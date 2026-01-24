@@ -1,0 +1,193 @@
+/* ==========================================================================
+   SelfQuest V34.0 Final CSS
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Config & Variables (全域變數)
+   -------------------------------------------------------------------------- */
+:root {
+    /* Colors */
+    --bg-frame: #1a100c;
+    --bg-main: #f7e7ce;
+    --bg-wood: #5d4037;
+    --bg-wood-dark: #3e2723;
+    --bg-panel: #f7e7ce; 
+    --bg-input: #ffffff;
+    --text-main: #3e2723;
+    --text-light: #5d4037;
+    
+    --color-gold: #ffb300;
+    --color-acc: #00897b;
+    --color-danger: #d32f2f;
+    --color-success: #2e7d32;
+
+    /* Dimensions */
+    --hud-h: 90px;
+    --nav-h: 70px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+
+    /* Z-Index Strategy */
+    --z-bg: 0;
+    --z-page: 100;
+    --z-nav: 1000;
+    --z-hud: 1000;
+    --z-layer: 1500; /* Story/Avatar Layer */
+    --z-mask: 8000;
+    --z-modal: 9000;
+    --z-toast: 9999;
+}
+
+/* --------------------------------------------------------------------------
+   2. Reset & Layout Frame (框架)
+   -------------------------------------------------------------------------- */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; scrollbar-width: none; }
+::-webkit-scrollbar { display: none; }
+
+html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg-frame); font-family: sans-serif; display: flex; justify-content: center; align-items: center; }
+
+#app-frame {
+    position: relative;
+    width: 100%; height: 100%; max-width: 480px;
+    margin: 0 auto;
+    background: var(--bg-panel);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 0 50px rgba(0,0,0,0.5);
+}
+
+/* --------------------------------------------------------------------------
+   3. Global Structures (HUD, Navbar, Content)
+   -------------------------------------------------------------------------- */
+#hud {
+    flex-shrink: 0;
+    height: calc(var(--hud-h) + var(--safe-top));
+    padding-top: var(--safe-top);
+    background: linear-gradient(180deg, var(--bg-wood) 0%, var(--bg-wood-dark) 100%);
+    border-bottom: 3px solid var(--bg-wood-dark);
+    display: flex; justify-content: space-between; align-items: center; padding: 0 15px;
+    z-index: var(--z-hud);
+}
+.hud-left { flex: 1; display: flex; align-items: center; gap: 12px; margin-right: 15px; min-width: 0; }
+.hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.hud-info { display: flex; flex-direction: column; justify-content: center; gap: 2px; width: 100%; }
+.hud-name { font-size: 0.95rem; font-weight: bold; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.hud-lv-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+.hud-lv-txt { font-size: 0.8rem; color: #ffd54f; font-weight: bold; flex-shrink: 0; }
+.hud-lv-row .u-progress { flex: 1; width: auto !important; height: 12px !important; }
+
+#navbar {
+    flex-shrink: 0;
+    height: calc(var(--nav-h) + var(--safe-bottom));
+    padding-bottom: var(--safe-bottom);
+    background: var(--bg-wood-dark);
+    border-top: 2px solid #3e2723;
+    display: flex; z-index: var(--z-nav);
+}
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; border: none; color: #bcaaa4; font-size: 0.9rem; padding: 0; margin: 0; cursor: pointer; transition: all 0.2s; }
+.nav-item.active { color: var(--color-gold); background: rgba(255,255,255,0.05); transform: translateY(-2px); text-shadow: 0 0 5px rgba(255,215,0,0.5); }
+
+#content-area {
+    flex: 1; position: relative; overflow: hidden; z-index: var(--z-page);
+    background-color: var(--bg-panel);
+}
+
+/* 全螢幕覆蓋層 (Story/Avatar) - 修正為蓋住 HUD */
+#layer-full {
+    position: absolute;top: calc(var(--hud-h) + var(--safe-top)); bottom: 0; left: 0; right: 0;
+    z-index: var(--z-layer);
+    opacity: 0; pointer-events: none;
+    background-color: #000; /* 預設黑底 */
+    transition: opacity 0.3s ease; overflow: hidden;
+}
+#layer-full.active { opacity: 1; pointer-events: auto; }
+
+/* 頁面通用類別 */
+.page {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: none; flex-direction: column;
+    background-color: var(--bg-main);
+    padding: 10px; /* 預設間距 */
+    box-sizing: border-box; overflow: hidden;
+}
+.page.active { display: flex; animation: fadeIn 0.2s; }
+
+/* 全螢幕頁面特規 (無間距) */
+#page-story, #page-avatar { padding: 0 !important; background: #000; }
+
+/* --------------------------------------------------------------------------
+   4. Universal Components (UI 元件庫)
+   -------------------------------------------------------------------------- */
+/* Buttons */
+.u-btn { border: 1px solid #ccc; border-radius: var(--radius-sm); padding: 8px 16px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; background: #e0e0e0; color: var(--text-main); transition: all 0.1s; flex-shrink: 0; }
+.u-btn:active { transform: translateY(2px); }
+.u-btn:disabled { background: #e0e0e0; color: #9e9e9e; cursor: not-allowed; }
+.u-btn-correct { background: var(--color-acc); color: #fff; border: none; }
+.u-btn-danger { background: var(--color-danger); color: #fff; border: none; }
+.u-btn-normal { background: #fff; border: 1px solid #aaa; }
+.u-btn-ghost { background: transparent; border: 1px dashed transparent; }
+.u-btn-sm { padding: 4px 10px; font-size: 0.85rem; }
+
+/* Boxes & Inputs */
+.u-box { background: rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.1); border-radius: var(--radius-md); padding: 12px; margin-bottom: 12px; width: 100%; }
+.u-bar { background: #eee; border-radius: 50px; padding: 4px; display: flex; align-items: center; gap: 5px; width: 100%; }
+.input-group { margin-bottom: 12px; width: 100%; }
+.section-title { display: block; font-weight: bold; color: var(--text-light); margin-bottom: 6px; font-size: 0.9rem; }
+.inp { width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid #ccc; border-radius: var(--radius-sm); font-size: 1rem; }
+.u-pill { padding: 2px 10px; border-radius: 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); font-size: 0.85rem; color: #fff; font-weight: bold; }
+
+/* Progress & Checkbox */
+.u-progress { position: relative; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; width: 100%; height: 14px; }
+.u-progress-bar { height: 100%; background: linear-gradient(90deg, #66bb6a, #a5d6a7); width: 0%; transition: width 0.3s ease; }
+.u-progress-text { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #fff; font-weight: bold; text-shadow: 0 1px 2px #000; }
+.chk { width: 24px; height: 24px; border: 2px solid #aaa; border-radius: 50%; cursor: pointer; background: #fff; transition: all 0.2s; position: relative; }
+.chk.checked { background: var(--color-success); border-color: var(--color-success); }
+.chk.checked::after { content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 14px; }
+
+/* Cards */
+.task-card, .std-card { display: flex; flex-direction: column; background: #fff; border-radius: 12px; padding: 12px 15px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #ccc; transition: transform 0.1s; }
+.task-card:active { transform: scale(0.99); }
+.task-card.status-done { border-left-color: var(--color-gold); background: #fff8e1; }
+.task-main-row, .card-main-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+.task-content, .card-col-center { flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.task-title { font-weight: bold; color: var(--text-main); font-size: 1rem; }
+.card-col-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+
+/* Segment Control */
+.radio-pill-group { display: flex; background: #eee; border-radius: 20px; padding: 3px; }
+.radio-pill-group input { display: none; }
+
+/* --------------------------------------------------------------------------
+   5. Modules (特定模組樣式)
+   -------------------------------------------------------------------------- */
+/* Shop Grid */
+.shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.card-vertical { display: flex; flex-direction: column; align-items: center; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.card-img-area { width: 100%; height: 80px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+
+/* Story Module */
+#story-top-bar { position: relative; z-index: 10; flex-shrink: 0; background: rgba(0, 0, 0, 0.9); border-bottom: 1px solid #333; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; }
+#story-text-box { position: relative; z-index: 10; flex: 1; width: 100%; padding: 20px 25px; color: #eee; font-size: 1.1rem; line-height: 1.6; overflow-y: auto; }
+#story-actions { position: relative; z-index: 10; flex-shrink: 0; width: 100%; padding: 15px; background: #111; border-top: 1px solid #333; display: grid; gap: 10px; max-height: 40%; overflow-y: auto; }
+
+/* Avatar Module (No Purple) */
+.u-avatar { width: 56px; height: 56px; border: 2px solid var(--color-gold); border-radius: 50%; background: #fff; overflow: hidden; display: flex; justify-content: center; align-items: center; font-size: 30px; cursor: pointer; flex-shrink: 0; }
+.u-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-card { background: #fff; border: 1px solid #eee; transition: all 0.2s; }
+
+/* --------------------------------------------------------------------------
+   6. Overlays (Modal & Toast)
+   -------------------------------------------------------------------------- */
+.mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: var(--z-mask); display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+.mask.active { display: flex; }
+.modal { width: 90%; max-width: 400px; max-height: 85%; background: #fdf5e6; border-radius: 16px; border: 3px solid #5d4037; box-shadow: 0 10px 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; z-index: var(--z-modal); overflow: hidden; }
+.m-head { flex-shrink: 0; background: #4e342e; color: #fdf5e6; padding: 12px 16px; font-weight: bold; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
+.m-body { flex: 1; overflow-y: auto; padding: 20px; background: #fdf5e6; }
+.m-foot { flex-shrink: 0; padding: 10px 15px; background: #fdf5e6; border-top: 1px solid rgba(93, 64, 55, 0.15); display: flex; justify-content: flex-end; gap: 10px; }
+.u-toast { position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%); z-index: var(--z-toast); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.9rem; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+.u-toast.show { opacity: 1; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
