@@ -1,396 +1,753 @@
-/* js/view.js - V34.Strict (Restored Navbar & UI Locked) */
+/* js/view.js - V35.Final UI Library (Complete Collection) */
 
 window.ui = window.ui || {};
 window.view = window.view || {};
 window.act = window.act || {};
-
-// =============================================================================
-// 1. 原子元件 (Atoms) - [鎖定不可動]
-// =============================================================================
-ui.component = {
-    btn: (opts) => {
-        const themeMap = {
-            'correct': 'u-btn-correct', 'danger': 'u-btn-danger',
-            'normal': 'u-btn-normal', 'ghost': 'u-btn-ghost',
-        };
-        const themeClass = themeMap[opts.theme] || 'u-btn-secondary';
-        const sizeClass = opts.size ? `u-btn-${opts.size}` : '';
-        const disabledAttr = opts.disabled ? 'disabled' : '';
-        const idAttr = opts.id ? `id="${opts.id}"` : '';
-        const action = opts.disabled ? '' : `onclick="${opts.action}"`;
-        const iconHtml = opts.icon ? `<span style="margin-right:4px;">${opts.icon}</span>` : '';
-
-        return `<button ${idAttr} class="u-btn ${themeClass} ${sizeClass}" style="${opts.style || ''}" ${action} ${disabledAttr}>${iconHtml}${opts.label||''}</button>`;
-    },
-    
-    pillBtn: (opts) => {
-        const baseStyle = opts.style || '';
-        const pillStyle = `border-radius: 50px; padding: 4px 12px; white-space: nowrap; ${baseStyle}`;
-        return ui.component.btn({
-            ...opts,
-            size: opts.size || 'sm', 
-            style: pillStyle
-        });
-    },
-
-    pill: (text, color, id, solid = false) => {
-        const idAttr = id ? `id="${id}"` : '';
-        const style = solid 
-            ? `background: ${color}; color: #fff; border: none;` 
-            : `border-color: ${color}; color: ${color}; background: rgba(0,0,0,0.05);`;
-        return `<span ${idAttr} class="u-pill" style="${style}">${text}</span>`;
-    },
-    
-    avatar: (id, action, imgContent) => {
-        return `<div id="${id}" class="u-avatar" onclick="${action}">${imgContent}</div>`;
-    },
-    
-    // 立繪/圖片按鈕 (Sprite)
-    sprite: ({ src, action, width, height, style, id }) => {
-        const idAttr = id ? `id="${id}"` : '';
-        const clickAttr = action ? `onclick="${action}"` : '';
-        const cursorStyle = action ? 'cursor: pointer;' : 'cursor: default;';
-        const sizeStyle = `width:${width || 'auto'}; height:${height || 'auto'};`;
+window.ui = {
+    // =============================================================================
+    // 1. 原子元件 (Atoms)
+    // =============================================================================
+    component: {
+        // 通用按鈕
+        btn: (opts) => {
+            const themeMap = { 'correct': 'u-btn-correct', 'danger': 'u-btn-danger', 'normal': 'u-btn-normal', 'ghost': 'u-btn-ghost', 'paper': 'u-btn-paper' };
+            const themeClass = themeMap[opts.theme] || 'u-btn-normal';
+            const sizeClass = opts.size ? `u-btn-${opts.size}` : '';
+            const disabledAttr = opts.disabled ? 'disabled' : '';
+            const idAttr = opts.id ? `id="${opts.id}"` : '';
+            const action = opts.disabled ? '' : (opts.action ? `onclick="${opts.action}"` : '');
+            const iconHtml = opts.icon ? `<span style="margin-right:4px;">${opts.icon}</span>` : '';
+            return `<button ${idAttr} class="u-btn ${themeClass} ${sizeClass}" style="${opts.style || ''}" ${action} ${disabledAttr}>${iconHtml}${opts.label||''}</button>`;
+        },
         
-        return `
-            <img ${idAttr} src="${src}" ${clickAttr} 
-                 class="u-sprite"
-                 style="display:block; object-fit:contain; -webkit-user-drag: none; ${sizeStyle} ${cursorStyle} ${style||''}"
-                 onmousedown="if(this.onclick) this.style.transform='scale(0.95)'"
-                 onmouseup="if(this.onclick) this.style.transform='scale(1)'"
-                 onmouseleave="if(this.onclick) this.style.transform='scale(1)'"
-            >
-        `;
-    },
-    
-    segment: (options, currentVal, onAction) => {
-        return options.map(opt => {
-            const isActive = currentVal === opt.val;
-            const actionCall = onAction.includes('(') ? onAction : `${onAction}('${opt.val}')`;
-            return ui.component.pillBtn({
-                label: opt.label,
-                theme: isActive ? 'correct' : 'normal',
-                style: `flex:1; margin:2px; ${isActive ? 'box-shadow:inset 0 2px 4px rgba(0,0,0,0.1);' : ''}`,
-                action: actionCall
-            });
-        }).join('');
-    },
-};
+        pillBtn: (opts) => {
+            return ui.component.btn({ ...opts, size: opts.size || 'sm', style: `border-radius: 50px; padding: 4px 12px; white-space: nowrap; ${opts.style||''}` });
+        },
 
-// =============================================================================
-// 2. 容器與標籤 (Containers & Tabs) - [鎖定不可動]
-// =============================================================================
-ui.container = {
-    box: (content, style='') => `<div class="u-box" style="${style}">${content}</div>`,
-    bar: (content, style='') => `<div class="u-bar" style="${style}">${content}</div>`
-};
-
-ui.tabs = {
-    scrollX: (options, currentVal, actionName) => {
-        const buttons = options.map(opt => ui.component.btn({
-            label: opt,
-            theme: opt === currentVal ? 'correct' : 'ghost',
-            size: 'sm',
-            style: 'border-radius:15px; white-space:nowrap; flex-shrink:0; margin-right:5px;',
-            action: `${actionName}('${opt}')`
-        })).join('');
-        return `<div style="display:flex; overflow-x:auto; padding-bottom:5px; -webkit-overflow-scrolling:touch; gap:5px;">${buttons}</div>`;
-    },
-    sliding: (label1, label2, isLeft, act1, act2) => {
-        return `
-        <div style="display:flex; background:rgba(0,0,0,0.1); border-radius:50px; padding:4px; margin:10px 15px;">
-            ${ui.component.pillBtn({label:label1, theme:isLeft?'correct':'ghost', style:'flex:1;', action:act1})}
-            ${ui.component.pillBtn({label:label2, theme:!isLeft?'correct':'ghost', style:'flex:1;', action:act2})}
-        </div>`;
-    }
-};
-
-// =============================================================================
-// 3. 輸入元件 (Inputs) - [鎖定不可動]
-// =============================================================================
-ui.input = {
-    text: (val, placeholder, onInput, id) => 
-        `<input type="text" id="${id||''}" class="inp" value="${val||''}" placeholder="${placeholder||''}" oninput="${onInput}">`,
-
-    textarea: (val, placeholder, onInput, id) => 
-        `<textarea id="${id||''}" class="inp" rows="3" placeholder="${placeholder||''}" oninput="${onInput}">${val||''}</textarea>`,
-
-    number: (val, onInput, digit=4, id) => {
-        const width = digit === 2 ? '60px' : '100px';
-        return `<input type="number" id="${id||''}" class="inp inp-num" style="width:${width}; text-align:center;" value="${val||0}" oninput="${onInput}">`;
-    },
-    
-    datetime: (val, onChange, id) => 
-        `<input type="datetime-local" id="${id||''}" class="inp" value="${val||''}" onchange="${onChange}" style="width:100%;">`,
-    
-    select: (options, currentVal, onChange, id) => {
-        const optsHtml = options.map(opt => 
-            `<option value="${opt.val||opt.value}" ${ (opt.val||opt.value) == currentVal ? 'selected' : ''}>${opt.label}</option>`
-        ).join('');
-        return `<select id="${id||''}" onchange="${onChange}" style="width:100%; padding:8px; border-radius:8px; border:1px solid #ccc; background:#fff; outline:none; font-size:0.9rem;">${optsHtml}</select>`;
-    },
-
-    toggleRow: ({ id, label, icon = '', checked, onChange }) => {
-        return `
-        <div class="u-toggle-row" onclick="const c=this.querySelector('input'); c.checked=!c.checked; c.dispatchEvent(new Event('change'));" 
-             style="display:flex; align-items:center; gap:12px; padding:12px; background:rgba(255,255,255,0.6); border-radius:10px; cursor:pointer; margin-bottom:8px; border:1px solid rgba(0,0,0,0.05);">
-            <div style="width:20px; height:20px; border:2px solid ${checked ? 'var(--color-gold)' : '#bbb'}; border-radius:4px; display:flex; align-items:center; justify-content:center; background:${checked ? 'var(--color-gold)' : '#fff'};">
-                <input type="checkbox" id="${id}" ${checked ? 'checked' : ''} onchange="${onChange}" style="display:none;" onclick="event.stopPropagation();">
-                ${checked ? '<span style="color:white; font-size:14px; font-weight:bold;">✓</span>' : ''}
-            </div>
-            <div style="font-size:1.2rem;">${icon}</div>
-            <div style="font-size:0.95rem; font-weight:bold; color:#444; flex:1;">${label}</div>
-            <div style="font-size:0.75rem; color:${checked ? 'var(--color-gold)' : '#999'}; font-weight:bold;">${checked ? 'ON' : 'OFF'}</div>
-        </div>`;
-    }
-};
-
-// =============================================================================
-// 4. 進度與佈局 (Layouts) - [鎖定不可動]
-// =============================================================================
-ui.progress = {
-    bar: (curr, max, text, style='') => {
-        const pct = Math.min(100, Math.max(0, (curr / max) * 100));
-        return `
-            <div class="u-progress" style="${style}">
-                <div class="u-progress-bar" style="width:${pct}%"></div>
-                <div class="u-progress-text">${text || ''}</div>
-            </div>`;
-    },
-    stepWizard: (currStep, totalSteps) => {
-        let html = '<div style="display:flex; align-items:center; justify-content:space-between; width:100%;">';
-        for (let i = 1; i <= totalSteps; i++) {
-            let state = 'gray'; 
-            if (i < currStep) state = 'green'; 
-            else if (i === currStep) state = 'gold'; 
-
-            const color = state==='green'?'#4caf50':(state==='gold'?'#ffb300':'#ccc');
-            const circle = `<div style="width:12px; height:12px; border-radius:50%; background:${color}; margin:0 2px;"></div>`;
-            html += circle;
-            if (i < totalSteps) html += `<div style="flex:1; height:2px; background:#eee;"></div>`;
-        }
-        return html + '</div>';
-    }
-};
-
-ui.layout = {
-    flexRow: (content, gap='10px', justify='space-between') => 
-        `<div style="display:flex; align-items:center; justify-content:${justify}; gap:${gap}; width:100%;">${content}</div>`,
-    grid: (content, cols='2', gap='10px') => 
-        `<div style="display:grid; grid-template-columns:repeat(${cols}, 1fr); gap:${gap}; width:100%;">${content}</div>`,
-    scrollX: (options, currentVal, actionName) => {
-        const buttons = options.map(opt => ui.component.pillBtn({
-            label: opt,
-            theme: opt === currentVal ? 'normal' : 'ghost',
-            style: 'flex-shrink:0; margin-right:5px;', 
-            action: `${actionName}('${opt}')`
-        })).join('');
-
-        return `<div style="display:flex; overflow-x:auto; padding-bottom:5px; -webkit-overflow-scrolling:touch; gap:5px;">${buttons}</div>`;
-    },
-    drawer: (isOpen, contentHtml, onOpen, onClose) => {
-        const handleStyle = `
-            width: 40px; height: 50px; 
-            background: #222; color: #fff; 
-            border: 1px solid #555; border-bottom: none; 
-            display: flex; align-items: center; justify-content: center; 
-            cursor: pointer; position: absolute; top: -50px;
-            border-radius: 8px 8px 0 0;
-        `;
-        return `
-            <div id="tag-drawer-unit" class="${isOpen ? 'open' : ''}" 
-                 style="position: absolute; bottom: 0; right: 0; width: 100%; height: 200px; z-index: 20; transform: translateX(${isOpen ? '0%' : '100%'}); transition: transform 0.3s ease;">
-                <div onclick="${onOpen}" style="${handleStyle} left: -40px;">◁</div>
-                <div id="tag-drawer-body" style="width: 100%; height: 100%; background: rgba(10,10,10,0.95); border-top: 2px solid #ffd700; padding: 15px; overflow-y: auto;">
-                    ${contentHtml}
-                </div>
-                <div onclick="${onClose}" style="${handleStyle} right: 0; border-radius: 8px 0 0 0;">▷</div>
-            </div>
-        `;
-    },
-    
-    scroller: (header, body, id='') => `
-        <div style="display:flex; flex-direction:column; height:100%; width:100%; overflow:hidden; position:relative;">
-            <div style="flex-shrink:0; z-index:2;">${header}</div>
-            <div id="${id}" style="flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; padding-bottom:80px;">
-                ${body}
-            </div>
-        </div>`
-};
-
-// =============================================================================
-// 5. 卡片元件 (Cards) - [鎖定不可動]
-// =============================================================================
-ui.card = {
-    vertical: (optsOrTitle, subTitle, desc, actionBtn, onClick) => {
-        let opts = typeof optsOrTitle === 'object' ? optsOrTitle : { title: optsOrTitle, subTitle: subTitle, desc: desc, actionBtnHtml: actionBtn, onClick: onClick };
-        let imgHtml = '';
-        if (opts.imgPath) {
-            imgHtml = `<div class="card-img-area"><img src="${opts.imgPath}" style="height:80px; object-fit:contain;"></div>`;
-        }
-        const borderStyle = opts.isHighlight ? 'border: 2px solid var(--color-primary);' : '';
-        const clickAction = opts.onClick ? `onclick="${opts.onClick}"` : '';
-
-        return `
-        <div class="card-vertical" style="${opts.style||''} ${borderStyle}" ${clickAction}>
-            ${imgHtml}
-            <div class="card-info-area" style="text-align:center;">
-                <div style="font-weight:bold; margin-bottom:4px;">${opts.title}</div>
-                <div style="font-size:0.8rem; color:#666;">${opts.subTitle||''}</div>
-                <div style="font-size:0.75rem; color:#999;">${opts.desc||''}</div>
-            </div>
-            <div class="card-action-area" style="margin-top:8px;">${opts.actionBtnHtml||''}</div>
-        </div>`;
-    },
-
-    task: (t, isReadOnly = false) => {
-        const left = isReadOnly 
-            ? `<div style="font-size:1.2rem; color:var(--color-correct); width:30px; text-align:center;">✓</div>`
-            : `<div class="task-checkbox ${t.done?'checked':''}" onclick="event.stopPropagation(); act.toggleTask('${t.id}')">${t.done?'✓':''}</div>`;
-
-        let pills = '';
-        if (t.importance >= 3) pills += ui.component.pill('🔥', 'orange', '', 'soft');
-        if (t.recurrence) pills += ui.component.pill('🔁', 'blue', '', 'soft');
-
-        const progressRow = (!t.done && t.type === 'count') 
-            ? `<div style="margin-top:5px;">${ui.progress.bar(t.curr, t.target)}</div>` 
-            : '';
-
-        const right = isReadOnly ? '' : ui.component.btn({ label:'⚙️', theme:'ghost', action:`event.stopPropagation(); act.editTask('${t.id}')` });
-
-        return `
-            <div class="task-card ${t.done?'status-done':''}" ${!isReadOnly ? `onclick="view.toggleCardExpand('${t.id}')"` : ''}>
-                <div class="task-main-row">
-                    <div>${left}</div>
-                    <div class="task-content" style="flex:1;">
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <span class="task-title">${t.title}</span>${pills}
-                        </div>
-                        ${progressRow}
-                    </div>
-                    <div>${right}</div>
-                </div>
-                <div id="expand-${t.id}" style="display:none; padding-top:10px; border-top:1px dashed #eee; margin-top:10px; font-size:0.9rem; color:#666;">
-                    ${t.desc || '無描述'} <br>
-                    <span style="font-size:0.8rem; color:#aaa;">📅 ${t.deadline || '無期限'}</span>
-                </div>
-            </div>`;
-    },
-    
-    nav: ({ icon, title, desc, theme, action }) => {
-        return `
-            <div class="nav-card theme-${theme || 'normal'}" onclick="${action}" 
-                 style="display:flex; align-items:center; gap:12px; padding:12px; background:rgba(255,255,255,0.8); border-radius:12px; cursor:pointer; border:1px solid ${theme==='gold'?'var(--color-gold)':'#eee'}; box-shadow:0 2px 6px rgba(0,0,0,0.05); margin-top:5px;">
-                <div style="font-size:1.5rem;">${icon}</div>
-                <div style="flex:1; text-align:left;">
-                    <div style="font-weight:bold; font-size:0.95rem; color:#4e342e;">${title}</div>
-                    <div style="font-size:0.75rem; color:#8d6e63; line-height:1.2;">${desc}</div>
-                </div>
-                <div style="color:${theme==='gold'?'var(--color-gold)':'#ccc'}; font-weight:bold;">➜</div>
-            </div>`;
-    },
-
-    achievement: (a) => {
-        return `<div class="task-card" style="border-left: 4px solid gold;">
-            <div style="font-weight:bold;">${a.title}</div>
-            <div style="font-size:0.85rem; color:#666;">${a.desc}</div>
-            <div style="margin-top:5px;">${ui.progress.bar(a.curr, a.targetVal, `${a.curr}/${a.targetVal}`)}</div>
-            <div style="text-align:right; margin-top:5px;">
-                ${a.done && !a.claimed ? ui.component.btn({label:'領取', theme:'correct', size:'sm', action:`act.claim('${a.id}')`}) : (a.claimed ? '已領取' : '')}
-                ${ui.component.btn({label:'⚙️', theme:'ghost', size:'sm', action:`act.editAch('${a.id}')`})}
-            </div>
-        </div>`;
-    }
-};
-
-// =============================================================================
-// 6. 視窗工廠 (Modals) - [修正：層級分流]
-// =============================================================================
-ui.modal = {
-    render: (title, bodyHtml, footHtml, layer = 'overlay') => {
-        // [關鍵修改] 根據 layer 決定 ID，對應 CSS z-index
-        // system: 緊急/警示 (z-index 9999)
-        // overlay: 確認/詳情 (z-index 9500)
-        // panel: 一般功能面板 (z-index 9000)
-        const layers = { 'panel': 'm-panel', 'overlay': 'm-overlay', 'system': 'm-system' };
-        const targetId = layers[layer] || layers['overlay'];
-
-        let modal = document.getElementById(targetId);
-        
-        // 如果不存在，動態建立 (確保它在 HTML 最尾端，層級最高)
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = targetId;
-            modal.className = 'mask'; // CSS: .mask { z-index: 根據 ID 決定 或預設 }
+        // 狀態標籤 (Tag) - 支援空心模式 (hollow)
+        pill: (text, color, id, type = 'solid') => {
+            const idAttr = id ? `id="${id}"` : '';
+            // solid: 實心, hollow: 空心(只有邊框), soft: 淺底色(舊版)
+            let style = '';
+            if (type === 'solid') style = `background: ${color}; color: #fff; border: none;`;
+            else if (type === 'hollow') style = `border: 1px solid ${color}; color: ${color}; background: transparent; padding: 1px 6px; font-size: 0.75rem;`;
+            else style = `border-color: ${color}; color: ${color}; background: rgba(0,0,0,0.05);`;
             
-            // 這裡補上 CSS 對應的 style 確保 JS 邏輯生效
-            if (layer === 'system') modal.style.zIndex = '9999';
-            else if (layer === 'overlay') modal.style.zIndex = '9500';
-            else modal.style.zIndex = '9000';
-
-            const closeBtnHtml = ui.component.btn({
-                label: '✕',
-                theme: 'ghost',
-                style: 'font-size: 1.2rem; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;'
-            });
-
-            modal.innerHTML = `
-                <div class="modal">
-                    <div class="m-head">
-                        <span class="m-title"></span>
-                        ${closeBtnHtml}
-                    </div>
-                    <div class="m-body"></div>
-                    <div class="m-foot"></div>
-                </div>`;
-            document.body.appendChild(modal);
-        }
-
-        const closeBtn = modal.querySelector('.m-head button');
-        closeBtn.setAttribute('onclick', `window.act.closeModal('${targetId}')`);
-
-        modal.querySelector('.m-title').innerText = title;
-        modal.querySelector('.m-body').innerHTML = bodyHtml;
+            return `<span ${idAttr} class="u-pill" style="${style}">${text}</span>`;
+        },
         
-        const footEl = modal.querySelector('.m-foot');
-        if (footHtml) {
-            footEl.style.display = 'flex';
-            footEl.innerHTML = footHtml;
-        } else {
-            footEl.style.display = 'none';
-        }
+        // 頭像 (Avatar)
+        avatar: (id, action, imgContent) => {
+            const clickAttr = action ? `onclick="${action}"` : '';
+            const cursor = action ? 'cursor:pointer;' : '';
+            return `<div id="${id}" class="u-avatar" ${clickAttr} style="${cursor}">${imgContent}</div>`;
+        },
 
-        modal.style.display = 'flex';
-        requestAnimationFrame(() => modal.classList.add('active'));
+        // 立繪/圖片按鈕 (Sprite)
+        sprite: ({ src, action, width, height, style, id }) => {
+            const idAttr = id ? `id="${id}"` : '';
+            const clickAttr = action ? `onclick="${action}"` : '';
+            const cursorStyle = action ? 'cursor: pointer;' : 'cursor: default;';
+            const sizeStyle = `width:${width || 'auto'}; height:${height || 'auto'};`;
+            return `<img ${idAttr} src="${src}" ${clickAttr} class="u-sprite" style="display:block; object-fit:contain; -webkit-user-drag: none; ${sizeStyle} ${cursorStyle} ${style||''}" onmousedown="if(this.onclick) this.style.transform='scale(0.95)'" onmouseup="if(this.onclick) this.style.transform='scale(1)'" onmouseleave="if(this.onclick) this.style.transform='scale(1)'">`;
+        },
+        
+        // 分段切換器 (Segment)
+        segment: (options, currentVal, onAction) => {
+            return options.map(opt => {
+                const isActive = currentVal === opt.val;
+                const actionCall = onAction.includes('(') ? onAction : `${onAction}('${opt.val}')`;
+                return ui.component.pillBtn({ label: opt.label, theme: isActive ? 'correct' : 'normal', style: `flex:1; margin:2px; ${isActive ? 'box-shadow:inset 0 2px 4px rgba(0,0,0,0.1);' : ''}`, action: actionCall });
+            }).join('');
+        },
     },
 
-    close: (id) => {
-        const targetId = id || 'm-overlay';
-        const modal = document.getElementById(targetId);
-        if (modal) {
-            modal.classList.remove('active');
-            setTimeout(() => { 
-                if (!modal.classList.contains('active')) {
-                    modal.style.display = 'none'; 
-                    // 如果沒有其他啟動中的 modal，才移除 body 的鎖定
-                    if (!document.querySelector('.mask.active')) {
-                        document.body.classList.remove('modal-open');
-                    }
-                }
-            }, 300);
+    // =============================================================================
+    // 2. 容器 (Containers)
+    // =============================================================================
+    container: {
+        box: (content, style='') => `<div class="u-box" style="${style}">${content}</div>`,
+        bar: (content, style='') => `<div class="u-bar" style="${style}">${content}</div>`
+    },
+
+    // =============================================================================
+    // 3. 佈局模板 (Layouts)
+    // =============================================================================
+    layout: {
+        // [V35核心] 萬用頁面模板
+        page: (opts) => {
+            let backBtnHtml = '';
+            if (opts.back) {
+                const action = typeof opts.back === 'string' ? opts.back : "act.navigate('main')";
+                backBtnHtml = ui.component.btn({ label: '返回', icon: '↵', theme: 'normal', action: action, style: 'padding: 6px 12px; font-size:0.9rem; border-radius:8px;' });
+            }
+            const topBarHtml = `<div style="flex-shrink:0; height:60px; display:flex; align-items:center; justify-content:space-between; padding:0 15px; background:transparent;"><div style="font-size:1.2rem; font-weight:bold; color:#3e2723;">${opts.title || ''}</div>${backBtnHtml}</div>`;
+
+            return `<div style="display:flex; flex-direction:column; height:100%; overflow:hidden;">
+                ${topBarHtml}
+                ${opts.fixedTop ? `<div style="flex-shrink:0;">${opts.fixedTop}</div>` : ''}
+                <div style="flex:1; overflow-y:auto; overflow-x:hidden; position:relative; z-index:10; padding-bottom: 20px;">${opts.body || ''}</div>
+                ${opts.footer ? `<div style="flex-shrink:0; padding:10px;">${opts.footer}</div>` : ''}
+            </div>`;
+        },
+
+        // Flex 橫向佈局 (工具類)
+        flexRow: (content, gap='10px', justify='space-between') => 
+            `<div style="display:flex; align-items:center; justify-content:${justify}; gap:${gap}; width:100%;">${content}</div>`,
+        
+        // Grid 網格佈局 (工具類)
+        grid: (content, cols='2', gap='10px') => 
+            `<div style="display:grid; grid-template-columns:repeat(${cols}, 1fr); gap:${gap}; width:100%;">${content}</div>`,
+
+        // 橫向捲動區 (ScrollX)
+        scrollX: (options, currentVal, actionName) => {
+            const buttons = options.map(opt => ui.component.pillBtn({ label: opt, theme: opt === currentVal ? 'normal' : 'ghost', style: 'flex-shrink:0; margin-right:5px;', action: `${actionName}('${opt}')` })).join('');
+            return `<div style="display:flex; overflow-x:auto; padding-bottom:5px; -webkit-overflow-scrolling:touch; gap:5px;">${buttons}</div>`;
+        },
+
+    // [V35.31] 萬用抽屜 (固定把手 + 獨立滑動層)
+    drawer: (isOpen, contentHtml, onToggle, opts = {}) => {
+        const bgColor = opts.color || '#222';
+        const dir = opts.dir || 'bottom';
+        // 新增參數：預設為 false (跟著動)，Story 模式請傳入 true
+        const isFixedHandle = opts.fixedHandle || false; 
+
+        // 1. Wrapper: 滿版容器
+        const wrapperStyle = `
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 200; pointer-events: none; overflow: hidden;
+        `;
+
+        // 2. Handle (把手) 通用樣式
+        let handleBaseStyle = `
+            background: ${bgColor}; 
+            color: #fff; 
+            cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; font-weight: bold;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+            user-select: none;
+            width: 60px; height: 40px;
+            border-radius: 8px 8px 0 0;
+            border: 1px solid rgba(255,255,255,0.1); border-bottom: none;
+            pointer-events: auto; /* 確保可點擊 */
+            z-index: 202; /* 把手層級必須比抽屜高 */
+        `;
+
+        // 3. Body (抽屜本體) 通用樣式
+        let drawerBaseStyle = `
+            position: absolute; 
+            background: ${bgColor}; 
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            pointer-events: auto;
+            display: flex; flex-direction: column;
+            z-index: 201; 
+            overflow: visible; /* 讓內部把手可以凸出去 */
+        `;
+
+        // --- 根據模式決定位置邏輯 ---
+        
+        let finalHandleStyle = handleBaseStyle + 'position: absolute; right: 0; ';
+        let finalDrawerStyle = drawerBaseStyle;
+
+        if (dir === 'right') {
+            // [STORY 模式] (通常使用 fixedHandle: true)
+            // 抽屜：由右側滑入，高度固定 220px
+            finalDrawerStyle += `
+                bottom: 0; right: 0; 
+                width: 100%; height: 220px; 
+                transform: translateX(${isOpen ? '0%' : '100%'}); 
+                border-top: 2px solid #555;
+            `;
+
+            if (isFixedHandle) {
+                // 【固定模式】：按鈕定死在距離底部 220px 的位置
+                finalHandleStyle += `bottom: 220px;`;
+            } else {
+                // 【跟隨模式】：雖然你是右側抽屜，但也可以設定按鈕跟著跑(看需求)
+                finalHandleStyle += `bottom: 100%;`; 
+            }
+
+        } else {
+            // [SHOP 模式] (通常使用 fixedHandle: false)
+            // 抽屜：由底部滑入
+            const h = opts.height || '35%';
+            finalDrawerStyle += `
+                bottom: 0; left: 0; width: 100%; height: ${h};
+                transform: translateY(${isOpen ? '0%' : '100%'});
+                border-top: 1px solid rgba(255,255,255,0.1);
+            `;
+            
+            if (isFixedHandle) {
+                // 【固定模式】：按鈕定死在螢幕某個高度 (例如 35%)
+                finalHandleStyle += `bottom: ${h};`;
+            } else {
+                // 【跟隨模式】：按鈕黏在抽屜頭頂
+                finalHandleStyle += `bottom: 100%;`;
+            }
+        }
+
+        const icon = isOpen ? (opts.iconOpen || '▼') : (opts.iconClose || '▲');
+        
+        // 建立 Handle HTML 片段
+        const handleHtml = `
+            <div onclick="event.preventDefault(); event.stopPropagation(); ${onToggle}" style="${finalHandleStyle}">
+                ${icon}
+            </div>
+        `;
+
+        // 建立 Body HTML 片段
+        const bodyContent = `
+            <div style="width:100%; height:100%; overflow-y:auto; padding:15px; box-sizing:border-box;">
+                ${contentHtml}
+            </div>
+        `;
+
+        // --- 最終組裝 (關鍵分流) ---
+        
+        if (isFixedHandle) {
+            // A. 固定模式 (Sibling 結構)
+            // Handle 和 Body 是兄弟，互不干涉
+            return `
+                <div class="u-drawer-wrapper" style="${wrapperStyle}">
+                    ${handleHtml}
+                    <div class="u-drawer-body" style="${finalDrawerStyle}">
+                        ${bodyContent}
+                    </div>
+                </div>`;
+        } else {
+            // B. 跟隨模式 (Parent-Child 結構)
+            // Handle 被塞進 Body 裡面，這樣 Body 動，Handle 就自動跟著動
+            return `
+                <div class="u-drawer-wrapper" style="${wrapperStyle}">
+                    <div class="u-drawer-body" style="${finalDrawerStyle}">
+                        ${handleHtml}
+                        ${bodyContent}
+                    </div>
+                </div>`;
+        }
+    },
+        // 舊版容器 (保留相容性)
+        scroller: (header, body, id='') => `
+            <div style="display:flex; flex-direction:column; height:100%; width:100%; overflow:hidden; position:relative;">
+                <div style="flex-shrink:0; z-index:2;">${header}</div>
+                <div id="${id}" style="flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; padding-bottom:80px;">${body}</div>
+            </div>`
+    },
+
+    // =============================================================================
+    // 4. 輸入元件 (Inputs)
+    // =============================================================================
+    input: {
+        text: (val, placeholder, onInput, id) => `<input type="text" id="${id||''}" class="inp" value="${val||''}" placeholder="${placeholder||''}" oninput="${onInput}">`,
+
+        // [客製化] 純數字輸入框 (限制位數)
+        number: (val, onInput, digit=4, id) => {
+            const safeVal = val !== undefined ? val : '';
+            return `<input type="text" inputmode="numeric" pattern="[0-9]*" id="${id||''}" class="inp inp-num" value="${safeVal}" maxlength="${digit}" style="width: 100px; text-align:center; font-weight:bold; letter-spacing:1px;" oninput="this.value=this.value.replace(/[^0-9]/g,''); ${onInput}">`;
+        },
+        
+        textarea: (val, placeholder, onInput, id) => `<textarea id="${id||''}" class="inp" rows="3" placeholder="${placeholder||''}" oninput="${onInput}">${val||''}</textarea>`,
+
+        datetime: (val, onChange, id) => `<input type="datetime-local" id="${id||''}" class="inp" value="${val||''}" onchange="${onChange}" style="width:100%;">`,
+
+        select: (options, currentVal, onChange, id) => {
+            const optsHtml = options.map(opt => `<option value="${opt.val||opt.value}" ${ (opt.val||opt.value) == currentVal ? 'selected' : ''}>${opt.label}</option>`).join('');
+            return `<select id="${id||''}" onchange="${onChange}" style="width:100%; padding:8px; border-radius:8px; border:1px solid #ccc; background:#fff; outline:none; font-size:0.9rem;">${optsHtml}</select>`;
+        },
+
+        // 開關列 (Settings Toggle)
+        toggleRow: ({ id, label, icon = '', checked, onChange }) => {
+            return `
+            <div class="u-toggle-row" onclick="const c=this.querySelector('input'); c.checked=!c.checked; c.dispatchEvent(new Event('change'));" 
+                 style="display:flex; align-items:center; gap:12px; padding:12px; background:rgba(255,255,255,0.6); border-radius:10px; cursor:pointer; margin-bottom:8px; border:1px solid rgba(0,0,0,0.05);">
+                <div style="width:20px; height:20px; border:2px solid ${checked ? 'var(--color-gold)' : '#bbb'}; border-radius:4px; display:flex; align-items:center; justify-content:center; background:${checked ? 'var(--color-gold)' : '#fff'};">
+                    <input type="checkbox" id="${id}" ${checked ? 'checked' : ''} onchange="${onChange}" style="display:none;" onclick="event.stopPropagation();">
+                    ${checked ? '<span style="color:white; font-size:14px; font-weight:bold;">✓</span>' : ''}
+                </div>
+                <div style="font-size:1.2rem;">${icon}</div>
+                <div style="font-size:0.95rem; font-weight:bold; color:#444; flex:1;">${label}</div>
+                <div style="font-size:0.75rem; color:${checked ? 'var(--color-gold)' : '#999'}; font-weight:bold;">${checked ? 'ON' : 'OFF'}</div>
+            </div>`;
+        }
+    },
+
+    // =============================================================================
+    // 4. 進度元件 (修正版)
+    // =============================================================================
+    progress: {
+        // [修正 1] 計次任務進度條 (內含文字，高度增加)
+        bar: (curr, max) => {
+            const pct = Math.min(100, Math.max(0, (curr / max) * 100));
+            return `
+            <div class="u-progress" style="height:18px; background:#e0e0e0; border-radius:10px; position:relative; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,0.1);">
+                <div style="width:${pct}%; height:100%; background:var(--color-correct, #4caf50); transition:width 0.3s ease;"></div>
+                <div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:11px; color:#333; font-weight:bold; letter-spacing:0.5px; text-shadow: 0 0 2px rgba(255,255,255,0.8);">
+                    ${curr} / ${max}
+                </div>
+            </div>`;
+        },
+        // [修正 3] 子任務進度條 (分段式，高度增加至 5px)
+stepWizard: (currStep, totalSteps) => {
+    let html = '<div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px;">';
+
+    for (let i = 1; i <= totalSteps; i++) {
+        // --- 1. 繪製圓球 (Ball) ---
+        // 判定：只要是當前步驟或之前的步驟，球就是綠色
+        let ballColor = i <= currStep ? 'var(--color-correct, #4caf50)' : '#e0e0e0';
+        
+        // 樣式：12px 大小的球，z-index 設為 2 確保球浮在線上面
+        html += `<div style="width:12px; height:12px; background:${ballColor}; border-radius:50%; flex-shrink:0; z-index:2; transition:background 0.3s;"></div>`;
+
+        // --- 2. 繪製連接線 (Line) ---
+        // 只有在「不是最後一個步驟」時，才在球後面加一條線
+        if (i < totalSteps) {
+            // 判定：線條代表「從第 i 步走到第 i+1 步」
+            // 如果目前進度大於 i (代表 i 已完成，正在前往或已到達 i+1)，線就是綠色
+            let lineColor = i < currStep ? 'var(--color-correct, #4caf50)' : '#e0e0e0';
+            
+            // 樣式：flex:1 自動填滿球之間的空間，左右負邊距(-2px)確保無縫連接
+            html += `<div style="flex:1; height:4px; background:${lineColor}; margin:0 -2px; z-index:1; transition:background 0.3s;"></div>`;
         }
     }
+
+    return html + '</div>';
+},
+	},
+	layout: {
+        // [V35核心] 萬用頁面模板
+        page: (opts) => {
+            let backBtnHtml = '';
+            if (opts.back) {
+                const action = typeof opts.back === 'string' ? opts.back : "act.navigate('main')";
+                backBtnHtml = ui.component.btn({ label: '返回', icon: '↵', theme: 'normal', action: action, style: 'padding: 6px 12px; font-size:0.9rem; border-radius:8px;' });
+            }
+            const topBarHtml = `<div style="flex-shrink:0; height:60px; display:flex; align-items:center; justify-content:space-between; padding:0 15px; background:transparent;"><div style="font-size:1.2rem; font-weight:bold; color:#3e2723;">${opts.title || ''}</div>${backBtnHtml}</div>`;
+
+            return `<div style="display:flex; flex-direction:column; height:100%; overflow:hidden;">
+                ${topBarHtml}
+                ${opts.fixedTop ? `<div style="flex-shrink:0;">${opts.fixedTop}</div>` : ''}
+                <div style="flex:1; overflow-y:auto; overflow-x:hidden; position:relative; z-index:10; padding-bottom: 20px;">${opts.body || ''}</div>
+                ${opts.footer ? `<div style="flex-shrink:0; padding:10px;">${opts.footer}</div>` : ''}
+            </div>`;
+        },
+
+        // Flex 橫向佈局 (工具類)
+        flexRow: (content, gap='10px', justify='space-between') => 
+            `<div style="display:flex; align-items:center; justify-content:${justify}; gap:${gap}; width:100%;">${content}</div>`,
+        
+        // Grid 網格佈局 (工具類)
+        grid: (content, cols='2', gap='10px') => 
+            `<div style="display:grid; grid-template-columns:repeat(${cols}, 1fr); gap:${gap}; width:100%;">${content}</div>`,
+
+        // 橫向捲動區 (ScrollX)
+        scrollX: (options, currentVal, actionName) => {
+            const buttons = options.map(opt => ui.component.pillBtn({ label: opt, theme: opt === currentVal ? 'normal' : 'ghost', style: 'flex-shrink:0; margin-right:5px;', action: `${actionName}('${opt}')` })).join('');
+            return `<div style="display:flex; overflow-x:auto; padding-bottom:5px; -webkit-overflow-scrolling:touch; gap:5px;">${buttons}</div>`;
+        },
+
+    // [V35.31] 萬用抽屜 (固定把手 + 獨立滑動層)
+    drawer: (isOpen, contentHtml, onToggle, opts = {}) => {
+        const bgColor = opts.color || '#222';
+        const dir = opts.dir || 'bottom';
+        // 新增參數：預設為 false (跟著動)，Story 模式請傳入 true
+        const isFixedHandle = opts.fixedHandle || false; 
+
+        // 1. Wrapper: 滿版容器
+        const wrapperStyle = `
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 200; pointer-events: none; overflow: hidden;
+        `;
+
+        // 2. Handle (把手) 通用樣式
+        let handleBaseStyle = `
+            background: ${bgColor}; 
+            color: #fff; 
+            cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; font-weight: bold;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+            user-select: none;
+            width: 60px; height: 40px;
+            border-radius: 8px 8px 0 0;
+            border: 1px solid rgba(255,255,255,0.1); border-bottom: none;
+            pointer-events: auto; /* 確保可點擊 */
+            z-index: 202; /* 把手層級必須比抽屜高 */
+        `;
+
+        // 3. Body (抽屜本體) 通用樣式
+        let drawerBaseStyle = `
+            position: absolute; 
+            background: ${bgColor}; 
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            pointer-events: auto;
+            display: flex; flex-direction: column;
+            z-index: 201; 
+            overflow: visible; /* 讓內部把手可以凸出去 */
+        `;
+
+        // --- 根據模式決定位置邏輯 ---
+        
+        let finalHandleStyle = handleBaseStyle + 'position: absolute; right: 0; ';
+        let finalDrawerStyle = drawerBaseStyle;
+
+        if (dir === 'right') {
+            // [STORY 模式] (通常使用 fixedHandle: true)
+            // 抽屜：由右側滑入，高度固定 220px
+            finalDrawerStyle += `
+                bottom: 0; right: 0; 
+                width: 100%; height: 220px; 
+                transform: translateX(${isOpen ? '0%' : '100%'}); 
+                border-top: 2px solid #555;
+            `;
+
+            if (isFixedHandle) {
+                // 【固定模式】：按鈕定死在距離底部 220px 的位置
+                finalHandleStyle += `bottom: 220px;`;
+            } else {
+                // 【跟隨模式】：雖然你是右側抽屜，但也可以設定按鈕跟著跑(看需求)
+                finalHandleStyle += `bottom: 100%;`; 
+            }
+
+        } else {
+            // [SHOP 模式] (通常使用 fixedHandle: false)
+            // 抽屜：由底部滑入
+            const h = opts.height || '35%';
+            finalDrawerStyle += `
+                bottom: 0; left: 0; width: 100%; height: ${h};
+                transform: translateY(${isOpen ? '0%' : '100%'});
+                border-top: 1px solid rgba(255,255,255,0.1);
+            `;
+            
+            if (isFixedHandle) {
+                // 【固定模式】：按鈕定死在螢幕某個高度 (例如 35%)
+                finalHandleStyle += `bottom: ${h};`;
+            } else {
+                // 【跟隨模式】：按鈕黏在抽屜頭頂
+                finalHandleStyle += `bottom: 100%;`;
+            }
+        }
+
+        const icon = isOpen ? (opts.iconOpen || '▼') : (opts.iconClose || '▲');
+        
+        // 建立 Handle HTML 片段
+        const handleHtml = `
+            <div onclick="event.preventDefault(); event.stopPropagation(); ${onToggle}" style="${finalHandleStyle}">
+                ${icon}
+            </div>
+        `;
+
+        // 建立 Body HTML 片段
+        const bodyContent = `
+            <div style="width:100%; height:100%; overflow-y:auto; padding:15px; box-sizing:border-box;">
+                ${contentHtml}
+            </div>
+        `;
+
+        // --- 最終組裝 (關鍵分流) ---
+        
+        if (isFixedHandle) {
+            // A. 固定模式 (Sibling 結構)
+            // Handle 和 Body 是兄弟，互不干涉
+            return `
+                <div class="u-drawer-wrapper" style="${wrapperStyle}">
+                    ${handleHtml}
+                    <div class="u-drawer-body" style="${finalDrawerStyle}">
+                        ${bodyContent}
+                    </div>
+                </div>`;
+        } else {
+            // B. 跟隨模式 (Parent-Child 結構)
+            // Handle 被塞進 Body 裡面，這樣 Body 動，Handle 就自動跟著動
+            return `
+                <div class="u-drawer-wrapper" style="${wrapperStyle}">
+                    <div class="u-drawer-body" style="${finalDrawerStyle}">
+                        ${handleHtml}
+                        ${bodyContent}
+                    </div>
+                </div>`;
+        }
+    },
+        // 舊版容器 (保留相容性)
+        scroller: (header, body, id='') => `
+            <div style="display:flex; flex-direction:column; height:100%; width:100%; overflow:hidden; position:relative;">
+                <div style="flex-shrink:0; z-index:2;">${header}</div>
+                <div id="${id}" style="flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; padding-bottom:80px;">${body}</div>
+            </div>`
+    },
+
+    // =============================================================================
+    // 6. 智能卡片系統 (Cards)
+    // =============================================================================
+
+    card: {
+        row: (opts) => {
+            const clickAttr = opts.onClick ? `onclick="${opts.onClick}"` : '';
+            const cursorStyle = opts.onClick ? 'cursor:pointer;' : '';
+            const borderStyle = opts.themeColor ? `border-left: 4px solid ${opts.themeColor};` : '';
+            return `
+            <div class="task-card" ${clickAttr} style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; background: #fff; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); ${borderStyle} ${opts.style||''} ${cursorStyle}">
+                <div style="width:40px; height:40px; background:#f5f5f5; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0;">${opts.iconHtml || '📄'}</div>
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:center; overflow:hidden;">
+                    <div style="font-weight:bold; font-size:1rem; color:#333; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${opts.title}</div>
+                    <div style="font-size:0.85rem; color:#666;">${opts.subTitle || ''}</div>
+                </div>
+                <div style="flex-shrink:0;">${opts.rightHtml || ''}</div>
+            </div>`;
+        },
+
+        task: (t, isHistory = false) => {
+            // --- A. 左側 Checkbox ([修正 2] 統一使用標準樣式) ---
+            let leftHtml = '';
+            const checkboxStyle = "width:24px; height:24px; border:2px solid #bbb; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; margin-right:12px; background:#fff; transition:all 0.2s;";
+            
+            if (isHistory) {
+                const isSuccess = t.status === 'success' || t.done;
+                const color = isSuccess ? '#4caf50' : '#f44336';
+                const icon = isSuccess ? '✓' : '✕';
+                leftHtml = `<div style="font-size:1.4rem; color:${color}; width:24px; text-align:center; font-weight:bold; flex-shrink:0; margin-right:12px;">${icon}</div>`;
+            } else {
+                const activeStyle = t.done ? "background:#4caf50; border-color:#4caf50; color:#fff;" : "";
+                leftHtml = `
+                <div class="chk ${t.done?'checked':''}" 
+                     style="${checkboxStyle} ${activeStyle}" 
+                     onclick="event.stopPropagation(); act.toggleTask('${t.id}')">
+                     ${t.done ? '<span style="font-size:16px; font-weight:bold;">✓</span>' : ''}
+                </div>`;
+            }
+
+            // --- B. 標題與標籤 ---
+            let badges = '';
+            if (t.importance >= 3) badges += ui.component.pill('🔥', '#ef6c00', '', 'hollow');
+            if (t.urgency >= 3) badges += ui.component.pill('⚡', '#d32f2f', '', 'hollow');
+            if (t.recurrence) badges += ui.component.pill('🔁', '#1976d2', '', 'hollow');
+            let skillIcons = (t.attrs && t.attrs.length > 0) ? `<span style="font-size:0.9rem; margin-left:4px; opacity:0.8;">${t.attrs.map(a => '💪').join('')}</span>` : '';
+            const pinHtml = t.pinned ? `<span style="margin-left:auto; font-size:1rem; color:#5d4037;">📌</span>` : `<span style="margin-left:auto;"></span>`;
+
+            const titleRow = `
+                <div style="display:flex; align-items:center; gap:6px; width:100%;">
+                    <span class="task-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60%; font-weight:bold; color:#333;">${t.title}</span>
+                    ${badges} ${skillIcons} ${pinHtml}
+                </div>`;
+            
+            // --- C. 進度條 ([修正 3] 始終顯示，計次含數字) ---
+            let progressRow = '';
+            if (!isHistory) { 
+                if (t.type === 'count') {
+                    progressRow = `<div style="margin-top:6px; width:100%;">${ui.progress.bar(t.curr, t.target)}</div>`;
+                } else if (t.subs && t.subs.length > 0) {
+                    const doneCount = t.subs.filter(s => s.done).length;
+                    progressRow = ui.progress.stepWizard(doneCount, t.subs.length);
+                }
+            }
+            
+            const rightHtml = isHistory ? '' : ui.component.btn({ label:'⚙️', theme:'ghost', action:`event.stopPropagation(); act.editTask('${t.id}')`, style:'padding:0 5px; color:#999; flex-shrink:0;' });
+
+            // --- D. 展開區 (子任務) ---
+            let subtaskHtml = '';
+            if (t.subs && t.subs.length > 0) {
+                subtaskHtml = `<div style="margin-top:8px; border-top:1px dashed #eee; padding-top:8px;">`;
+                t.subs.forEach((sub, idx) => {
+                    const isSubDone = sub.done;
+                    const textStyle = isSubDone ? 'text-decoration:line-through; color:#aaa;' : 'color:#555;';
+                    // [修正 4] stopPropagation 防止點擊子任務時觸發卡片收縮
+                    subtaskHtml += `
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer; padding:4px 0;" 
+                         onclick="event.stopPropagation(); act.toggleSubtask('${t.id}', ${idx})">
+                        <div style="width:18px; height:18px; border:1px solid ${isSubDone?'#4caf50':'#999'}; background:${isSubDone?'#4caf50':'#fff'}; border-radius:4px; display:flex; align-items:center; justify-content:center; transition:all 0.2s;">
+                            ${isSubDone ? '<span style="color:#fff; font-size:12px; font-weight:bold;">✓</span>' : ''}
+                        </div>
+                        <div style="font-size:0.9rem; ${textStyle} flex:1;">${sub.text}</div>
+                    </div>`;
+                });
+                subtaskHtml += `</div>`;
+            }
+
+            const dateValue = isHistory ? (t.finishTime || '未知') : (t.deadline || '');
+            const dateDisplay = dateValue ? `<div style="text-align:right; font-size:0.8rem; color:#aaa; margin-top:8px;">📅 ${dateValue}</div>` : '';
+
+            // --- E. 展開狀態控制 ---
+            // 讀取 TempState.expandedTaskId 決定是否展開
+            const isExpanded = window.TempState.expandedTaskId === t.id;
+            const expandStyle = isExpanded ? 'display:block;' : 'display:none;';
+
+            return `
+            <div class="task-card ${t.done?'status-done':''}" onclick="view.toggleCardExpand('${t.id}')" style="background:#fff; padding:12px; border-radius:12px; margin-bottom:10px; box-shadow:0 2px 5px rgba(0,0,0,0.05); transition:all 0.2s;">
+                <div class="task-main-row" style="display:flex; align-items: flex-start; width:100%;"> 
+                    ${leftHtml}
+                    <div class="task-content" style="flex:1; min-width:0;">
+                        ${titleRow}
+                        ${progressRow} 
+                    </div>
+                    <div>${rightHtml}</div>
+                </div>
+                <div id="expand-${t.id}" style="${expandStyle} padding-top:10px; margin-top:10px; font-size:0.9rem; color:#666; padding-left: 36px;">
+                    ${t.desc ? `<div style="margin-bottom:8px; line-height:1.4;">${t.desc}</div>` : ''} 
+                    ${subtaskHtml}
+                    ${dateDisplay}
+                </div>
+            </div>`;
+        },
+
+        poster: (opts) => {
+            const badgeHtml = opts.badge ? `<span style="background:${opts.border}; color:#000; padding:2px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">${opts.badge}</span>` : '';
+            return `
+            <div onclick="${opts.onClick||''}" style="flex:1; border:2px solid ${opts.border}; border-radius:10px; padding:15px; background:${opts.bg}; text-align:left; position:relative; min-height:160px; display:flex; flex-direction:column; justify-content:space-between; cursor:pointer;">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h3 style="margin:0; color:${opts.color}; font-size:1.1rem;">${opts.title}</h3>
+                        ${badgeHtml}
+                    </div>
+                    <p style="font-size:0.9rem; color:#555; margin-bottom:15px; line-height:1.6; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
+                        ${opts.desc}
+                    </p>
+                </div>
+                <div style="font-size:1.4rem; font-weight:bold; color:${opts.color}; text-align:right;">
+                    ${opts.price}
+                </div>
+            </div>`;
+        },
+
+        achievement: (ach, isHistory) => {
+    // 1. 基礎數據計算
+    const current = ach.current || 0;
+    const target = ach.target || 1;
+    const isDone = current >= target;
+
+    // 2. 左側獎盃圖示
+    const leftIcon = `<div style="width:40px; height:40px; background:#fff8e1; color:gold; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; margin-right:12px; border:1px solid #ffe082;">🏆</div>`;
+
+    // 3. 按鈕邏輯 (兩段式：完成 -> 領取)
+    let btnHtml = '';
+    
+    if (isHistory) {
+        btnHtml = `<span style="color:#fbc02d; font-weight:bold; font-size:0.8rem;">已入殿堂</span>`;
+    } else {
+        if (!isDone) {
+            // 未完成 (灰色，無鎖頭)
+            btnHtml = `<button disabled style="background:#f5f5f5; color:#bbb; border:none; padding:5px 12px; border-radius:15px; font-size:0.8rem; letter-spacing:1px;">未完成</button>`;
+        } else {
+            // 已完成 (綠色) -> 點擊變黃色
+            btnHtml = `<button id="btn-ach-${ach.id}" onclick="event.stopPropagation(); act.preClaimAch('${ach.id}', this)" style="background:var(--color-correct, #4caf50); color:#fff; border:none; padding:5px 15px; border-radius:15px; font-size:0.8rem; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2); transition: all 0.3s;">✅ 完成</button>`;
+        }
+    }
+
+    // 4. [修改] 替換成 Step Wizard 進度條
+    // 注意：這裡直接呼叫 ui.progress.stepWizard
+    const progressHtml = ui.progress.stepWizard(current, target);
+
+    // 5. 組合 HTML
+    // [修改] 在 style 中補回 background:#fff; 以及 box-shadow
+    return `
+    <div class="u-card" style="background:#fff; margin-bottom:10px; border-left:4px solid ${isDone ? '#4caf50' : '#ccc'}; padding:12px; cursor:pointer; border-radius:12px; box-shadow:0 2px 5px rgba(0,0,0,0.05);" onclick="view.toggleCardExpand('${ach.id}')">
+        
+        <div style="display:flex; align-items:center;">
+            ${leftIcon}
+            <div style="flex:1; margin-right: 10px;">
+                <div style="font-weight:bold; font-size:1rem; margin-bottom:4px; color:#333;">${ach.title}</div>
+                
+                <div style="margin-top:5px;">
+                    ${progressHtml}
+                </div>
+                
+                <div style="font-size:0.75rem; color:#888; margin-top:4px; text-align:right;">${current} / ${target}</div>
+            </div>
+            <div style="flex-shrink:0; align-self:center;">${btnHtml}</div>
+        </div>
+
+        <div id="expand-${ach.id}" style="display:none; padding-top:10px; border-top:1px dashed #eee; margin-top:10px; font-size:0.9rem; color:#666; padding-left: 52px;">
+            <div style="margin-bottom:5px;">${ach.desc}</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:#d4af37; font-size:0.85rem; font-weight:bold;">✨ 獎勵: ${ach.rewards?.gold || 0} G</span>
+                ${!isHistory ? ui.component.btn({label:'⚙️', theme:'ghost', size:'sm', action:`act.editAch('${ach.id}')`}) : ''}
+            </div>
+        </div>
+    </div>`;
+},
+
+        vertical: (opts) => {
+            const imgHtml = opts.imgPath ? `<div class="card-img-area"><img src="${opts.imgPath}" style="height:80px; object-fit:contain;"></div>` : '';
+            const stockHtml = opts.stock !== undefined ? `<div style="font-size:0.75rem; color:#888; margin-top:2px;">庫存: ${opts.stock}</div>` : '';
+            return `
+            <div class="card-vertical" style="${opts.style||''}" onclick="${opts.onClick||''}">
+                ${imgHtml}
+                <div class="card-info-area">
+                    <div style="font-weight:bold;">${opts.title}</div>
+                    ${stockHtml}
+                </div>
+                <div style="width:100%;">
+                    ${opts.actionBtnHtml || '<button class="u-btn u-btn-normal" style="width:100%;">購買</button>'}
+                </div>
+            </div>`;
+        }
+    },
+
+    // =============================================================================
+    // 6. 視窗工廠 (Modals)
+    // =============================================================================
+    modal: {
+        render: (title, bodyHtml, footHtml, layer = 'overlay') => {
+            const layers = { 'panel': 'm-panel', 'overlay': 'm-overlay', 'system': 'm-system' };
+            const targetId = layers[layer] || layers['overlay'];
+            let modal = document.getElementById(targetId);
+            if (!modal) {
+                modal = document.createElement('div'); modal.id = targetId; modal.className = 'mask';
+                if (layer === 'system') modal.style.zIndex = '9999'; 
+                else if (layer === 'overlay') modal.style.zIndex = '9500'; 
+                else modal.style.zIndex = '9000';
+                modal.innerHTML = `<div class="modal"><div class="m-head"><span class="m-title"></span>${ui.component.btn({ label:'✕', theme:'ghost', style:'padding:0 8px;', action:`ui.modal.close('${targetId}')` })}</div><div class="m-body"></div><div class="m-foot"></div></div>`;
+                document.body.appendChild(modal);
+            }
+            modal.querySelector('.m-title').innerText = title; 
+            modal.querySelector('.m-body').innerHTML = bodyHtml;
+            const foot = modal.querySelector('.m-foot'); 
+            if (footHtml) { foot.innerHTML = footHtml; foot.style.display = 'flex'; } else { foot.style.display = 'none'; }
+            
+            modal.style.display = 'flex'; 
+            requestAnimationFrame(() => requestAnimationFrame(() => modal.classList.add('active')));
+        },
+        
+        close: (id) => {
+            const targetId = id || 'm-overlay';
+            const modal = document.getElementById(targetId);
+            if (modal) {
+                modal.classList.remove('active');
+                setTimeout(() => { if(!modal.classList.contains('active')) modal.style.display = 'none'; }, 50);
+            }
+        }
+    },
+    
+    // =============================================================================
+    // 7. 舊版相容區
+    // =============================================================================
+    tabs: {
+        sliding: (label1, label2, isLeft, act1, act2) => {
+            return `<div style="display:flex; background:rgba(0,0,0,0.1); border-radius:50px; padding:4px; margin:10px 15px;">
+                ${ui.component.pillBtn({label:label1, theme:isLeft?'correct':'ghost', style:'flex:1;', action:act1})}
+                ${ui.component.pillBtn({label:label2, theme:!isLeft?'correct':'ghost', style:'flex:1;', action:act2})}
+            </div>`;
+        },
+        scrollX: (options, currentVal, actionName) => ui.layout.scrollX(options, currentVal, actionName)
+    }
 };
+
 
 // =============================================================================
 // 7. 全域橋接 (Bridge)
 // =============================================================================
 if (window.EventBus) {
-    window.EventBus.on(window.EVENTS.System.MODAL_CLOSE, (id) => {
-        console.log("🎯 View 接收到關閉訊號:", id);
-        ui.modal.close(id || 'm-overlay'); 
+    window.EventBus.on(window.EVENTS.System.MODAL_CLOSE, (layerName) => {
+        // 傳進來的可能是 'overlay'，但 DOM ID 是 'm-overlay'
+        const map = { 'panel': 'm-panel', 'overlay': 'm-overlay', 'system': 'm-system' };
+        // 如果傳進來的是 'overlay' 就轉成 'm-overlay'，否則就用原值 (容錯)
+        const targetId = map[layerName] || layerName || 'm-overlay';
+        
+        console.log("🎯 View 關閉視窗, 目標 ID:", targetId);
+        ui.modal.close(targetId); 
     });
-}
+};
 
 view.toggleCardExpand = (id) => {
     const el = document.getElementById(`expand-${id}`);
@@ -403,31 +760,64 @@ view.showToast = (msg) => {
     toast.className = 'u-toast show';
     // 確保 toast 層級最高
     toast.style.zIndex = '10000';
-    toast.innerHTML = ui.component.pill(msg, 'rgba(0,0,0,0.8)', '', true);
+    toast.innerHTML = ui.component.pill(msg, 'rgba(f3f6f4)', '', true);
     document.body.appendChild(toast);
     setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 2000);
 };
 act.toast = view.showToast;
 
+window.view.renderSystemModal = (type, msg, defVal = '') => {
+    let title = '系統提示';
+    let body = `<div style="padding:20px; font-size:1.1rem; color:#333; text-align:center;">${msg}</div>`;
+    let foot = '';
+    
+    // Alert
+    if (type === 'alert') {
+        title = '⚠️ 提示';
+        foot = ui.component.btn({label:'確定', theme:'normal', style:'width:100%;', action:"ui.modal.close('m-system')"});
+    }
+    // Confirm
+    else if (type === 'confirm') {
+        title = '❓ 確認';
+        foot = `
+            ${ui.component.btn({label:'取消', theme:'ghost', style:'flex:1;', action:"act.handleSysConfirm(false)"})}
+            ${ui.component.btn({label:'確定', theme:'correct', style:'flex:1;', action:"act.handleSysConfirm(true)"})}
+        `;
+    }
+    // Prompt
+    else if (type === 'prompt') {
+        title = '✏️ 輸入';
+        body += `<div style="padding:0 20px;">${ui.input.text(defVal, '', '', 'sys-univ-input')}</div>`;
+        foot = `
+            ${ui.component.btn({label:'取消', theme:'ghost', style:'flex:1;', action:"ui.modal.close('m-system')"})}
+            ${ui.component.btn({label:'確定', theme:'correct', style:'flex:1;', action:"act.handleSysConfirm('prompt_submit')"})}
+        `;
+    }
+
+    ui.modal.render(title, body, foot, 'system');
+};
+
 // ==========================================
 // [Part 3] Implementation (具體渲染邏輯)
 // ==========================================
-
-// 1. HUD 渲染
+// --- HUD 渲染邏輯 ---
 view.initHUD = (data) => {
-    const container = document.getElementById('hud');
-    if (!container) return;
+    let container = document.getElementById('hud');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'hud';
+        document.getElementById('app-frame').appendChild(container);
+    }
 
+    // [修復] 這裡補回了 hud-gem-paid (付費鑽石) 的結構
     container.innerHTML = `
         <div class="hud-left">
             ${ui.component.avatar('hud-avatar', "act.navigate('stats')", '⏳')}
             <div class="hud-info">
-                <div id="hud-name" class="hud-name">---</div>
+                <div class="hud-name">---</div>
                 <div class="hud-lv-row">
                     <div class="hud-lv-txt">Lv.<span id="hud-lv">1</span></div>
-                    <div id="hud-exp-container" style="flex:1">
-                        ${ui.progress.bar(0, 100)}
-                    </div>
+                    <div id="hud-exp-container" style="flex:1"></div>
                 </div>
             </div>
         </div>
@@ -436,89 +826,106 @@ view.initHUD = (data) => {
                 ${ui.component.pill('💎 0', '#b3e5fc', 'hud-gem-free')}
                 ${ui.component.pill('💠 0', '#e1bee7', 'hud-gem-paid')}
             </div>
-            <div class="res-row" style="justify-content: flex-end;">
-                ${ui.component.pill('💰 0', 'gold', 'hud-gold')}
-                ${ui.component.btn({label:'≡', theme:'ghost', style:'font-size:1.5rem; padding:0 8px; color: #ffb300;', action:'view.renderSettings()'})}
+            <div class="res-row" style="justify-content:flex-end;">
+                ${ui.component.pill('💰 0', 'gold', 'hud-gold')} 
+                ${ui.component.btn({label:'≡',theme:'ghost',style:'font-size:1.5rem;padding:0 4px;color:#ffb300;',action:'view.renderSettings()'})}
             </div>
         </div>`;
 
     view.updateHUD(data);
 };
 
+// --- HUD 資料更新邏輯 ---
 view.updateHUD = (data) => {
     if (!data) data = window.GlobalState || {};
-
     const setText = (id, val) => { const el = document.getElementById(id); if(el) el.innerHTML = val; };
     
     setText('hud-name', data.name || 'Commander');
     setText('hud-lv', data.lv || 1);
+    
+    // [確認] 資料會隨動：這裡會去抓最新的 freeGem 和 paidGem
     setText('hud-gem-free', `💎 ${data.freeGem || 0}`);
     setText('hud-gem-paid', `💠 ${data.paidGem || 0}`);
     setText('hud-gold', `💰 ${data.gold || 0}`);
 
     const expContainer = document.getElementById('hud-exp-container');
     if (expContainer) {
-        const lv = data.lv || 1;
-        expContainer.innerHTML = ui.progress.bar(data.exp || 0, lv * 100);
+        expContainer.innerHTML = ui.progress.bar(data.exp || 0, (data.lv || 1) * 100, '', 'height:8px;');
     }
-
-    if (window.Assets && window.Assets.getCharImgTag) {
-        const avatarEl = document.getElementById('hud-avatar');
-        if (avatarEl) avatarEl.innerHTML = window.Assets.getCharImgTag('hud-avatar-img', 'width:100%; height:100%; object-fit:cover;');
+    if (window.Assets && Assets.getCharImgTag) {
+        const avEl = document.getElementById('hud-avatar');
+        if (avEl) avEl.innerHTML = window.Assets.getCharImgTag('hud-avatar-img', 'width:100%;height:100%;object-fit:cover;');
     }
 };
 
-// 2. Main Page 渲染 (大廳)
-view.renderMain = (mode) => {
-    view.hideFab(); 
+// 2. Main Page 渲染 (V6: 穩定點擊版)
+view.renderMain = () => {
     const container = document.getElementById('page-main');
     if (!container) return;
 
-    if (container.innerHTML.trim() === "") {
-        container.innerHTML = `
-            <div id="quick-icons-normal" class="quick-area-normal"></div>
-            <div class="main-scene"></div>
-        `;
-    }
-
-    const quickArea = document.getElementById('quick-icons-normal');
-    const sceneArea = container.querySelector('.main-scene');
-    
     const isBasic = window.GlobalState?.settings?.mode === 'basic';
+
+    // 立體按鈕樣式
+    const btnStyle3D = `
+        width: 48px; height: 48px; border-radius: 12px; font-size: 1.6rem; padding: 0; 
+        display: flex; align-items: center; justify-content: center; background: #fff; 
+        border: 2px solid #3e2723; box-shadow: 0 4px 0 #5d4037; transition: all 0.1s; margin-bottom: 5px;
+    `;
     
-    const buttons = [
-        { icon: '📜', action: "act.openModal('quick')", show: true },
-        { icon: '🎒', action: "act.openModal('bag')", show: true },
+    // 1. Quick Icons
+    const quickButtonsHtml = [
+        { icon: '📜', action: "act.openquickModal('quick')", show: true },
         { icon: '👗', action: "act.navigate('avatar')", show: !isBasic },
         { icon: '❓', action: "act.showQA()", show: !isBasic }
-    ];
+    ]
+    .filter(b => b.show)
+    .map(b => ui.component.btn({
+        label: b.icon, theme: 'normal', action: b.action, style: btnStyle3D
+    })).join('');
 
-    if (quickArea) {
-        quickArea.innerHTML = buttons
-            .filter(b => b.show)
-            .map(b => ui.component.btn({
-                label: b.icon, theme: 'normal', action: b.action,
-                style: 'width:44px; height:44px; border-radius: 10px; font-size:1.3rem;'
-            })).join('');
+    // 2. 立繪圖片
+    let charImg = '';
+    if (window.Assets && Assets.getCharImgTag) {
+        charImg = window.Assets.getCharImgTag('main-char-img', 'height: 100%; width: auto; object-fit: contain; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));');
+    } else {
+        charImg = '<div style="font-size:6rem;">🦸</div>';
     }
 
-    let charHtml = (window.Assets && Assets.getCharImgTag) 
-        ? Assets.getCharImgTag('main-char-img') 
-        : '<div style="font-size:5rem;">🦸</div>';
-
+    // 3. 劇情按鈕 (注意：這裡不需要再寫 pointer-events 了，我們靠容器解決)
     const storyBtn = !isBasic ? ui.component.btn({
-        label: '🌀 劇情模式', theme: 'correct', action: 'act.enterStoryMode()',
-        style: 'width:200px; margin: 20px auto; display:block; border-radius:25px;'
+        label: '🌀 進入劇情模式', theme: 'correct', action: 'act.enterStoryMode()',
+        style: `width: 240px; padding: 12px; border-radius: 50px; font-size: 1.1rem; font-weight: bold; border: 2px solid #004d40; box-shadow: 0 5px 0 #00695c; margin-bottom: 5px;`
     }) : '';
 
-    if (sceneArea) {
-        sceneArea.innerHTML = `
-            <div class="char-stage" onclick="act.navigate('stats')" style="cursor:pointer; text-align:center;">
-                ${charHtml}
+    container.innerHTML = `
+        <div style="position: relative; width: 100%; height: 100%; overflow: hidden;">
+            
+            <div style="position: absolute; top: 20px; right: 10px; z-index: 50; display: flex; flex-direction: column; gap: 15px;">
+                ${quickButtonsHtml}
             </div>
-            ${storyBtn}
-        `;
-    }
+
+            <div style="width: 100%; height: 75%; display: flex; align-items: flex-end; justify-content: center; 
+                        padding-bottom: 0; transform: translateY(40px); 
+                        position: relative; z-index: 10; pointer-events: none;">
+
+                 <div style="height: 100%; width: auto; display: flex; align-items: flex-end; pointer-events: none;">
+                    ${charImg}
+                 </div>
+
+                 <div onclick="act.navigate('stats')" 
+                      style="position: absolute; bottom: 0; left: 30%;
+                             width: 40%; height: 90%; 
+                             cursor: pointer; pointer-events: auto; z-index: 20;">
+                 </div>
+            </div>
+
+            <div style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); 
+                        z-index: 100; width: auto; display: flex; justify-content: center;">
+                ${storyBtn}
+            </div>
+
+        </div>
+    `;
 };
 
 // 3. Navbar 渲染 - [動態生成回歸]
@@ -548,43 +955,6 @@ view.renderNavbar = () => {
                 <span style="font-size: 0.7rem; font-weight: bold;">${item.label}</span>
             </button>`;
     }).join('');
-};
-
-// 4. System Modals (強制 system 層級)
-view.renderSystemModal = (type, msg, defVal) => {
-    const title = type === 'confirm' ? '確認操作' : (type === 'prompt' ? '請輸入' : '系統提示');
-    let body = `<div style="padding:10px; font-weight:bold; text-align:center;">${msg.replace(/\n/g, '<br>')}</div>`;
-    
-    if (type === 'prompt') {
-        body += `<div style="margin-top:15px;">${ui.input.text(defVal, '請輸入內容...', '', 'sys-univ-input')}</div>`;
-    }
-    
-    let foot = '';
-    if (type === 'alert') {
-        foot = ui.component.btn({ label:'我知道了', theme:'correct', action:'act.handleSysConfirm(true)' });
-    } else {
-        const cancelBtn = ui.component.btn({ label:'取消', theme:'normal', action:'act.handleSysConfirm(false)' });
-        const confirmAction = type === 'prompt' ? "'prompt_submit'" : 'true';
-        const confirmBtn = ui.component.btn({ label:'確定', theme:'correct', action: `act.handleSysConfirm(${confirmAction})` });
-        foot = ui.layout.flexRow(`${cancelBtn}${confirmBtn}`, 'center', 'center');
-    }
-
-    // 強制使用 system 層級 (z-index 9999)
-    ui.modal.render(title, body, foot, 'system');
-    
-    if (type === 'prompt') {
-        setTimeout(() => { 
-            const inp = document.querySelector('#sys-univ-input'); 
-            if(inp) inp.focus(); 
-        }, 150);
-    }
-};
-
-view.renderModal = ui.modal.render;
-
-view.hideFab = () => {
-    const fab = document.getElementById('global-fab');
-    if(fab) fab.style.display = 'none';
 };
 
 // 6. 全域渲染入口 (Master Render Loop)

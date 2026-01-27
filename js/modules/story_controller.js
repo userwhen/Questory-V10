@@ -1,53 +1,71 @@
-/* js/modules/story_controller.js - V34.Final */
+/* js/modules/story_controller.js - V35.18 (Fix Error & Drawer Logic) */
+
 window.StoryController = {
     init: function() {
+        if (!window.EventBus) return;
+        if (window.StoryEngine) StoryEngine.init();
         const E = window.EVENTS;
-        if (!window.EventBus || !E) return;
 
-        // A. 橋接 act
         Object.assign(window.act, {
-            enterStory: () => window.act.navigate('story'),
-            enterStoryMode: () => window.act.navigate('story'),
+            // [Fix] 修復 index.html 呼叫報錯
+            enterStoryMode: () => {
+                act.navigate('story');
+            },
+
+            // 探索
+            explore: () => {
+                const res = StoryEngine.explore();
+                if (res.success) {
+                    if (window.view && view.updateHUD) view.updateHUD(window.GlobalState);
+                    
+                    // [建議加入] 探索成功後，立即渲染新劇情
+                    if (window.storyView && window.TempState.storyCard) {
+                        storyView.renderScene(window.TempState.storyCard);
+                    }
+                } else {
+                    act.toast(res.msg || '精力不足！');
+                    // ...
+                }
+            },
             
-            explore: () => StoryEngine.explore(),
-            choice: (idx) => StoryEngine.makeChoice(idx),
+            // 選擇
+            choice: (idx) => {
+                StoryEngine.makeChoice(idx);
+                if (window.view && view.updateHUD) view.updateHUD(window.GlobalState);
+            },
             
-            // [New] 語言切換橋接
-            setLang: (val) => {
-                StoryEngine.setLang(val);
-                // 如果在閒置畫面，重繪以更新文字 (可選)
-                if (window.storyView) window.storyView.render();
-            }
+            // 語言
+            setLang: (lang) => {
+                if (!window.GlobalState.settings) window.GlobalState.settings = {};
+                window.GlobalState.settings.targetLang = lang;
+                act.toast(`語言已切換: ${lang}`);
+                if (window.TempState.storyCard) storyView.renderScene(window.TempState.storyCard);
+            },
+            
+            // [Fix] Tag 抽屜開關 (配合 ui.layout.drawer 的 toggle 機制)
+            toggleTagDrawer: (forceState) => {
+                // 如果傳入布林值就用傳入的，否則反轉當前狀態
+                const current = window.TempState.isTagDrawerOpen || false;
+                const nextState = (typeof forceState === 'boolean') ? forceState : !current;
+                
+                window.TempState.isTagDrawerOpen = nextState;
+                
+                // 重新渲染 View 以更新抽屜位置
+                if (window.storyView && storyView.render) storyView.render();
+            },
+			
+			setTagFilter: (val) => {
+                window.TempState.tagFilter = val;
+                // 重新渲染介面以更新按鈕選取狀態
+                if (window.storyView) storyView.render();
+            },
         });
 
-        // B. 監聽導航
         EventBus.on(E.System.NAVIGATE, (pageId) => {
             if (pageId === 'story') {
-                // 資料安全檢查
-                if (!window.GlobalState.story) {
-                    StoryEngine.init(); 
-                }
-                
-                window.TempState.storyCard = null; 
-                
-                if (window.storyView) {
-                    window.storyView.render();
-                }
+                if (window.storyView) storyView.render();
             }
         });
-
-        // C. 監聽更新
-        EventBus.on(E.Story.UPDATED, () => {
-            if (window.TempState.currentView === 'story') {
-                if (window.storyView) window.storyView.render();
-            }
-        });
-
-        // D. 監聽播放
-        EventBus.on(E.Story.SCENE_PLAYED, (card) => {
-            if (window.storyView) window.storyView.renderScene(card);
-        });
-
-        console.log("✅ StoryController (Final) 就緒");
+        console.log("✅ StoryController Active");
     }
 };

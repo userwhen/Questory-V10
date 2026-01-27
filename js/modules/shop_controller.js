@@ -1,120 +1,199 @@
-/* js/modules/shop_controller.js - V34.Final */
+/* js/modules/shop_controller.js - V35.7 (Min/Max & Time Logic) */
+
 window.ShopController = {
     init: function() {
+        if (!window.EventBus) return;
+        if (window.ShopEngine) ShopEngine.init();
         const E = window.EVENTS;
-        if (!window.EventBus || !E) return;
 
-        // A. 橋接 act
         Object.assign(window.act, {
-            setShopFilter: (cat) => { 
-                window.TempState.shopCategory = cat; 
-                shopView.render(); 
+            setShopFilter: (cat) => { window.TempState.shopCategory = cat; shopView.render(); },
+            setBagFilter: (cat) => { window.TempState.bagCategory = cat; shopView.render(); },
+            toggleBag: (isOpen) => { window.TempState.isBagOpen = isOpen; shopView.render(); },
+            toggleNpcDialog: () => {
+                const dialogs = ["歡迎光臨！", "庫存有限！", "冒險累了嗎？", "只要有金幣，一切好談！"];
+                const next = dialogs[Math.floor(Math.random() * dialogs.length)];
+                window.TempState.npcText = next;
+                const el = document.getElementById('shop-npc-text');
+                if(el) el.innerText = next;
             },
-            setBagFilter: (cat) => {
-                window.TempState.bagCategory = cat;
-                shopView.renderBag();
-            },
-            openBag: () => {
-                window.TempState.bagCategory = '全部';
-                shopView.renderBag();
-            },
+
             openBuyModal: (id) => shopView.renderBuyModal(id),
-            openItemDetail: (id) => shopView.renderItemDetail(id),
-            openPayment: () => shopView.renderPayment(),
             
-            // 購買相關
+            // [Fix] 支援 Min/Max 字串指令
             updateBuyQty: (delta) => {
-                let el = document.getElementById('buy-qty-input'); // 注意：V34 的 ui.input 預設 ID 可能不同
-                // 這裡我們直接操作 TempState
-                const current = window.TempState.buyQty || 1;
-                const max = window.TempState.buyMax || 99;
-                let next = current + delta;
-                if (next < 1) next = 1;
-                if (next > max) next = max;
-                window.TempState.buyQty = next;
+                let qty = window.TempState.buyQty || 1;
+                const max = window.TempState.buyMax || 999;
                 
-                // 更新 UI
-                const display = document.getElementById('buy-qty-display');
-                if(display) display.innerText = next;
+                if (delta === 'min') {
+                    qty = 1;
+                } else if (delta === 'max') {
+                    qty = max;
+                } else {
+                    qty += delta;
+                }
+
+                if (qty < 1) qty = 1;
+                if (qty > max) qty = max;
                 
-                const totalDisplay = document.getElementById('buy-total-price');
+                window.TempState.buyQty = qty;
+                
+                const qtyDisplay = document.getElementById('buy-qty-display');
+                const priceDisplay = document.getElementById('buy-total-price');
                 const items = ShopEngine.getShopItems('全部');
                 const item = items.find(i => i.id === window.TempState.buyTargetId);
-                if(totalDisplay && item) totalDisplay.innerText = item.price * next;
+                
+                if (qtyDisplay) qtyDisplay.innerText = qty;
+                if (item && priceDisplay) priceDisplay.innerText = item.price * qty;
             },
-            confirmBuy: () => ShopEngine.buyItem(window.TempState.buyTargetId, window.TempState.buyQty),
-            useItem: (isDiscard) => ShopEngine.useItem(window.TempState.useTargetId, 1, isDiscard),
 
-            // 上架相關
-            renderUploadModal: (id) => shopView.renderUploadModal(id),
-            shopUploadChange: () => {
-                const el = document.getElementById('up-cat');
-                if(el) shopView.renderDynamicFields(el.value);
+            confirmBuy: () => {
+                const id = window.TempState.buyTargetId;
+                const qty = window.TempState.buyQty || 1;
+                const result = ShopEngine.buyItem(id, qty);
+                if (result.success) {
+                    act.toast(`🎉 購買成功！`);
+                    ui.modal.close('m-overlay');
+                    shopView.render();
+                    if (window.view && view.updateHUD) view.updateHUD(window.GlobalState);
+                } else {
+                    act.toast(`❌ ${result.msg}`);
+                }
             },
+			
+			// [New] 物品使用數量的加減邏輯 (與 updateBuyQty 類似，但對象不同)
+            updateUseQty: (delta) => {
+                let qty = window.TempState.useQty || 1;
+                const max = window.TempState.useMax || 1; // 這裡的 Max 是背包擁有量
+                
+                if (delta === 'min') {
+                    qty = 1;
+                } else if (delta === 'max') {
+                    qty = max;
+                } else {
+                    qty += delta;
+                }
+
+                // 邊界檢查
+                if (qty < 1) qty = 1;
+                if (qty > max) qty = max;
+                
+                window.TempState.useQty = qty;
+                
+                // 更新 UI 顯示
+                const qtyDisplay = document.getElementById('use-qty-display');
+                if (qtyDisplay) qtyDisplay.innerText = qty;
+            },
+
+            // [Update] 使用/丟棄 (支援多個數量)
+            useItem: (isDiscard) => {
+                const id = window.TempState.useTargetId;
+                const qty = window.TempState.useQty || 1; // 讀取選擇的數量
+
+                if (isDiscard) {
+                    ShopEngine.discardItem(id, qty);
+                    act.toast(`🗑️ 已丟棄 ${qty} 個`);
+                } else {
+                    // 這裡先簡單處理使用邏輯 (消耗物品)
+                    // 未來可在 ShopEngine.useItem 裡加入效果判斷
+                    ShopEngine.discardItem(id, qty);
+                    act.toast(`✨ 已使用 ${qty} 個`);
+                }
+                
+                ui.modal.close('m-panel');
+                shopView.render(); 
+                if (window.view && view.updateHUD) view.updateHUD(window.GlobalState);
+            },
+
+            shopUploadChange: () => {
+                const cat = document.getElementById('up-cat').value;
+                if (shopView.renderDynamicFields) shopView.renderDynamicFields(cat);
+            },
+            
+            // [Fix] 處理時間輸入 (H:M -> Total Min)
             submitUpload: () => {
-                // 從 DOM 收集資料
-                const data = {
-                    name: document.getElementById('up-name')?.value,
-                    desc: document.getElementById('up-desc')?.value,
-                    category: document.getElementById('up-cat')?.value,
-                    price: parseInt(document.getElementById('up-price')?.value) || 0,
-                    qty: parseInt(document.getElementById('up-qty')?.value) || 1,
-                    perm: document.getElementById('up-perm')?.value,
-                    // 動態數值
-                    val: document.getElementById('up-val-cal')?.value || 
-                         document.getElementById('up-val-gold')?.value ||
-                         document.getElementById('up-val-time')?.value || ''
-                };
-                ShopEngine.submitUpload(data);
+                const name = document.getElementById('up-name').value;
+                const price = document.getElementById('up-price').value;
+                const cat = document.getElementById('up-cat').value;
+                
+                if (!name || !price) { act.toast('❌ 資訊不完整'); return; }
+                
+                let val = '';
+                if (cat === '熱量') val = document.getElementById('up-val-cal')?.value;
+                else if (cat === '金錢') val = document.getElementById('up-val-gold')?.value;
+                else if (cat === '時間') {
+                    const h = parseInt(document.getElementById('up-time-h')?.value || 0);
+                    const m = parseInt(document.getElementById('up-time-m')?.value || 0);
+                    val = (h * 60) + m; // 存成總分鐘數
+                }
+
+                const success = ShopEngine.uploadItem({
+                    name: name,
+                    price: parseInt(price),
+                    desc: document.getElementById('up-desc').value,
+                    category: cat,
+                    qty: parseInt(document.getElementById('up-qty').value || 1),
+                    val: val, // 儲存數值
+                    id: window.TempState.uploadEditId
+                });
+
+                if (success) {
+                    act.toast('✅ 上架成功');
+                    ui.modal.close('m-panel'); 
+                    shopView.render();
+                }
             },
             deleteShopItem: () => {
-                if(confirm("確定下架此商品？")) ShopEngine.deleteShopItem(window.TempState.uploadEditId);
+                ShopEngine.deleteItem(window.TempState.uploadEditId);
+                act.toast('🗑️ 商品已下架');
+                ui.modal.close('m-panel');
+                shopView.render();
             },
-            
-            // 儲值
+
+            openItemDetail: (id) => shopView.renderItemDetail(id),
+            useItem: (isDiscard) => {
+                const id = window.TempState.useTargetId;
+                if (isDiscard) {
+                    ShopEngine.discardItem(id, 1);
+                    act.toast('🗑️ 已丟棄 1 個');
+                } else {
+                    const res = ShopEngine.useItem(id);
+                    act.toast(res.success ? '✅ 使用成功' : '❌ 無法使用');
+                }
+                ui.modal.close('m-panel');
+                shopView.render(); 
+                if (window.view && view.updateHUD) view.updateHUD(window.GlobalState);
+            },
+			// [New] 購買精力
+            buyStamina: (amount, cost) => {
+                const res = ShopEngine.recoverStamina(amount, cost);
+                
+                if (res.success) {
+                    act.toast(`⚡ 精力恢復了！ (目前: ${res.current})`);
+                    ui.modal.close('m-overlay');
+                    
+                    // 如果在劇情頁面，刷新 UI
+                    if (window.TempState.currentView === 'story' && window.storyView) {
+                        storyView.render(); 
+                    }
+                    // 如果在 HUD，刷新 HUD
+                    if (window.view && view.updateHUD) {
+                        view.updateHUD(window.GlobalState);
+                    }
+                } else {
+                    act.toast(res.msg || '❌ 購買失敗');
+                }
+            },
             submitPayment: (amount) => {
-                if(confirm(`確定儲值 ${amount} 鑽石?`)) ShopEngine.submitPayment(amount);
+                ShopEngine.addGem(amount);
+                act.toast(`💎 獲得 ${amount} 鑽石！`);
+                ui.modal.close('m-overlay');
+                if (window.view && view.updateHUD) view.updateHUD(window.GlobalState);
             },
-			
-			// 精力商店
-            openStaminaShop: () => shopView.renderStaminaShop(),
-            buyStamina: (type) => {
-                if(confirm(`確定花費鑽石購買精力?`)) ShopEngine.buyStamina(type);
-            },
-			
-			// [New] 橋接舊版通用開窗指令
-            openModal: (id) => {
-                if (id === 'bag') shopView.renderBag();
-                // 其他舊版 ID 可在此擴充，例如 'quick'
-            },
-            
-            // [New] 橋接 QA (如果還沒做 QA 模組，先給個空函式防止報錯)
-            showQA: () => alert("QA 功能即將開放！"),
+            openPayment: () => shopView.renderPayment()
         });
 
-        // [New] 橋接 View 層級呼叫 (給 HTML 按鈕用)
-        window.view = window.view || {};
-        window.view.renderUploadModal = (id) => window.shopView.renderUploadModal(id);
-
-
-        // B. 監聽導航
-        EventBus.on(E.System.NAVIGATE, (pageId) => {
-            if (pageId === 'shop') shopView.render();
-        });
-
-        // C. 監聽數據更新
-        EventBus.on(E.Shop.UPDATED, () => {
-            if (window.TempState.currentView === 'shop') shopView.render();
-        });
-
-        // D. 監聽背包更新
-        EventBus.on(E.Shop.BAG_UPDATED, () => {
-            const bagModal = document.getElementById('m-panel');
-            if (bagModal && bagModal.classList.contains('active')) shopView.renderBag();
-            // 通知 MainController 更新 HUD
-            EventBus.emit(E.Stats.UPDATED);
-        });
-
-        console.log("✅ ShopController (Final) 就緒");
+        EventBus.on(E.System.NAVIGATE, (pageId) => { if (pageId === 'shop') shopView.render(); });
+        console.log("✅ ShopController Active");
     }
 };

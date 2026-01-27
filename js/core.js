@@ -1,22 +1,25 @@
-/* js/core.js - 核心框架層 (不包含業務邏輯) */
+/* js/core.js - 核心框架層 (Fixed Navigation Logic) */
 window.act = window.act || {};
 window.TempState = window.TempState || {};
 
 window.Core = {
-    // 1. 純粹的頁面切換 (不判斷權限，只管 DOM)
+    // 1. 純粹的頁面切換 (強制隱藏舊頁面)
     switchPage: (pageId) => {
         const targetId = pageId.startsWith('page-') ? pageId : `page-${pageId}`;
-        const pages = document.querySelectorAll('.page');
         
-        pages.forEach(p => {
+        // [修正] 使用更廣泛的選擇器，並強制設定 display: none
+        // 這能解決 Controller 設定了 style="display:block" 導致 CSS class 失效的問題
+        const allPages = document.querySelectorAll('.page, div[id^="page-"]');
+        
+        allPages.forEach(p => {
             p.classList.remove('active');
-            p.style.display = 'none';
+            p.style.display = 'none'; // <--- 關鍵！強制覆蓋行內樣式
         });
 
         const targetEl = document.getElementById(targetId);
         if (targetEl) {
             targetEl.classList.add('active');
-            targetEl.style.display = 'flex';
+            targetEl.style.display = 'block'; // 改為 block 確保顯示，若需 flex 可由 CSS .active 控制
         }
     },
 
@@ -34,7 +37,7 @@ window.Core = {
             }
         },
         toast: (msg) => {
-            if (window.EventBus) window.EventBus.emit(window.EVENTS.System.TOAST, msg);
+            if (window.EventBus && window.EVENTS) window.EventBus.emit(window.EVENTS.System.TOAST, msg);
             else console.log("[Toast]", msg);
         }
     },
@@ -50,23 +53,34 @@ window.Core = {
     }
 };
 
+// --- [重寫] act.navigate 導航邏輯 ---
 window.act.navigate = (pageId) => {
+    console.log(`[Nav] Switching to: ${pageId}`);
+
+    // --- [A] 核心頁面切換 (同步執行，不等待 EventBus) ---
+    // 1. 強制隱藏所有頁面 (解決殘留 style="display:block" 問題)
+    const allPages = document.querySelectorAll('.page, div[id^="page-"]');
+    allPages.forEach(p => {
+        p.classList.remove('active');
+        p.style.display = 'none'; // 強制隱藏
+    });
     
-    // --- [A] 核心頁面切換 ---
-    // 先移除所有頁面的 active 狀態 (包含 content-area 和 layer-full 裡的)
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    
-    // 啟用目標頁面
+    // 2. 顯示目標頁面
     const target = document.getElementById(`page-${pageId}`);
     if (target) {
         target.classList.add('active');
+        // 判斷是否需要 flex (通常全屏頁面如 avatar/story 用 flex，其他用 block)
+        // 保險起見先用 block，具體佈局交給 CSS .page.active
+        target.style.display = (['story', 'avatar'].includes(pageId)) ? 'flex' : 'block';
+        
         window.TempState.currentView = pageId;
+    } else {
+        console.error(`❌ 找不到目標頁面: page-${pageId}`);
     }
 
-    // --- [B] 容器狀態同步 (給舊瀏覽器 CSS 相容用) ---
+    // --- [B] 容器狀態同步 (Layer Full) ---
     const layerFull = document.getElementById('layer-full');
     if (layerFull) {
-        // 如果目標頁面在 layer-full 裡面，就啟用 layer-full
         if (target && layerFull.contains(target)) {
             layerFull.classList.add('active');
         } else {
@@ -74,9 +88,9 @@ window.act.navigate = (pageId) => {
         }
     }
 
-    // --- [C] Navbar 控制 (雖然 CSS 層級夠高，但 display:none 可防誤觸) ---
+    // --- [C] Navbar 控制 ---
     const navbar = document.getElementById('navbar');
-    const fullPages = ['story', 'avatar']; // 定義哪些是全螢幕頁面
+    const fullPages = ['story', 'avatar']; 
     
     if (navbar) {
         if (fullPages.includes(pageId)) {
@@ -86,17 +100,24 @@ window.act.navigate = (pageId) => {
             
             // 同步 Navbar 按鈕狀態
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            // 嘗試匹配 nav-task, nav-shop 等 ID
             const activeBtn = document.getElementById(`nav-${pageId}`);
             if (activeBtn) activeBtn.classList.add('active');
         }
     }
 
-    // --- [D] 發送訊號 (給各模組做初始化) ---
-    if (window.EventBus) {
+    // --- [D] 關閉干擾視窗 ---
+    // 切換頁面時，強制關閉可能開啟的 Modal 或 Overlay
+    if (window.ui && window.ui.modal && window.ui.modal.close) {
+        window.ui.modal.close('m-overlay'); 
+    }
+
+    // --- [E] 發送訊號 (通知 Controller 刷新數據) ---
+    if (window.EventBus && window.EVENTS) {
         window.EventBus.emit(window.EVENTS.System.NAVIGATE, pageId);
     }
 };
 
-// 為了相容舊版 HTML 的呼叫，保留最精簡的 act 映射
+// 兼容性映射
 window.act.closeModal = (id) => Core.ui.modal(id, 'close');
 window.act.validateNumber = Core.utils.validateNumber;

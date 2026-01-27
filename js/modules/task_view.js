@@ -1,301 +1,285 @@
-/* js/modules/task_view.js - V33.6 (Hybrid Ultimate View) */
+/* js/modules/task_view.js - V37.8 (Fix: Scroll, Button Type, Expand State) */
 window.taskView = {
-    // 1. 主列表渲染 (整合了任務與成就 Tab)
-    render: function() {
+    // 1. 主列表渲染
+    render: function(resetTab = false) {
+        if (resetTab) window.TempState.taskTab = 'list';
+        else if (!window.TempState.taskTab) window.TempState.taskTab = 'list';
         window.TempState.currentView = 'tasks';
         const page = document.getElementById('page-task');
         if (!page) return;
-
-        // 復原卷軸位置
+        
         const oldScrollBox = document.getElementById('task-scroll-area');
-        if (oldScrollBox) window.TempState.mainListScrollY = oldScrollBox.scrollTop;
-
-        const currentTab = window.TempState.taskTab || 'list';
-        const isList = currentTab === 'list';
-
-        // Header: 使用 ui.tabs.sliding
-        const headerHtml = ui.container.bar(
-            ui.tabs.sliding('📋 任務列表', '🏆 榮譽成就', isList, "act.switchTaskTab('list')", "act.switchTaskTab('ach')"),
-            'margin-bottom:10px;'
-        );
-
+        if (oldScrollBox && !resetTab) window.TempState.mainListScrollY = oldScrollBox.scrollTop;
+        
+        const isList = window.TempState.taskTab === 'list';
+        const headerHtml = ui.tabs.sliding('📋 任務列表', '🏆 榮譽成就', isList, "act.switchTaskTab('list')", "act.switchTaskTab('ach')");
+        
         let contentHtml = '';
-
         if (isList) {
-            // --- 任務列表 ---
+            const userCats = (window.GlobalState.taskCats && window.GlobalState.taskCats.length > 0) ? window.GlobalState.taskCats.filter(c => c !== '全部') : ['每日', '運動', '工作'];
             const currentCat = window.TempState.filterCategory || '全部';
-            const allCats = ['全部', ...(window.GlobalState.taskCats || []).filter(c => c !== '全部')];
+            const allCats = ['全部', ...userCats];
             const tasks = TaskEngine.getSortedTasks(false, currentCat);
-
-            // 分類過濾器
-            const filterHtml = ui.container.bar(
-                ui.tabs.scrollX(allCats, currentCat, "act.setTaskFilter") +
-                ui.component.btn({ label:'📜 歷史', theme:'normal', size:'sm', style:'margin-left:5px;', action:"act.navigate('history')" })
-            , 'display:flex; align-items:center; gap:5px; margin-bottom:10px;');
-
-            const listItems = tasks.length === 0 
-                ? `<div style="text-align:center;color:#888;padding:40px;">📭 暫無任務</div>`
-                : tasks.map(t => ui.card.task(t)).join('');
-
-            contentHtml = filterHtml + `<div style="padding-bottom:100px;">${listItems}</div>`;
-
+            
+            const filterArea = `<div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;"><div style="flex:1; overflow:hidden;">${ui.container.bar(ui.tabs.scrollX(allCats, currentCat, "act.setTaskFilter"), 'width:100%;')}</div><div style="flex-shrink:0;">${ui.component.btn({ label:'📜 歷史', theme:'normal', size:'sm', action:"act.navigate('history')" })}</div></div>`;
+            const listItems = tasks.length === 0 ? `<div style="text-align:center;color:#888;padding:40px;">📭 暫無任務</div>` : tasks.map(t => ui.card.task(t, false)).join('');
+            contentHtml = filterArea + `<div style="padding-bottom:100px;">${listItems}</div>`;
         } else {
-            // --- 成就列表 ---
             const currentAchCat = window.TempState.achFilter || '全部';
             const achCats = ['全部', '每日', '里程碑', '官方'];
             const achs = window.GlobalState.achievements || [];
-            
-            // 成就過濾邏輯
             const displayAchs = achs.filter(a => {
-                if(currentAchCat==='每日') return a.type==='check_in';
-                if(currentAchCat==='里程碑') return a.type!=='check_in' && !a.isSystem;
-                if(currentAchCat==='官方') return a.isSystem;
+                if (a.claimed) return false;
+                if (currentAchCat==='每日') return a.type==='check_in';
+                if (currentAchCat==='里程碑') return a.type!=='check_in' && !a.isSystem;
+                if (currentAchCat==='官方') return a.isSystem;
                 return true;
             });
-
-            // 這裡使用 IIFE 封裝 tab 切換 action
-            const achTabHtml = ui.tabs.scrollX(achCats, currentAchCat, "act.setAchFilter");
-            const achToolbar = ui.container.bar(achTabHtml + ui.component.btn({label:'🏆 殿堂', theme:'normal', size:'sm', style:'margin-left:5px;', action:"act.navigate('milestone')"}), 'display:flex; align-items:center; margin-bottom:10px;');
-
-            const achListItems = displayAchs.length === 0
-                ? `<div style="text-align:center;color:#888;padding:40px;">暫無成就</div>`
-                : displayAchs.map(a => ui.card.achievement(a)).join('');
-
-            contentHtml = achToolbar + `<div style="padding-bottom:100px;">${achListItems}</div>`;
+            const achFilterArea = `<div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;"><div style="flex:1; overflow:hidden;">${ui.container.bar(ui.tabs.scrollX(achCats, currentAchCat, "act.setAchFilter"), 'width:100%;')}</div><div style="flex-shrink:0;">${ui.component.btn({ label:'🏆 殿堂', theme:'normal', size:'sm', action:"act.navigate('milestone')" })}</div></div>`;
+            const achListItems = displayAchs.length === 0 ? `<div style="text-align:center;color:#888;padding:40px;">暫無成就</div>` : displayAchs.map(a => ui.card.achievement(a, false)).join('');
+            contentHtml = achFilterArea + `<div style="padding-bottom:100px;">${achListItems}</div>`;
         }
 
-        // FAB 按鈕
-        const fabAction = isList ? "act.editTask(null)" : "view.renderCreateAchForm(null)"; // 注意：需要補 act.createAch
-        const fabHtml = ui.component.btn({
-            label: isList ? '＋' : '🌟', theme: isList ? 'correct' : 'normal',
-            style: `position:absolute; bottom:25px; right:25px; width:60px; height:60px; border-radius:50%; font-size:2rem; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:10; ${!isList?'background:gold; border:none;':''}`,
-            action: fabAction
-        });
-
-        page.innerHTML = `
-            <div style="display:flex; flex-direction:column; height:100%; position:relative;">
-                <div style="padding:10px;">${headerHtml}</div>
-                <div id="task-scroll-area" style="flex:1; overflow-y:auto; padding:0 10px;">
-                    ${contentHtml}
-                </div>
-                ${fabHtml}
-            </div>
-        `;
-
-        // 恢復捲動
-        setTimeout(() => {
-            const scrollBox = document.getElementById('task-scroll-area');
-            if (scrollBox && window.TempState.mainListScrollY) scrollBox.scrollTop = window.TempState.mainListScrollY;
-        }, 0);
+        const fabBg = !isList ? 'background:gold; border:none; color:#333;' : '';
+        const fabAction = isList ? "act.editTask(null)" : "view.renderCreateAchForm(null)";
+        const fabHtml = ui.component.btn({ label: '＋', theme: isList ? 'correct' : 'normal', style: `position:absolute; bottom:25px; right:25px; width:60px; height:60px; border-radius:50%; font-size:2rem; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:10; ${fabBg}`, action: fabAction });
+        
+        page.innerHTML = `<div style="display:flex; flex-direction:column; height:100%; position:relative; overflow:hidden;"><div style="flex-shrink:0; padding:10px 0;">${headerHtml}</div><div id="task-scroll-area" style="flex:1; overflow-y:auto; padding:0 10px; width:100%; box-sizing:border-box;">${contentHtml}</div>${fabHtml}</div>`;
+        
+        setTimeout(() => { const scrollBox = document.getElementById('task-scroll-area'); if (scrollBox && window.TempState.mainListScrollY) scrollBox.scrollTop = window.TempState.mainListScrollY; }, 0);
     },
-	
-	renderHistoryPage: function() {
-    const container = document.getElementById('page-history');
-    if(!container) return;
 
-    // A. 標題列
-    const headerHtml = ui.container.bar(`
-        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-            <h2 style="margin:0; font-size:1.2rem; color:#5d4037;">📜 歷史紀錄</h2>
-            ${ui.component.btn({label:'↩ 返回', theme:'normal', size:'sm', action:"act.navigate('task')"})}
+    renderHistoryPage: function() { 
+        const container = document.getElementById('page-history'); if(!container) return;
+        const headerHtml = ui.container.bar(`<div style="display:flex; justify-content:space-between; align-items:center; width:100%;"><h2 style="margin:0; font-size:1.2rem; color:#5d4037;">📜 歷史紀錄</h2>${ui.component.btn({label:'↩ 返回', theme:'normal', size:'sm', action:"act.switchTaskTab('list')"})}</div>`, 'padding:15px; background:#f5f5f5; border-bottom:1px solid #e0e0e0; width:100%; box-sizing:border-box;');
+        const history = window.GlobalState.history || [];
+        const listHtml = history.length === 0 ? `<div style="text-align:center;color:#888;padding:50px;">📜 無歷史紀錄</div>` : `<div style="padding: 10px;">` + [...history].reverse().map(t => ui.card.task(t, true)).join('') + `</div>`;
+        container.innerHTML = `<div style="height:100%; width:100%; overflow:hidden;">${ui.layout.scroller(headerHtml, listHtml, 'history-list-area')}</div>`;
+    },
+
+    renderMilestonePage: function() { 
+        const container = document.getElementById('page-milestone'); if(!container) return;
+        const headerHtml = ui.container.bar(`<div style="display:flex; justify-content:space-between; align-items:center; width:100%;"><h2 style="margin:0; font-size:1.2rem; color:#d4af37;">🏆 榮譽殿堂</h2>${ui.component.btn({label:'↩ 返回', theme:'normal', size:'sm', action:"act.switchTaskTab('ach')"})}</div>`, 'padding:15px; background:#222; color:#fff; border-bottom:1px solid gold; width:100%; box-sizing:border-box;');
+        const achs = (window.GlobalState.achievements || []).filter(a => a.claimed);
+        const listHtml = achs.length === 0 ? `<div style="text-align:center;color:#666;padding:50px;">尚無榮譽紀錄</div>` : `<div style="padding: 10px;">` + achs.map(a => ui.card.achievement(a, true)).join('') + `</div>`;
+        container.innerHTML = `<div style="background:#f9f9f9; height:100%; width:100%; overflow:hidden;">${ui.layout.scroller(headerHtml, listHtml, 'milestone-list-area')}</div>`;
+    },
+
+    // =========================================================================
+    // 4. 編輯表單
+    // =========================================================================
+    renderCreateTaskForm: function(taskId) {
+    const gs = window.GlobalState;
+    if (window.TempState.importedTaskData) {
+        // 使用導入的資料初始化
+        window.TempState.editingTask = {
+            ...window.TempState.importedTaskData,
+            id: null, // 確保是新任務
+            attrs: [],
+            target: 10,
+            pinned: false,
+            calories: 0,
+            deadline: '',
+            subRule: 'all',
+            recurrence: ''
+        };
+        // 導入後清除，避免下次誤用
+        window.TempState.importedTaskData = null;
+        
+        // 強制視為「無 taskId」的新增模式
+        taskId = null;
+    }
+    // ------------------------------------------------
+    // [修正] 改用 ID 抓取，確保能正確紀錄目前分類列滑到哪裡
+    // 這是為了防止抓錯元素導致跳動
+    const oldScrollBox = document.getElementById('cat-scroll-container');
+    if (oldScrollBox) window.TempState.editScrollX = oldScrollBox.scrollLeft;
+
+    const currentTemp = window.TempState.editingTask;
+    const needInit = !currentTemp || (taskId && currentTemp.id !== taskId) || (taskId === null && currentTemp.id !== null);
+    
+    if (needInit) {
+        if (taskId === null) {
+            // [新增] 預設分類加入 '運動'，如果沒有指定就預設為 '每日'
+            window.TempState.editingTask = { id: null, title: '', desc: '', importance: 2, urgency: 2, type: 'normal', attrs: [], cat: '每日', target: 10, subs: [], pinned: false, calories: 0, deadline: '', subRule: 'all', recurrence: '' };
+        } else {
+            const task = gs.tasks.find(t => t.id === taskId);
+            if (task) window.TempState.editingTask = JSON.parse(JSON.stringify(task));
+        }
+    }
+    
+    const data = window.TempState.editingTask;
+    if (!data.attrs) data.attrs = [];
+    const isCount = data.type === 'count';
+
+    // ... (這裡保留原本的 title / desc 輸入框 HTML，不需要變動) ...
+    let bodyHtml = `
+    <div style="margin-bottom:15px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div style="flex:1;">
+                <label style="font-size:0.8rem; color:#888;">任務名稱</label>
+                ${ui.input.text(data.title, "要做什麼呢？", "taskView.updateField('title', this.value)")}
+            </div>
+            <div style="padding-top:20px;">
+                ${ui.component.btn({ id: 'btn-pin-toggle', label: '📌', theme: 'ghost', action: `taskView.togglePin()`, style: `font-size:1.4rem; padding:0 8px; opacity:${data.pinned ? '1' : '0.3'}; transition:all 0.2s;` })}
+            </div>
         </div>
-    `, 'padding:15px; background:#f5f5f5; border-bottom:1px solid #e0e0e0;');
+    </div>
+    <div style="margin-bottom:15px;"><label style="font-size:0.8rem; color:#888;">詳細說明</label>${ui.input.textarea(data.desc, "備註...", "taskView.updateField('desc', this.value)")}</div>`;
 
-    // B. 資料準備 (讀取 GlobalState.history)
-    const history = window.GlobalState.history || [];
-    const sortedHistory = [...history].reverse(); // 最新的在上面
+    // 分類 (ID for scrolling)
+    // [修正] 預設分類改為 ['每日', '運動', '工作']
+    const defaultCats = ['每日', '運動', '工作'];
+    const catButtons = (gs.taskCats && gs.taskCats.length > 0 ? gs.taskCats : defaultCats).map(c => {
+        const isActive = data.cat === c;
+        return `<button type="button" id="cat-btn-${c}" class="u-btn u-btn-sm ${isActive ? 'u-btn-correct' : 'u-btn-normal'}" 
+            style="flex-shrink:0; margin-right:5px; border-radius:50px; padding:4px 12px; white-space:nowrap; ${isActive ? 'box-shadow:inset 0 2px 4px rgba(0,0,0,0.1);' : ''}" 
+            onclick="taskView.updateCategory('${c}')">${c}</button>`;
+    }).join('');
 
-    // C. 列表內容
-    let listHtml = '';
-    if (sortedHistory.length === 0) {
-        listHtml = `<div style="text-align:center;color:#888;padding:50px;">📜 無歷史紀錄</div>`;
-    } else {
-        // 使用 ui.card.task (傳入 true 代表唯讀模式)
-        listHtml = `<div style="padding: 10px;">` + sortedHistory.map(t => {
-            return ui.card.task(t, true); 
-        }).join('') + `</div>`;
+    let caloriesInput = '';
+    if (data.cat === '運動') {
+        caloriesInput = `<div style="display:flex; align-items:center; gap:5px; background:#fff3e0; padding:2px 8px; border-radius:15px; border:1px solid #ffe0b2; margin-left:10px; flex-shrink:0;"><span style="font-size:0.9rem;">🔥</span>${ui.input.number(data.calories, "taskView.updateField('calories', parseInt(this.value)||0)", 4)}<span style="font-size:0.8rem; color:#f57c00;">Kcal</span></div>`;
     }
 
-    // D. 寫入 DOM
-    container.innerHTML = ui.layout.scroller(headerHtml, listHtml + '<div style="height:50px;"></div>');
-    
-    // 隱藏 FAB
-    if(window.view && view.hideFab) view.hideFab();
-	},
-
-    // 2. 編輯表單 (復刻 V25 高度互動版)
-    renderCreateTaskForm: function(taskId) {
-        const gs = window.GlobalState;
-        // 初始化暫存
-        if (!window.TempState.editingTask || (taskId && window.TempState.editingTask.id !== taskId)) {
-            const task = taskId ? gs.tasks.find(t => t.id === taskId) : null;
-            window.TempState.editingTask = task ? JSON.parse(JSON.stringify(task)) : { 
-                id: null, title: '', desc: '', importance: 2, urgency: 2, 
-                type: 'normal', attrs: [], cat: '每日', target: 10, subs: [], 
-                pinned: false, calories: 0, deadline: '', subRule: 'all' 
-            };
-        }
-        const data = window.TempState.editingTask;
-        const isCount = data.type === 'count';
-
-        // --- A. 標題與置頂 ---
-        let bodyHtml = `
-            <div style="display:flex; gap:10px; align-items:flex-end; margin-bottom:15px;">
-                <div style="flex:1;">
-                    <label style="font-size:0.8rem; color:#888;">任務名稱</label>
-                    ${ui.input.text(data.title, "要做什麼呢？", "taskView.updateField('title', this.value)")}
-                </div>
-                ${ui.component.btn({
-                    label: '📌', theme: data.pinned ? 'correct' : 'ghost',
-                    style: `width:40px; height:40px; padding:0; ${!data.pinned ? 'opacity:0.3' : ''}`,
-                    action: `taskView.updateField('pinned', !${data.pinned})`
-                })}
+    bodyHtml += `
+    <div style="margin-bottom:15px;">
+        <label style="font-size:0.8rem; color:#888; margin-bottom:5px; display:block;">分類</label>
+        <div style="display:flex; align-items:center; width:100%;">
+            <div class="u-scroll-x" id="cat-scroll-container" style="flex:1; overflow-x:auto; display:flex; align-items:center; background:rgba(0,0,0,0.05); border-radius:30px; padding:4px;">
+                ${catButtons}
             </div>
-            <div style="margin-bottom:15px;">
-                ${ui.input.textarea(data.desc, "詳細說明...", "taskView.updateField('desc', this.value)")}
+            <div style="flex-shrink:0; display:flex; align-items:center;">
+                ${caloriesInput}
+                ${ui.component.btn({label:'+', size:'sm', theme:'normal', action:'taskView.handleAddCategory()', style:'margin-left:5px; height:32px; width:32px; padding:0; border-radius:50%;'})}
             </div>
-        `;
+        </div>
+    </div>`;
 
-        // --- B. 分類與熱量 (動態顯示) ---
-        // 構建分類按鈕條
-        const catBtns = (gs.taskCats || ['預設']).map(c => ui.component.pillBtn({
-            label: c, theme: data.cat === c ? 'correct' : 'normal',
-            action: `taskView.updateCategory('${c}')`
-        })).join('');
-        
-        let caloriesInput = '';
-        if (data.cat === '運動') {
-            caloriesInput = `
-                <div style="display:flex; align-items:center; gap:5px; background:#fff3e0; padding:5px 10px; border-radius:15px; margin-top:10px;">
-                    <span>🔥 消耗:</span>
-                    ${ui.input.number(data.calories || 0, "taskView.updateField('calories', parseInt(this.value)||0)", 4)}
-                    <span style="color:#f57c00;">Kcal</span>
-                </div>
-            `;
-        }
+        let rightSettingHtml = !isCount ? 
+            `<div style="display:flex; gap:10px;"><label style="display:flex; align-items:center;"><input type="radio" ${data.subRule==='all'?'checked':''} onclick="taskView.updateField('subRule', 'all')"><span style="margin-left:4px; font-size:0.8rem;">全部</span></label><label style="display:flex; align-items:center;"><input type="radio" ${data.subRule==='any'?'checked':''} onclick="taskView.updateField('subRule', 'any')"><span style="margin-left:4px; font-size:0.8rem;">擇一</span></label></div>` : 
+            `<div style="display:flex; align-items:center; gap:5px;">${ui.input.number(data.target, "taskView.updateField('target', this.value)", 2)}<span style="font-size:0.9rem;">次</span></div>`;
 
-        bodyHtml += ui.container.box(`
-            <label style="font-size:0.8rem; color:#888;">分類</label>
-            <div style="display:flex; gap:5px; overflow-x:auto; padding-bottom:5px;">
-                ${catBtns} ${ui.component.btn({label:'+', size:'sm', theme:'ghost', action:'act.addNewCategory()'})}
-            </div>
-            ${caloriesInput}
-        `, 'margin-bottom:15px;');
-
-        // --- C. 類型與設定 (計次/子任務) ---
-        // 子任務規則 Radio
-        const ruleHtml = `
-            <div style="display:flex; align-items:center; gap:10px; font-size:0.85rem;">
-                <span>規則:</span>
-                <label><input type="radio" name="sub_rule" ${data.subRule==='all'?'checked':''} onclick="taskView.updateField('subRule', 'all')"> 全部</label>
-                <label><input type="radio" name="sub_rule" ${data.subRule==='any'?'checked':''} onclick="taskView.updateField('subRule', 'any')"> 擇一</label>
-            </div>
-        `;
-        
-        // 類型切換 UI
-        const typeHtml = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        bodyHtml += `
+        <div class="u-box" style="padding:10px; margin-bottom:15px; background:#f9f9f9; border-radius:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div style="display:flex; background:#eee; border-radius:20px; padding:2px;">
                     ${ui.component.pillBtn({label:'📝 一般', theme:!isCount?'correct':'ghost', action:"taskView.updateField('type', 'normal')"})}
                     ${ui.component.pillBtn({label:'🔢 計次', theme:isCount?'correct':'ghost', action:"taskView.updateField('type', 'count')"})}
                 </div>
-                ${!isCount ? ruleHtml : `<div>目標: ${ui.input.number(data.target, "taskView.updateField('target', this.value)", 2)} 次</div>`}
+                ${rightSettingHtml}
             </div>
-        `;
-
-        // 子任務列表
-        let subsHtml = '';
-        if (!isCount) {
-            const list = (data.subs || []).map((s, i) => `
+            ${!isCount ? `
+            <div style="margin-top:10px; border-top:1px dashed #ddd; padding-top:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="font-size:0.85rem; font-weight:bold; color:#666;">🔨 子任務</div>
+                    <button type="button" class="u-btn u-btn-sm u-btn-paper" onclick="act.addSubtask()">+ 新增步驟</button>
+                </div>
+                ${(data.subs || []).map((s, i) => `
                 <div style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
                     ${ui.input.text(s.text, `步驟 ${i+1}`, `act.updateSubtaskText(${i}, this.value)`)}
-                    <button class="u-btn u-btn-ghost" style="color:red; padding:0 5px;" onclick="act.removeSubtask(${i})">✕</button>
-                </div>`).join('');
-            subsHtml = `
-                <div style="border-top:1px dashed #ddd; padding-top:10px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <span>子任務</span>
-                        ${ui.component.btn({label:'+ 步驟', size:'sm', theme:'paper', action:'act.addSubtask()'})}
-                    </div>
-                    ${list || '<div style="text-align:center; color:#ccc; font-size:0.8rem;">尚無步驟</div>'}
-                </div>
-            `;
-        }
-
-        bodyHtml += ui.container.box(typeHtml + subsHtml, 'margin-bottom:15px;');
-
-        // --- D. 技能綁定 ---
-        const skillBtns = (gs.skills || []).map(s => {
-            const active = data.attrs.includes(s.name);
-            const icon = window.GlobalState.attrs?.[s.parent?.toUpperCase()]?.icon || '❓';
-            // 手動樣式
-            const style = active 
-                ? 'border:1px solid var(--color-acc); background:#e0f2f1; color:var(--color-acc); opacity:1;' 
-                : 'border:1px solid #ccc; opacity:0.6;';
-            
-            return `<button class="u-btn u-btn-sm" style="${style} margin-right:5px; margin-bottom:5px; border-radius:12px;"
-                onclick="taskView.toggleSkill('${s.name}')">${icon} ${s.name}</button>`;
-        }).join('');
-
-        bodyHtml += ui.container.box(`
-            <label style="font-size:0.8rem; color:#888;">綁定技能</label>
-            <div style="display:flex; flex-wrap:wrap; margin-top:5px;">
-                ${skillBtns || '<span style="color:#ccc; font-size:0.8rem;">無可用技能 (請至屬性頁新增)</span>'}
-            </div>
-        `, 'margin-bottom:15px;');
-
-        // --- E. 價值矩陣 ---
-        bodyHtml += ui.container.box(`
-            <div style="display:flex; justify-content:space-between;">
-                <b>價值評估</b>
-                <div id="matrix-tag-preview" style="font-size:0.85rem;"></div>
-            </div>
-            <div style="margin:10px 0;">
-                <div style="font-size:0.8rem; color:#666;">重要性: <b id="val-imp">${data.importance}</b></div>
-                <input type="range" min="1" max="4" value="${data.importance}" style="width:100%; accent-color:var(--color-acc);" oninput="taskView.updateField('importance', parseInt(this.value))">
-            </div>
-            <div>
-                <div style="font-size:0.8rem; color:#666;">緊急性: <b id="val-urg">${data.urgency}</b></div>
-                <input type="range" min="1" max="4" value="${data.urgency}" style="width:100%; accent-color:var(--color-danger);" oninput="taskView.updateField('urgency', parseInt(this.value))">
-            </div>
-        `, 'margin-bottom:15px; border-left:4px solid gold;');
-
-        // --- F. 到期日 ---
-        bodyHtml += `<div style="margin-bottom:15px;">
-            <label style="font-size:0.8rem; color:#888;">📅 到期時間</label>
-            ${ui.input.datetime(data.deadline, "taskView.updateField('deadline', this.value)")}
+                    <button type="button" class="u-btn u-btn-ghost u-btn-sm" style="color:#d32f2f;" onclick="act.removeSubtask(${i})">✕</button>
+                </div>`).join('')}
+            </div>` : ''}
         </div>`;
 
-        // Footer
-        const footHtml = taskId 
-            ? `
-                ${ui.component.btn({label:'刪除', theme:'danger', action:`act.deleteTask('${taskId}')`})}
-                ${ui.component.btn({label:'複製', theme:'normal', action:`act.copyTask('${taskId}')`})}
-                ${ui.component.btn({label:'保存', theme:'correct', style:'flex:1;', action:'act.submitTask()'})}
-              `
-            : ui.component.btn({label:'新增任務', theme:'correct', style:'width:100%;', action:'act.submitTask()'});
+        // 技能
+        const skillHtml = (gs.skills || []).map(s => {
+            const active = data.attrs.includes(s.name);
+            const style = active ? 'border:1px solid #4caf50; background:#e8f5e9; color:#2e7d32; font-weight:bold;' : 'border:1px solid #ccc; opacity:0.7;';
+            return `<button type="button" class="u-btn u-btn-sm" id="skill-btn-${s.name}" style="${style} margin-right:5px; margin-bottom:5px; border-radius:12px;" onclick="taskView.toggleSkill('${s.name}')"> ${window.GlobalState.attrs?.[s.parent?.toUpperCase()]?.icon || '❓'} ${s.name}</button>`;
+        }).join('');
+        bodyHtml += `<div style="margin-bottom:15px;"><label style="font-size:0.8rem; color:#888;">📚 綁定技能</label><div class="u-box" style="padding:10px; background:#fff; border:1px solid #e0e0e0; border-radius:8px; display:flex; flex-wrap:wrap; min-height:50px;">${skillHtml || '<span style="color:#888;font-size:0.8rem; width:100%; text-align:center;">無可用技能，請至屬性頁新增</span>'}</div></div>`;
+
+        // 矩陣 & 日期
+        const getLabelColor = (val) => val >= 3 ? (val===4?'#d32f2f':'#ef6c00') : (val===2?'#1976d2':'#555');
+        let borderSideColor = '#757575'; 
+        if(data.importance>=3 && data.urgency>=3) borderSideColor="#d32f2f"; else if(data.importance>=3) borderSideColor="#0288d1"; else if(data.urgency>=3) borderSideColor="#ef6c00";
+        
+        bodyHtml += `<div id="matrix-box" class="u-box" style="padding:10px; margin-bottom:15px; border-left: 4px solid ${borderSideColor}; background:#fff; transition: border-left-color 0.3s ease;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span style="font-weight:bold; font-size:0.9rem;">📊 價值評估</span><div id="matrix-tag-preview" style="font-size:0.85rem; color:#666;">...</div></div>
+            <div style="margin-bottom:10px;"><div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#666;"><span id="lbl-imp" style="color:${getLabelColor(data.importance)}; font-weight:bold;">重要性</span> <b id="val-imp">${data.importance}</b></div><input type="range" min="1" max="4" value="${data.importance}" style="width:100%; accent-color:#0288d1;" oninput="taskView.updateField('importance', parseInt(this.value));"></div>
+            <div><div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#666;"><span id="lbl-urg" style="color:${getLabelColor(data.urgency)}; font-weight:bold;">緊急性</span> <b id="val-urg">${data.urgency}</b></div><input type="range" min="1" max="4" value="${data.urgency}" style="width:100%; accent-color:#d32f2f;" oninput="taskView.updateField('urgency', parseInt(this.value));"></div>
+        </div>`;
+
+        const commonInputStyle = "width:100%; height:40px; padding:0 8px; border-radius:8px; border:1px solid #ccc; background:#fff; box-sizing:border-box; font-size:0.9rem;";
+        const recurrenceOpts = [{val:'', label:'不重複'}, {val:'daily', label:'每天'}, {val:'weekly', label:'每週'}, {val:'monthly', label:'每月'}, {val:'yearly', label:'每年'}];
+        bodyHtml += `<div style="margin-bottom:15px; display:flex; gap:10px; align-items:flex-end;"><div style="flex: 1 1 0; min-width: 0;"> <label style="font-size:0.8rem; color:#888; display:block; margin-bottom:4px;">📅 到期時間</label> <input type="datetime-local" class="inp" value="${data.deadline||''}" onchange="taskView.updateField('deadline', this.value)" style="${commonInputStyle}"> </div><div style="flex: 1 1 0; min-width: 0;"> <label style="font-size:0.8rem; color:#888; display:block; margin-bottom:4px;">🔄 循環</label> <select onchange="taskView.updateField('recurrence', this.value)" style="${commonInputStyle} outline:none;">${recurrenceOpts.map(o => `<option value="${o.val}" ${o.val===(data.recurrence||'')?'selected':''}>${o.label}</option>`).join('')}</select> </div></div>`;
+
+        const footHtml = taskId ? `${ui.component.btn({label:'刪除', theme:'danger', action:`act.deleteTask('${taskId}')`})} ${ui.component.btn({label:'複製', theme:'normal', action:`act.copyTask('${taskId}')`})} ${ui.component.btn({label:'保存', theme:'correct', style:'flex:1;', action:'act.submitTask()'})}` : ui.component.btn({label:'新增任務', theme:'correct', style:'width:100%;', action:'act.submitTask()'});
 
         ui.modal.render(taskId ? '編輯任務' : '新增任務', bodyHtml, footHtml, 'overlay');
-        this.updateMatrixPreview(); // 初始化預覽文字
-    },
+        this.updateMatrixPreview();
 
-    // 3. 輔助函式
+        // [修正 5] 自動捲動到分類
+        setTimeout(() => {
+        const newScrollContainer = document.getElementById('cat-scroll-container');
+        if (newScrollContainer) {
+            // 如果有紀錄的位置，優先使用
+            if (typeof window.TempState.editScrollX === 'number') {
+                newScrollContainer.scrollLeft = window.TempState.editScrollX;
+            } else {
+                // 沒有紀錄才自動定位
+                const d = window.TempState.editingTask;
+                const activeBtn = document.getElementById(`cat-btn-${d.cat}`);
+                if (activeBtn) {
+                    const scrollLeft = activeBtn.offsetLeft - (newScrollContainer.clientWidth / 2) + (activeBtn.clientWidth / 2);
+                    newScrollContainer.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                }
+            }
+        }
+    }, 0);
+},
     updateField: function(field, val) {
         if (!window.TempState.editingTask) return;
+        if (field === 'importance' || field === 'urgency') val = parseInt(val);
         window.TempState.editingTask[field] = val;
 
-        // 數值顯示更新
-        if(field === 'importance' || field === 'urgency') {
-            const el = document.getElementById(`val-${field.substring(0,3)}`);
-            if(el) el.innerText = val;
+        if (field === 'importance' || field === 'urgency') {
+            const valEl = document.getElementById(field === 'importance' ? 'val-imp' : 'val-urg');
+            const lblEl = document.getElementById(field === 'importance' ? 'lbl-imp' : 'lbl-urg');
+            if(valEl) valEl.innerText = val;
+            if(lblEl) {
+                const color = val >= 3 ? (val===4?'#d32f2f':'#ef6c00') : (val===2?'#1976d2':'#555');
+                lblEl.style.color = color;
+            }
+            const box = document.getElementById('matrix-box');
+            if(box) {
+                const t = window.TempState.editingTask;
+                let c = '#757575';
+                if(t.importance>=3 && t.urgency>=3) c="#d32f2f";
+                else if(t.importance>=3) c="#0288d1";
+                else if(t.urgency>=3) c="#ef6c00";
+                box.style.borderLeftColor = c;
+            }
             this.updateMatrixPreview();
             return; 
         }
-        
-        // 結構性重繪 (類型、分類等)
-        if(['type', 'subRule', 'pinned'].includes(field)) {
-            // 使用 setTimeout 避免點擊事件衝突
-            setTimeout(() => this.renderCreateTaskForm(window.TempState.editingTask.id), 0);
+        if (['type', 'subRule'].includes(field)) setTimeout(() => this.renderCreateTaskForm(window.TempState.editingTask.id), 0);
+    },
+
+    // 狀態切換，確保狀態同步
+    toggleCardExpand: function(id) {
+        window.TempState.expandedTaskId = (window.TempState.expandedTaskId === id) ? null : id;
+        const el = document.getElementById('expand-' + id);
+        if(el) {
+            const isVisible = el.style.display === 'block';
+            el.style.display = isVisible ? 'none' : 'block';
+        }
+    },
+
+    togglePin: function() {
+        if (!window.TempState.editingTask) return;
+        const newState = !window.TempState.editingTask.pinned;
+        window.TempState.editingTask.pinned = newState;
+        const btn = document.getElementById('btn-pin-toggle');
+        if(btn) btn.style.opacity = newState ? '1' : '0.3';
+    },
+
+    handleAddCategory: function() {
+        if (window.act && window.act.addNewCategory) {
+            act.addNewCategory(); 
+            setTimeout(() => { if(window.TempState.editingTask) this.renderCreateTaskForm(window.TempState.editingTask.id); }, 500);
         }
     },
 
@@ -303,12 +287,17 @@ window.taskView = {
         if (!window.TempState.editingTask) return;
         const oldCat = window.TempState.editingTask.cat;
         window.TempState.editingTask.cat = cat;
-        // 如果切換涉及「運動」(顯示/隱藏熱量)，需要重繪
-        if (oldCat === '運動' || cat === '運動') {
-            setTimeout(() => this.renderCreateTaskForm(window.TempState.editingTask.id), 0);
-        } else {
-            // 否則只重繪按鈕狀態 (這裡偷懶直接重繪整個表單，保證一致性)
-            setTimeout(() => this.renderCreateTaskForm(window.TempState.editingTask.id), 0);
+        if (oldCat === '運動' || cat === '運動') setTimeout(() => this.renderCreateTaskForm(window.TempState.editingTask.id), 0);
+        else {
+            document.querySelectorAll('.modal .u-scroll-x button').forEach(btn => {
+                btn.className = 'u-btn u-btn-sm u-btn-normal';
+                btn.style.boxShadow = 'none';
+            });
+            const targetBtn = document.getElementById(`cat-btn-${cat}`);
+            if(targetBtn) {
+                targetBtn.className = 'u-btn u-btn-sm u-btn-correct';
+                targetBtn.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.1)';
+            }
         }
     },
 
@@ -317,15 +306,31 @@ window.taskView = {
         const t = window.TempState.editingTask;
         if (!t.attrs) t.attrs = [];
         const idx = t.attrs.indexOf(skillName);
-        
+        let isActive = false;
         if (idx === -1) {
             if (t.attrs.length >= 3) return act.toast("⚠️ 最多綁定 3 個技能");
             t.attrs.push(skillName);
+            isActive = true;
         } else {
             t.attrs.splice(idx, 1);
+            isActive = false;
         }
-        // 重繪以更新按鈕樣式
-        setTimeout(() => this.renderCreateTaskForm(t.id), 0);
+        const btn = document.getElementById(`skill-btn-${skillName}`);
+        if (btn) {
+            if (isActive) {
+                btn.style.border = '1px solid #4caf50';
+                btn.style.background = '#e8f5e9';
+                btn.style.color = '#2e7d32';
+                btn.style.fontWeight = 'bold';
+            } else {
+                btn.style.border = '1px solid #ccc';
+                btn.style.background = '';
+                btn.style.color = '';
+                btn.style.fontWeight = '';
+                btn.style.opacity = '0.7';
+            }
+            btn.blur();
+        }
     },
 
     updateMatrixPreview: function() {
@@ -341,3 +346,7 @@ window.taskView = {
         }
     }
 };
+
+// 安全橋接
+window.view = window.view || {};
+window.view.toggleCardExpand = window.taskView.toggleCardExpand;
