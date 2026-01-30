@@ -1,374 +1,532 @@
-/* js/modules/story.js - V36 (RPG Core Upgrade: Checks, Rewards, Conditions) */
+window.StoryGenerator = {
+    _sysDict: { investigate: { zh: "調查" }, explore_deeper: { zh: "繼續深入" }, finish: { zh: "完成" } },
+    _t: function(k, l) { return (this._sysDict[k] && this._sysDict[k][l]) || this._sysDict[k]?.zh || k; },
 
+    generate: function(contextTags = []) {
+        const gs = window.GlobalState;
+        if (!gs.story.chain) gs.story.chain = { depth: 0, maxDepth: 3, accumulatedTags: [], memory: {} };
+        
+        const depth = gs.story.chain.depth;
+        const maxDepth = gs.story.chain.maxDepth;
+        let targetType = (depth === 0) ? 'setup' : (depth >= maxDepth ? 'ending' : 'event');
+
+        // [Fix] 失敗斷鏈保底
+        if (contextTags.includes('combat_defeat')) targetType = 'ending';
+
+        const template = this.pickTemplate(targetType, contextTags);
+        const lang = gs.settings?.targetLang || 'zh';
+        
+        if (!template) {
+            // [Fallback]
+            return {
+                id: `gen_fallback_${Date.now()}`,
+                text: "前方充滿了未知的迷霧...",
+                options: [{ label: "完成", action: "finish_chain", style: 'primary' }],
+                type: targetType
+            };
+        }
+
+        const filledData = this.fillTemplate(template, lang);
+        const dynamicOptions = this.generateOptions(template, filledData.fragments, lang, targetType);
+
+        return {
+            id: `gen_${Date.now()}`,
+            text: filledData.text,
+            location: filledData.locationStr || "Event",
+            options: dynamicOptions,
+            meta: filledData.fragments,
+            type: targetType
+        };
+    },
+
+    pickTemplate: function(type, contextTags) {
+        const db = window.FragmentDB;
+        if (!db || !db.templates) return null;
+        const currentMode = window.GlobalState.settings?.gameMode || 'adventurer';
+
+        let candidates = db.templates.filter(t => {
+            if (t.type !== type) return false;
+            if (t.mode && t.mode !== currentMode) return false;
+            return true;
+        });
+
+        if (contextTags.length > 0) {
+            const match = candidates.filter(t => t.reqTag && contextTags.includes(t.reqTag));
+            if (match.length > 0) return this.weightedRandom(match);
+        }
+        
+        const fallback = candidates.filter(t => !t.reqTag);
+        if (fallback.length > 0) return this.weightedRandom(fallback);
+        return null;
+    },
+
+    fillTemplate: function(tmpl, lang) {
+        const db = window.FragmentDB;
+        const gs = window.GlobalState;
+        const memory = gs.story.chain.memory || {}; 
+
+        let finalStr = tmpl.text[lang] || tmpl.text['zh'];
+        let chosenFragments = {};
+        
+        finalStr = finalStr.replace(/\{memory:(\w+)\}/g, (m, k) => memory[k] || "某人");
+
+        (tmpl.slots || []).forEach(key => {
+            const list = db.fragments[key];
+            if (list && list.length > 0) {
+                const item = this.weightedRandom(list);
+                const word = item.val[lang] || item.val['zh'];
+                finalStr = finalStr.replace(`{${key}}`, word);
+                chosenFragments[key] = item;
+                memory[key] = word; 
+            } else if (memory[key]) {
+                finalStr = finalStr.replace(`{${key}}`, memory[key]);
+            } else {
+                // [Fix] 使用圓括號避免 Ruby 解析錯誤
+                finalStr = finalStr.replace(`{${key}}`, `(未知${key})`);
+            }
+        });
+        gs.story.chain.memory = memory;
+        return { text: finalStr, fragments: chosenFragments };
+    },
+
+    // [Fix] 修復變數名稱錯誤 (random -> r)
+    weightedRandom: function(list) {
+        if (!list || list.length === 0) return null;
+        let total = 0; 
+        list.forEach(item => { total += (item.weight || 1); });
+        
+        let r = Math.random() * total; // 這裡定義的是 r
+        
+        for (let i = 0; i < list.length; i++) {
+            r -= (list[i].weight || 1);
+            if (r <= 0) return list[i]; // [修正] 這裡原本寫成 random <= 0，已改為 r
+        }
+        return list[0];
+    },
+    generateOptions: function(tmpl, fragments, lang, type) {
+        let opts = [];
+        const db = window.FragmentDB;
+        
+        let activeTags = [];
+        Object.values(fragments).forEach(item => {
+            if (item.tags) activeTags = activeTags.concat(item.tags);
+        });
+        if (tmpl.outTags) activeTags = activeTags.concat(tmpl.outTags);
+
+        if (type === 'ending') {
+            opts.push({
+                label: this._t('finish', lang),
+                style: "primary",
+                action: "finish_chain"
+            });
+            return opts;
+        }
+
+        if (db.optionRules) {
+            db.optionRules.forEach(rule => {
+                if (activeTags.includes(rule.reqTag)) {
+                    rule.options.forEach(ruleOpt => {
+                        let labelStr = ruleOpt.label[lang] || ruleOpt.label['zh'];
+                        opts.push({
+                            label: labelStr,
+                            style: ruleOpt.style || "normal",
+                            action: ruleOpt.action || "advance_chain",
+                            nextTags: ruleOpt.nextTags || [],
+                            failNextTags: ruleOpt.failNextTags || [], // [Fix] 支援失敗分支
+                            req: ruleOpt.req,
+                            check: ruleOpt.check,
+                            failNext: ruleOpt.failNext
+                        });
+                    });
+                }
+            });
+        }
+
+        if (opts.length === 0) {
+            opts.push({
+                label: this._t('explore_deeper', lang),
+                style: "normal",
+                action: "advance_chain",
+                nextTags: [] 
+            });
+        }
+        return opts;
+    }
+};
+
+// ============================================================
+// 2. 主引擎 (StoryEngine)
+// ============================================================
 window.StoryEngine = {
-    
-    // ============================================================
-    // 1. 初始化與數據加載
-    // ============================================================
     init: function() {
         const gs = window.GlobalState;
         if (!gs) return;
-
-        // A. 確保資料結構存在
-        if (!gs.story) {
-            gs.story = { 
-                energy: 100, 
-                maxEnergy: 100, 
-                dailyExploreCount: 0,
-                deck: [],       
-                discard: [],    
-                tags: [],       // 關鍵：用來記錄劇情標籤 (Flags)
-                history: [],
-                locationName: '冒險者大廳',
-                lastRecTime: Date.now()
-            };
-        }
         
-        // 補齊基礎屬性 (如果還沒有的話，給予預設值以便檢定)
-        if (!gs.stats) gs.stats = { str: 1, dex: 1, int: 1, cha: 1 };
-        
-        ['deck', 'discard', 'tags'].forEach(k => { if(!gs.story[k]) gs.story[k] = []; });
-        
-        this.loadSceneDB();
+        if (!gs.story) gs.story = { energy: 100, deck: [], discard: [], tags: [], cooldowns: [] };
+        if (!Array.isArray(gs.story.deck)) gs.story.deck = [];
+        // [Fix] 確保模式存在
+        if (!gs.settings) gs.settings = { targetLang: 'zh', gameMode: 'adventurer' };
+        if (!gs.settings.gameMode) gs.settings.gameMode = 'adventurer';
 
-        if (gs.story.deck.length === 0 && gs.story.discard.length === 0) {
-            this.reloadDeck();
-        }
-
-        this.checkEnergyLoop();
-        console.log("⚙️ StoryEngine V36 (RPG Core) Ready");
+        this.loadDatabase();
+        this.checkEnergyLoop(); // 假設外部有定義
+        console.log("⚙️ StoryEngine V48.5 (Integrated) Ready");
     },
 
-    // 載入劇本 (維持不變)
-    loadSceneDB: function() {
+    selectOption: function(idx) { this.makeChoice(idx); },
+
+    // [V45 Feature] 統一屬性讀取 (Stats Integration)
+    getPlayerStat: function(key) {
+        const gs = window.GlobalState;
+        if (!gs.attrs) return 0;
+        const direct = gs.attrs[key];
+        if (direct && typeof direct.v === 'number') return direct.v;
+        const upperKey = key.toUpperCase();
+        const mapped = gs.attrs[upperKey];
+        if (mapped && typeof mapped.v === 'number') return mapped.v;
+        return 0;
+    },
+
+    addPlayerStat: function(key, val) {
+        const gs = window.GlobalState;
+        if (!gs.attrs) return;
+        const upperKey = key.toUpperCase();
+        if (gs.attrs[upperKey]) {
+            gs.attrs[upperKey].v += val;
+            if (window.EventBus && window.EVENTS) EventBus.emit(EVENTS.Stats.UPDATED, gs.attrs);
+        }
+    },
+
+    // [V46+V48 Feature] 載入資料庫 (巢狀節點 + 入口過濾)
+    loadDatabase: function() {
         window.StoryData = window.StoryData || {};
-        window.StoryData.scenes = {}; 
+        window.StoryData.pool = [];
         
-        const RANDOM_RATIO = 9; 
-        let fixedCardIds = [];
-        const nestedDB = window.SCENE_DB || {};
+        const gs = window.GlobalState;
+        const currentMode = gs.settings.gameMode || 'adventurer';
+        const nestedDB = window.SCENE_DB || {}; // V48 巢狀資料庫
         
-        Object.keys(nestedDB).forEach(categoryKey => {
-            const categoryScenes = nestedDB[categoryKey];
-            Object.keys(categoryScenes).forEach(sceneId => {
-                const sceneData = categoryScenes[sceneId];
-                sceneData.id = sceneId; 
-                sceneData.category = categoryKey;
-                window.StoryData.scenes[sceneId] = sceneData;
-                fixedCardIds.push(sceneId);
+        // 1. 讀取該模式下的所有根劇本 (Root Nodes)
+        let roots = [];
+        if (Array.isArray(nestedDB[currentMode])) {
+            // 如果是 V48 陣列結構
+            roots = nestedDB[currentMode]; 
+        } else if (nestedDB[currentMode]) {
+            // 如果是 V46 物件結構，轉為陣列並過濾 entry
+            const group = nestedDB[currentMode];
+            Object.values(group).forEach(scene => {
+                if (scene.entry === true) roots.push(scene);
             });
-        });
-
-        window.StoryData.pool = [...fixedCardIds];
-        if (fixedCardIds.length > 0) {
-            const genCount = Math.max(5, fixedCardIds.length * RANDOM_RATIO);
-            for(let i=0; i < genCount; i++) window.StoryData.pool.push('GEN_MODULAR');
         }
+
+        // 2. 混合牌庫 (1 固定 : 1 隨機)
+        window.StoryData.pool = [...roots]; 
+        const genCount = Math.max(2, roots.length); 
+        for(let i=0; i<genCount; i++) window.StoryData.pool.push('GEN_MODULAR');
+        
+        // 3. 洗牌並寫入 Deck
+        gs.story.deck = this.shuffle([...window.StoryData.pool]);
+        console.log(`🎴 牌庫重建: 模式[${currentMode}], 固定入口[${roots.length}], 隨機卡[${genCount}]`);
     },
 
-    // 洗牌 (維持不變)
-    reloadDeck: function() {
-        const gs = window.GlobalState;
-        let pool = [...(window.StoryData.pool || ['GEN_MODULAR', 'GEN_MODULAR'])];
-        for (let i = pool.length - 1; i > 0; i--) {
+    reloadDeck: function() { this.loadDatabase(); },
+
+    shuffle: function(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [pool[i], pool[j]] = [pool[j], pool[i]];
+            [arr[i], arr[j]] = [arr[j], arr[i]];
         }
-        gs.story.deck = pool;
-        gs.story.discard = [];
-        if(window.App) App.saveData();
+        return arr;
     },
 
-    calculateMaxEnergy: function() {
-        const gs = window.GlobalState;
-        const lv = gs.lv || 1;
-        return Math.min(100, 30 + (lv - 1) * 2);
-    },
-
-    // ============================================================
-    // 2. 探索核心 (維持不變)
-    // ============================================================
     explore: function() {
         const gs = window.GlobalState;
         if (!gs.story) this.init();
 
         const cost = 5;
-        const currentEnergy = gs.story.energy || 0;
-
-        if (currentEnergy < cost) return { success: false, msg: `精力不足 (需要 ${cost} 點)` };
-
+        if ((gs.story.energy || 0) < cost) {
+            if(window.act && act.toast) act.toast("❌ 精力不足");
+            return { success: false, msg: "精力不足" }; 
+        }
+        
         gs.story.energy -= cost;
-        if (gs.story.energy < 0) gs.story.energy = 0;
-        gs.story.dailyExploreCount = (gs.story.dailyExploreCount || 0) + 1;
-
         this.drawAndPlay();
-
+        
         if(window.App) App.saveData();
-        return { success: true };
+        return { success: true }; 
     },
 
+    // [Core] 抽卡與播放
     drawAndPlay: function() {
         const gs = window.GlobalState;
-        if (gs.story.deck.length === 0) {
-            if (gs.story.discard.length > 0) {
-                gs.story.deck = [...gs.story.discard];
-                gs.story.discard = [];
-                for (let i = gs.story.deck.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [gs.story.deck[i], gs.story.deck[j]] = [gs.story.deck[j], gs.story.deck[i]];
-                }
-                if (window.act && act.toast) act.toast("🔄 重洗棄牌堆...");
-            } else {
-                this.reloadDeck();
-            }
+        if (gs.story.deck.length === 0) this.reloadDeck();
+        
+        // 20% 洗牌檢測
+        const total = gs.story.deck.length + gs.story.discard.length;
+        if (total > 0 && gs.story.deck.length / total < 0.2) {
+            gs.story.deck = this.shuffle(gs.story.deck.concat(gs.story.discard));
+            gs.story.discard = [];
         }
-        const cardId = gs.story.deck.shift() || 'GEN_MODULAR';
-        window.TempState.currentSceneId = cardId;
 
-        if (cardId === 'GEN_MODULAR') {
-            this.generateModularScene();
+        const cardOrId = gs.story.deck.shift();
+        
+        if (cardOrId === 'GEN_MODULAR') {
+            this.startRandomChain();
+        } else if (typeof cardOrId === 'object') {
+            // V48 巢狀物件
+            this.playSceneNode(cardOrId);
+        } else if (typeof cardOrId === 'string') {
+            // V46 舊版 ID 兼容
+            this.playFixedSceneID(cardOrId);
         } else {
-            this.playFixedScene(cardId);
+            this.drawAndPlay(); // 異常，重抽
         }
     },
 
-    // ============================================================
-    // 3. 場景處理 (🔥 增強：條件過濾)
-    // ============================================================
-    playFixedScene: function(id) {
-        const data = window.StoryData.scenes ? window.StoryData.scenes[id] : null;
-        if (!data) { this.generateSimpleScene(); return; }
+    // [V48 Core] 播放節點 (巢狀結構)
+    playSceneNode: function(node) {
+        if (!node) { this.drawAndPlay(); return; }
+        
+        // 暫存當前節點 (供 investigate 刷新使用)
+        window.TempState.currentSceneNode = node;
 
-        // [New] 過濾選項：檢查 visibleIf 條件
-        // 如果選項設定了 condition: { hasTag: 'xxx' }，只有玩家有該標籤才會顯示
-        const validOptions = (data.options || []).filter(opt => {
-            return this.checkCondition(opt.condition);
+        // 轉換選項
+        const options = (node.options || []).filter(opt => this.checkCondition(opt.condition)).map(opt => ({
+            label: opt.label || opt.text,
+            action: opt.action || 'node_next', 
+            nextScene: opt.nextScene,
+            failScene: opt.failScene,
+            ...opt
+        }));
+
+        // 自動追加離開
+        if (options.length === 0) {
+            options.push({ label: "離開", action: "finish_scene" });
+        }
+
+        this.renderSceneContent({
+            text: node.text,
+            location: "Adventure",
+            options: options
         });
-
-        const sceneForView = {
-            id: id, // 確保 View 有 ID 用於比對
-            text: data.text,
-            location: data.location || "未知區域",
-            options: validOptions.map(opt => ({
-                text: opt.text || opt.label,
-                label: opt.text || opt.label,
-                style: opt.style || 'normal',
-                
-                // 將邏輯數據傳遞給 View (雖然 View 不處理，但可以擴充顯示)
-                req: opt.req,       // 需求 (金幣/精力)
-                check: opt.check,   // 檢定 (屬性)
-                
-                next: opt.next || opt.nextSceneId,
-                action: opt.action
-            }))
-        };
-        
-        window.TempState.storyCard = sceneForView;
     },
 
-    // [New] 條件檢查 Helper
-    checkCondition: function(cond) {
-        if (!cond) return true; // 沒條件 = 通過
+    // --- Chain Logic ---
+    startRandomChain: function() {
         const gs = window.GlobalState;
-        const myTags = gs.story.tags || [];
+        gs.story.chain = { depth: 0, maxDepth: 2, accumulatedTags: [], memory: {} }; // Depth 0->1->2 (End)
+        const scene = StoryGenerator.generate([]);
+        this.renderSceneContent(scene);
+    },
 
-        // 1. 檢查標籤 (hasTag)
-        if (cond.hasTag && !myTags.includes(cond.hasTag)) return false;
+    advanceChain: function(nextTags) {
+        const gs = window.GlobalState;
+        if (!gs.story.chain) return;
+        gs.story.chain.depth++;
+        if (nextTags) gs.story.chain.accumulatedTags = gs.story.chain.accumulatedTags.concat(nextTags);
         
-        // 2. 檢查反向標籤 (noTag)
-        if (cond.noTag && myTags.includes(cond.noTag)) return false;
-
-        // 3. 檢查屬性 (例如: str >= 5)
-        if (cond.stat) {
-            const playerVal = (gs.stats && gs.stats[cond.stat.key]) || 0;
-            if (playerVal < cond.stat.val) return false;
-        }
-
-        return true;
+        const scene = StoryGenerator.generate(nextTags);
+        this.renderSceneContent(scene);
     },
 
-    // 生成模組化場景 (V34 高級生成)
-    generateModularScene: function() {
-        const rules = window.StoryData.learningRules;
-        // 如果沒有規則庫，降級使用簡單生成
-        if (!rules || !rules.patterns) {
-            this.generateSimpleScene();
-            return;
-        }
-
-        // ... (保留 V34 的語言混合邏輯) ...
-        const settings = window.GlobalState.settings || {};
-        let lang = settings.targetLang || 'mix';
-        if (lang === 'mix') {
-            const pool = ['zh', 'en', 'jp']; 
-            lang = pool[Math.floor(Math.random() * pool.length)];
-        }
-
-        // 簡單模擬文字 (實際應從 rules 組合)
-        const text = `(語言: ${lang}) 你正在探索這片未知的領域... [模組化生成系統運作中]`;
-        
-        const dynamicOptions = [
-            { label: "繼續前進", style: "correct", action: "explore" },
-            { label: "觀察四周", style: "normal", action: "explore" },
-            { label: "返回", style: "danger", action: "back" }
-        ];
-
-        window.TempState.storyCard = {
-            text: text,
-            location: "隨機生成的迷宮",
-            options: dynamicOptions
-        };
+    finishChain: function() {
+        window.GlobalState.story.chain = null;
+        this.showLocationIdle();
     },
 
-generateSimpleScene: function() {
-        // 這是兜底用的簡單場景
-        const scenes = [
-            {
-                text: "你在森林深處發現了一個發光的祭壇。",
-                location: "迷霧森林",
-                options: [
-                    { label: "獻上金幣 (10G)", req: { gold: 10 }, rewards: { tags: ['blessed'] }, style: "correct", next: "scene_blessing" }, 
-                    { label: "仔細觀察", check: { stat: 'int', val: 5 }, style: "normal", action: "explore" },
-                    { label: "無視離開", style: "ghost", action: "back" }
-                ]
-            }
-        ];
-        const randomScene = scenes[Math.floor(Math.random() * scenes.length)];
-        // 給予一個虛擬 ID 避免 View 比對出錯
-        randomScene.id = 'gen_' + Date.now(); 
-        window.TempState.storyCard = randomScene;
+   // [V46 Compat] 舊版 ID 播放 (相容性保留)
+    playFixedSceneID: function(id) {
+        // 為了支援舊邏輯，如果你還沒完全轉移到 V48
+        const data = window.StoryData.scenes ? window.StoryData.scenes[id] : null;
+        if(data) this.playSceneNode(data); // 嘗試轉為 node 播放
+        else this.drawAndPlay();
     },
 
-    // ============================================================
-    // 4. 選項執行 (🔥 核心增強：檢定、獎勵、標籤)
-    // ============================================================
-    makeChoice: function(optionIndex) {
+    // [V48.5 Feature] 互動與鎖定
+    makeChoice: function(input) {
+        // 1. 防連點鎖定
+        if (window.TempState.isProcessing) return;
+
         const card = window.TempState.storyCard;
-        // 注意：這裡是去拿 TempState 裡的，但最好是對照原始 DB 資料以策安全
-        // 為了簡單，我們直接用 TempState，但要小心 options 索引對應問題
-        if (!card || !card.options || !card.options[optionIndex]) return;
-        
-        // 這裡需要一個技巧：因為 playFixedScene 過濾了選項，
-        // 所以 View 傳回來的 index 是「過濾後」的 index。
-        // 我們直接用 card.options[optionIndex] 是正確的，因為 TempState 存的就是過濾後的。
-        const opt = card.options[optionIndex];
+        const opt = (typeof input === 'number') ? card.options[input] : input;
+        if (!opt) return;
+
         const gs = window.GlobalState;
 
-        // 1. [Check] 處理需求 (Requirement)
+        // 2. 消耗檢查
         if (opt.req) {
-            if (opt.req.gold && (gs.gold || 0) < opt.req.gold) {
-                if(window.act && act.toast) act.toast(`❌ 金幣不足！需要 ${opt.req.gold}G`);
-                return; // 阻止執行
+            if ((opt.req.gold && (gs.gold||0) < opt.req.gold) || (opt.req.energy && (gs.story.energy||0) < opt.req.energy)) {
+                 if(window.act && act.toast) act.toast("❌ 條件不足"); return;
             }
-            if (opt.req.energy && (gs.story.energy || 0) < opt.req.energy) {
-                if(window.act && act.toast) act.toast(`❌ 精力不足！需要 ${opt.req.energy}⚡`);
-                return;
-            }
-            
-            // 扣除資源
             if (opt.req.gold) gs.gold -= opt.req.gold;
             if (opt.req.energy) gs.story.energy -= opt.req.energy;
         }
 
-        // 2. [Check] 處理屬性檢定 (Roll Logic)
-        let checkPassed = true;
+        // 3. 鎖定 UI
+        window.TempState.isProcessing = true;
+        if(window.storyView && window.storyView.setButtonsDisabled) {
+            window.storyView.setButtonsDisabled(true);
+        }
+
+        // 4. 檢定邏輯
+        let passed = true;
         if (opt.check) {
-            const statKey = opt.check.stat || 'str'; // 預設力量
-            const targetVal = opt.check.val || 10;
-            const playerStat = (gs.stats && gs.stats[statKey]) ? gs.stats[statKey] : 0;
-            
-            // D20 系統：1~20隨機數 + 屬性值
+            const playerStat = this.getPlayerStat(opt.check.stat);
             const roll = Math.floor(Math.random() * 20) + 1;
-            const total = roll + playerStat;
+            passed = (roll + playerStat >= opt.check.val);
             
-            checkPassed = (total >= targetVal);
-
-            if(window.act && act.toast) {
-                const resultText = checkPassed ? "成功" : "失敗";
-                const color = checkPassed ? "#4caf50" : "#f44336";
-                act.toast(`🎲 ${statKey.toUpperCase()} 檢定: ${roll}+${playerStat}=${total} (目標${targetVal}) <span style="color:${color}; font-weight:bold;">[${resultText}]</span>`);
-            }
+            if (window.storyView) window.storyView.appendInlineCheckResult(opt.check.stat, roll + playerStat, passed);
             
-            // 如果檢定失敗，且選項有定義 failNext (失敗跳轉)，則改變路徑
-            if (!checkPassed && opt.failNext) {
-                this.finishScene();
-                this.playFixedScene(opt.failNext);
-                return; // 中斷，不再發放獎勵
-            }
-        }
-
-        // 3. [Rewards] 發放獎勵 (只有檢定通過，或沒檢定時才發)
-        if (checkPassed && opt.rewards) {
-            this.distributeRewards(opt.rewards);
-        }
-
-        // 4. [System] 執行跳轉
-        this.finishScene(); // 將當前卡片移入棄牌堆
-
-        if (opt.next) {
-            this.playFixedScene(opt.next);
-        } else if (opt.action === 'back' || opt.action === 'main') {
-            if(window.act.navigate) window.act.navigate('main');
+            // 延遲以顯示動畫
+            setTimeout(() => {
+                this.executeRouting(opt, passed);
+                // 解鎖在 executeRouting 後處理 (或切換場景時自動解鎖)
+            }, 1200);
         } else {
-            // 預設行為：繼續探索
-            this.drawAndPlay();
+            // 無檢定，直接執行
+            this.executeRouting(opt, true);
         }
-        
+    },
+
+    // [V48.5 Core] 統一路由與獎勵
+    executeRouting: function(opt, passed) {
+        // 1. 發放獎勵
+        if (passed && opt.rewards) this.distributeRewards(opt.rewards);
+
+        // 2. 解鎖 UI (為了讓下一個畫面能點擊，這裡先解鎖狀態)
+        window.TempState.isProcessing = false;
+
+        // 3. 路由分支
+        // A. 巢狀節點跳轉
+        if (opt.action === 'node_next') {
+            const target = passed ? opt.nextScene : opt.failScene;
+            if (target) this.playSceneNode(target);
+            else this.finishChain();
+            return;
+        }
+
+        // B. 隨機劇本鏈
+        if (opt.action === 'advance_chain') {
+            if (!passed && opt.failNextTags) this.advanceChain(opt.failNextTags);
+            else this.advanceChain(opt.nextTags);
+            return;
+        }
+
+        // C. 原地刷新 (密室調查)
+        if (opt.action === 'investigate') {
+            if (opt.result && window.act) act.toast(opt.result);
+            this.playSceneNode(window.TempState.currentSceneNode); // 重新渲染當前節點
+            return;
+        }
+
+        // D. 結束
+        if (opt.action === 'finish_scene' || opt.action === 'finish_chain') {
+            this.finishChain();
+            return;
+        }
+
+        // Default
+        this.finishChain();
         if(window.App) App.saveData();
     },
 
-    // [New] 獎勵發放 Helper
+    // [Fix] 修復 distributeRewards 報錯
     distributeRewards: function(rewards) {
         const gs = window.GlobalState;
+        if (!gs) return;
         
-        // A. 金幣/精力
-        if (rewards.gold) {
-            gs.gold = (gs.gold || 0) + rewards.gold;
-            act.toast(`💰 獲得 ${rewards.gold} 金幣`);
-        }
-        if (rewards.energy) {
-            gs.story.energy = Math.min(this.calculateMaxEnergy(), (gs.story.energy || 0) + rewards.energy);
-            act.toast(`⚡ 恢復 ${rewards.energy} 精力`);
-        }
+        // 防呆初始化
+        if (!gs.story) gs.story = { energy: 100, tags: [] };
+        if (!Array.isArray(gs.story.tags)) gs.story.tags = [];
 
-        // B. 標籤 (Tags)
+        if (rewards.gold) gs.gold = (gs.gold || 0) + rewards.gold;
+        if (rewards.energy) gs.story.energy = Math.min(100, (gs.story.energy || 0) + rewards.energy);
+        if (rewards.stats) Object.keys(rewards.stats).forEach(k => this.addPlayerStat(k, rewards.stats[k]));
+        
         if (rewards.tags) {
             rewards.tags.forEach(tag => {
-                if (!gs.story.tags.includes(tag)) {
-                    gs.story.tags.push(tag);
-                    act.toast(`🏷️ 獲得標籤: [${tag}]`);
-                }
-            });
-        }
-        if (rewards.removeTags) {
-            rewards.removeTags.forEach(tag => {
-                const idx = gs.story.tags.indexOf(tag);
-                if (idx > -1) gs.story.tags.splice(idx, 1);
-            });
-        }
-
-        // C. 道具 (Items) - 串接 ShopEngine 或直接操作
-        if (rewards.items) {
-            rewards.items.forEach(item => {
-                // 嘗試使用 ShopEngine 加入背包 (如果有的話)
-                if (window.ShopEngine && ShopEngine.addItemToBag) {
-                    ShopEngine.addItemToBag(item.id, item.count || 1);
-                    act.toast(`🎒 獲得道具: ${item.id} x${item.count||1}`);
-                } else {
-                    // Fallback: 如果沒有 ShopEngine，簡單存入
-                    if (!gs.bag) gs.bag = [];
-                    gs.bag.push({ id: item.id, count: item.count || 1 });
-                }
+                if (!gs.story.tags.includes(tag)) gs.story.tags.push(tag);
             });
         }
     },
-
-    finishScene: function() {
-        const gs = window.GlobalState;
-        const currentId = window.TempState.currentSceneId;
-        if (currentId && currentId !== 'GEN_MODULAR' && !String(currentId).startsWith('gen_')) {
-            gs.story.discard.push(currentId);
+    
+    // [New Helper] 通知 View 鎖定按鈕
+    disableButtons: function(disabled) {
+        if (window.storyView && window.storyView.setButtonsDisabled) {
+            window.storyView.setButtonsDisabled(disabled);
         }
+    },
+    
+
+    finishSceneDiscard: function() {
+        const currentId = window.TempState.currentSceneId;
+        if (currentId && !String(currentId).startsWith('gen_') && currentId !== 'GEN_MODULAR') {
+            window.GlobalState.story.discard.push(currentId);
+        }
+    },
+
+    renderSceneContent: function(s) {
+        window.TempState.storyCard = s;
+        window.TempState.currentSceneId = s.id;
+        if (s.location) window.TempState.storyLocation = s.location;
+        if (window.storyView && window.storyView.render) window.storyView.render();
+    },
+
+    showLocationIdle: function() {
+        window.TempState.storyCard = null;
+        if (window.storyView && window.storyView.render) window.storyView.render();
+    },
+
+    checkCondition: function(cond) {
+        if (!cond) return true;
+        const gs = window.GlobalState;
+        const myTags = gs.story.tags || [];
+        if (cond.hasTag && !myTags.includes(cond.hasTag)) return false;
+        if (cond.noTag && myTags.includes(cond.noTag)) return false;
+        if (cond.stat) {
+            // [Fix] 使用 getPlayerStat
+            const playerVal = this.getPlayerStat(cond.stat.key);
+            if (playerVal < cond.stat.val) return false;
+        }
+        return true;
+    },
+
+    isCooldown: function(id) {
+        return window.GlobalState.story.cooldowns.some(c => c.id === id);
+    },
+    addCooldown: function(id, turns) {
+        window.GlobalState.story.cooldowns.push({ id: id, turns: turns });
+    },
+    tickCooldowns: function() {
+        const cs = window.GlobalState.story.cooldowns;
+        cs.forEach(c => c.turns--);
+        window.GlobalState.story.cooldowns = cs.filter(c => c.turns > 0);
+    },
+    
+    checkEnergyLoop: function() {
+        const recover = () => {
+            const gs = window.GlobalState;
+            if (!gs || !gs.story) return;
+            const now = Date.now();
+            const max = this.calculateMaxEnergy();
+            if (!gs.story.lastRecTime) gs.story.lastRecTime = now;
+            
+            const elapsed = now - gs.story.lastRecTime;
+            const interval = 60000; 
+            if (elapsed >= interval) {
+                const points = Math.floor(elapsed / interval);
+                if (points > 0 && (gs.story.energy < max)) {
+                    gs.story.energy = Math.min(max, gs.story.energy + points);
+                    gs.story.lastRecTime = now - (elapsed % interval);
+                    if (window.view && view.updateHUD) view.updateHUD(gs);
+                } else {
+                    if (gs.story.energy >= max) gs.story.lastRecTime = now;
+                }
+            }
+        };
+        recover();
+        if (window._energyTimer) clearInterval(window._energyTimer);
+        window._energyTimer = setInterval(recover, 10000); 
     },
 
     setLang: function(val) {
@@ -377,34 +535,9 @@ generateSimpleScene: function() {
         gs.settings.targetLang = val;
         if(window.App) App.saveData();
     },
-
-    checkEnergyLoop: function() {
-        const recover = () => {
-            const gs = window.GlobalState;
-            if (!gs || !gs.story) return;
-            
-            const now = Date.now();
-            const max = this.calculateMaxEnergy();
-            
-            if (!gs.story.lastRecTime) gs.story.lastRecTime = now;
-            
-            const elapsed = now - gs.story.lastRecTime;
-            const interval = 60000; 
-            
-            if (elapsed >= interval) {
-                const points = Math.floor(elapsed / interval);
-                if (points > 0 && gs.story.energy < max) {
-                    gs.story.energy = Math.min(max, gs.story.energy + points);
-                    gs.story.lastRecTime = now - (elapsed % interval);
-                    
-                    if (window.EventBus) window.EventBus.emit(window.EVENTS.Story.UPDATED);
-                    if (window.App) App.saveData();
-                } else {
-                    gs.story.lastRecTime = now;
-                }
-            }
-        };
-        recover();
-        setInterval(recover, 10000); 
-    }
+    calculateMaxEnergy: function() { return 100; }
 };
+
+if (typeof window.act === 'undefined') window.act = {};
+
+console.log("✅ StoryEngine V44.0 (Stable) Loaded.");
