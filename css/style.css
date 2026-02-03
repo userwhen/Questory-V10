@@ -104,15 +104,21 @@ html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
 }
 #layer-full.active { opacity: 1; pointer-events: auto; }
 
-/* 頁面通用類別 */
+/* 頁面容器基礎樣式 */
 .page {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    display: none; flex-direction: column;
-    background-color: var(--bg-main);
-    padding: 10px; /* 預設間距 */
-    box-sizing: border-box; overflow: hidden;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.15s ease-out; /* 極短的過渡，消除生硬感 */
+    width: 100%;
+    height: 100%;
+    overflow: hidden; /* 防止頁面本身捲動，讓內層捲動 */
 }
-.page.active { display: flex; animation: fadeIn 0.2s; }
+
+/* 激活狀態 */
+.page.active {
+    opacity: 1;
+    /* display 由 Router JS 控制 */
+}
 
 /* 全螢幕頁面特規 (無間距) */
 #page-story, #page-avatar { padding: 0 !important; background: #000; }

@@ -532,38 +532,68 @@ stepWizard: (currStep, totalSteps) => {
                     ${badges} ${skillIcons} ${pinHtml}
                 </div>`;
             
-            // --- C. 進度條 ([修正 3] 始終顯示，計次含數字) ---
-            let progressRow = '';
-            if (!isHistory) { 
-                if (t.type === 'count') {
-                    progressRow = `<div style="margin-top:6px; width:100%;">${ui.progress.bar(t.curr, t.target)}</div>`;
-                } else if (t.subs && t.subs.length > 0) {
-                    const doneCount = t.subs.filter(s => s.done).length;
-                    progressRow = ui.progress.stepWizard(doneCount, t.subs.length);
-                }
-            }
-            
-            const rightHtml = isHistory ? '' : ui.component.btn({ label:'⚙️', theme:'ghost', action:`event.stopPropagation(); act.editTask('${t.id}')`, style:'padding:0 5px; color:#999; flex-shrink:0;' });
+            // --- C. 進度條 (含防護罩) ---
+    let progressRow = '';
+    if (!isHistory) { 
+        let innerContent = '';
+        if (t.type === 'count') {
+            innerContent = ui.progress.bar(t.curr, t.target);
+        } else if (t.subs && t.subs.length > 0) {
+            const doneCount = t.subs.filter(s => s.done).length;
+            innerContent = ui.progress.stepWizard(doneCount, t.subs.length);
+        }
+        
+        if (innerContent) {
+            progressRow = `<div style="margin-top:6px; width:100%; cursor:default;" onclick="event.stopPropagation();">${innerContent}</div>`;
+        }
+    }
+    
+    // --- [關鍵修復] rightHtml 定義在這裡，確保不被任何 if 包住 ---
+    const rightHtml = isHistory 
+        ? '' 
+        : ui.component.btn({ 
+            label:'⚙️', 
+            theme:'ghost', 
+            action:`event.stopPropagation(); act.editTask('${t.id}')`, // 防止冒泡
+            style:'padding:0 5px; color:#999; flex-shrink:0;' 
+          });
 
-            // --- D. 展開區 (子任務) ---
-            let subtaskHtml = '';
-            if (t.subs && t.subs.length > 0) {
-                subtaskHtml = `<div style="margin-top:8px; border-top:1px dashed #eee; padding-top:8px;">`;
-                t.subs.forEach((sub, idx) => {
-                    const isSubDone = sub.done;
-                    const textStyle = isSubDone ? 'text-decoration:line-through; color:#aaa;' : 'color:#555;';
-                    // [修正 4] stopPropagation 防止點擊子任務時觸發卡片收縮
-                    subtaskHtml += `
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer; padding:4px 0;" 
-                         onclick="event.stopPropagation(); act.toggleSubtask('${t.id}', ${idx})">
-                        <div style="width:18px; height:18px; border:1px solid ${isSubDone?'#4caf50':'#999'}; background:${isSubDone?'#4caf50':'#fff'}; border-radius:4px; display:flex; align-items:center; justify-content:center; transition:all 0.2s;">
-                            ${isSubDone ? '<span style="color:#fff; font-size:12px; font-weight:bold;">✓</span>' : ''}
-                        </div>
-                        <div style="font-size:0.9rem; ${textStyle} flex:1;">${sub.text}</div>
-                    </div>`;
-                });
-                subtaskHtml += `</div>`;
-            }
+    // --- D. 展開區 (子任務/計數器) ---
+    let subtaskHtml = '';
+    
+    // 互斥顯示：如果是計次，顯示+1按鈕；否則顯示子任務
+    if (t.type === 'count') {
+        // 計次模式的操作區
+        subtaskHtml = `
+        <div style="margin-top:8px; border-top:1px dashed #eee; padding-top:8px; display:flex; justify-content:space-between; align-items:center; cursor:default;" onclick="event.stopPropagation();">
+            <span style="font-weight:bold; color:#f57f17;">目前進度: ${t.curr} / ${t.target}</span>
+            <button class="u-btn u-btn-sm u-btn-correct" onclick="event.stopPropagation(); act.toggleTask('${t.id}')">
+                +1 次數
+            </button>
+        </div>`;
+    } 
+    else if (t.subs && t.subs.length > 0) {
+        // 子任務模式的操作區
+        subtaskHtml = `<div style="margin-top:8px; border-top:1px dashed #eee; padding-top:8px; cursor:default;" onclick="event.stopPropagation();">`;
+        t.subs.forEach((sub, idx) => {
+            const isSubDone = sub.done;
+            const textStyle = isSubDone ? 'text-decoration:line-through; color:#aaa;' : 'color:#555;';
+            
+            subtaskHtml += `
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer; padding:6px 4px; border-radius:4px; transition:background 0.2s;" 
+                 onmouseover="this.style.background='rgba(0,0,0,0.05)'"
+                 onmouseout="this.style.background='transparent'"
+                 onclick="event.stopPropagation(); act.toggleSubtask('${t.id}', ${idx})">
+                
+                <div style="width:18px; height:18px; border:1px solid ${isSubDone?'#4caf50':'#999'}; background:${isSubDone?'#4caf50':'#fff'}; border-radius:4px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    ${isSubDone ? '<span style="color:#fff; font-size:12px; font-weight:bold;">✓</span>' : ''}
+                </div>
+                
+                <div style="font-size:0.9rem; ${textStyle} flex:1; user-select:none;">${sub.text}</div>
+            </div>`;
+        });
+        subtaskHtml += `</div>`;
+    }
 
             const dateValue = isHistory ? (t.finishTime || '未知') : (t.deadline || '');
             const dateDisplay = dateValue ? `<div style="text-align:right; font-size:0.8rem; color:#aaa; margin-top:8px;">📅 ${dateValue}</div>` : '';
@@ -749,9 +779,19 @@ if (window.EventBus) {
     });
 };
 
-view.toggleCardExpand = (id) => {
-    const el = document.getElementById(`expand-${id}`);
-    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+view.toggleCardExpand = function(id) {
+    // 1. 修改狀態 (State)
+    if (window.TempState.expandedTaskId === id) {
+        window.TempState.expandedTaskId = null; // 如果已經展開，就收起
+    } else {
+        window.TempState.expandedTaskId = id;   // 否則展開
+    }
+
+    // 2. 驅動視圖更新 (Render)
+    // 這會觸發 taskView.render()，它會根據 expandedTaskId 決定渲染出來的 HTML 是開還是關
+    if (window.taskView && taskView.render) {
+        taskView.render();
+    }
 };
 
 view.showToast = (msg) => {
@@ -939,9 +979,11 @@ view.renderNavbar = () => {
     }
 
     const navItems = [
-        { id: 'task', icon: '📋', label: '任務' },
-        { id: 'main', icon: '🏠', label: '大廳' },
-        { id: 'shop', icon: '🛒', label: '商店' }
+        // [修改] 將 onclick 改為 act.goToTaskRoot()
+        // 注意：只有任務按鈕需要改，其他保持 act.navigate
+        { id: 'task', icon: '📋', label: '任務', action: "act.goToTaskRoot()" }, 
+        { id: 'main', icon: '🏠', label: '大廳', action: "act.navigate('main')" },
+        { id: 'shop', icon: '🛒', label: '商店', action: "act.navigate('shop')" }
     ];
 
     const activePage = document.querySelector('.page.active');
@@ -949,8 +991,9 @@ view.renderNavbar = () => {
 
     container.innerHTML = navItems.map(item => {
         const isActive = item.id === activeId ? 'active' : '';
+        // 使用 item.action
         return `
-            <button class="nav-item ${isActive}" id="nav-${item.id}" onclick="act.navigate('${item.id}')">
+            <button class="nav-item ${isActive}" id="nav-${item.id}" onclick="${item.action}">
                 <span style="font-size: 1.4rem; display: block;">${item.icon}</span> 
                 <span style="font-size: 0.7rem; font-weight: bold;">${item.label}</span>
             </button>`;

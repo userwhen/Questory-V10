@@ -1,0 +1,124 @@
+/* js/modules/sys_router.js - V2.0 Integrated Router */
+/* 負責：頁面切換、全螢幕判斷、歷史堆疊、Navbar 狀態連動 */
+
+window.Router = {
+    // [配置] 定義所有頁面的屬性
+    // divId: HTML 中的 ID
+    // navId: Navbar 按鈕的 ID (沒有則填 null)
+    // fullscreen: 是否為全螢幕 (隱藏 Navbar, 顯示 layer-full)
+    config: {
+        // --- 主介面 ---
+        'main':     { divId: 'page-main',     navId: 'nav-main', fullscreen: false },
+        'task':     { divId: 'page-task',     navId: 'nav-task', fullscreen: false },
+        'shop':     { divId: 'page-shop',     navId: 'nav-shop', fullscreen: false },
+        'stats':    { divId: 'page-stats',    navId: 'nav-stats', fullscreen: false }, // 假設屬性頁有按鈕
+        'settings': { divId: 'page-settings', navId: null,       fullscreen: false },
+        
+        // --- 子頁面 ---
+        'history':   { divId: 'page-history',   navId: null, fullscreen: false },
+        'milestone': { divId: 'page-milestone', navId: null, fullscreen: false },
+        'quick':     { divId: 'page-quick',     navId: null, fullscreen: false }, // 假設有
+
+        // --- 全螢幕層 (Story / Avatar) ---
+        'story':  { divId: 'page-story',  navId: null, fullscreen: true },
+        'avatar': { divId: 'page-avatar', navId: null, fullscreen: true }
+    },
+
+    stack: [], // 歷史紀錄
+
+    init: function() {
+        // 綁定原生返回鍵
+        window.onpopstate = () => this.back();
+        console.log("🚀 Router V2.0 Initialized");
+    },
+
+    // [核心] 跳轉邏輯 (取代原本 Core.js 的 act.navigate)
+    go: function(pageId) {
+        // 1. 容錯處理 (加上前綴兼容舊寫法)
+        const cleanId = pageId.replace('page-', '');
+        const conf = this.config[cleanId];
+        
+        if (!conf) {
+            console.error(`Router: Undefined page [${cleanId}]`);
+            return;
+        }
+
+        console.log(`[Router] Go -> ${cleanId}`);
+
+        // 2. 處理頁面顯示/隱藏
+        // 遍歷 Config 中所有定義的頁面 ID
+        Object.values(this.config).forEach(p => {
+            const el = document.getElementById(p.divId);
+            if (el) {
+                el.classList.remove('active');
+                el.style.display = 'none'; // 強制隱藏
+            }
+        });
+
+        // 顯示目標頁面
+        const targetEl = document.getElementById(conf.divId);
+        if (targetEl) {
+            // 全螢幕模式通常用 flex 置中，一般模式用 block
+            targetEl.style.display = conf.fullscreen ? 'flex' : 'block';
+            // 微小延遲以觸發 CSS Transition (如果有的話)
+            setTimeout(() => targetEl.classList.add('active'), 20);
+        }
+
+        // 3. 處理全螢幕層 (Layer-Full)
+        // 舊版邏輯是判斷 DOM 包含關係，這裡直接用 Config 判斷更高效
+        const layerFull = document.getElementById('layer-full');
+        if (layerFull) {
+            if (conf.fullscreen) {
+                layerFull.style.display = 'block';
+                layerFull.classList.add('active');
+            } else {
+                layerFull.style.display = 'none';
+                layerFull.classList.remove('active');
+            }
+        }
+
+        // 4. 處理 Navbar 顯示與高亮
+        const navbar = document.getElementById('navbar');
+        if (navbar) {
+            if (conf.fullscreen) {
+                navbar.style.display = 'none';
+            } else {
+                navbar.style.display = 'flex';
+                // 移除所有高亮
+                document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+                // 新增高亮
+                if (conf.navId) {
+                    const btn = document.getElementById(conf.navId);
+                    if (btn) btn.classList.add('active');
+                }
+            }
+        }
+
+        // 5. 關閉干擾視窗 (Overlay / Modals)
+        if (window.act.closeModal) {
+            window.act.closeModal('overlay');
+            window.act.closeModal('system');
+        }
+
+        // 6. 堆疊管理
+        if (this.stack[this.stack.length - 1] !== cleanId) {
+            this.stack.push(cleanId);
+        }
+
+        // 7. 更新全域狀態並發送事件
+        if (window.TempState) window.TempState.currentView = cleanId;
+        if (window.EventBus) window.EventBus.emit(window.EVENTS.System.NAVIGATE, cleanId);
+    },
+
+    back: function() {
+        if (this.stack.length <= 1) return;
+        this.stack.pop(); // 移除當前
+        const prev = this.stack[this.stack.length - 1]; // 取得上一個
+        this.go(prev); // 重新導向
+    }
+};
+
+// [綁定接口] 讓舊代碼呼叫 act.navigate 時自動轉發給 Router
+window.act = window.act || {};
+window.act.navigate = (id) => Router.go(id);
+window.act.back = () => Router.back();

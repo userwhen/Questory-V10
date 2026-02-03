@@ -1,165 +1,255 @@
-/* js/modules/task_controller.js - V36.Final (Merged) */
+/* js/modules/task_controller.js - V40.5 Fixed (Nav Nuke & Cat Guard) */
 window.TaskController = {
     init: function() {
         const E = window.EVENTS;
         if (!window.EventBus || !E) return;
 
-        // A. 橋接 act (對外接口)
         Object.assign(window.act, {
-            // 基本 CRUD
-            submitTask: function() {
-    // 1. 取得正在編輯的資料
-    const taskData = window.TempState.editingTask;
-
-    // 2. [新增] 檢查標題是否存在且不為空白
-    if (!taskData || !taskData.title || taskData.title.trim() === "") {
-        if (window.act && window.act.toast) {
-            window.act.toast("⚠️ 請輸入任務名稱！");
-        } else {
-            alert("⚠️ 請輸入任務名稱！");
-        }
-        if (navigator.vibrate) navigator.vibrate(200);
-        return; // ⛔ 阻擋
-    }
-
-    // 3. [補回] 原本的存檔邏輯 (如果被刪掉的話要補回來，否則任務無法儲存)
-    // 假設您的 TaskEngine 負責處理資料，這裡需要呼叫它
-    if (window.TaskEngine) {
-        // 判斷是新增還是修改
-        if (taskData.id) {
-            window.TaskEngine.updateTask(taskData);
-            window.act.toast("✅ 任務已更新");
-        } else {
-            window.TaskEngine.addTask(taskData);
-            window.act.toast("✅ 任務已新增");
-        }
-    } else {
-        // 如果沒有 TaskEngine，使用 GlobalState 直接操作的備案
-        const gs = window.GlobalState;
-        if (taskData.id) {
-            const idx = gs.tasks.findIndex(t => t.id === taskData.id);
-            if (idx !== -1) gs.tasks[idx] = JSON.parse(JSON.stringify(taskData));
-        } else {
-            taskData.id = Date.now().toString(36);
-            taskData.createdAt = new Date().toISOString();
-            gs.tasks.push(JSON.parse(JSON.stringify(taskData)));
-        }
-        if (window.App && window.App.saveData) window.App.saveData();
-    }
-
-    // 4. 關閉視窗並重繪
-    ui.modal.close('m-overlay');
-    if (window.taskView) window.taskView.render();
-
-},
             
-            // [修正] 使用 sys.confirm 取代原生 confirm
-            deleteTask: (id) => {
-                sys.confirm('確定要刪除這個任務嗎？此操作無法復原。', () => {
-                    const gs = window.GlobalState;
-                    const idx = gs.tasks.findIndex(t => t.id === id);
-                    if (idx !== -1) {
-                        gs.tasks.splice(idx, 1);
-                        App.saveData(); 
-                        ui.modal.close('m-overlay'); // 關閉可能開啟的編輯視窗
-                        if (window.taskView) taskView.render(false);
-                        act.toast('🗑️ 任務已刪除');
-                    }
-                });
+            goToTaskRoot: () => {
+                // 1. 強制重置 Tab 狀態
+                window.TempState.taskTab = 'list';
+                
+                // 2. 執行導航
+                // 如果已經在 task 頁面，act.navigate 內的 Router 可能會因為頁面 ID 相同而不動作
+                // 所以我們這裡手動判斷：
+                if (window.TempState.currentView === 'task') {
+                    // 如果已經在任務頁，直接強制刷新視圖
+                    refreshPage();
+                } else {
+                    // 如果在其他頁面，走正常導航流程
+                    window.act.navigate('task');
+                }
+            },
+			// --- 核心 CRUD ---
+			editTask: (id) => {
+                // 如果 id 是 null (代表點擊了 FAB 新增)
+                // 強制清空暫存的編輯物件，確保 View 重新初始化預設值
+                if (id === null) {
+                    window.TempState.editingTask = null; 
+                }
+                // 發送事件
+                window.EventBus.emit(E.Task.EDIT_MODE, { taskId: id });
             },
             
-            resolveTask: (id) => TaskEngine.resolveTask(id),
+            submitTask: () => {
+                const temp = window.TempState.editingTask;
+                if (!temp || !temp.title) return window.act.toast("⚠️ 標題必填");
+                if (temp.id) {
+                    TaskEngine.updateTask(temp);
+                    window.act.toast("✅ 已更新");
+                } else {
+                    TaskEngine.addTask(temp);
+                    window.act.toast("✅ 已新增");
+                }
+                if(window.act.closeModal) window.act.closeModal('overlay');
+            },
+
+            deleteTask: (id) => {
+                const doDelete = () => {
+                    TaskEngine.deleteTask(id);
+                    if(window.act.closeModal) window.act.closeModal('overlay');
+                    window.act.toast('🗑️ 已刪除');
+                };
+                if(window.sys && sys.confirm) sys.confirm('確定刪除？', doDelete);
+                else if(confirm('確定刪除？')) doDelete();
+            },
+
+            // --- 狀態操作 ---
             toggleTask: (id) => {
+                // [新增] 1. 樂觀更新：立刻改變視覺樣式 (不等待 Engine)
+                const cardEl = document.getElementById(`task-card-${id}`);
+                const checkEl = document.getElementById(`check-btn-${id}`);
+                
+                if (cardEl) {
+                    // 加上完成的 class (假設 CSS 有寫 .done 樣式)
+                    cardEl.classList.toggle('task-done'); 
+                    cardEl.style.opacity = '0.5'; // 暫時變淡，讓使用者知道有點到
+                }
+                if (checkEl) {
+                    checkEl.innerHTML = '⏳'; // 變成沙漏或勾勾
+                }
+
+                // 2. 正常呼叫 Engine (這會觸發真正的數據運算和存檔)
+                // 運算完後 EventBus 會觸發 task:updated，接著 render() 會把正確的最終狀態畫上去
                 const t = window.GlobalState.tasks.find(x => x.id === id);
                 if (!t) return;
                 
-                // 如果是計次任務，且尚未達成目標，點擊 Checkbox 視為 "計次+1"
-                if (t.type === 'count' && !t.done) {
-                    act.incrementTask(id);
-                } else {
-                    // 否則 (一般任務 或 計次已滿想取消)，視為 "切換完成狀態"
-                    TaskEngine.resolveTask(id);
+                // 為了讓動畫跑一下，可以稍微延遲真正的刷新 (選配)
+                setTimeout(() => {
+                    if (t.type === 'count' && !t.done) TaskEngine.incrementTask(id);
+                    else TaskEngine.resolveTask(id);
+                }, 100); // 100ms 延遲讓視覺過渡更順
+            },
+
+            resolveTask: (id) => { TaskEngine.resolveTask(id); },
+            toggleSubtask: (taskId, subIdx) => TaskEngine.toggleSubtask(taskId, subIdx),
+
+            copyTask: (id) => {
+                const t = window.GlobalState.tasks.find(x => x.id === id);
+                if(t) {
+                    const copy = JSON.parse(JSON.stringify(t));
+                    delete copy.id; copy.title += " (副本)";
+                    TaskEngine.addTask(copy);
+                    window.act.toast("已複製");
                 }
             },
-            editTask: (id) => EventBus.emit(E.Task.EDIT_MODE, { taskId: id }),
-            copyTask: (id) => TaskEngine.copyTask(id),
-            
-            // 子任務與計次
+
+            togglePin: () => {
+                if(window.TempState.editingTask) {
+                    window.TempState.editingTask.pinned = !window.TempState.editingTask.pinned;
+                    window.EventBus.emit(E.Task.FORM_UPDATE);
+                }
+            },
+
+            // --- 編輯預覽 ---
+            updateEditField: (field, val) => {
+                if (!window.TempState.editingTask) return;
+                window.TempState.editingTask[field] = val;
+                
+                if (field === 'type') {
+                    if (val === 'count') {
+                        window.TempState.editingTask.subs = [];
+                        if(!window.TempState.editingTask.target) window.TempState.editingTask.target = 10;
+                    } else {
+                        window.TempState.editingTask.target = 1; 
+                        if(!window.TempState.editingTask.subs) window.TempState.editingTask.subs = [];
+                    }
+                    window.EventBus.emit(E.Task.FORM_UPDATE);
+                    return;
+                }
+
+                if (field === 'importance' || field === 'urgency') {
+                    const imp = parseInt(window.TempState.editingTask.importance) || 1;
+                    const urg = parseInt(window.TempState.editingTask.urgency) || 1;
+                    const r = TaskEngine.previewRewards(imp, urg);
+                    
+                    const elGold = document.getElementById('preview-gold');
+                    const elExp = document.getElementById('preview-exp');
+                    if (elGold) elGold.innerText = r.gold;
+                    if (elExp) elExp.innerText = r.exp;
+                    
+                    if (window.taskView && window.taskView.updateMatrixPreview) {
+                        window.taskView.updateMatrixPreview();
+                    }
+                }
+            },
+
+            // --- 子任務 ---
             addSubtask: () => {
                 const t = window.TempState.editingTask;
-                if(t) { t.subs = t.subs || []; t.subs.push({text:'', done:false}); taskView.renderCreateTaskForm(t.id); }
+                if(t) { t.subs = t.subs || []; t.subs.push({text:'', done:false}); window.EventBus.emit(E.Task.FORM_UPDATE); }
             },
             removeSubtask: (idx) => {
                 const t = window.TempState.editingTask;
-                if(t && t.subs) { t.subs.splice(idx, 1); taskView.renderCreateTaskForm(t.id); }
+                if(t && t.subs) { t.subs.splice(idx, 1); window.EventBus.emit(E.Task.FORM_UPDATE); }
             },
             updateSubtaskText: (idx, val) => {
                 const t = window.TempState.editingTask;
-                if(t && t.subs[idx]) t.subs[idx].text = val;
+                if(t && t.subs && t.subs[idx]) t.subs[idx].text = val;
             },
-            toggleSubtask: (id, idx) => TaskEngine.toggleSubtask(id, idx),
-            incrementTask: (id) => TaskEngine.incrementTask(id),
 
-            // 分類與過濾
+            // --- 導航與過濾 ---
             switchTaskTab: (tab) => {
-    window.TempState.taskTab = tab;
-    
-    // [關鍵修正] 強制關閉所有子頁面，顯示主任務頁面
-    ['page-history', 'page-milestone'].forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.style.display = 'none'; // 隱藏子頁面
-    });
-    
-    const taskPage = document.getElementById('page-task');
-    if(taskPage) taskPage.style.display = 'block'; // 顯示主頁面
-
-    taskView.render();
-},
-            setTaskFilter: (cat) => { window.TempState.filterCategory = cat; taskView.render(); },
-            setAchFilter: (cat) => { window.TempState.achFilter = cat; taskView.render(); },
+                window.TempState.taskTab = tab;
+                window.EventBus.emit(E.Task.UPDATED);
+            },
+            setTaskFilter: (cat) => {
+                window.TempState.filterCategory = cat;
+                window.EventBus.emit(E.Task.UPDATED);
+            },
+            setAchFilter: (cat) => {
+                window.TempState.achFilter = cat;
+                window.EventBus.emit(E.Task.UPDATED);
+            },
+            
+            // [Fix 2] 分類防護：確保預設分類不消失
             addNewCategory: () => {
-                sys.prompt("請輸入新分類名稱：", "", (name) => {
+                const cb = (name) => {
                     if (name && name.trim()) {
                         const newCat = name.trim();
-                        if (!window.GlobalState.taskCats) window.GlobalState.taskCats = ['每日', '工作'];
+                        const gs = window.GlobalState;
+                        const defaults = ['每日', '運動', '工作'];
                         
-                        // 避免重複添加
-                        if (!window.GlobalState.taskCats.includes(newCat)) {
-                            window.GlobalState.taskCats.push(newCat);
+                        // 1. 初始化或修復 taskCats
+                        if (!gs.taskCats) gs.taskCats = [...defaults];
+                        else {
+                            // 強制補回缺失的預設分類
+                            defaults.forEach(d => {
+                                if(!gs.taskCats.includes(d)) gs.taskCats.push(d);
+                            });
                         }
-
-                        // 如果正在編輯模式
-                        if (window.TempState.editingTask) {
-                            // 關鍵：先將當前編輯中的任務分類切換過去，避免重繪後跳回舊分類
-                            window.TempState.editingTask.cat = newCat;
-                            // 強制重繪表單，這樣新的標籤按鈕才會生成出來
-                            taskView.renderCreateTaskForm(window.TempState.editingTask.id);
-                            act.toast(`已新增並切換至分類：${newCat}`);
+                        
+                        // 2. 新增自訂分類
+                        if (!gs.taskCats.includes(newCat)) {
+                            gs.taskCats.push(newCat);
+                            if (window.TempState.editingTask) {
+                                window.TempState.editingTask.cat = newCat;
+                                window.EventBus.emit(E.Task.FORM_UPDATE);
+                            } else {
+                                window.EventBus.emit(E.Task.UPDATED);
+                            }
+                            window.act.toast(`已新增分類：${newCat}`);
                         } else {
-                            // 如果是在列表頁，刷新列表
-                            taskView.render();
+                            window.act.toast("分類已存在");
                         }
                     }
-                });
+                };
+                if(window.sys && window.sys.prompt) window.sys.prompt("新分類名稱：", "", cb);
+                else cb(prompt("新分類名稱："));
             }
         });
 
-        // B. 核心監聽
+        const refreshPage = () => {
+            // 只有當前視圖是 'task' 時才重繪，避免在其他頁面浪費資源
+            // 注意：這裡必須用 'task' (單數)，對應 Router 的 ID
+            if (window.TempState.currentView === 'task') {
+                if (window.taskView && taskView.render) {
+                    console.log("🔄 TaskController: 刷新 TaskView");
+                    taskView.render();
+                }
+            }
+             // 同時處理歷史頁面
+            if (window.TempState.currentView === 'history') {
+                if (window.taskView && taskView.renderHistoryPage) {
+                    taskView.renderHistoryPage();
+                }
+            }
+        };
+
+        // 1. 監聽導航 (Router 切換完後通知)
         EventBus.on(E.System.NAVIGATE, (pageId) => {
-            if (pageId === 'task') taskView.render(); // 這裡通常是 false，Navbar 點擊時會由 act.navigate 觸發 true
-            if (pageId === 'history' && taskView.renderHistoryPage) taskView.renderHistoryPage();
-            if (pageId === 'milestone' && taskView.renderMilestonePage) taskView.renderMilestonePage();
+            if (pageId === 'task') {
+                // 確保進入時初始化 Tab
+                if (!window.TempState.taskTab) window.TempState.taskTab = 'list';
+                refreshPage();
+            }
+            if (pageId === 'history') {
+                refreshPage();
+            }
         });
 
-        const refresh = () => { if(window.TempState.currentView === 'tasks') taskView.render(); };
+        // 2. 監聽數據變更 (新增/修改/刪除/完成) -> 自動刷新
+        EventBus.on(E.Task.CREATED, refreshPage);
+        EventBus.on(E.Task.UPDATED, refreshPage);
+        EventBus.on(E.Task.DELETED, refreshPage);
+        EventBus.on(E.Task.COMPLETED, refreshPage);
         
-        EventBus.on(E.Task.CREATED, refresh);
-        EventBus.on(E.Task.UPDATED, refresh);
-        EventBus.on(E.Task.DELETED, refresh);
-        EventBus.on(E.Task.COMPLETED, refresh);
+        // 3. 監聽成就更新 (因為任務頁面有成就列表)
+        EventBus.on(E.Ach.UPDATED, refreshPage);
 
-        EventBus.on(E.Task.EDIT_MODE, (data) => taskView.renderCreateTaskForm(data.taskId));
+        // 4. 監聽編輯表單刷新
+        EventBus.on(E.Task.EDIT_MODE, (data) => {
+            if (window.taskView && taskView.renderCreateTaskForm) {
+                taskView.renderCreateTaskForm(data.taskId);
+            }
+        });
+        EventBus.on(E.Task.FORM_UPDATE, () => {
+            if (window.taskView && taskView.renderCreateTaskForm && window.TempState.editingTask) {
+                taskView.renderCreateTaskForm(window.TempState.editingTask.id);
+            }
+        });
 
-        console.log("✅ TaskController (完整版) 啟動");
+        console.log("✅ TaskController V41.0 Loaded (Clean & Router Synced).");
     }
 };

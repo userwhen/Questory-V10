@@ -1,178 +1,172 @@
-/* js/main.js - V35.Final (Bootloader & System Interceptors) */
-const SAVE_KEY = 'SQ_V103';
+/* js/main.js - V39.2 System Bootloader (UI Manager & Lobby Fix) */
+/* 負責：系統初始化順序、全域 UI 管理、錯誤攔截、相容性接口 */
 
-// =============================================================================
-// 1. 應用程式核心 (App Core)
-// =============================================================================
+const SAVE_KEY = 'Levelife_Save_V1';
+
 window.App = {
+    // =========================================================================
+    // 1. 系統啟動 (Boot Sequence)
+    // =========================================================================
     boot: function() {
-        this.loadData();
-    
-        // 核心修正：必須把 MainController 放入啟動名單
-        // 注意：請確保其他 Controller (Task, Stats...) 的 js 檔已在 index.html 引入
+        console.log("🔌 [App] System Booting...");
+
+        // A. 初始化控制器
         const controllers = [
             window.MainController,    
             window.TaskController, 
             window.StatsController, 
-            window.ShopController, 
             window.AchController, 
+            window.ShopController, 
             window.AvatarController, 
             window.StoryController, 
             window.SettingsController,
-			window.quickController
+            window.quickController
         ];
-    
-        // 啟動所有控制器
+        
         controllers.forEach(ctrl => { 
             if (ctrl && ctrl.init) ctrl.init(); 
         });
-    
-        // 初始導航
-        if (window.act && window.act.navigate) {
-            window.act.navigate('main');
-        } else {
-            // Fallback: 如果 act.navigate 尚未就緒
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            const main = document.getElementById('page-main');
-            if(main) main.classList.add('active');
-        }
 
-        // 渲染 HUD
-        if(window.view && view.initHUD) view.initHUD(window.GlobalState);
-        
-        console.log("🚀 [App] System Booted.");
-    },
+        // B. 初始化引擎
+        if (window.TaskEngine) window.TaskEngine.init();
+        if (window.AchEngine) window.AchEngine.init();
+        if (window.StatsEngine) window.StatsEngine.init();
+        if (window.Core) window.Core.init();
 
-    loadData: function() {
-        try {
-            const saved = localStorage.getItem(SAVE_KEY);
-            window.GlobalState = saved ? 
-                { ...window.DefaultData, ...JSON.parse(saved) } : 
-                JSON.parse(JSON.stringify(window.DefaultData));
-        } catch (e) {
-            console.error("Load Error:", e);
-            window.GlobalState = JSON.parse(JSON.stringify(window.DefaultData));
-        }
-    },
-
-    saveData: function() {
-        if (window.isResetting) return;
-        localStorage.setItem(SAVE_KEY, JSON.stringify(window.GlobalState));
-    },
-
-    initGlobalListeners: function() {
-        if (!window.EventBus) return;
-        
-        window.EventBus.on(window.EVENTS.System.NAVIGATE, (pageId) => {
-            if (window.Core) Core.switchPage(pageId);
-            
-            // 處理 Navbar 顯示邏輯 (隱藏 Navbar 的頁面)
-            const navbar = document.getElementById('navbar');
-            if (navbar) {
-                navbar.style.display = ['story', 'avatar'].includes(pageId) ? 'none' : 'flex';
+        // C. 啟動導航
+        setTimeout(() => {
+            if (window.act && window.act.navigate) {
+                console.log("🚀 Launching App...");
+                if (window.Router) window.Router.init();
+				window.act.navigate('main');
+            } else {
+                console.error("❌ Core.js 未載入，無法導航");
+                const page = document.getElementById('page-main');
+                if(page) page.classList.add('active');
             }
-        });
+        }, 100);
+        
+        console.log("🚀 [App] System Booted Successfully.");
+    },
+
+    // =========================================================================
+    // [兼容接口] Shop 重構後可移除
+    // =========================================================================
+    saveData: function() {
+        if (window.Core && window.Core.save) {
+            window.Core.save();
+        } else {
+            console.warn("Core.save not ready, using fallback.");
+            if(window.GlobalState) {
+                try {
+                    const json = JSON.stringify(window.GlobalState);
+                    const encoded = btoa(unescape(encodeURIComponent(json)));
+                    localStorage.setItem(SAVE_KEY, encoded);
+                } catch(e) {
+                    // ignore
+                }
+            }
+        }
+    },
+
+    resetData: function() {
+        if (window.Core && window.Core.resetData) window.Core.resetData();
     }
 };
 
 // =============================================================================
-// 2. 主控制器 (Main Controller)
+// 2. 主控制器 (Main Controller) - [HUD/Navbar 管理員]
 // =============================================================================
 window.MainController = {
     init: function() {
         if (!window.EventBus) return;
 
+        // 監聽導航：負責全域 UI 的持續渲染
         window.EventBus.on(window.EVENTS.System.NAVIGATE, (pageId) => {
-            if (window.view && typeof view.render === 'function') {
-                view.render(); 
+            
+            // 1. 強制渲染 HUD 與 Navbar (解決消失問題)
+            if (window.view) {
+                // 只有在非全螢幕頁面才顯示 Navbar (story/avatar 除外)
+                const isFullScreen = ['story', 'avatar'].includes(pageId);
+                
+                if (view.initHUD) view.initHUD(window.GlobalState);
+                if (view.renderNavbar && !isFullScreen) view.renderNavbar();
             }
+
+            // 2. 如果是首頁，呼叫大廳渲染邏輯
+            // (其他頁面由各自的 Controller 負責)
+            if (pageId === 'main') {
+                if (window.view && view.renderMain) view.renderMain();
+            }
+            
         });
 
+        // 監聽數值變更：刷新 HUD 數據
         window.EventBus.on(window.EVENTS.Stats.UPDATED, () => {
             if (window.view && view.updateHUD) {
                 view.updateHUD(window.GlobalState);
             }
         });
-        console.log("✅ MainController Active");
+        
+        console.log("✅ MainController Active (UI Manager)");
     }
 };
 
 // =============================================================================
-// 3. 全域視窗攔截 (Global Window Interceptors)
+// 3. 系統視窗攔截 (System Interceptors)
 // =============================================================================
 
-// A. 覆蓋原生 Alert
-window._nativeAlert = window.alert; 
-window.alert = function(msg) {
-    if (window.view && view.renderSystemModal) {
-        view.renderSystemModal('alert', msg);
-    } else {
-        console.warn("View 尚未就緒，使用原生 Alert");
-        window._nativeAlert(msg);
-    }
-};
-
-// B. 覆蓋原生 Confirm (注意：改為非同步!)
-// 如果您的代碼中有 if(confirm('...')) { ... } 這種寫法，會失效！
-// 必須改為 sys.confirm('...', () => { ... })
-window._nativeConfirm = window.confirm;
-window.confirm = function(msg) {
-    console.error("🛑 [System] 禁止使用原生 confirm()，因為它會阻塞 UI 線程。請改用 sys.confirm(msg, onYes, onNo)。");
-    // 為了防止邏輯錯誤，這裡直接開啟自定義視窗，但回傳 false
-    if (window.view && view.renderSystemModal) {
-        // 嘗試自動轉接：但因為無法傳入 callback，只能顯示視窗，無法執行後續
-        view.renderSystemModal('alert', "系統錯誤：請聯繫開發者使用 sys.confirm");
-    }
-    return false; 
-};
-
-// C. 覆蓋原生 Prompt
-window._nativePrompt = window.prompt;
-window.prompt = function(msg, def) {
-    console.error("🛑 [System] 禁止使用原生 prompt()。請改用 sys.prompt(msg, def, onSubmit)。");
-    if (window.view && view.renderSystemModal) {
-        view.renderSystemModal('alert', "系統錯誤：請聯繫開發者使用 sys.prompt");
-    }
-    return null;
-};
-
-// D. 定義 System Helpers (正確的呼叫方式)
 window.sys = {
-    // 使用法: sys.confirm('確定要刪除嗎?', () => { 刪除邏輯... })
     confirm: (msg, onConfirm, onCancel) => {
-        window.TempState.sysConfirmCallback = onConfirm;
-        window.TempState.sysCancelCallback = onCancel;
-        view.renderSystemModal('confirm', msg);
+        if (window.view && view.renderSystemModal) {
+            window.TempState.sysConfirmCallback = onConfirm;
+            window.TempState.sysCancelCallback = onCancel;
+            view.renderSystemModal('confirm', msg);
+        } else {
+            if(window._nativeConfirm(msg)) { if(onConfirm) onConfirm(); } 
+            else { if(onCancel) onCancel(); }
+        }
     },
     
-    // 使用法: sys.prompt('請輸入名字', '預設值', (val) => { console.log(val) })
     prompt: (msg, defVal, onSubmit) => {
-        window.TempState.sysPromptCallback = onSubmit;
-        view.renderSystemModal('prompt', msg, defVal);
+        if (window.view && view.renderSystemModal) {
+            window.TempState.sysPromptCallback = onSubmit;
+            view.renderSystemModal('prompt', msg, defVal);
+        } else {
+            const val = window._nativePrompt(msg, defVal);
+            if(onSubmit) onSubmit(val);
+        }
     }
 };
 
+window._nativeAlert = window.alert; 
+window.alert = function(msg) {
+    if (window.view && view.renderSystemModal) view.renderSystemModal('alert', msg);
+    else window._nativeAlert(msg);
+};
+
+window._nativeConfirm = window.confirm;
+window.confirm = function(msg) {
+    console.warn("⚠️ 建議使用 sys.confirm");
+    return window._nativeConfirm(msg); 
+};
+
+window._nativePrompt = window.prompt;
+window.prompt = function(msg, def) {
+    console.warn("⚠️ 建議使用 sys.prompt");
+    return window._nativePrompt(msg, def);
+};
+
 // =============================================================================
-// 4. 系統視窗邏輯實現 (System Modal Logic)
+// 4. 視窗回調處理
 // =============================================================================
-// 這裡定義了當使用者在 sys.confirm/alert 按下按鈕後，程式該怎麼反應
+window.act = window.act || {};
 Object.assign(window.act, {
     handleSysConfirm: (result) => {
-        console.log("[Main] 處理系統確認:", result);
-
-        // 1. 關閉視窗
         const targetId = 'm-system';
-        if (window.ui && window.ui.modal && window.ui.modal.close) {
-            ui.modal.close(targetId);
-        } else {
-            const modal = document.getElementById(targetId);
-            if (modal) {
-                modal.classList.remove('active');
-                setTimeout(() => modal.style.display = 'none', 300);
-            }
-        }
+        if (window.act.closeModal) window.act.closeModal(targetId);
+        else { const m = document.getElementById(targetId); if(m) m.style.display='none'; }
 
-        // 2. 處理 Prompt (輸入框提交)
         if (result === 'prompt_submit') {
             const val = document.getElementById('sys-univ-input')?.value;
             if (window.TempState.sysPromptCallback) {
@@ -182,15 +176,12 @@ Object.assign(window.act, {
             return;
         }
 
-        // 3. 處理 Confirm (確認: true)
         if (result === true) {
             if (window.TempState.sysConfirmCallback) {
                 window.TempState.sysConfirmCallback();
                 window.TempState.sysConfirmCallback = null;
             }
-        } 
-        // 4. 處理 Cancel (取消: false)
-        else {
+        } else {
             if (window.TempState.sysCancelCallback) {
                 window.TempState.sysCancelCallback();
                 window.TempState.sysCancelCallback = null;
@@ -200,10 +191,8 @@ Object.assign(window.act, {
 });
 
 // =============================================================================
-// 5. 啟動入口 (Boot Trigger)
+// 5. 啟動入口
 // =============================================================================
-document.addEventListener('DOMContentLoaded', () => {
-    // 確保 Global Helpers 已經掛載
-    console.log("🚀 [Main] System Logic Loaded.");
+window.onload = function() {
     App.boot();
-});
+};

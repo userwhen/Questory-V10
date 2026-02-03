@@ -1,162 +1,154 @@
-/* js/modules/ach.js - V33.0 (Logic Engine) */
+/* js/modules/ach.js - V40.0 Gamification Engine */
 window.AchEngine = {
     init: function() {
         const gs = window.GlobalState;
         if (!gs) return;
+        // 統一存放在 achievements，若有舊的 milestones 則在 getSorted 時合併
         if (!gs.achievements) gs.achievements = [];
-        console.log("🏆 AchEngine Initialized.");
+        // 如果你需要兼容舊存檔的 milestones 陣列，可以在這裡做遷移，或者保持雙軌並行
+        if (!gs.milestones) gs.milestones = []; 
     },
 
-    // 1. 核心排序 (未完成 > 簽到 > 已完成)
-    getSortedAchievements: function() {
-        if (!window.GlobalState || !window.GlobalState.achievements) return [];
-        let achs = window.GlobalState.achievements;
-        
-        // 排序邏輯：簽到優先 -> 可領取優先 -> 未完成 -> 已完成
-        return [...achs].sort((a,b) => { 
-            if (a.type === 'check_in' && !a.done) return -1;
-            if (b.type === 'check_in' && !b.done) return 1;
-            const aReady = a.curr >= a.targetVal && !a.done;
-            const bReady = b.curr >= b.targetVal && !b.done;
-            if (aReady && !bReady) return -1;
-            if (!aReady && bReady) return 1;
-            if (a.done && !b.done) return 1;
-            if (!a.done && b.done) return -1;
-            return 0; 
+    // 2. 監聽任務完成 (自動化積累)
+    onTaskCompleted: function(task, impact) {
+        const gs = window.GlobalState;
+        // 我們主要監聽「玩家自訂的里程碑」(通常存放在 milestones 或 type='progress' 的 achievements)
+        // 這裡假設我們統一操作 milestones 陣列作為「進行中」的目標
+        const targets = gs.milestones || []; 
+        let anyUpdate = false;
+
+        targets.forEach(ms => {
+            if (ms.done) return; // 已達成的就不再累積
+
+            let isMatch = false;
+            // A. 判定邏輯
+            if (ms.targetType === 'tag' && task.cat === ms.targetValue) isMatch = true;
+            else if (ms.targetType === 'attr' && task.attrs && task.attrs.includes(ms.targetValue)) isMatch = true;
+            else if (ms.targetType === 'challenge') {
+                const imp = parseInt(task.importance || 1);
+                const urg = parseInt(task.urgency || 1);
+                // 挑戰：高重要且高緊急 (3以上)
+                if (imp >= 3 && urg >= 3) isMatch = true;
+            }
+
+            // B. 積累邏輯
+            if (isMatch) {
+                ms.curr = (ms.curr || 0) + impact; // 累積 Impact 值
+                anyUpdate = true;
+                
+                // C. 達成判定
+                if (ms.curr >= ms.target) {
+                    this._unlockMilestone(ms);
+                }
+            }
         });
+
+        if (anyUpdate) this._saveAndNotify();
     },
 
-    // 2. 簽到邏輯
-    doCheckIn: function(id) {
-        const ach = window.GlobalState.achievements.find(a => a.id === id);
-        // 檢查日期 (防止重複簽到)
-        const today = new Date().toDateString();
-        if(ach && (!ach.done || ach.lastCheckIn !== today)) {
-            ach.done = true; 
-            ach.curr = (ach.curr || 0) + 1;
-            ach.lastCheckIn = today; // 標記日期
-            this.claimAchievement(id); 
+    // 內部：達成瞬間 (還沒領獎)
+    _unlockMilestone: function(ms) {
+        ms.curr = ms.target; // 避免溢出
+        ms.done = true;      // 標記為達成 (此時應顯示「領取」按鈕)
+        
+        if (window.EventBus) {
+            window.EventBus.emit(window.EVENTS.System.TOAST, `🎉 目標達成：${ms.title}`);
         }
     },
 
-    // 3. 領取獎勵
-    claimAchievement: function(id) {
-        const ach = window.GlobalState.achievements.find(a => a.id === id);
-        if (!ach) return;
-        
-        const r = ach.reward || {};
+    // 3. [新增] 領取獎勵並歸檔 (Claim & Archive)
+    claimReward: function(id) {
         const gs = window.GlobalState;
+        const ms = gs.milestones.find(m => m.id === id);
         
-        if(r.gold) gs.gold = (gs.gold||0) + r.gold;
-        if(r.exp) gs.exp = (gs.exp||0) + r.exp;
-        if(r.freeGem) gs.freeGem = (gs.freeGem||0) + r.freeGem;
+        if (!ms) return { success: false, msg: "找不到目標" };
+        if (!ms.done) return { success: false, msg: "目標尚未達成" };
+        if (ms.claimed) return { success: false, msg: "已經領取過了" };
 
-        if (ach.type === 'check_in') {
-            // 簽到只標記 done，不標記 claimed (因為明天還能簽)
-            ach.done = true;
-            EventBus.emit(EVENTS.System.TOAST, `簽到成功！獲得: 💰${r.gold||0}`);
-        } else {
-            ach.done = true;      
-            ach.claimed = true;   
-            ach.date = Date.now(); 
-            EventBus.emit(EVENTS.System.TOAST, `成就達成！獲得: 💰${r.gold||0}`);
-        }
+        // A. 發放獎勵
+        const reward = ms.reward || { gold: 0, exp: 0 };
+        gs.gold = (gs.gold || 0) + reward.gold;
+        gs.exp = (gs.exp || 0) + reward.exp;
+
+        // B. 狀態流轉 -> 歸檔
+        ms.claimed = true; // 標記為已領取 (View 層會根據此屬性將其移至「殿堂」)
+        ms.finishDate = Date.now(); // 紀錄榮譽時刻
+
+        // C. (可選) 歷史紀錄連動
+        // 如果希望「達成成就」這件事也寫入 History，可以在這裡 push gs.history
         
-        if(window.App) App.saveData();
-        EventBus.emit(EVENTS.Stats.UPDATED); // 更新 HUD
-        EventBus.emit(EVENTS.Ach.UPDATED);   // 更新列表
+        this._saveAndNotify();
+        return { success: true, reward: reward };
     },
 
-    // 4. 提交/保存成就 (新增/編輯)
-    submitAchievement: function() {
-        const data = window.TempState.editingAch;
-        if (!data || !data.title) {
-            EventBus.emit(EVENTS.System.TOAST, "請輸入標題");
-            return;
-        }
-        
+    // 4. 建立新目標 (Factory)
+    createMilestone: function(data) {
         const gs = window.GlobalState;
-        const isEdit = !!data.id;
-        const newId = isEdit ? data.id : `ach_${Date.now()}`;
-        const targetVal = parseInt(data.targetVal) || 1;
+        if (!gs.milestones) gs.milestones = [];
 
-        let ach = isEdit ? gs.achievements.find(a => a.id === newId) : {
-            id: newId, curr: 0, done: false, claimed: false
+        // 自動判定數值與獎勵 (S/A/B/C)
+        const tierConfig = {
+            'S': { target: 1000, reward: { gold: 500, exp: 1000 } }, // 傳奇
+            'A': { target: 500,  reward: { gold: 200, exp: 400 } },  // 史詩
+            'B': { target: 200,  reward: { gold: 80,  exp: 150 } },  // 稀有
+            'C': { target: 50,   reward: { gold: 20,  exp: 50 } }    // 普通
         };
 
-        if (!ach && isEdit) return;
+        const config = tierConfig[data.tier] || tierConfig['C'];
 
-        Object.assign(ach, {
+        const newMs = {
+            id: 'ms_' + Date.now(),
             title: data.title,
-            desc: data.desc,
-            type: data.type,
-            targetKey: data.targetKey || '',
-            targetVal: targetVal,
-            isSystem: !!data.isSystem,
-            reward: { 
-                gold: parseInt(data.reward?.gold) || 0, 
-                exp: parseInt(data.reward?.exp) || 0,
-                freeGem: parseInt(data.reward?.freeGem) || 0
-            }
-        });
+            desc: `累積 ${config.target} 點影響力`,
+            type: 'progress',    // 類型：進度條
+            targetType: data.targetType, // tag, attr, challenge
+            targetValue: data.targetValue,
+            tier: data.tier,     // S, A, B, C
+            
+            // 數值設定
+            curr: 0,
+            target: config.target,
+            reward: config.reward, // 寫入獎勵
 
-        if (!isEdit) gs.achievements.unshift(ach);
-        
-        if(window.App) App.saveData();
-        EventBus.emit(EVENTS.System.MODAL_CLOSE, 'overlay');
-        EventBus.emit(EVENTS.System.TOAST, "已保存");
-        EventBus.emit(EVENTS.Ach.UPDATED);
+            // 狀態
+            done: false,
+            claimed: false,
+            startDate: Date.now(),
+            finishDate: null
+        };
+
+        gs.milestones.push(newMs);
+        this._saveAndNotify();
     },
 
-    deleteAchievement: function(id) {
-        window.GlobalState.achievements = window.GlobalState.achievements.filter(a => a.id !== id);
-        if(window.App) App.saveData();
-        EventBus.emit(EVENTS.System.MODAL_CLOSE, 'overlay'); // 關閉編輯窗 (如果有的話)
-        EventBus.emit(EVENTS.System.TOAST, "🗑️ 成就已刪除");
-        EventBus.emit(EVENTS.Ach.UPDATED);
-    },
-
-    // 5. 監聽器 (Listener Logic) - 檢查條件是否達成
-    checkConditions: function(eventType, payload) {
+    deleteMilestone: function(id) {
         const gs = window.GlobalState;
-        if(!gs.achievements) return;
-
-        let changed = false;
-        gs.achievements.forEach(ach => {
-            if(ach.done) return;
-
-            // A. 任務完成次數監聽
-            if (ach.type === 'task_count' && eventType === 'TASK_COMPLETED') {
-                // 如果有指定關鍵字 (targetKey)，檢查分類或標題
-                if (ach.targetKey) {
-                    const task = payload.task;
-                    if (task.cat.includes(ach.targetKey) || task.title.includes(ach.targetKey)) {
-                        ach.curr++;
-                        changed = true;
-                    }
-                } else {
-                    // 沒指定關鍵字，任意任務都算
-                    ach.curr++;
-                    changed = true;
-                }
-            }
-
-            // B. 屬性等級監聽
-            if (ach.type === 'attr_lv' && eventType === 'STATS_UPDATED') {
-                const key = ach.targetKey?.toUpperCase(); // 例如 'STR'
-                if (gs.attrs && gs.attrs[key]) {
-                    const nowLv = gs.attrs[key].v;
-                    if (nowLv > ach.curr) {
-                        ach.curr = nowLv;
-                        changed = true;
-                    }
-                }
-            }
-        });
-
-        if(changed) {
-            if(window.App) App.saveData();
-            EventBus.emit(EVENTS.Ach.UPDATED);
+        if(gs.milestones) {
+            gs.milestones = gs.milestones.filter(m => m.id !== id);
+            this._saveAndNotify();
         }
+    },
+
+    // View Helper: 統一輸出接口
+    getSortedAchievements: function() {
+        const gs = window.GlobalState;
+        // 這裡將 milestones (玩家自訂) 與 achievements (系統成就) 視為同一種資料格式輸出
+        // 但為了區分邏輯，我們之後在 View 層可以用 .type 或 .isSystem 來過濾
+        const list = [
+            ...(gs.milestones || []),
+            ...(gs.achievements || [])
+        ];
+        
+        // 排序：可領取 > 進行中 > 已歸檔
+        return list.sort((a, b) => {
+            const scoreA = (a.done && !a.claimed) ? 2 : (!a.done ? 1 : 0);
+            const scoreB = (b.done && !b.claimed) ? 2 : (!b.done ? 1 : 0);
+            return scoreB - scoreA;
+        });
+    },
+
+    _saveAndNotify: function() {
+        if (window.App && window.App.saveData) App.saveData();
+        if (window.EventBus) window.EventBus.emit(window.EVENTS.Ach.UPDATED);
     }
 };

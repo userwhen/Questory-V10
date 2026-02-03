@@ -1,3 +1,4 @@
+// 2. 事件總線 (Event Bus)
 window.EventBus = {
     listeners: {},
 
@@ -15,7 +16,7 @@ window.EventBus = {
 
     emit: function(event, data) {
         if (!this.listeners[event]) return;
-        // console.log(`📡 [EventBus] 廣播: ${event}`, data || '(無數據)'); // 除錯用，可註解
+        // console.log(`📡 [EventBus] 廣播: ${event}`, data || ''); 
         this.listeners[event].forEach(callback => {
             try {
                 callback(data);

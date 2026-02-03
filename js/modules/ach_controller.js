@@ -1,104 +1,95 @@
-/* js/modules/ach_controller.js - Ach Controller (Fixed & Merged) */
+/* js/modules/ach_controller.js - V40.1 Fixed (Listener Added) */
 window.AchController = {
     init: function() {
         const E = window.EVENTS;
         if (!window.EventBus || !E) return;
 
-        // A. 橋接 act (包含新的領取邏輯)
         Object.assign(window.act, {
-            // CRUD
-            submitAchievement: () => AchEngine.submitAchievement(),
-            
-            deleteAchievement: (id) => {
-                sys.confirm("確定刪除此成就？", () => {
-                    AchEngine.deleteAchievement(id);
-                    // 刪除後刷新視圖
-                    if(window.taskView) taskView.render(); 
+            // A. 開啟建立表單 (發送訊號)
+            openCreateCustomAch: () => {
+                // 初始化暫存物件
+                window.TempState.editingAch = {
+                    title: '',
+                    targetType: 'tag', 
+                    targetValue: '運動',
+                    tier: 'C'          
+                };
+                console.log("📡 發送成就編輯訊號..."); // Debug
+                window.EventBus.emit(E.Ach.EDIT_MODE);
+            },
+
+            // B. 提交建立
+            submitMilestone: () => {
+                const data = window.TempState.editingAch;
+                if (!data || !data.title) return window.act.toast("⚠️ 請輸入目標名稱");
+                
+                AchEngine.createMilestone({
+                    title: data.title,
+                    targetType: data.targetType,
+                    targetValue: data.targetValue,
+                    tier: data.tier
                 });
-            },
-            
-            // 編輯與新增
-            editAch: (id) => window.EventBus.emit(E.Ach.EDIT_MODE, { achId: id }),
-            createAch: () => window.EventBus.emit(E.Ach.EDIT_MODE, { achId: null }), 
-            
-            // --- [新增] 兩段式領取邏輯 ---
-            
-            // 第一階段：點擊「完成」 -> 變身為「領取」
-            preClaimAch: (id, btn) => {
-                // 1. 變更按鈕樣式 (綠 -> 黃)
-                btn.style.background = '#fbc02d'; // 黃色
-                btn.style.color = '#333'; // 深色文字
-                btn.innerHTML = '🎁 領取'; // 變更文字
-                
-                // 2. 變更點擊行為 (指向真正的領取函式)
-                // 注意：這裡再次加入 stopPropagation 防止冒泡打開詳情
-                btn.onclick = (e) => { e.stopPropagation(); act.claimAch(id); };
-                
-                // 3. 震動回饋 (增加期待感)
-                if(navigator.vibrate) navigator.vibrate(50);
+
+                if (window.act.closeModal) window.act.closeModal('overlay');
+                window.act.toast("✅ 目標已建立！");
             },
 
-            // 第二階段：真正的領取處理
-            claimAch: (id) => {
-                const gs = window.GlobalState;
-                const ach = gs.achievements.find(a => a.id === id);
-                
-                if (ach && !ach.claimed) {
-                    // 1. 標記領取
-                    ach.claimed = true;
-                    ach.claimedAt = new Date().toISOString();
-                    
-                    // 2. 發放獎勵 (範例：發金幣)
-                    const rewardGold = parseInt(ach.rewards?.gold || 0);
-                    if(rewardGold > 0) {
-                        gs.gold = (gs.gold || 0) + rewardGold;
-                    }
-
-                    // 3. 存檔
-                    App.saveData();
-                    
-                    // 4. 回饋與刷新
-                    act.toast(`🎉 成功領取：${ach.title} (+${rewardGold}G)`);
-                    if(navigator.vibrate) navigator.vibrate([100, 50, 100]); // 雙重震動
-                    
-                    // 刷新列表 (領取後通常會從列表中消失，進入殿堂)
-                    if(window.taskView) taskView.render();
+            // C. 領取獎勵
+            claimReward: (id) => {
+                const result = AchEngine.claimReward(id);
+                if (result.success) {
+                    const r = result.reward;
+                    window.act.toast(`🎉 領取成功！ +${r.gold}💰 +${r.exp}✨`);
+                } else {
+                    window.act.toast(`❌ ${result.msg}`);
                 }
             },
 
-            // 保留原本的 claim 接口以防萬一，但導向新的 claimAch
-            claim: (id) => act.claimAch(id)
+            // D. 刪除
+            deleteAchievement: (id) => {
+                const doDelete = () => {
+                    AchEngine.deleteMilestone(id);
+                    if (window.act.closeModal) window.act.closeModal('overlay');
+                    window.act.toast('🗑️ 已刪除');
+                };
+                if(window.sys && sys.confirm) sys.confirm('確定放棄此目標？', doDelete);
+            }
         });
 
-        // B. 監聽導航
+        // ============================
+        // 事件監聽 (Receiver)
+        // ============================
+
+        // 1. [補回這個缺失的部分] 監聽編輯模式 -> 呼叫 View 打開視窗
+        EventBus.on(E.Ach.EDIT_MODE, () => {
+            console.log("📥 收到成就編輯訊號，呼叫 View...");
+            if (window.achView && achView.renderCreateAchForm) {
+                // 傳入 null 代表新增模式
+                achView.renderCreateAchForm(null);
+            } else {
+                console.error("❌ achView.renderCreateAchForm 未定義");
+            }
+        });
+
+        // 2. 任務完成 -> 觸發 Engine 計算
+        EventBus.on(E.Task.COMPLETED, (payload) => {
+            if (payload && payload.task) {
+                AchEngine.onTaskCompleted(payload.task, payload.impact);
+            }
+        });
+
+        // 3. 導航監聽
         EventBus.on(E.System.NAVIGATE, (pageId) => {
             if (pageId === 'milestone') {
-                 if(window.taskView && taskView.renderMilestonePage) taskView.renderMilestonePage();
+                if (window.achView && achView.renderMilestonePage) {
+                    achView.renderMilestonePage();
+                }
+            }
+            if (pageId === 'task' && window.TempState.taskTab === 'ach') {
+                 window.EventBus.emit(E.Ach.UPDATED);
             }
         });
 
-        // C. 監聽編輯模式
-        EventBus.on(E.Ach.EDIT_MODE, (data) => {
-            // 統一由 View 層處理表單渲染
-            // 假設您的成就表單渲染函式在 view 或 taskView 中
-            if(window.view && view.renderCreateAchForm) view.renderCreateAchForm(data.achId);
-        });
-
-        // D. 監聽數據變動 (自動檢查成就條件)
-        EventBus.on(E.Task.COMPLETED, (data) => {
-            if(window.AchEngine) AchEngine.checkConditions('TASK_COMPLETED', data);
-        });
-        EventBus.on(E.Stats.UPDATED, () => {
-            if(window.AchEngine) AchEngine.checkConditions('STATS_UPDATED', {});
-        });
-
-        // E. 監聽自身更新 (當成就達成或數據變更時，刷新列表)
-        EventBus.on(E.Ach.UPDATED, () => {
-            if (window.TempState.currentView === 'tasks' && window.TempState.taskTab === 'ach') {
-                if(window.taskView && taskView.render) taskView.render(false);
-            }
-        });
-
-        console.log("✅ AchController (成就) 模組就緒");
+        console.log("✅ AchController V40.1 Loaded (FAB Listener Fixed).");
     }
 };

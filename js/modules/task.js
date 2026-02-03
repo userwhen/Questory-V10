@@ -1,96 +1,92 @@
-/* js/modules/task.js - V37.0 Ultimate (V25 Logic + V36 Architecture) */
+/* js/modules/task.js - V38.0 Stable Engine */
+/* 負責：資料運算、存檔、Impact計算、歷史聚合 */
+
 window.TaskEngine = {
     // =========================================
-    // 1. 初始化與讀取 (Initialization)
+    // 1. 初始化 (Init)
     // =========================================
     init: function() {
         const gs = window.GlobalState;
         if (!gs) return;
 
-        // V25: 補齊基礎資料結構
+        // 補齊結構
+        if (!gs.tasks) gs.tasks = [];
+        if (!gs.history) gs.history = [];
         if (!gs.taskCats) gs.taskCats = ['每日', '運動', '工作', '待辦', '願望'];
-        if (!gs.settings) gs.settings = { calMode: false, strict: false };
-        if (!gs.cal) gs.cal = { today: 0, logs: [] }; // V25 熱量系統
+        if (!gs.cal) gs.cal = { today: 0, logs: [] };
 
+        // 每日重置檢查
         const today = new Date().toDateString();
-        
-        // V25: 每日任務重置邏輯
         if (gs.lastLoginDate !== today) {
-            console.log("📅 新的一天！每日任務與熱量已重置");
-            if (gs.tasks) {
-                gs.tasks.forEach(t => {
-                    if (t.cat === '每日' || t.recurrence === 'daily') {
-                        t.done = false;
-                        t.doneTime = null;
-                        if (t.type === 'count') t.curr = 0;
-                        if (t.subs) t.subs.forEach(s => s.done = false);
-                    }
-                });
-            }
-            // 重置熱量
-            if (gs.cal) { gs.cal.today = 0; gs.cal.logs = []; } // 這裡可以選擇是否清空 logs
-            
+            console.log("📅 [TaskEngine] Daily Reset Triggered");
+            gs.tasks.forEach(t => {
+                if (t.cat === '每日' || t.recurrence === 'daily') {
+                    t.done = false;
+                    t.doneTime = null;
+                    if (t.type === 'count') t.curr = 0;
+                    if (t.subs) t.subs.forEach(s => s.done = false);
+                }
+            });
+            if (gs.cal) gs.cal.today = 0;
             gs.lastLoginDate = today;
-            if (window.App) App.saveData();
+            if (window.App && window.App.saveData) App.saveData();
         }
     },
 
-    getSortedTasks: function(isHistory, cat) {
-        // V25: 排序與過濾邏輯
-        const tasks = isHistory ? (window.GlobalState.history || []) : (window.GlobalState.tasks || []);
-        if (isHistory) return tasks; // 歷史紀錄直接回傳
-
+    // =========================================
+    // 2. 讀取與排序 (Getters)
+    // =========================================
+    getSortedTasks: function(categoryFilter) {
+        const tasks = window.GlobalState.tasks || [];
         const now = new Date();
         const todayStr = now.toDateString();
-        const isDoneToday = (t) => t.done && t.doneTime && new Date(t.doneTime).toDateString() === todayStr;
 
         let filtered = tasks.filter(t => {
-            if (cat && cat !== '全部' && t.cat !== cat) return false;
-            // 顯示：未完成 OR 每日任務 OR 今天剛完成的
+            // 分類過濾
+            if (categoryFilter && categoryFilter !== '全部' && t.cat !== categoryFilter) return false;
+            
+            // 顯示規則：未完成 OR 每日任務 OR 今天剛完成的
             if (!t.done) return true;
-            if (t.cat === '每日') return true;
-            if (isDoneToday(t)) return true;
+            if (t.cat === '每日' || t.recurrence === 'daily') return true;
+            if (t.doneTime && new Date(t.doneTime).toDateString() === todayStr) return true;
+            
             return false;
         });
         
+        // 排序：置頂 > 未完成 > Impact (重要+緊急)
         return filtered.sort((a, b) => {
             if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
             if (a.done !== b.done) return a.done ? 1 : -1;
-            // V25: 權重公式 (重要性 1.5 + 緊急性 0.5)
-            const wA = (parseInt(a.importance||1) * 1.5) + (parseInt(a.urgency||1) * 0.5);
-            const wB = (parseInt(b.importance||1) * 1.5) + (parseInt(b.urgency||1) * 0.5);
-            return wB - wA;
+            
+            const impA = (parseInt(a.importance||1) * 1.5) + (parseInt(a.urgency||1) * 0.5);
+            const impB = (parseInt(b.importance||1) * 1.5) + (parseInt(b.urgency||1) * 0.5);
+            return impB - impA;
         });
     },
 
     // =========================================
-    // 2. 核心操作 (CRUD Actions) - 供 Controller 呼叫
+    // 3. 核心 CRUD
     // =========================================
-
-    // [V36 要求] 新增任務
     addTask: function(temp) {
         const gs = window.GlobalState;
-        
-        // V25: 建立任務結構
         const newTask = { 
             id: 't_' + Date.now(), 
             createDate: Date.now(), 
-            done: false 
+            done: false, 
+            status: 'active' 
         };
-
-        // V25: 欄位賦值 (包含熱量與屬性)
+        // 安全寫入欄位
         Object.assign(newTask, {
             title: temp.title,
             desc: temp.desc,
             cat: temp.cat,
-            type: temp.type,
+            type: temp.type || 'normal',
             target: parseInt(temp.target) || 1,
-            curr: temp.curr || 0,
-            // V25 特有邏輯：只有運動分類才記錄熱量
-            burn: (temp.cat === '運動') ? (parseInt(temp.calories) || 0) : 0,
+            curr: 0,
+            calories: (parseInt(temp.calories) || 0),
             importance: parseInt(temp.importance) || 1,
             urgency: parseInt(temp.urgency) || 1,
-            attrs: [...(temp.attrs || [])], // 技能屬性
+            attrs: [...(temp.attrs || [])],
             subs: temp.subs ? JSON.parse(JSON.stringify(temp.subs)) : [],
             pinned: temp.pinned || false,
             deadline: temp.deadline,
@@ -98,195 +94,250 @@ window.TaskEngine = {
             subRule: temp.subRule || 'all'
         });
 
-        gs.tasks.push(newTask);
-        this._saveAndNotify(EVENTS.Task.CREATED, newTask);
+        gs.tasks.unshift(newTask);
+        this._saveAndNotify(window.EVENTS.Task.CREATED, newTask);
     },
 
-    // [V36 要求] 更新任務
     updateTask: function(temp) {
         const gs = window.GlobalState;
         const task = gs.tasks.find(t => t.id === temp.id);
-
         if (task) {
-            // V25: 欄位更新
-            Object.assign(task, {
-                title: temp.title,
-                desc: temp.desc,
-                cat: temp.cat,
-                type: temp.type,
-                target: parseInt(temp.target) || 1,
-                // curr 不覆蓋，以免重置計數
-                burn: (temp.cat === '運動') ? (parseInt(temp.calories) || 0) : 0,
-                importance: parseInt(temp.importance) || 1,
-                urgency: parseInt(temp.urgency) || 1,
-                attrs: [...(temp.attrs || [])],
-                subs: temp.subs ? JSON.parse(JSON.stringify(temp.subs)) : [],
-                pinned: temp.pinned || false,
-                deadline: temp.deadline,
-                recurrence: temp.recurrence,
-                subRule: temp.subRule || 'all'
-            });
+            // 更新除了 id, done, curr 以外的欄位
+            task.title = temp.title;
+            task.desc = temp.desc;
+            task.cat = temp.cat;
+            task.type = temp.type;
+            task.target = parseInt(temp.target) || 1;
+            task.calories = parseInt(temp.calories) || 0;
+            task.importance = parseInt(temp.importance) || 1;
+            task.urgency = parseInt(temp.urgency) || 1;
+            task.attrs = [...(temp.attrs || [])];
+            task.subs = temp.subs ? JSON.parse(JSON.stringify(temp.subs)) : [];
+            task.pinned = temp.pinned;
+            task.deadline = temp.deadline;
+            task.recurrence = temp.recurrence;
+            task.subRule = temp.subRule;
 
-            this._saveAndNotify(EVENTS.Task.UPDATED, task);
+            this._saveAndNotify(window.EVENTS.Task.UPDATED, task);
         }
     },
 
-    // [V36 要求] 完成/取消任務 (包含 V25 的複雜運算)
+    deleteTask: function(id) {
+        const gs = window.GlobalState;
+        gs.tasks = gs.tasks.filter(t => t.id !== id);
+        this._saveAndNotify(window.EVENTS.Task.DELETED, { id });
+    },
+
+    // =========================================
+    // 4. 業務邏輯 (完成/取消/子任務)
+    // =========================================
     resolveTask: function(taskId) {
         const gs = window.GlobalState;
         const task = gs.tasks.find(t => t.id === taskId);
         if (!task) return;
 
-        // V25: 子任務擋修檢查
+        // A. 擋修檢查
         if (!task.done && task.subs && task.subs.length > 0 && task.type !== 'count') {
             const doneCount = task.subs.filter(s => s.done).length;
             const rule = task.subRule || 'all';
             if (rule === 'all' && doneCount < task.subs.length) { 
-                EventBus.emit(EVENTS.System.TOAST, "🔒 請先完成所有步驟"); return; 
+                return window.EventBus.emit(window.EVENTS.System.TOAST, "🔒 請先完成所有步驟"); 
             }
             if (rule === 'any' && doneCount === 0) { 
-                EventBus.emit(EVENTS.System.TOAST, "🔒 請至少完成一個步驟"); return; 
+                return window.EventBus.emit(window.EVENTS.System.TOAST, "🔒 請至少完成一個步驟"); 
             }
         }
 
         task.done = !task.done;
+        
+        // 計算獎勵與 Impact (直接計算，不依賴 this)
+        const imp = parseInt(task.importance||1);
+        const urg = parseInt(task.urgency||1);
+        const base = 10;
+        const w = (imp * 1.5) + (urg * 0.5);
+        const rewards = { gold: Math.floor(base * w), exp: Math.floor(base * w) };
+        const impact = Math.floor(w);
 
         if (task.done) {
-            // [A] 任務完成：發獎勵
+            // --- 完成 ---
             task.doneTime = Date.now();
-            const r = this.previewRewards(task.importance, task.urgency);
-            task.lastReward = r; // 記錄獎勵以便回滾
+            task.status = 'completed';
+            task.lastReward = rewards;
 
-            gs.gold = (gs.gold || 0) + r.gold;
-            gs.exp = (gs.exp || 0) + r.exp;
+            gs.gold = (gs.gold || 0) + rewards.gold;
+            gs.exp = (gs.exp || 0) + rewards.exp;
 
-            // V25: 屬性經驗分配
-            if (task.attrs && task.attrs.length > 0 && window.StatsEngine) {
-                StatsEngine.distributeExp(r.exp, task.attrs);
-                task.attrs.forEach(name => StatsEngine.addSkillProficiency(name));
-            }
-
-            // V25: 熱量扣除與紀錄
-            if (gs.settings.calMode && task.burn > 0) {
-                gs.cal.today -= task.burn;
+            // 熱量扣除 (DLC 檢查)
+            if (gs.unlocks && gs.unlocks.calorie_tracker && task.calories > 0) {
+                gs.cal.today -= task.calories;
                 const timeStr = new Date().toTimeString().substring(0, 5);
-                gs.cal.logs.unshift(`${timeStr} 運動: ${task.title} -${task.burn}`);
-                if (gs.cal.logs.length > 50) gs.cal.logs.pop();
+                gs.cal.logs.unshift(`${timeStr} ${task.title} -${task.calories}`);
+                if (gs.cal.logs.length > 30) gs.cal.logs.pop();
             }
 
-            if (window.StatsEngine) StatsEngine.checkLevelUp();
-            EventBus.emit(EVENTS.System.TOAST, `完成！+${r.gold}💰 +${r.exp}✨`);
+            // 寫入歷史
+            const historyEntry = JSON.parse(JSON.stringify(task));
+            historyEntry.doneImpact = impact; 
+            gs.history.push(historyEntry);
+
+            window.EventBus.emit(window.EVENTS.Task.COMPLETED, { task: task, impact: impact, gained: rewards });
+            window.EventBus.emit(window.EVENTS.System.TOAST, `完成！+${rewards.gold}💰 +${rewards.exp}✨`);
 
         } else {
-            // [B] 任務取消：回滾/懲罰
+            // --- 取消 ---
             task.doneTime = null;
+            task.status = 'active';
+
             if (task.lastReward) {
                 const r = task.lastReward;
-                const isStrict = gs.settings.strict;
+                const isStrict = gs.unlocks && gs.unlocks.strict_mode; // DLC 嚴格模式
 
-                // V25: 嚴格模式邏輯
-                if (isStrict) { 
-                    gs.gold -= r.gold; 
-                } else { 
-                    gs.gold = Math.max(0, gs.gold - r.gold); 
-                }
+                // 扣回獎勵
+                gs.gold = Math.max(0, gs.gold - r.gold);
                 
-                // 經驗值回滾
-                gs.exp -= r.exp;
-                if (!isStrict) gs.exp = Math.max(0, gs.exp); // 非嚴格模式不扣到負
-                
-                // 屬性經驗回滾
-                if (task.attrs && window.StatsEngine && StatsEngine.deductExp) {
-                    StatsEngine.deductExp(r.exp, task.attrs);
+                // 嚴格模式倒扣邏輯
+                if (isStrict) {
+                    gs.exp -= r.exp; 
+                    // 這裡不處理降級，由 StatsEngine 監聽 Stats.UPDATED 時處理，或保持簡單僅扣到0
+                } else {
+                    gs.exp = Math.max(0, gs.exp - r.exp);
                 }
 
-                // V25: 熱量 Log 回滾 (精確刪除)
-                if (gs.settings.calMode && task.burn > 0) {
-                    gs.cal.today += task.burn;
-                    const targetStr = `-${task.burn}`;
-                    const idx = gs.cal.logs.findIndex(l => l.includes(task.title) && l.includes(targetStr));
+                // 熱量回滾
+                if (gs.unlocks && gs.unlocks.calorie_tracker && task.calories > 0) {
+                    gs.cal.today += task.calories;
+                    const targetLog = `-${task.calories}`;
+                    const idx = gs.cal.logs.findIndex(l => l.includes(task.title) && l.includes(targetLog));
                     if (idx !== -1) gs.cal.logs.splice(idx, 1);
                 }
 
-                const msg = isStrict ? " (已扣除/負債)" : " (已回收)";
-                EventBus.emit(EVENTS.System.TOAST, `已取消${msg}`);
+                // 移除歷史
+                const hIdx = gs.history.findIndex(h => h.id === task.id && h.doneTime === task.doneTime);
+                if (hIdx !== -1) gs.history.splice(hIdx, 1);
+
+                window.EventBus.emit(window.EVENTS.System.TOAST, isStrict ? "已取消 (懲罰扣除)" : "已取消 (回收獎勵)");
                 task.lastReward = null;
-            } else {
-                EventBus.emit(EVENTS.System.TOAST, "已取消");
             }
         }
 
-        // 通知更新：HUD (金幣經驗) 與 任務列表
-        this._saveAndNotify(EVENTS.Task.COMPLETED, task);
-        EventBus.emit(EVENTS.Stats.UPDATED);
+        if (window.App) App.saveData();
+        window.EventBus.emit(window.EVENTS.Stats.UPDATED);
+        window.EventBus.emit(window.EVENTS.Task.UPDATED);
     },
 
-    // [V36 要求] 計次增加
     incrementTask: function(id) {
         const gs = window.GlobalState;
         const t = gs.tasks.find(x => x.id === id);
         if (!t || t.done || t.type !== 'count') return;
-
         t.curr = (t.curr || 0) + 1;
         if (t.curr >= t.target) {
             t.curr = t.target;
             this.resolveTask(id);
         } else {
-            this._saveAndNotify(EVENTS.Task.UPDATED, t);
+            this._saveAndNotify(window.EVENTS.Task.UPDATED, t);
         }
     },
 
-    // [V36 要求] 複製任務
-    copyTask: function(id) {
-        const gs = window.GlobalState;
-        // 嘗試從列表中找，找不到則找編輯暫存
-        const temp = gs.tasks.find(t => t.id === id) || window.TempState.editingTask;
-        if (!temp) return;
-
-        const newTask = JSON.parse(JSON.stringify(temp));
-        newTask.id = 't_' + Date.now();
-        newTask.title = temp.title + " (副本)";
-        newTask.done = false;
-        newTask.doneTime = null;
-        newTask.curr = 0;
-        if (newTask.subs) newTask.subs.forEach(s => s.done = false);
-        
-        gs.tasks.unshift(newTask);
-        this._saveAndNotify(EVENTS.Task.CREATED, newTask);
-        EventBus.emit(EVENTS.System.TOAST, "任務已複製");
-    },
-
-    // [V36 要求] 切換子任務 (列表模式用)
+    // [Fix] 子任務切換 (解決 toggleSubtask 報錯)
     toggleSubtask: function(taskId, subIdx) {
         const gs = window.GlobalState;
         const task = gs.tasks.find(t => t.id === taskId);
-        
-        // V25: 確保資料存在
-        if (!task || !task.subs || !task.subs[subIdx]) return;
-
-        task.subs[subIdx].done = !task.subs[subIdx].done;
-        
-        // 只需要發送更新事件，不用重繪整個 CreateForm (那是 Controller 的工作)
-        this._saveAndNotify(EVENTS.Task.UPDATED, task);
+        if (task && task.subs && task.subs[subIdx]) {
+            task.subs[subIdx].done = !task.subs[subIdx].done;
+            this._saveAndNotify(window.EVENTS.Task.UPDATED, task);
+        }
     },
 
     // =========================================
-    // 3. 輔助運算 (Helpers)
+    // 5. 數據聚合 (History Summary)
+    // =========================================
+    getHistorySummary: function() {
+        const gs = window.GlobalState;
+        const history = gs.history || [];
+        const dailyMap = {};
+
+        history.forEach(task => {
+            const d = new Date(task.doneTime);
+            if(isNaN(d.getTime())) return;
+            const dateStr = d.toISOString().split('T')[0];
+
+            if (!dailyMap[dateStr]) {
+                dailyMap[dateStr] = {
+                    date: dateStr,
+                    totalImpact: 0,
+                    totalExp: 0,
+                    tasks: [],
+                    attrCounts: {}
+                };
+            }
+
+            const day = dailyMap[dateStr];
+            day.tasks.push(task);
+            
+            if (task.status === 'completed') {
+                day.totalImpact += (task.doneImpact || 0);
+                day.totalExp += (task.lastReward ? task.lastReward.exp : 0);
+            }
+
+            if (task.attrs && task.attrs.length) {
+                task.attrs.forEach(attr => {
+                    day.attrCounts[attr] = (day.attrCounts[attr] || 0) + 1;
+                });
+            }
+        });
+
+        // 整理輸出
+        const resultList = Object.values(dailyMap).map(day => {
+            const completedTasks = day.tasks.filter(t => t.status === 'completed');
+            completedTasks.sort((a, b) => (b.doneImpact || 0) - (a.doneImpact || 0));
+            const mvpTask = completedTasks.length > 0 ? completedTasks[0] : null;
+
+            // 主屬性
+            let maxAttr = 'NONE';
+            let maxCount = -1;
+            for (const [attr, count] of Object.entries(day.attrCounts)) {
+                if (count > maxCount) { maxCount = count; maxAttr = attr; }
+            }
+            if (maxAttr === 'NONE') maxAttr = 'STR';
+
+            // 評級
+            let rank = 'C';
+            if (day.totalImpact > 50) rank = 'S';
+            else if (day.totalImpact > 30) rank = 'A';
+            else if (day.totalImpact > 15) rank = 'B';
+
+            return {
+                date: day.date,
+                rank: rank,
+                totalImpact: day.totalImpact,
+                totalExp: day.totalExp,
+                mainAttr: maxAttr,
+                tasks: day.tasks, // 包含完成與失敗
+                mvpTask: mvpTask
+            };
+        });
+
+        return resultList.sort((a, b) => new Date(b.date) - new Date(a.date));
+    },
+
+    // =========================================
+    // 6. 公用工具 (Helpers)
     // =========================================
     
-    // V25: 獎勵計算公式
+    // [Fix] 公開且獨立的預覽函數 (避免 Context Loss)
     previewRewards: function(imp, urg) {
+        const i = parseInt(imp || 1);
+        const u = parseInt(urg || 1);
         const base = 10;
-        // 使用 V25 的 1.5 / 0.5 權重
-        const w = (parseInt(imp||1) * 1.5) + (parseInt(urg||1) * 0.5);
-        return { gold: Math.floor(base * w), exp: Math.floor(base * w) };
+        const w = (i * 1.5) + (u * 0.5);
+        return { 
+            gold: Math.floor(base * w), 
+            exp: Math.floor(base * w) 
+        };
     },
 
-    // 內部工具：存檔並發送事件
     _saveAndNotify: function(event, data) {
-        if (window.App) App.saveData();
-        if (window.EventBus && window.EVENTS) {
-            EventBus.emit(event, { task: data });
-        }
+        if (window.App && window.App.saveData) App.saveData();
+        if (window.EventBus) window.EventBus.emit(event, data);
     }
 };

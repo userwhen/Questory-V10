@@ -1,123 +1,199 @@
-/* js/core.js - 核心框架層 (Fixed Navigation Logic) */
+/* js/core.js - V35.0 System Core (Foundation) */
+/* 包含：GlobalState 定義、存檔機制、核心導航、通用工具 */
+
 window.act = window.act || {};
-window.TempState = window.TempState || {};
+window.TempState = window.TempState || { currentView: 'main' };
 
+// =========================================================
+// 1. Core Engine (系統核心)
+// =========================================================
 window.Core = {
-    // 1. 純粹的頁面切換 (強制隱藏舊頁面)
-    switchPage: (pageId) => {
-        const targetId = pageId.startsWith('page-') ? pageId : `page-${pageId}`;
+    // --- 系統初始化 ---
+    init: function() {
+        console.log("🚀 System Core V35 Initializing...");
         
-        // [修正] 使用更廣泛的選擇器，並強制設定 display: none
-        // 這能解決 Controller 設定了 style="display:block" 導致 CSS class 失效的問題
-        const allPages = document.querySelectorAll('.page, div[id^="page-"]');
-        
-        allPages.forEach(p => {
-            p.classList.remove('active');
-            p.style.display = 'none'; // <--- 關鍵！強制覆蓋行內樣式
-        });
+        // 1. 讀取存檔
+        this.load();
 
-        const targetEl = document.getElementById(targetId);
-        if (targetEl) {
-            targetEl.classList.add('active');
-            targetEl.style.display = 'block'; // 改為 block 確保顯示，若需 flex 可由 CSS .active 控制
+        // 2. 資料結構遷移與修補 (確保 DLC 與新欄位存在)
+        this.migrateData();
+
+        // 3. 發送初始化事件
+        if (window.EventBus && window.EVENTS) {
+            window.EventBus.emit(window.EVENTS.System.INIT);
         }
     },
 
-    // 2. 核心 UI 元件
-    ui: {
-        modal: (id, action = 'open') => {
-            const m = document.getElementById(id.startsWith('m-') ? id : 'm-' + id);
-            if (!m) return;
-            if (action === 'open') {
-                m.style.display = 'flex';
-                setTimeout(() => m.classList.add('active'), 10);
-            } else {
-                m.classList.remove('active');
-                setTimeout(() => m.style.display = 'none', 300);
+    // --- 資料管理 (Data Management) ---
+    
+    // 讀取存檔
+    load: function() {
+        const savedData = localStorage.getItem('Levelife_Save_V1');
+        if (savedData) {
+            try {
+                // Base64 解碼 -> JSON 解析
+                window.GlobalState = JSON.parse(decodeURIComponent(escape(atob(savedData))));
+                console.log("✅ 存檔讀取成功");
+            } catch (e) {
+                console.error("❌ 存檔損毀，重置資料", e);
+                this.resetData();
             }
-        },
-        toast: (msg) => {
-            if (window.EventBus && window.EVENTS) window.EventBus.emit(window.EVENTS.System.TOAST, msg);
-            else console.log("[Toast]", msg);
+        } else {
+            console.log("✨ 歡迎新使用者，建立預設資料");
+            this.resetData();
         }
     },
 
-    // 3. 通用工具
-    utils: {
-        generateId: (prefix = 'id') => prefix + '_' + Date.now() + Math.random().toString(36).substr(2, 9),
-        validateNumber: (el, max) => {
-            let v = parseInt(el.value);
-            if (isNaN(v)) v = ''; else if (max && v > max) v = max;
-            el.value = v;
-        }
-    }
-};
-
-// --- [重寫] act.navigate 導航邏輯 ---
-window.act.navigate = (pageId) => {
-    console.log(`[Nav] Switching to: ${pageId}`);
-
-    // --- [A] 核心頁面切換 (同步執行，不等待 EventBus) ---
-    // 1. 強制隱藏所有頁面 (解決殘留 style="display:block" 問題)
-    const allPages = document.querySelectorAll('.page, div[id^="page-"]');
-    allPages.forEach(p => {
-        p.classList.remove('active');
-        p.style.display = 'none'; // 強制隱藏
-    });
-    
-    // 2. 顯示目標頁面
-    const target = document.getElementById(`page-${pageId}`);
-    if (target) {
-        target.classList.add('active');
-        // 判斷是否需要 flex (通常全屏頁面如 avatar/story 用 flex，其他用 block)
-        // 保險起見先用 block，具體佈局交給 CSS .page.active
-        target.style.display = (['story', 'avatar'].includes(pageId)) ? 'flex' : 'block';
-        
-        window.TempState.currentView = pageId;
-    } else {
-        console.error(`❌ 找不到目標頁面: page-${pageId}`);
-    }
-
-    // --- [B] 容器狀態同步 (Layer Full) ---
-    const layerFull = document.getElementById('layer-full');
-    if (layerFull) {
-        if (target && layerFull.contains(target)) {
-            layerFull.classList.add('active');
-        } else {
-            layerFull.classList.remove('active');
-        }
-    }
-
-    // --- [C] Navbar 控制 ---
-    const navbar = document.getElementById('navbar');
-    const fullPages = ['story', 'avatar']; 
-    
-    if (navbar) {
-        if (fullPages.includes(pageId)) {
-            navbar.style.display = 'none';
-        } else {
-            navbar.style.display = 'flex';
+    // 儲存存檔
+    save: function() {
+        if (!window.GlobalState) return;
+        try {
+            const json = JSON.stringify(window.GlobalState);
+            const encoded = btoa(unescape(encodeURIComponent(json)));
+            localStorage.setItem('Levelife_Save_V1', encoded);
             
-            // 同步 Navbar 按鈕狀態
-            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-            // 嘗試匹配 nav-task, nav-shop 等 ID
-            const activeBtn = document.getElementById(`nav-${pageId}`);
-            if (activeBtn) activeBtn.classList.add('active');
+            // 可選：發送存檔事件 (避免過於頻繁可不發)
+            // if(window.EventBus) window.EventBus.emit(window.EVENTS.System.SAVE);
+        } catch (e) {
+            console.error("Save failed:", e);
+            if (window.act.toast) window.act.toast("❌ 存檔失敗 (空間不足?)");
         }
+    },
+
+    // 重置/預設資料結構 (The Holy Grail of Data Structure)
+    resetData: function() {
+        window.GlobalState = {
+            // [A] 玩家基礎
+            lv: 1,
+            exp: 0,
+            gold: 0,
+            freeGem: 0, // 免費鑽
+            paidGem: 0, // 儲值鑽
+            
+            // [B] 屬性與技能
+            attrs: {},   // STR, INT... (由 StatsEngine 補完)
+            skills: [],  // 現役技能
+            archivedSkills: [], // 大師技能
+            
+            // [C] 任務系統
+            tasks: [],   // 進行中任務
+            history: [], // 冒險日誌 (含完成與失敗)
+            
+            // [D] 成就與里程碑
+            achievements: [], // 系統成就 (Badges - 自動觸發)
+            milestones: [],   // 玩家里程碑 (Cards - 手動設定/Tag監聽)
+            
+            // [E] 設定與 DLC 解鎖
+            settings: {
+                mode: 'basic',      // basic, story, harem, learning...
+                sound: true,
+                theme: 'light',
+                calMax: 2000,       // 預設熱量目標
+                targetLang: 'en'    // 學習模式目標語言
+            },
+            unlocks: {
+                // 預設解鎖 basic
+                'basic': true,
+                // DLC 預設鎖定
+                'harem': false,
+                'learning': false,
+                'calorie_tracker': false, // 熱量追蹤模組
+                'strict_mode': false      // 嚴格模式契約
+            },
+
+            // [F] 系統紀錄
+            lastLoginDate: new Date().toDateString(),
+            installDate: Date.now()
+        };
+        this.save();
+    },
+
+    // 資料補丁 (Migration) - 確保舊存檔擁有新欄位
+    migrateData: function() {
+        const gs = window.GlobalState;
+        if (!gs) return;
+
+        // V35 DLC 補丁
+        if (!gs.unlocks) gs.unlocks = { 'basic': true };
+        
+        // V35 雙貨幣補丁
+        if (typeof gs.freeGem === 'undefined') gs.freeGem = 0;
+        if (typeof gs.paidGem === 'undefined') gs.paidGem = 0;
+
+        // V35 里程碑與歷史補丁
+        if (!gs.milestones) gs.milestones = [];
+        if (!gs.history) gs.history = [];
+
+        // 確保設定存在
+        if (!gs.settings) gs.settings = { mode: 'basic' };
+    },
+};
+
+// --- B. 視窗管理 (Modal Router) ---
+window.act.openModal = function(id) {
+    // 路由轉發：將舊 ID 轉給新模組渲染
+    if (id === 'settings' && window.SettingsController) {
+        window.SettingsController.renderSettings();
+        return;
+    }
+    if (id === 'bag' && window.view && view.renderBag) {
+        view.renderBag(); // 假設 Shop/Bag View 存在
+        return;
     }
 
-    // --- [D] 關閉干擾視窗 ---
-    // 切換頁面時，強制關閉可能開啟的 Modal 或 Overlay
-    if (window.ui && window.ui.modal && window.ui.modal.close) {
-        window.ui.modal.close('m-overlay'); 
-    }
-
-    // --- [E] 發送訊號 (通知 Controller 刷新數據) ---
-    if (window.EventBus && window.EVENTS) {
-        window.EventBus.emit(window.EVENTS.System.NAVIGATE, pageId);
+    // 預設行為：尋找 DOM 直接開啟 (相容舊版靜態 HTML)
+    const targetId = id.startsWith('m-') ? id : 'm-' + id;
+    const m = document.getElementById(targetId);
+    if (m) {
+        m.style.display = 'flex';
+        setTimeout(() => m.classList.add('active'), 10);
+        // 發出事件
+        if(window.EventBus) window.EventBus.emit(window.EVENTS.System.MODAL_OPEN, id);
     }
 };
 
-// 兼容性映射
-window.act.closeModal = (id) => Core.ui.modal(id, 'close');
-window.act.validateNumber = Core.utils.validateNumber;
+window.act.closeModal = function(id) {
+    let targetId = id;
+    // ID 映射 (相容舊版)
+    if (id === 'universal' || id === 'overlay') targetId = 'm-overlay';
+    if (id === 'system') targetId = 'm-system';
+    if (id === 'panel') targetId = 'm-panel';
+    if (!targetId.startsWith('m-')) targetId = 'm-' + targetId;
+
+    const m = document.getElementById(targetId);
+    if (m) {
+        m.classList.remove('active');
+        setTimeout(() => m.style.display = 'none', 300); // 等待動畫結束
+        // 發出事件
+        if(window.EventBus) window.EventBus.emit(window.EVENTS.System.MODAL_CLOSE, id);
+    }
+};
+
+// --- C. 通用操作 (Utils & Bridge) ---
+window.act.save = function() {
+    Core.save();
+};
+
+window.act.toast = function(msg) {
+    // 優先使用 EventBus 通知 UI 層顯示
+    if (window.EventBus && window.EVENTS) {
+        window.EventBus.emit(window.EVENTS.System.TOAST, msg);
+    } else {
+        // Fallback: 如果沒有 UI 層，直接 console
+        console.log(`[Toast] ${msg}`);
+        alert(msg);
+    }
+};
+
+// 新手教學入口 (保留舊版)
+window.act.showQA = function() {
+    // 假設 sys.confirm 存在，否則用原生
+    const confirmFunc = (window.sys && sys.confirm) ? sys.confirm : confirm;
+    if (confirmFunc("要重新觀看新手教學嗎?")) {
+        if (window.act.restartTutorial) window.act.restartTutorial();
+        else window.act.toast("教學模組尚未載入");
+    }
+};
+
+// 初始化執行 (確保在 DOMContentLoaded 後手動呼叫 Core.init，或由 main.js 呼叫)
+console.log("✅ Core V35 Loaded.");
