@@ -1,4 +1,4 @@
-/* js/modules/task_controller.js - V40.5 Fixed (Nav Nuke & Cat Guard) */
+/* js/modules/task_controller.js - V41.0 Fixed (Engine Bridge) */
 window.TaskController = {
     init: function() {
         const E = window.EVENTS;
@@ -7,28 +7,19 @@ window.TaskController = {
         Object.assign(window.act, {
             
             goToTaskRoot: () => {
-                // 1. 強制重置 Tab 狀態
                 window.TempState.taskTab = 'list';
-                
-                // 2. 執行導航
-                // 如果已經在 task 頁面，act.navigate 內的 Router 可能會因為頁面 ID 相同而不動作
-                // 所以我們這裡手動判斷：
                 if (window.TempState.currentView === 'task') {
-                    // 如果已經在任務頁，直接強制刷新視圖
                     refreshPage();
                 } else {
-                    // 如果在其他頁面，走正常導航流程
                     window.act.navigate('task');
                 }
             },
-			// --- 核心 CRUD ---
-			editTask: (id) => {
-                // 如果 id 是 null (代表點擊了 FAB 新增)
-                // 強制清空暫存的編輯物件，確保 View 重新初始化預設值
+
+            // --- 核心 CRUD ---
+            editTask: (id) => {
                 if (id === null) {
                     window.TempState.editingTask = null; 
                 }
-                // 發送事件
                 window.EventBus.emit(E.Task.EDIT_MODE, { taskId: id });
             },
             
@@ -55,31 +46,11 @@ window.TaskController = {
                 else if(confirm('確定刪除？')) doDelete();
             },
 
-            // --- 狀態操作 ---
-            toggleTask: (id) => {
-                // [新增] 1. 樂觀更新：立刻改變視覺樣式 (不等待 Engine)
-                const cardEl = document.getElementById(`task-card-${id}`);
-                const checkEl = document.getElementById(`check-btn-${id}`);
-                
-                if (cardEl) {
-                    // 加上完成的 class (假設 CSS 有寫 .done 樣式)
-                    cardEl.classList.toggle('task-done'); 
-                    cardEl.style.opacity = '0.5'; // 暫時變淡，讓使用者知道有點到
-                }
-                if (checkEl) {
-                    checkEl.innerHTML = '⏳'; // 變成沙漏或勾勾
-                }
-
-                // 2. 正常呼叫 Engine (這會觸發真正的數據運算和存檔)
-                // 運算完後 EventBus 會觸發 task:updated，接著 render() 會把正確的最終狀態畫上去
-                const t = window.GlobalState.tasks.find(x => x.id === id);
-                if (!t) return;
-                
-                // 為了讓動畫跑一下，可以稍微延遲真正的刷新 (選配)
-                setTimeout(() => {
-                    if (t.type === 'count' && !t.done) TaskEngine.incrementTask(id);
-                    else TaskEngine.resolveTask(id);
-                }, 100); // 100ms 延遲讓視覺過渡更順
+            // --- 狀態操作 (核心修復) ---
+            toggleTask: function(id) {
+                // [修復] 直接呼叫 Engine 處理所有邏輯 (金幣、歷史、Impact計算)
+                // 這樣能確保 task.doneTime 被正確寫入，且獎勵發放正確
+                TaskEngine.resolveTask(id);
             },
 
             resolveTask: (id) => { TaskEngine.resolveTask(id); },
@@ -163,7 +134,6 @@ window.TaskController = {
                 window.EventBus.emit(E.Task.UPDATED);
             },
             
-            // [Fix 2] 分類防護：確保預設分類不消失
             addNewCategory: () => {
                 const cb = (name) => {
                     if (name && name.trim()) {
@@ -171,16 +141,13 @@ window.TaskController = {
                         const gs = window.GlobalState;
                         const defaults = ['每日', '運動', '工作'];
                         
-                        // 1. 初始化或修復 taskCats
                         if (!gs.taskCats) gs.taskCats = [...defaults];
                         else {
-                            // 強制補回缺失的預設分類
                             defaults.forEach(d => {
                                 if(!gs.taskCats.includes(d)) gs.taskCats.push(d);
                             });
                         }
                         
-                        // 2. 新增自訂分類
                         if (!gs.taskCats.includes(newCat)) {
                             gs.taskCats.push(newCat);
                             if (window.TempState.editingTask) {
@@ -201,15 +168,11 @@ window.TaskController = {
         });
 
         const refreshPage = () => {
-            // 只有當前視圖是 'task' 時才重繪，避免在其他頁面浪費資源
-            // 注意：這裡必須用 'task' (單數)，對應 Router 的 ID
             if (window.TempState.currentView === 'task') {
                 if (window.taskView && taskView.render) {
-                    console.log("🔄 TaskController: 刷新 TaskView");
                     taskView.render();
                 }
             }
-             // 同時處理歷史頁面
             if (window.TempState.currentView === 'history') {
                 if (window.taskView && taskView.renderHistoryPage) {
                     taskView.renderHistoryPage();
@@ -217,28 +180,21 @@ window.TaskController = {
             }
         };
 
-        // 1. 監聽導航 (Router 切換完後通知)
+        // 監聽
         EventBus.on(E.System.NAVIGATE, (pageId) => {
             if (pageId === 'task') {
-                // 確保進入時初始化 Tab
                 if (!window.TempState.taskTab) window.TempState.taskTab = 'list';
                 refreshPage();
             }
-            if (pageId === 'history') {
-                refreshPage();
-            }
+            if (pageId === 'history') refreshPage();
         });
 
-        // 2. 監聽數據變更 (新增/修改/刪除/完成) -> 自動刷新
         EventBus.on(E.Task.CREATED, refreshPage);
         EventBus.on(E.Task.UPDATED, refreshPage);
         EventBus.on(E.Task.DELETED, refreshPage);
         EventBus.on(E.Task.COMPLETED, refreshPage);
-        
-        // 3. 監聽成就更新 (因為任務頁面有成就列表)
         EventBus.on(E.Ach.UPDATED, refreshPage);
 
-        // 4. 監聽編輯表單刷新
         EventBus.on(E.Task.EDIT_MODE, (data) => {
             if (window.taskView && taskView.renderCreateTaskForm) {
                 taskView.renderCreateTaskForm(data.taskId);
@@ -250,6 +206,6 @@ window.TaskController = {
             }
         });
 
-        console.log("✅ TaskController V41.0 Loaded (Clean & Router Synced).");
+        console.log("✅ TaskController V41.0 Fixed (Engine Bridge).");
     }
 };

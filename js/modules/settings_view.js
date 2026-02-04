@@ -1,7 +1,10 @@
-/* js/modules/settings_view.js - V34.Final (Complete UI) */
+/* js/modules/settings_view.js - V42.1 Fixed (Panel Restore + Calorie Fix) */
 window.settingsView = {
-    // 1. 設定主面板
+    // =========================================
+    // 1. 設定主面板 (回復使用 V34 的 Panel 模式)
+    // =========================================
     render: function() {
+        // [關鍵修復] 不再尋找 page-settings，而是準備彈出 Panel
         const gs = window.GlobalState;
         const s = gs.settings || {};
         const unlocks = gs.unlocks || {};
@@ -17,6 +20,7 @@ window.settingsView = {
         if (unlocks.harem) modeOptions.push({val:'harem', label:'💕 后宮模式'});
         if (unlocks.learning) modeOptions.push({val:'learning', label:'📚 語言學習'});
 
+        // 使用 V34 的結構，確保可以正確彈出
         const bodyHtml = `
             <div class="u-box">
                 <label class="section-title" style="display:block; margin-bottom:5px; font-weight:bold;">核心設定</label>
@@ -55,10 +59,13 @@ window.settingsView = {
 
         const footHtml = ui.component.btn({label:'儲存變更', theme:'correct', style:'width:100%;', action:'act.saveSettings()'});
 
+        // [關鍵] 使用 panel 類型，這樣才會從側面滑出，而不是寫入不存在的 page 容器
         ui.modal.render('⚙️ 系統設定', bodyHtml, footHtml, 'panel');
     },
 
-    // 2. 模式商店 (V12 風格)
+    // =========================================
+    // 2. 模式商店 (保留 V42 的美化版)
+    // =========================================
     renderSettingsShop: function() {
         const items = SettingsEngine.shopItems;
         const unlocks = window.GlobalState.unlocks || {};
@@ -86,19 +93,32 @@ window.settingsView = {
         ui.modal.render('🛒 模式商店', `<div style="padding:10px;">${listHtml}</div>`, null, 'overlay');
     },
 
-    // 3. 卡路里設定視窗 (取代 prompt)
+    // =========================================
+    // 3. 卡路里設定視窗 (保留 V42 的修復版)
+    // =========================================
     renderCalorieModal: function() {
-        const currentMax = window.GlobalState.settings?.calMax || 2000;
+        const gs = window.GlobalState;
+        const currentVal = (gs.settings && gs.settings.calMax) ? gs.settings.calMax : 2000;
+
+        // [Fix] 手動寫 HTML input 確保 ID 正確，Controller 才能抓到數值
         const body = `
             <div style="padding:20px; text-align:center;">
-                <p style="margin-bottom:15px; color:#555;">請設定每日目標熱量 (Kcal)</p>
-                ${ui.input.number(currentMax, '例如: 2000', '', 5, 'inp-cal-target')}
+                <div style="margin-bottom:15px; color:#555;">請設定每日熱量目標 (Kcal)</div>
+                <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
+                    <span style="font-size:1.5rem;">🎯</span>
+                    <input type="number" id="inp-cal-target" value="${currentVal}" 
+                        style="font-size:1.5rem; width:120px; text-align:center; padding:5px; border:2px solid #2196f3; border-radius:8px; outline:none;">
+                </div>
+                <div style="margin-top:10px; font-size:0.8rem; color:#999;">
+                    建議範圍: 1500 ~ 2500
+                </div>
             </div>
         `;
-        
+
         // 如果取消，要把開關關掉 (視覺上)
         const cancelAction = "document.getElementById('set-cal').querySelector('input').checked = false; act.closeModal('overlay');";
-        
+
+        // [Fix] 保留取消與確定按鈕
         const foot = ui.layout.flexRow(
             ui.component.btn({label:'取消', theme:'ghost', action:cancelAction}) +
             ui.component.btn({label:'確定', theme:'correct', action:'act.submitCalTarget()'})
@@ -107,7 +127,9 @@ window.settingsView = {
         ui.modal.render('🔥 目標設定', body, foot, 'overlay');
     },
 
-    // 4. 重置確認視窗 (取代 confirm)
+    // =========================================
+    // 4. 其他功能 (保留 V42)
+    // =========================================
     renderResetConfirm: function() {
         const body = `
             <div style="padding:20px; text-align:center; color:#d32f2f;">
@@ -117,10 +139,9 @@ window.settingsView = {
             </div>
         `;
         const foot = ui.component.btn({label:'確定重置', theme:'danger', style:'width:100%;', action:'act.confirmReset()'});
-        ui.modal.render('系統警告', body, foot, 'system'); // 使用 system 層級
+        ui.modal.render('系統警告', body, foot, 'system');
     },
 
-    // 5. 匯出視窗
     renderExportModal: function(code) {
         const body = `
             <div style="padding:10px;">
@@ -132,7 +153,6 @@ window.settingsView = {
         setTimeout(() => { const el = document.getElementById('inp-export-area'); if(el) el.select(); }, 200);
     },
 
-    // 6. 匯入視窗
     renderImportModal: function() {
         const body = `
             <div style="padding:10px;">

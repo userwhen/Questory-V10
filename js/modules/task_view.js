@@ -102,22 +102,26 @@ window.taskView = {
 
         const currentTemp = window.TempState.editingTask;
         
-        // [邏輯確認] 
-        // 由於 Controller 把 editingTask 設為 null 了，這裡的 currentTemp 就是 null
-        // needInit 會變成 true，進而執行下方的預設值初始化
+        // 判斷是否需要初始化數據
         const needInit = !currentTemp || (taskId && currentTemp.id !== taskId) || (taskId === null && currentTemp.id !== null);
         
         if (needInit) {
             if (taskId === null) {
-                // 這裡會建立乾淨的預設值
-                window.TempState.editingTask = { id: null, title: '', desc: '', importance: 2, urgency: 2, type: 'normal', attrs: [], cat: '每日', target: 10, subs: [], pinned: false, calories: 0, deadline: '', subRule: 'all', recurrence: '' };
+                // [修正] 新增模式：預設值改為 1 (雜務)
+                window.TempState.editingTask = { id: null, title: '', desc: '', importance: 1, urgency: 1, type: 'normal', attrs: [], cat: '每日', target: 10, subs: [], pinned: false, calories: 0, deadline: '', subRule: 'all', recurrence: '' };
             } else {
+                // 編輯模式：複製現有任務
                 const task = gs.tasks.find(t => t.id === taskId);
                 if (task) window.TempState.editingTask = JSON.parse(JSON.stringify(task));
             }
         }
         
         const data = window.TempState.editingTask;
+        
+        // [修正] 防呆邏輯：如果數據缺失或為 0，強制設為 1
+        data.importance = (data.importance === undefined || data.importance === null) ? 1 : (parseInt(data.importance) || 1);
+        data.urgency = (data.urgency === undefined || data.urgency === null) ? 1 : (parseInt(data.urgency) || 1);
+        
         if (!data.attrs) data.attrs = [];
         const isCount = data.type === 'count';
 
@@ -200,9 +204,13 @@ window.taskView = {
         bodyHtml += `<div style="margin-bottom:15px;"><label style="font-size:0.8rem; color:#888;">📚 綁定技能</label><div class="u-box" style="padding:10px; background:#fff; border:1px solid #e0e0e0; border-radius:8px; display:flex; flex-wrap:wrap; min-height:50px;">${skillHtml || '<span style="color:#888;font-size:0.8rem; width:100%; text-align:center;">無可用技能，請至屬性頁新增</span>'}</div></div>`;
 
         // 矩陣 & 日期
+        // [修正] 顏色邏輯：>=3 變色，否則維持灰色
         const getLabelColor = (val) => val >= 3 ? (val===4?'#d32f2f':'#ef6c00') : (val===2?'#1976d2':'#555');
+        
         let borderSideColor = '#757575'; 
-        if(data.importance>=3 && data.urgency>=3) borderSideColor="#d32f2f"; else if(data.importance>=3) borderSideColor="#0288d1"; else if(data.urgency>=3) borderSideColor="#ef6c00";
+        if(data.importance>=3 && data.urgency>=3) borderSideColor="#d32f2f"; 
+        else if(data.importance>=3) borderSideColor="#0288d1"; 
+        else if(data.urgency>=3) borderSideColor="#ef6c00";
         
         bodyHtml += `<div id="matrix-box" class="u-box" style="padding:10px; margin-bottom:15px; border-left: 4px solid ${borderSideColor}; background:#fff; transition: border-left-color 0.3s ease;">
             <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span style="font-weight:bold; font-size:0.9rem;">📊 價值評估</span><div id="matrix-tag-preview" style="font-size:0.85rem; color:#666;">...</div></div>

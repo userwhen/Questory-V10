@@ -28,7 +28,8 @@ window.EVENTS = {
     Stats: {
         UPDATED: 'stats:updated',       // 屬性/金幣/等級變更
         SKILL_EDIT_MODE: 'stats:skill_edit',
-        LEVEL_UP: 'stats:level_up'      // [建議新增] 升級特效用
+        LEVEL_UP: 'stats:level_up',      // [建議新增] 升級特效用
+		SKILL_MAXED: 'stats:skill_maxed'
     },
     Story: {
         UPDATED: 'story:updated',       // 精力變更

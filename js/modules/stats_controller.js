@@ -1,104 +1,106 @@
-/* js/modules/stats_controller.js - V39.0 Stats Controller */
-/* 負責：處理 UI 事件、技能表單提交 */
-
+/* js/modules/stats_controller.js - V45.0 Source Fix (Auto-Init) */
 window.StatsController = {
+    // =========================================
+    // 1. 初始化 (系統啟動時執行)
+    // =========================================
     init: function() {
+        // [源頭修復] 強制啟動引擎初始化
+        // 這行代碼會檢查 GlobalState，如果發現缺了 STR/INT，會當場補齊。
+        // 確保後續 View 讀取時，數據絕對是完整的。
+        if (window.StatsEngine && StatsEngine.init) {
+            console.log("⚙️ StatsController: 呼叫引擎執行數據完整性檢查...");
+            StatsEngine.init(); 
+        }
+
         const E = window.EVENTS;
         if (!window.EventBus || !E) return;
 
-        // ============================
-        // A. 擴充 window.act
-        // ============================
+        // A. 註冊 act 行為 (供 View 呼叫)
         Object.assign(window.act, {
-            
-            // 1. 打開新增視窗 (View 呼叫)
-            openAddSkill: function() {
-                // 通知 View 渲染空表單 (editId = null)
-                window.TempState.editSkillId = null;
-                // 注意：這裡假設 View 有一個 renderSkillModal 方法
-                // 我們發送 SKILL_EDIT_MODE 事件讓 View 去處理
-                window.EventBus.emit(E.Stats.SKILL_EDIT_MODE, { skill: null });
-            },
-
-            // 2. 打開編輯視窗
-            editSkill: function(name) {
-                const skill = window.GlobalState.skills.find(s => s.name === name);
-                if (!skill) return;
-                window.TempState.editSkillId = name;
-                window.EventBus.emit(E.Stats.SKILL_EDIT_MODE, { skill: skill });
-            },
-
-            // 3. 提交技能 (表單按鈕呼叫)
-            submitNewSkill: function() {
-                // 從 DOM 獲取數據
-                const nameInput = document.getElementById('skill-name-input');
-                const attrSelect = document.getElementById('skill-attr-select');
-                
-                if (!nameInput || !attrSelect) {
-                    console.error("DOM Element not found for skill submit");
-                    return;
+            openAddSkill: () => {
+                if (window.statsView && statsView.renderSkillModal) {
+                    statsView.renderSkillModal(null);
                 }
-
-                const name = nameInput.value.trim();
-                const parent = attrSelect.value;
-                const editId = window.TempState.editSkillId;
-
-                if (!name) {
-                    window.act.toast("❌ 請輸入技能名稱");
-                    return;
+            },
+            editSkill: (skillName) => {
+                if (window.statsView && statsView.renderSkillModal) {
+                    statsView.renderSkillModal(skillName);
                 }
+            },
+            saveSkill: () => {
+                const data = window.TempState.editingSkill;
+                if (!data || !data.name) return act.toast("⚠️ 請輸入技能名稱");
 
-                // 呼叫 Engine 處理邏輯
-                const result = StatsEngine.saveSkill(name, parent, editId);
-
+                const result = StatsEngine.saveSkill(data.name, data.parent, data.editId);
                 if (result.success) {
-                    window.act.toast(editId ? "✅ 修改成功" : "✅ 新增成功");
-                    if (window.act.closeModal) window.act.closeModal('overlay'); // 或 m-panel
+                    act.closeModal('overlay');
+                    act.toast("✅ 技能已儲存");
                 } else {
-                    window.act.toast(`❌ ${result.msg}`);
+                    act.toast(`❌ ${result.msg}`);
                 }
             },
-
-            // 4. 刪除技能
-            deleteSkill: function() {
-                const name = window.TempState.editSkillId;
-                if (!name) return;
-
-                const confirmFunc = (window.sys && sys.confirm) ? sys.confirm : confirm;
-                if (confirmFunc(`確定要刪除技能 [${name}] 嗎？`)) {
+            deleteSkill: (name) => {
+                const doDelete = () => {
                     StatsEngine.deleteSkill(name);
-                    if (window.act.closeModal) window.act.closeModal('overlay');
-                    window.act.toast("🗑️ 技能已刪除");
+                    act.closeModal('overlay');
+                    act.toast("🗑️ 技能已刪除");
+                };
+                if(window.sys && sys.confirm) {
+                    sys.confirm(`確定要刪除技能 [${name}] 嗎？`, doDelete);
+                } else if(confirm(`確定要刪除技能 [${name}] 嗎？`)) {
+                    doDelete();
                 }
             },
             
-            // 5. 切換 Stats 分頁 (如果有 Skill Tree / Radar 切換需求)
             switchStatsTab: function(tab) {
                 window.TempState.statsTab = tab;
-                window.EventBus.emit(E.Stats.UPDATED);
+                window.EventBus.emit(window.EVENTS.Stats.UPDATED);
             }
         });
 
         // ============================
-        // B. 事件監聽
+        // B. 事件監聽 (Event Listeners)
         // ============================
 
-        // 監聽導航：刷新
+        // 1. 任務完成 -> 加分
+        EventBus.on(E.Task.COMPLETED, (payload) => {
+            if (payload && payload.task) {
+                StatsEngine.onTaskCompleted(payload.task, payload.impact);
+            }
+        });
+
+        // 2. 任務取消 -> 倒扣
+        EventBus.on(E.Task.UNCOMPLETED, (payload) => {
+            if (payload && payload.task) {
+                StatsEngine.onTaskUndone(payload.task, payload.impact);
+            }
+        });
+
+        // 3. 編輯模式
+        EventBus.on(E.Stats.SKILL_EDIT_MODE, (data) => {
+            if (window.statsView && statsView.renderSkillModal) {
+                statsView.renderSkillModal(data ? data.skill : null);
+            }
+        });
+
+        // 4. 頁面導航渲染 (防止白畫面)
         EventBus.on(E.System.NAVIGATE, (pageId) => {
             if (pageId === 'stats') {
-                if (window.statsView && window.statsView.render) {
-                    window.statsView.render();
+                if (window.statsView && statsView.render) {
+                    statsView.render();
                 }
             }
         });
 
-        // 監聽數據變更：刷新
-        EventBus.on(E.Stats.UPDATED, () => {
+        // 5. 數據更新刷新
+        const refreshStats = () => {
             if (window.TempState.currentView === 'stats' && window.statsView) {
-                window.statsView.render();
+                statsView.render();
             }
-        });
+        };
+        EventBus.on(E.Stats.UPDATED, refreshStats);
+        EventBus.on(E.Stats.LEVEL_UP, refreshStats);
 
-        console.log("✅ StatsController V39.0 Loaded.");
+        console.log("✅ StatsController V45.0 Loaded (Auto-Init Active).");
     }
 };

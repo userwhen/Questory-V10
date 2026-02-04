@@ -1,6 +1,6 @@
-/* js/modules/settings.js - V34.Final (Logic Engine) */
+/* js/modules/settings.js - V35.0 Fixed (Unlock Sync) */
 window.SettingsEngine = {
-    // 商店商品定義 (包含 V12 視覺樣式)
+    // 商店商品定義
     shopItems: [
         { 
             id: 'harem', name: '💕 后宮模式', 
@@ -21,7 +21,6 @@ window.SettingsEngine = {
         const gs = window.GlobalState;
         if (!gs.settings) gs.settings = {};
         
-        // 特殊模式處理
         if (newSettings.mode === 'learning') {
             newSettings.learningMode = true;
             if (!newSettings.targetLang) newSettings.targetLang = 'mix';
@@ -33,23 +32,36 @@ window.SettingsEngine = {
         
         if (window.App) App.saveData();
         
-        EventBus.emit(EVENTS.Settings.UPDATED);
-        EventBus.emit(EVENTS.System.TOAST, "✅ 設定已儲存");
+        EventBus.emit(window.EVENTS.Settings.UPDATED);
+        EventBus.emit(window.EVENTS.System.TOAST, "✅ 設定已儲存");
         
         return gs.settings.mode === 'basic' ? 'stats' : 'main';
     },
 
-    // 2. 儲存卡路里目標
+    // 2. [修復] 儲存卡路里目標並解鎖功能
     saveCalTarget: function(val) {
         const gs = window.GlobalState;
         if (!gs.settings) gs.settings = {};
+        if (!gs.unlocks) gs.unlocks = {}; // 確保 unlocks 存在
         
+        const numVal = parseInt(val);
+        
+        // 設定數值
         gs.settings.calMode = true;
-        gs.settings.calMax = parseInt(val);
+        gs.settings.calMax = numVal;
+        
+        // [關鍵修復] 同步解鎖 TaskEngine 需要的旗標
+        gs.unlocks.calorie_tracker = true; 
         
         if (window.App) App.saveData();
-        EventBus.emit(EVENTS.Settings.UPDATED);
-        EventBus.emit(EVENTS.System.TOAST, `✅ 目標已更新: ${val} Kcal`);
+        
+        // 通知更新
+        if (window.EventBus) {
+            EventBus.emit(window.EVENTS.Settings.UPDATED);
+            EventBus.emit(window.EVENTS.System.TOAST, `✅ 目標已更新: ${numVal} Kcal (功能已啟用)`);
+            // 強制刷新 Stats 頁面以顯示熱量表
+            EventBus.emit(window.EVENTS.Stats.UPDATED);
+        }
     },
 
     // 3. 購買模式
@@ -58,14 +70,12 @@ window.SettingsEngine = {
         const item = this.shopItems.find(i => i.id === itemId);
         if (!item) return;
 
-        // 檢查餘額
         const totalGem = (gs.freeGem || 0) + (gs.paidGem || 0);
         if (totalGem < item.price) {
-            EventBus.emit(EVENTS.System.TOAST, "❌ 鑽石不足");
+            EventBus.emit(window.EVENTS.System.TOAST, "❌ 鑽石不足");
             return;
         }
         
-        // 扣款 (優先扣免費)
         let cost = item.price;
         if ((gs.freeGem || 0) >= cost) {
             gs.freeGem -= cost;
@@ -79,8 +89,8 @@ window.SettingsEngine = {
         gs.unlocks[itemId] = true;
         
         if (window.App) App.saveData();
-        EventBus.emit(EVENTS.Settings.UPDATED);
-        EventBus.emit(EVENTS.System.TOAST, `🎉 已解鎖 ${item.name}`);
+        EventBus.emit(window.EVENTS.Settings.UPDATED);
+        EventBus.emit(window.EVENTS.System.TOAST, `🎉 已解鎖 ${item.name}`);
     },
 
     // 4. 重置資料
@@ -104,13 +114,13 @@ window.SettingsEngine = {
             if (data && (typeof data.lv === 'number' || typeof data.gold === 'number')) {
                 window.GlobalState = data;
                 if (window.App) App.saveData();
-                EventBus.emit(EVENTS.System.TOAST, "✅ 匯入成功，即將重啟...");
+                EventBus.emit(window.EVENTS.System.TOAST, "✅ 匯入成功，即將重啟...");
                 setTimeout(() => location.reload(), 1000);
             } else {
                 throw new Error("Format Error");
             }
         } catch (e) {
-            EventBus.emit(EVENTS.System.TOAST, "❌ 代碼無效");
+            if(window.EventBus) EventBus.emit(window.EVENTS.System.TOAST, "❌ 代碼無效");
         }
     }
 };

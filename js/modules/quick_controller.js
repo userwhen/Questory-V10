@@ -1,4 +1,4 @@
-/* js/modules/quick_controller.js - quick Note Logic */
+/* js/modules/quick_controller.js - V39.1 Clears Draft & Fixes Race Condition */
 window.quickController = {
     init: function() {
         // 註冊到 act
@@ -23,41 +23,47 @@ window.quickController = {
                      return;
                 }
 
-                // 1. 保存當前內容
-                localStorage.setItem('SQ_QUICK_DRAFT', text);
-
-                // 2. 解析
+                // 1. 解析內容
                 // [注意] 這裡要呼叫自己 (window.quickController)
                 const parsedData = window.quickController.parseText(text);
 
                 if (!parsedData.title) {
+                    // 如果解析失敗，保留內容讓使用者修改
+                    localStorage.setItem('SQ_QUICK_DRAFT', text);
                     if(window.act && act.toast) act.toast("⚠️ 無法識別標題 (請使用 / 開頭)");
                     return;
                 }
 
-                // 3. 設定暫存資料
+                // ==========================================
+                // [新增] 2. 清除隨手記暫存
+                // 既然解析成功，就清空草稿，下次打開就是乾淨的
+                // ==========================================
+                localStorage.removeItem('SQ_QUICK_DRAFT');
+
+                // 3. 設定暫存資料 (傳遞給 TaskView)
                 window.TempState.importedTaskData = parsedData;
 
-                // 4. [修正] 跳轉頁面並自動開啟編輯視窗
+                // 4. 導航與關閉視窗 (觸發 CSS 關閉動畫)
                 if(window.act && act.navigate) act.navigate('task'); 
                 if(window.act && act.switchTaskTab) act.switchTaskTab('list');
-
-                // 5. 關閉隨手記視窗
                 if(window.ui && ui.modal) ui.modal.close('m-quick');
 
-                // 6. [新增] 延遲一點點時間，強制打開新增任務視窗
+                // 5. [優化] 延遲 400ms 開啟新視窗
+                // 避開「關閉動畫」的 300ms 期間，確保新視窗不會被舊的關閉指令誤殺
                 setTimeout(() => {
-                    console.log("🚀 自動開啟新增任務視窗...");
-                    if (window.taskView && taskView.renderCreateTaskForm) {
-                        taskView.renderCreateTaskForm(null); // null 代表新增模式
+                    console.log("🚀 隨手記傳送：開啟新增任務視窗...");
+                    // 使用 EventBus 觸發，與 TaskController 邏輯統一
+                    if (window.EventBus) {
+                        window.EventBus.emit(window.EVENTS.Task.EDIT_MODE, { taskId: null });
                     }
-                }, 100); // 100ms 緩衝確保頁面已切換
+                }, 400); 
             }
         });
         
-        console.log("✅ QuickController Active (Functions Registered)");
+        console.log("✅ QuickController Active (Auto-Clear Enabled)");
     },
 
+    // 解析邏輯保持不變
     parseText: (text) => {
         const lines = text.split('\n');
         const task = {
@@ -86,7 +92,7 @@ window.quickController = {
                 }
             } else {
                 if (!task.title && !t.startsWith('/')) {
-                     // 標題防呆可選
+                     // 標題前的雜訊忽略
                 } else {
                     task.desc = task.desc ? task.desc + '\n' + t : t;
                 }

@@ -23,15 +23,36 @@ window.AchController = {
                 const data = window.TempState.editingAch;
                 if (!data || !data.title) return window.act.toast("⚠️ 請輸入目標名稱");
                 
-                AchEngine.createMilestone({
-                    title: data.title,
-                    targetType: data.targetType,
-                    targetValue: data.targetValue,
-                    tier: data.tier
-                });
+                // [修正] 判斷是新增還是更新
+                if (data.id) {
+                    // 更新模式
+                    AchEngine.updateMilestone({
+                        id: data.id,
+                        title: data.title,
+                        targetType: data.targetType,
+                        targetValue: data.targetValue,
+                        tier: data.tier
+                    });
+                    window.act.toast("✅ 目標已更新！");
+                } else {
+                    // 新增模式
+                    AchEngine.createMilestone({
+                        title: data.title,
+                        targetType: data.targetType,
+                        targetValue: data.targetValue,
+                        tier: data.tier
+                    });
+                    window.act.toast("✅ 目標已建立！");
+                }
 
                 if (window.act.closeModal) window.act.closeModal('overlay');
-                window.act.toast("✅ 目標已建立！");
+            },
+			
+			editAch: (id) => {
+                // 呼叫 View 打開編輯視窗 (帶入 ID)
+                if (window.achView && achView.renderCreateAchForm) {
+                    achView.renderCreateAchForm(id);
+                }
             },
 
             // C. 領取獎勵
@@ -78,7 +99,16 @@ window.AchController = {
             }
         });
 
-        // 3. 導航監聽
+        // 3. [新增] 任務取消 -> 倒扣進度
+        // 確保你的 TaskController 在取消勾選時有發送這個訊號
+        EventBus.on(E.Task.UNCOMPLETED, (payload) => {
+            if (payload && payload.task) {
+                console.log("AchController: 偵測到任務取消，執行進度倒扣...");
+                AchEngine.onTaskUndone(payload.task, payload.impact);
+            }
+        });
+
+        // 4. 導航監聽
         EventBus.on(E.System.NAVIGATE, (pageId) => {
             if (pageId === 'milestone') {
                 if (window.achView && achView.renderMilestonePage) {
