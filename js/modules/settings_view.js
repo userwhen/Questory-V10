@@ -1,30 +1,35 @@
-/* js/modules/settings_view.js - V42.1 Fixed (Panel Restore + Calorie Fix) */
+/* js/modules/settings_view.js - V51.0 Fixed Unlocks Error */
 window.settingsView = {
-    // =========================================
-    // 1. 設定主面板 (回復使用 V34 的 Panel 模式)
-    // =========================================
     render: function() {
-        // [關鍵修復] 不再尋找 page-settings，而是準備彈出 Panel
         const gs = window.GlobalState;
-        const s = gs.settings || {};
-        const unlocks = gs.unlocks || {};
         
-        // 準備暫存 (Draft)
-        window.TempState.settingsDraft = { ...s };
+        // 1. 合併 Draft
+        const savedSettings = gs.settings || {};
+        const draftSettings = window.TempState.settingsDraft || {};
+        
+        if (Object.keys(draftSettings).length === 0) {
+            window.TempState.settingsDraft = { ...savedSettings };
+        }
+        
+        // 最終顯示狀態
+        const s = { ...savedSettings, ...window.TempState.settingsDraft };
+        const unlocks = gs.unlocks || {}; // 確保這一行存在
 
-        // 模式選項
+        // 2. 模式選項
         let modeOptions = [
             {val:'adventurer', label:'🛡️ 冒險者模式'},
             {val:'basic', label:'📊 基礎模式'}
         ];
+        
+        // 現在 unlocks 變數存在了，這裡就不會報錯
         if (unlocks.harem) modeOptions.push({val:'harem', label:'💕 后宮模式'});
         if (unlocks.learning) modeOptions.push({val:'learning', label:'📚 語言學習'});
 
-        // 使用 V34 的結構，確保可以正確彈出
+        // 3. 渲染 HTML
         const bodyHtml = `
             <div class="u-box">
                 <label class="section-title" style="display:block; margin-bottom:5px; font-weight:bold;">核心設定</label>
-                ${ui.input.select(modeOptions, s.mode || 'adventurer', "act.updateSettingsDraft('mode', this.value)")}
+                ${ui.input.select(modeOptions, s.mode || 'basic', "act.updateSettingsDraft('mode', this.value)")}
                 
                 <div onclick="act.openSettingsShop()" style="margin-top:10px; padding:12px; border:1px solid #ffb300; background:#fff8e1; border-radius:8px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:8px;">
@@ -37,13 +42,17 @@ window.settingsView = {
 
             <div class="u-box" style="margin-top:15px;">
                 <label class="section-title" style="display:block; margin-bottom:10px; font-weight:bold;">功能開關</label>
+                
                 ${ui.input.toggleRow({ 
                     id: 'set-cal', label: '🔥 卡路里消耗計算', 
-                    checked: s.calMode, onChange: "act.checkCalMode(this.checked)" 
+                    checked: s.calMode,  
+                    onChange: "act.checkCalMode(this.checked)" 
                 })}
+                
                 ${ui.input.toggleRow({ 
                     id: 'set-strict', label: '⚡ 嚴格模式 (失敗扣分)', 
-                    checked: s.strictMode, onChange: "act.updateSettingsDraft('strictMode', this.checked)" 
+                    checked: s.strictMode, 
+                    onChange: "act.updateSettingsDraft('strictMode', this.checked)" 
                 })}
             </div>
 
@@ -59,10 +68,8 @@ window.settingsView = {
 
         const footHtml = ui.component.btn({label:'儲存變更', theme:'correct', style:'width:100%;', action:'act.saveSettings()'});
 
-        // [關鍵] 使用 panel 類型，這樣才會從側面滑出，而不是寫入不存在的 page 容器
         ui.modal.render('⚙️ 系統設定', bodyHtml, footHtml, 'panel');
     },
-
     // =========================================
     // 2. 模式商店 (保留 V42 的美化版)
     // =========================================
@@ -100,7 +107,6 @@ window.settingsView = {
         const gs = window.GlobalState;
         const currentVal = (gs.settings && gs.settings.calMax) ? gs.settings.calMax : 2000;
 
-        // [Fix] 手動寫 HTML input 確保 ID 正確，Controller 才能抓到數值
         const body = `
             <div style="padding:20px; text-align:center;">
                 <div style="margin-bottom:15px; color:#555;">請設定每日熱量目標 (Kcal)</div>
@@ -109,20 +115,16 @@ window.settingsView = {
                     <input type="number" id="inp-cal-target" value="${currentVal}" 
                         style="font-size:1.5rem; width:120px; text-align:center; padding:5px; border:2px solid #2196f3; border-radius:8px; outline:none;">
                 </div>
-                <div style="margin-top:10px; font-size:0.8rem; color:#999;">
-                    建議範圍: 1500 ~ 2500
-                </div>
             </div>
         `;
 
-        // 如果取消，要把開關關掉 (視覺上)
-        const cancelAction = "document.getElementById('set-cal').querySelector('input').checked = false; act.closeModal('overlay');";
-
-        // [Fix] 保留取消與確定按鈕
-        const foot = ui.layout.flexRow(
-            ui.component.btn({label:'取消', theme:'ghost', action:cancelAction}) +
-            ui.component.btn({label:'確定', theme:'correct', action:'act.submitCalTarget()'})
-        , '10px', 'center');
+        // [修改] 只保留確定按鈕，移除 Cancel
+        const foot = ui.component.btn({
+            label: '確定', 
+            theme: 'correct', 
+            style: 'width:100%;', // 讓按鈕滿版
+            action: 'act.submitCalTarget()'
+        });
 
         ui.modal.render('🔥 目標設定', body, foot, 'overlay');
     },
@@ -155,12 +157,18 @@ window.settingsView = {
 
     renderImportModal: function() {
         const body = `
-            <div style="padding:10px;">
-                <p style="font-size:0.9rem; color:#666; margin-bottom:5px;">請貼上存檔代碼：</p>
-                ${ui.input.textarea('', '在此貼上代碼...', '', 'inp-import-area')}
-                <p style="font-size:0.8rem; color:red; margin-top:5px;">⚠️ 這將覆蓋目前的存檔</p>
+            <div style="padding:20px; text-align:center;">
+                <p style="margin-bottom:15px; color:#666;">請選擇 .json 存檔檔案</p>
+                <input type="file" id="inp-import-file" accept=".json" 
+                    onchange="act.handleFileImport(this)"
+                    style="display:block; width:100%; padding:10px; border:1px dashed #ccc; background:#f9f9f9;">
             </div>`;
-        const foot = ui.component.btn({label:'確認匯入', theme:'danger', style:'width:100%;', action:'act.submitImport()'});
-        ui.modal.render('📥 資料匯入', body, foot, 'overlay');
-    }
+        
+        // 不需要 Footer 按鈕，因為選擇檔案後直接觸發 onchange
+        const foot = ui.component.btn({label:'關閉', theme:'ghost', action:"act.closeModal('overlay')"});
+        
+        ui.modal.render('📥 讀取存檔', body, foot, 'overlay');
+    },
+    
+    // [已棄用] renderExportModal 可以刪除，因為 Controller 直接呼叫下載了
 };

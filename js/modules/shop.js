@@ -67,6 +67,12 @@ window.ShopEngine = {
     // [核心] 跨日重置邏輯
     checkDailyReset: function() {
         const gs = window.GlobalState;
+        
+        // [新增] 安全檢查：如果 Core 還沒讀完檔 (tasks 不存在)，絕對不准執行重置邏輯
+        if (!gs || !gs.tasks) {
+            console.warn("🛡️ [Shop] GlobalState 未就緒，跳過每日重置檢查");
+            return;
+        }
         const today = new Date().toDateString(); // 例如 "Mon Jan 26 2026"
         
         if (gs.lastLoginDate !== today) {

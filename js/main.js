@@ -1,22 +1,41 @@
 /* js/main.js - V39.2 System Bootloader (UI Manager & Lobby Fix) */
 /* 負責：系統初始化順序、全域 UI 管理、錯誤攔截、相容性接口 */
-
-const SAVE_KEY = 'Levelife_Save_V1';
-
-window.App = {
     // =========================================================================
     // 1. 系統啟動 (Boot Sequence)
     // =========================================================================
+	window.App = {
     boot: function() {
         console.log("🔌 [App] System Booting...");
 
-        // A. 初始化控制器
+        // ============================================================
+        // 1. 【絕對優先】啟動 Core 並讀取存檔
+        // ============================================================
+        // 只有先讀檔，GlobalState 才有資料，後續的 Controller/Engine 才不會把空資料存進去
+        if (window.Core) {
+            window.Core.init(); 
+        } else {
+            console.error("❌ [Fatal] Core 未載入，系統無法啟動");
+            return; // Core 沒活，後面都不用跑了
+        }
+
+        // ============================================================
+        // 2. 啟動基礎引擎 (Engines)
+        // ============================================================
+        // 建議先啟動引擎，確保邏輯層就緒，再啟動 UI 控制器
+        if (window.TaskEngine) window.TaskEngine.init();
+        if (window.AchEngine) window.AchEngine.init();
+        if (window.StatsEngine) window.StatsEngine.init();
+        // ShopEngine 通常由 Controller 帶起，但如果這裡先跑也沒關係，因為 Core 已經 ready 了
+
+        // ============================================================
+        // 3. 啟動 UI 控制器 (Controllers)
+        // ============================================================
         const controllers = [
             window.MainController,    
             window.TaskController, 
             window.StatsController, 
             window.AchController, 
-            window.ShopController, 
+            window.ShopController, // 它會呼叫 ShopEngine，現在安全了，因為 Core 已經有資料
             window.AvatarController, 
             window.StoryController, 
             window.SettingsController,
@@ -24,25 +43,28 @@ window.App = {
         ];
         
         controllers.forEach(ctrl => { 
-            if (ctrl && ctrl.init) ctrl.init(); 
+            if (ctrl && ctrl.init) {
+                try {
+                    ctrl.init(); 
+                } catch(e) {
+                    console.error(`❌ 控制器初始化失敗: ${ctrl}`, e);
+                }
+            }
         });
 
-        // B. 初始化引擎
-        if (window.TaskEngine) window.TaskEngine.init();
-        if (window.AchEngine) window.AchEngine.init();
-        if (window.StatsEngine) window.StatsEngine.init();
-        if (window.Core) window.Core.init();
-
-        // C. 啟動導航
+        // ============================================================
+        // 4. 啟動導航 (Navigation)
+        // ============================================================
         setTimeout(() => {
             if (window.act && window.act.navigate) {
-                console.log("🚀 Launching App...");
+                console.log("🚀 Launching App UI...");
                 if (window.Router) window.Router.init();
-				window.act.navigate('main');
+                
+                // 讀取上次最後所在的頁面，如果沒有則回首頁
+                // (你可以之後再實作記住最後頁面的功能，現在先回 main)
+                window.act.navigate('main');
             } else {
-                console.error("❌ Core.js 未載入，無法導航");
-                const page = document.getElementById('page-main');
-                if(page) page.classList.add('active');
+                console.error("❌ Router/Nav 未就緒");
             }
         }, 100);
         

@@ -4,6 +4,9 @@ window.taskView = {
     // 1. 主列表渲染 (Render Main List)
     // =========================================
     render: function(resetTab = false) {
+        // [微調] 確保 TempState 存在
+        window.TempState = window.TempState || {};
+
         if (resetTab) window.TempState.taskTab = 'list';
         else if (!window.TempState.taskTab) window.TempState.taskTab = 'list';
         

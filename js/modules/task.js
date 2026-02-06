@@ -1,36 +1,43 @@
-/* js/modules/task.js - V42.0 Calorie Fix */
+/* js/modules/task.js - V42.1 Fixed (Daily Reset Interface) */
 window.TaskEngine = {
-    // =========================================
     // 1. 初始化
-    // =========================================
     init: function() {
         const gs = window.GlobalState;
-        if (!gs) return;
+        if (!gs) return; // 現在 main.js 順序對了，這裡就不會被擋下
 
         if (!gs.tasks) gs.tasks = [];
         if (!gs.history) gs.history = [];
         if (!gs.taskCats) gs.taskCats = ['每日', '運動', '工作', '待辦', '願望'];
         if (!gs.cal) gs.cal = { today: 0, logs: [] };
+        
+        // 注意：這裡不再執行重置檢查，改由 Core 統一呼叫 resetDaily
+    },
 
-        // 每日重置檢查
-        const today = new Date().toDateString();
-        if (gs.lastLoginDate !== today) {
-            console.log("📅 [TaskEngine] Daily Reset Triggered");
-            gs.tasks.forEach(t => {
-                if (t.cat === '每日' || t.recurrence === 'daily') {
-                    t.done = false;
-                    t.doneTime = null;
-                    if (t.type === 'count') t.curr = 0;
-                    if (t.subs) t.subs.forEach(s => s.done = false);
-                }
-            });
-            // 每日重置攝取量，而不是重置目標
-            gs.cal.today = 0; 
-            gs.cal.logs = []; // 可選：清空當日日誌
-            
-            gs.lastLoginDate = today;
-            if (window.App && window.App.saveData) App.saveData();
+    // [新增] 2. 每日重置接口 (供 Core.js 呼叫)
+    resetDaily: function() {
+        const gs = window.GlobalState;
+        if (!gs || !gs.tasks) return;
+
+        console.log("📅 [TaskEngine] 執行每日重置...");
+        
+        // 重置每日任務狀態
+        gs.tasks.forEach(t => {
+            if (t.cat === '每日' || t.recurrence === 'daily') {
+                t.done = false;
+                t.doneTime = null;
+                if (t.type === 'count') t.curr = 0;
+                if (t.subs) t.subs.forEach(s => s.done = false);
+            }
+        });
+
+        // 重置今日熱量
+        if (gs.cal) {
+            gs.cal.today = 0;
+            gs.cal.logs = []; 
         }
+        
+        // 儲存變更
+        this._saveAndNotify(window.EVENTS.Task.UPDATED);
     },
 
     // =========================================

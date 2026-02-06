@@ -93,34 +93,42 @@ window.SettingsEngine = {
         EventBus.emit(window.EVENTS.System.TOAST, `🎉 已解鎖 ${item.name}`);
     },
 
-    // 4. 重置資料
-    performReset: function() {
-        window.isResetting = true;
-        localStorage.clear();
-        location.reload();
+    // 在 SettingsEngine 內新增/修改
+downloadSaveFile: function() {
+        const gs = window.GlobalState;
+        const json = JSON.stringify(gs, null, 2); // 美化格式
+        const blob = new Blob([json], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Levelife_Backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        return true;
     },
 
-    // 5. 匯出/匯入
-    exportData: function() {
-        const json = JSON.stringify(window.GlobalState);
-        return btoa(unescape(encodeURIComponent(json)));
-    },
-
-    importData: function(encodedStr) {
-        try {
-            const jsonStr = decodeURIComponent(escape(atob(encodedStr)));
-            const data = JSON.parse(jsonStr);
-            
-            if (data && (typeof data.lv === 'number' || typeof data.gold === 'number')) {
-                window.GlobalState = data;
-                if (window.App) App.saveData();
-                EventBus.emit(window.EVENTS.System.TOAST, "✅ 匯入成功，即將重啟...");
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                throw new Error("Format Error");
+    // 2. 讀取 JSON 檔案 (解析用)
+    parseSaveFile: function(file, callback) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                // 簡單驗證
+                if (data && typeof data.lv !== 'undefined') {
+                    callback(data);
+                } else {
+                    alert("❌ 檔案格式錯誤：這不是本遊戲的存檔");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("❌ 檔案損毀無法讀取");
             }
-        } catch (e) {
-            if(window.EventBus) EventBus.emit(window.EVENTS.System.TOAST, "❌ 代碼無效");
-        }
+        };
+        reader.readAsText(file);
     }
 };
