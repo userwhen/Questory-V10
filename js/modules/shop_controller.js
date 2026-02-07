@@ -65,7 +65,6 @@ window.ShopController = {
             updateUseQty: (delta) => {
                 let qty = window.TempState.useQty || 1;
                 const max = window.TempState.useMax || 1; // 這裡的 Max 是背包擁有量
-                
                 if (delta === 'min') {
                     qty = 1;
                 } else if (delta === 'max') {
@@ -73,7 +72,6 @@ window.ShopController = {
                 } else {
                     qty += delta;
                 }
-
                 // 邊界檢查
                 if (qty < 1) qty = 1;
                 if (qty > max) qty = max;
@@ -85,21 +83,17 @@ window.ShopController = {
                 if (qtyDisplay) qtyDisplay.innerText = qty;
             },
 
-            // [Update] 使用/丟棄 (支援多個數量)
+            // [重點更新] 使用物品回饋
             useItem: (isDiscard) => {
                 const id = window.TempState.useTargetId;
-                const qty = window.TempState.useQty || 1; // 讀取選擇的數量
-
                 if (isDiscard) {
-                    ShopEngine.discardItem(id, qty);
-                    act.toast(`🗑️ 已丟棄 ${qty} 個`);
+                    ShopEngine.discardItem(id, 1);
+                    act.toast('🗑️ 已丟棄 1 個');
                 } else {
-                    // 這裡先簡單處理使用邏輯 (消耗物品)
-                    // 未來可在 ShopEngine.useItem 裡加入效果判斷
-                    ShopEngine.discardItem(id, qty);
-                    act.toast(`✨ 已使用 ${qty} 個`);
+                    const res = ShopEngine.useItem(id);
+                    // 顯示引擎回傳的詳細訊息 (例如：攝取了 500 Kcal)
+                    act.toast(res.success ? (res.msg || '✅ 使用成功') : '❌ 無法使用');
                 }
-                
                 ui.modal.close('m-panel');
                 shopView.render(); 
                 if (window.view && view.updateHUD) view.updateHUD(window.GlobalState);

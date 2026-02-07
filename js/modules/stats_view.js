@@ -9,7 +9,8 @@ window.statsView = {
         if (!container) return;
 
         const gs = window.GlobalState;
-        const currentTab = window.TempState.statsTab || 'attr'; // attr | cal
+        // [關鍵修復 1] 判斷卡路里模式是否開啟
+        let currentTab = window.TempState.statsTab || 'attr';
 
         // =========================================================
         // [A] 頂部儀表板
@@ -37,6 +38,12 @@ window.statsView = {
                     </div>
                 </div>`;
         }
+		
+		// [修改] 永遠顯示這兩個選項，但如果在 Controller 層被攔截，就不會切換過去
+        const tabOptions = [
+            {label:'● 能力分析', val:'attr'},
+            {label:'● 熱量監控', val:'cal'}
+        ];
 
         const tabsHtml = `
             <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.5); display:flex; width:100%;">
@@ -80,6 +87,12 @@ window.statsView = {
                     <h3 style="margin:0; font-size:1.1rem; color:#5d4037;">修煉技能</h3>
                     ${ui.component.btn({label:'+ 新增', theme:'normal', size:'sm', action:'act.openAddSkill()'})}
                 </div>`;
+			
+			// [關鍵修改] 蜘蛛網邏輯
+            const isStrict = gs.unlocks && gs.unlocks.feature_strict && gs.settings.strictMode;
+            const now = Date.now();
+            // 設定閾值：例如 3 天沒練就會生蜘蛛網 (3 * 24 * 60 * 60 * 1000)
+            const DECAY_THRESHOLD = 3 * 86400000;
 
             const skillList = (gs.skills && gs.skills.length > 0) ? gs.skills.map(s => {
                 // [修復] 根據 parent 查找正確的 ICON
@@ -128,10 +141,12 @@ window.statsView = {
                     </div>
                 </div>`;
         }
-
+		
+		const isBasicMode = (gs.settings && gs.settings.mode === 'basic');
         container.innerHTML = ui.layout.page({
             title: '📊 狀態分析',
-            back: true,
+            // 只有在非 Basic 模式下才顯示返回鍵
+            back: !isBasicMode, 
             fixedTop: glassDashboard,
             body: bodyContent
         });

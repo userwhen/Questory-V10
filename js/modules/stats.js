@@ -86,22 +86,53 @@ window.StatsEngine = {
         }
     },
 
-    // [關鍵修改] 增加技能經驗 -> 同步增加主屬性經驗
-    addSkillProficiency: function(name, amount = 1) {
+    // [新增] 玩家經驗倒扣與降級邏輯 (供 TaskEngine 呼叫)
+    reducePlayerExp: function(amount, isStrict) {
         const gs = window.GlobalState;
         
-        // 1. 判斷是否為技能
+        // 先直接扣除
+        gs.exp -= amount;
+
+        if (isStrict) {
+            // --- 嚴格模式：允許降級 (De-level) ---
+            // 當經驗值變負數，且等級 > 1 時，執行降級回補
+            while (gs.exp < 0 && gs.lv > 1) {
+                gs.lv--;
+                gs.exp += (gs.lv * 100); // 補回上一級的經驗池
+                
+                if(window.EventBus) {
+                    window.EventBus.emit(window.EVENTS.System.TOAST, `📉 經驗回收... 等級降回 Lv.${gs.lv}`);
+                }
+            }
+            // 最低底限：Lv.1 0 exp (不能變成 Lv.0 或 Lv.1 的負經驗)
+            if (gs.lv === 1 && gs.exp < 0) gs.exp = 0;
+
+        } else {
+            // --- 一般模式：保護等級 (Safe Floor) ---
+            // 如果扣到負數，直接歸零，不降級
+            if (gs.exp < 0) {
+                gs.exp = 0;
+                // 可以選擇性跳提示，安撫玩家
+                // if(window.EventBus) window.EventBus.emit(window.EVENTS.System.TOAST, "🛡️ 等級保護生效：經驗值已歸零");
+            }
+        }
+        
+        this._saveAndNotify();
+    },
+
+    addSkillProficiency: function(name, amount = 1) {
+        const gs = window.GlobalState;
         const skillIndex = gs.skills.findIndex(s => s.name === name);
         
         if (skillIndex > -1) {
-            // --- 是技能 ---
             const skill = gs.skills[skillIndex];
             
-            // A. 增加技能經驗
+            // [新增] 更新最後修煉時間 (用於蜘蛛網判定)
+            skill.lastUsed = Date.now();
+
             skill.exp += amount;
             const max = skill.lv * 10; 
             
-            // 技能升級判定
             if (skill.exp >= max) {
                 skill.exp = 0;
                 skill.lv++;
@@ -115,14 +146,10 @@ window.StatsEngine = {
                     this.archiveSkill(skill.name);
                 }
             }
-
-            // B. [新增] 同步增加主屬性經驗
             if (skill.parent && gs.attrs[skill.parent]) {
                 this._addAttributeExp(skill.parent, amount);
             }
-
         } else {
-            // --- 不是技能，可能是直接指定屬性 (如 STR) ---
             if (gs.attrs[name]) {
                 this._addAttributeExp(name, amount);
             }
@@ -247,26 +274,20 @@ window.StatsEngine = {
     // 嚴格模式懲罰 (仍保留)
     deductExp: function(totalExp, skillNames) {
         const gs = window.GlobalState;
-        const isStrict = gs.unlocks && gs.unlocks.strict_mode; 
+        // 1. 檢查變數 (新版 DLC 變數 + 設定開關)
+        const isStrict = gs.unlocks && gs.unlocks.feature_strict && gs.settings.strictMode;
         if (!isStrict) return;
 
+        // 2. 扣除技能經驗
         if (skillNames && skillNames.length > 0) {
             const expPerAttr = Math.floor(totalExp / skillNames.length);
             skillNames.forEach(name => {
                 this._reduceSkillProficiency(name, expPerAttr);
             });
         }
-
-        const playerLoss = Math.floor(totalExp * 0.5);
-        gs.exp -= playerLoss;
-        while (gs.exp < 0 && gs.lv > 1) {
-            gs.lv--;
-            gs.exp += (gs.lv * 100);
-            if(window.EventBus) window.EventBus.emit(window.EVENTS.System.TOAST, `💔 慘痛教訓... 降級至 Lv.${gs.lv}`);
-        }
-        if (gs.lv === 1 && gs.exp < 0) gs.exp = 0;
-
-        this._saveAndNotify();
+        
+        // 3. 扣除玩家經驗 (呼叫共用的 helper 處理降級)
+        this.reducePlayerExp(Math.floor(totalExp * 0.5));
     },
 
     _saveAndNotify: function() {

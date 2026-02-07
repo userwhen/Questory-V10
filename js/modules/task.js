@@ -165,6 +165,9 @@ window.TaskEngine = {
         const w = (imp * 1.5) + (urg * 0.5);
         const rewards = { gold: Math.floor(base * w), exp: Math.floor(base * w) };
         const impact = Math.floor(w);
+		
+		// 檢查是否為嚴格模式 (DLC + Switch)
+		const isStrict = gs.unlocks && gs.unlocks.feature_strict && gs.settings.strictMode;
 
         if (task.done) {
             // --- 完成 ---
@@ -197,31 +200,34 @@ window.TaskEngine = {
             window.EventBus.emit(window.EVENTS.System.TOAST, `完成！+${rewards.gold}💰 +${rewards.exp}✨`);
 
         } else {
-            // --- 取消 ---
-            const oldDoneTime = task.doneTime; // 記住完成時間以便從歷史刪除
+            // --- 取消 (回收獎勵) ---
+            const oldDoneTime = task.doneTime;
             task.doneTime = null;
             task.status = 'active';
 
             if (task.lastReward) {
                 const r = task.lastReward;
-                const isStrict = gs.unlocks && gs.unlocks.strict_mode; 
 
-                gs.gold = Math.max(0, gs.gold - r.gold);
-                
-                // 經驗值處理
+                // [金幣回收]
                 if (isStrict) {
-                    gs.exp -= r.exp; 
+                    gs.gold -= r.gold; // 嚴格：允許負債
                 } else {
+                    gs.gold = Math.max(0, gs.gold - r.gold); // 一般：不負債
+                }
+
+                // [經驗回收]
+                if(window.StatsEngine) {
+                    // 呼叫新版接口，傳入 isStrict 旗標
+                    StatsEngine.reducePlayerExp(r.exp, isStrict);
+                } else {
+                    // Fallback
                     gs.exp = Math.max(0, gs.exp - r.exp);
                 }
 
                 // [熱量回滾]
-                const isCalActive = (gs.unlocks && gs.unlocks.calorie_tracker) || (gs.settings && gs.settings.calMode);
+                const isCalActive = (gs.unlocks && gs.unlocks.feature_cal) && gs.settings.calMode;
                 if (isCalActive && task.calories > 0) {
-                    // 取消完成，把消耗的熱量加回來
                     gs.cal.today += task.calories; 
-                    
-                    // 移除日誌
                     const targetLog = `-${task.calories}`;
                     const idx = gs.cal.logs.findIndex(l => l.includes(task.title) && l.includes(targetLog));
                     if (idx !== -1) gs.cal.logs.splice(idx, 1);
@@ -229,18 +235,15 @@ window.TaskEngine = {
 
                 // [移除歷史]
                 if (gs.history && gs.history.length > 0) {
-                    // 根據 ID 和 doneTime 精確移除
                     const hIdx = gs.history.findIndex(h => h.id === task.id && h.doneTime === oldDoneTime);
-                    if (hIdx !== -1) {
-                        gs.history.splice(hIdx, 1);
-                    }
+                    if (hIdx !== -1) gs.history.splice(hIdx, 1);
                 }
 
-                window.EventBus.emit(window.EVENTS.System.TOAST, isStrict ? "已取消 (懲罰扣除)" : "已取消 (回收獎勵)");
+                window.EventBus.emit(window.EVENTS.System.TOAST, isStrict ? "已撤銷 (⚠️ 獎勵全數回收)" : "已撤銷");
                 task.lastReward = null;
             }
             
-            // 發送取消事件 (讓 StatsEngine 扣除技能經驗)
+            // 技能經驗也只是 "倒扣" 而非額外懲罰
             window.EventBus.emit(window.EVENTS.Task.UNCOMPLETED, { task: task, impact: impact });
         }
 

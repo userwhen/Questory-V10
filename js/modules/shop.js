@@ -7,20 +7,18 @@ window.ShopEngine = {
         
         if (!gs.shop) gs.shop = { user: [] };
         if (!gs.bag) gs.bag = [];
-        if (!gs.sysShop) gs.sysShop = {}; // 紀錄系統商品狀態 (如庫存)
+        if (!gs.sysShop) gs.sysShop = {}; 
 
-        // 定義系統商品原型 (Base Data)
+        // [修改] 為蘋果加入 val: 50 (卡路里數值)
         this.systemPrototypes = [
-            { id: 'sys_apple', name: '蘋果', price: 10, currency: 'gold', maxQty: 99, category: '熱量', icon: '🍎', desc: '回復少量熱量', type: 'daily' },
+            { id: 'sys_apple', name: '蘋果', price: 10, currency: 'gold', maxQty: 99, category: '熱量', val: 50, icon: '🍎', desc: '回復少量熱量 (50kcal)', type: 'daily' },
             { id: 'sys_potion', name: '精力藥水', price: 50, currency: 'gem', maxQty: 10, category: '其他', icon: '🧪', desc: '回復精力 (需鑽石)', type: 'daily' },
             { id: 'sys_sword', name: '鐵劍', price: 500, currency: 'gold', maxQty: 1, category: '金錢', icon: '🗡️', desc: '新手冒險者的好夥伴', type: 'once' },
             { id: 'sys_clock', name: '懷錶', price: 200, currency: 'gold', maxQty: 5, category: '時間', icon: '⏱️', desc: '掌控時間的道具', type: 'daily' }
         ];
 
-        // 檢查跨日重置
         this.checkDailyReset();
-        
-        console.log("🏪 ShopEngine Initialized");
+        console.log("🏪 ShopEngine V36.0 Initialized");
     },
 	
 	// 恢復精力邏輯 (防止溢出)
@@ -144,45 +142,51 @@ window.ShopEngine = {
     buyItem: function(id, qty) {
         const gs = window.GlobalState;
         const items = this.getShopItems('全部');
-        const item = items.find(i => i.id === id); // 這裡是 reference 還是 copy?
+        const item = items.find(i => i.id === id);
         
         if (!item) return { success: false, msg: '商品不存在' };
         if (item.qty < qty) return { success: false, msg: '庫存不足' };
-
+		
+		// [新增] 負債檢查：如果玩家已經負債，且商品需要金幣，則禁止購買
+        if (item.currency === 'gold' && gs.gold < 0) {
+            return { success: false, msg: '🚫 您的帳戶處於負債狀態，請先還清債務！' };
+        }
         const totalCost = item.price * qty;
-        const currency = item.currency || 'gold'; 
-
-        // 1. 扣款
-        if (currency === 'gold') {
+        
+        // 扣款邏輯
+        if (item.currency === 'gold') {
             if (gs.gold < totalCost) return { success: false, msg: '金幣不足' };
             gs.gold -= totalCost;
         } else {
             const totalGem = (gs.freeGem || 0) + (gs.paidGem || 0);
             if (totalGem < totalCost) return { success: false, msg: '鑽石不足' };
-            if (gs.freeGem >= totalCost) { gs.freeGem -= totalCost; } 
-            else { const remain = totalCost - gs.freeGem; gs.freeGem = 0; gs.paidGem -= remain; }
+            if (gs.freeGem >= totalCost) gs.freeGem -= totalCost;
+            else { 
+                const remain = totalCost - gs.freeGem; 
+                gs.freeGem = 0; 
+                gs.paidGem -= remain; 
+            }
         }
 
-        // 2. 扣庫存 (關鍵修正：寫入 GlobalState)
+        // 扣庫存
         if (id.startsWith('sys_')) {
-            // 系統商品：更新 sysShop
-            if (!gs.sysShop[id]) gs.sysShop[id] = { qty: item.qty }; // 初始化狀態
+            if (!gs.sysShop[id]) gs.sysShop[id] = { qty: item.qty };
             gs.sysShop[id].qty -= qty;
         } else {
-            // 用戶商品：直接扣
             const userItem = gs.shop.user.find(u => u.id === id);
             if (userItem) userItem.qty -= qty;
         }
 
-        // 3. 進背包
+        // 進背包
         const existing = gs.bag.find(b => b.id === id);
         if (existing) {
             existing.count += qty;
         } else {
+            // 注意：這裡我們會把 item 的所有屬性 (包含 val) 都存進背包
             gs.bag.push({ ...item, count: qty });
         }
 
-        App.saveData();
+        if(window.App) App.saveData();
         return { success: true };
     },
 
@@ -197,10 +201,49 @@ window.ShopEngine = {
         App.saveData(); return true;
     },
     deleteItem: function(id) { const gs = window.GlobalState; gs.shop.user = gs.shop.user.filter(i => i.id !== id); App.saveData(); },
-    useItem: function(id) { this.discardItem(id, 1); return { success: true }; },
+    useItem: function(id) {
+        const gs = window.GlobalState;
+        const item = gs.bag.find(i => i.id === id);
+
+        if (!item) return { success: false, msg: "背包中找不到物品" };
+
+        let msg = "已使用";
+
+        // 1. 卡路里物品處理 (類別為'熱量'，且有 val 數值)
+        if (item.category === '熱量') {
+            const calories = parseInt(item.val || 0);
+
+            if (calories > 0) {
+                // 初始化熱量紀錄
+                if (!gs.cal) gs.cal = { today: 0, logs: [] };
+
+                gs.cal.today += calories;
+
+                // 寫入日誌
+                const timeStr = new Date().toTimeString().substring(0, 5);
+                gs.cal.logs.unshift(`${timeStr} ${item.name} +${calories}`);
+                if (gs.cal.logs.length > 30) gs.cal.logs.pop();
+
+                msg = `😋 攝取了 ${calories} Kcal`;
+            }
+        }
+
+        // 2. 消耗物品
+        this.discardItem(id, 1);
+        
+        // 3. 通知更新 (主要為了刷新 Stats View 的熱量表)
+        if (window.EventBus) window.EventBus.emit(window.EVENTS.Stats.UPDATED);
+
+        return { success: true, msg: msg };
+    },
     discardItem: function(id, qty) {
-        const gs = window.GlobalState; const idx = gs.bag.findIndex(i => i.id === id);
-        if (idx >= 0) { gs.bag[idx].count -= qty; if (gs.bag[idx].count <= 0) gs.bag.splice(idx, 1); App.saveData(); }
+        const gs = window.GlobalState; 
+        const idx = gs.bag.findIndex(i => i.id === id);
+        if (idx >= 0) { 
+            gs.bag[idx].count -= qty; 
+            if (gs.bag[idx].count <= 0) gs.bag.splice(idx, 1); 
+            if(window.App) App.saveData(); 
+        }
     },
     addGem: function(amount) { const gs = window.GlobalState; gs.paidGem = (gs.paidGem || 0) + amount; App.saveData(); }
 };

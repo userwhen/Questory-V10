@@ -53,6 +53,16 @@ window.StatsController = {
             },
             
             switchStatsTab: function(tab) {
+                // 如果想切換到熱量分頁，先檢查設定開關
+                if (tab === 'cal') {
+                    const gs = window.GlobalState;
+                    const isCalEnabled = (gs.settings && gs.settings.calMode);
+                    if (!isCalEnabled) {
+                        if(window.act.toast) window.act.toast("⚠️ 請先至設定開啟「熱量監控」模式");
+                        return; // 阻止切換
+                    }
+                }
+                
                 window.TempState.statsTab = tab;
                 window.EventBus.emit(window.EVENTS.Stats.UPDATED);
             }

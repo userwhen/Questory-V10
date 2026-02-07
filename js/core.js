@@ -69,7 +69,7 @@ window.Core = {
         window.GlobalState = {
             lv: 1, gold: 0, freeGem: 0, paidGem: 0,
             tasks: [], history: [], achievements: [], milestones: [],
-            settings: { mode: 'basic', calMax: 2000, theme: 'light' },
+            settings: { mode: 'adventurer', calMax: 2000, theme: 'light' },
             unlocks: { 'basic': true },
             lastLoginDate: new Date().toDateString(), // 預設今天
             installDate: Date.now()

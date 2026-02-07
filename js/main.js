@@ -103,34 +103,58 @@ window.MainController = {
     init: function() {
         if (!window.EventBus) return;
 
+        // ============================================================
+        // [新增] 導航攔截器 (Navigation Guard)
+        // 解決 Basic 模式按返回鍵誤入大廳的問題
+        // ============================================================
+        if (window.act && window.act.navigate) {
+            const originalNavigate = window.act.navigate;
+            
+            // 覆寫導航行為
+            window.act.navigate = function(targetPage) {
+                const gs = window.GlobalState;
+                
+                // 邏輯：如果是基礎模式，且目標是 'main' (大廳)，強制導向 'stats'
+                if (gs && gs.settings && gs.settings.mode === 'basic') {
+                    if (targetPage === 'main') {
+                        console.log("🛡️ [Basic Mode] 攔截大廳導航，停留在 Stats");
+                        targetPage = 'stats'; // 強制重導向
+                    }
+                }
+                
+                // 執行原本的導航
+                originalNavigate(targetPage);
+            };
+        }
+        // ============================================================
+
         // 監聽導航：負責全域 UI 的持續渲染
         window.EventBus.on(window.EVENTS.System.NAVIGATE, (pageId) => {
             
-            // 1. 強制渲染 HUD 與 Navbar (解決消失問題)
+            // 1. 強制渲染 HUD 與 Navbar
             if (window.view) {
-                // 只有在非全螢幕頁面才顯示 Navbar (story/avatar 除外)
                 const isFullScreen = ['story', 'avatar'].includes(pageId);
                 
+                // [優化] 如果是 Basic 模式，可以選擇不渲染 Navbar 的 Home 按鈕
+                // 但有了上面的攔截器，就算按了也不會壞，這樣比較保險
                 if (view.initHUD) view.initHUD(window.GlobalState);
                 if (view.renderNavbar && !isFullScreen) view.renderNavbar();
             }
 
-            // 2. 如果是首頁，呼叫大廳渲染邏輯
-            // (其他頁面由各自的 Controller 負責)
+            // 2. 渲染頁面內容
             if (pageId === 'main') {
                 if (window.view && view.renderMain) view.renderMain();
             }
-            
         });
 
-        // 監聽數值變更：刷新 HUD 數據
+        // 監聽數值變更
         window.EventBus.on(window.EVENTS.Stats.UPDATED, () => {
             if (window.view && view.updateHUD) {
                 view.updateHUD(window.GlobalState);
             }
         });
         
-        console.log("✅ MainController Active (UI Manager)");
+        console.log("✅ MainController Active (With Basic Mode Guard)");
     }
 };
 
