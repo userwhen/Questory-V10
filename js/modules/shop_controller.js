@@ -158,19 +158,22 @@ window.ShopController = {
                 shopView.render(); 
                 if (window.view && view.updateHUD) view.updateHUD(window.GlobalState);
             },
-			// [New] 購買精力
+			// [Update] 購買精力 (顯示正確上限)
             buyStamina: (amount, cost) => {
                 const res = ShopEngine.recoverStamina(amount, cost);
                 
                 if (res.success) {
-                    act.toast(`⚡ 精力恢復了！ (目前: ${res.current})`);
+                    // [新增] 獲取動態上限
+                    const max = (window.StoryEngine && window.StoryEngine.calculateMaxEnergy) 
+                                ? window.StoryEngine.calculateMaxEnergy() 
+                                : 100;
+
+                    act.toast(`⚡ 精力恢復了！ (目前: ${res.current}/${max})`);
                     ui.modal.close('m-overlay');
                     
-                    // 如果在劇情頁面，刷新 UI
                     if (window.TempState.currentView === 'story' && window.storyView) {
                         storyView.render(); 
                     }
-                    // 如果在 HUD，刷新 HUD
                     if (window.view && view.updateHUD) {
                         view.updateHUD(window.GlobalState);
                     }

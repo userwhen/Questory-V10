@@ -1,216 +1,126 @@
-/* js/data_piece.js - V44.2 (Mode Fixed & Ruby Safe) */
-
+/* js/data_piece.js - V3.0 Dialogue & Item Fix */
 window.FragmentDB = {
-    
-    simActions: {
-        act_train: { id: "act_train", cost: { energy: 15 }, effects: { str: 3, vit: 2 }, tags: ["training_event"] },
-        act_study: { id: "act_study", cost: { energy: 10 }, effects: { int: 4, wis: 1 }, tags: ["library_event"] },
-        act_pray:  { id: "act_pray",  cost: { energy: 5 },  effects: { luc: 2, san: 5 }, tags: ["temple_event"] }
-    },
-
-    // ============================================================
-    // 1. 選項規則 (避免使用半形 [] 導致 Ruby 誤判)
-    // ============================================================
-    optionRules: [
-        // [A] 初遇
-        {
-            reqTag: 'encounter_npc',
-            options: [
-                {
-                    label: { zh:"【魅力】友善攀談", en:"Talk friendly" },
-                    style: "primary",
-                    check: { stat: "chr", val: 10 },
-                    action: "advance_chain",
-                    nextTags: ["trust_gained", "next_day"],
-                    failNextTags: ["ignored_npc"] // 失敗則當作沒發生
-                },
-                {
-                    label: { zh:"保持警惕離開", en:"Leave" },
-                    style: "normal",
-                    action: "advance_chain",
-                    nextTags: ["ignored_npc", "next_day"]
-                }
-            ]
-        },
-        // [B] 陷阱/戰鬥
-        {
-            reqTag: 'trapped',
-            options: [
-                {
-                    label: { zh:"【敏捷】尋找出口", en:"[DEX] Find Exit" },
-                    style: "warning",
-                    check: { stat: "dex", val: 12 },
-                    action: "advance_chain",
-                    nextTags: ["escape_success"],
-                    failNextTags: ["escape_fail"]
-                },
-                {
-                    label: { zh:"【力量】破壞鐵籠", en:"[STR] Break Cage" },
-                    style: "danger",
-                    check: { stat: "str", val: 14 },
-                    action: "advance_chain",
-                    nextTags: ["escape_success"],
-                    failNextTags: ["escape_fail"]
-                }
-            ]
-        },
-        // [C] 敵對
-        {
-            reqTag: 'hostile',
-            options: [
-                {
-                    label: { zh:"【力量】正面迎戰", en:"Attack" },
-                    style: "danger",
-                    check: { stat: "str", val: 12 },
-                    action: "advance_chain",
-                    nextTags: ["combat_victory"],
-                    failNextTags: ["combat_defeat"]
-                }
-            ]
-        }
-    ],
-
-    // ============================================================
-    // 2. 劇本模板 (全部補上 mode: "adventurer")
-    // ============================================================
-    templates: [
-        
-        // --- Layer 1: Setup ---
-        {
-            id: "tmpl_meet_stranger",
-            type: "setup",
-            mode: "adventurer", // [Critical Fix]
-            text: {
-                zh: "你冒險來到了{location}，在路邊遇見了一位{npc}。他微笑著向你招手，似乎對你{activity}很感興趣。",
-                en: "You arrived at {location} and met a {npc}."
-            },
-            slots: ["location", "npc", "activity"],
-            outTags: ["encounter_npc"]
-        },
-        {
-            id: "tmpl_dungeon_start",
-            type: "setup",
-            mode: "adventurer", // [Critical Fix]
-            text: {
-                zh: "你踏入了{location}，空氣中瀰漫著{atmosphere}的味道。陰影中似乎有什麼東西在蠢蠢欲動。",
-                en: "You enter {location}..."
-            },
-            slots: ["location", "atmosphere"],
-            outTags: ["hostile"]
-        },
-
-        // --- Layer 2: Event (陷阱) ---
-        {
-            id: "tmpl_trap_reveal",
-            type: "event",
-            mode: "adventurer", // [Critical Fix]
-            reqTag: "trust_gained", 
-            text: {
-                zh: "翌日，經過{memory:npc}的熱情介紹，你來到了一處據說是寶藏地點的{trap_loc}。然而當你踏入時，身後的鐵閘門轟然落下！這居然是個陷阱！",
-            },
-            slots: ["trap_loc"],
-            outTags: ["trapped"]
-        },
-
-        // --- Layer 2: Event (平淡) ---
-        {
-            id: "tmpl_nothing_happened",
-            type: "event",
-            mode: "adventurer", // [Critical Fix]
-            reqTag: "ignored_npc",
-            text: {
-                zh: "你沒有理會那個人，徑直離開了。這或許是個明智的決定，因為你的直覺告訴你這裡並不安全。",
-            },
-            outTags: ["safe_end"]
-        },
-
-        // --- Layer 2: Event (戰鬥勝) ---
-        {
-            id: "tmpl_combat_win",
-            type: "event",
-            mode: "adventurer", // [Critical Fix]
-            reqTag: "combat_victory",
-            text: {
-                zh: "經過一番激戰，你成功擊退了敵人！你氣喘吁吁地檢查戰場，尋找有價值的東西。",
-            },
-            outTags: ["loot_phase"]
-        },
-
-        // --- Layer 3: Ending (成功) ---
-        {
-            id: "tmpl_escape_good",
-            type: "ending",
-            mode: "adventurer", // [Critical Fix]
-            reqTag: "escape_success",
-            text: {
-                zh: "憑藉著過人的身手，你成功逃出了{memory:trap_loc}！這次經歷讓你學到了寶貴的一課：不要輕易相信陌生人。",
-            },
-            outTags: ["complete"]
-        },
-
-        // --- Layer 3: Ending (失敗) ---
-        {
-            id: "tmpl_escape_bad",
-            type: "ending",
-            mode: "adventurer", // [Critical Fix]
-            reqTag: "escape_fail",
-            text: {
-                zh: "機關太過複雜，你沒能打開。體力耗盡的你，只能眼睜睜看著{memory:npc}帶著手下逼近...",
-            },
-            outTags: ["bad_end"]
-        },
-        
-        // --- Layer 3: Ending (通用) ---
-        {
-            id: "tmpl_generic_end",
-            type: "ending",
-            mode: "adventurer", // [Critical Fix]
-            text: {
-                zh: "一段旅程結束了。你在{location}稍作休息，整理裝備，準備迎接下一次的挑戰。",
-            },
-            slots: ["location"],
-            outTags: ["complete"]
-        },
-		
-		{
-            id: "tmpl_combat_defeat",
-            type: "event",
-            mode: "adventurer",
-            reqTag: "combat_defeat",
-            text: {
-                zh: "敵人的實力遠超你的想像！你被打得節節敗退，最後不得不狼狽地逃離戰場。",
-                en: "Defeated, you flee..."
-            },
-            outTags: ["bad_end"]
-        },
-		
-    ],
-
-    // ============================================================
-    // 3. 碎片庫
-    // ============================================================
     fragments: {
         location: [
-            { id: "loc_village", val: { zh:"邊境小村" }, weight: 1 },
-            { id: "loc_market", val: { zh:"黑市暗巷" }, weight: 1 },
-            { id: "loc_ruins", val: { zh:"古老遺跡" }, weight: 1 }
+            { val: { zh: "陰森的墓穴", en: "Gloomy Tomb" }, tags: ['dark', 'danger'] },
+            { val: { zh: "陽光普照的遺跡", en: "Sunny Ruins" }, tags: ['light', 'safe'] },
+            { val: { zh: "潮濕的地下水道", en: "Damp Sewer" }, tags: ['water', 'dirty'] },
+            { val: { zh: "被詛咒的圖書館", en: "Cursed Library" }, tags: ['magic', 'dark'] },
+            { val: { zh: "巨龍的巢穴", en: "Dragon's Lair" }, tags: ['fire', 'danger'] }
         ],
-        atmosphere: [
-            { id: "atmo_damp", val: { zh:"潮濕腐敗" }, weight: 1 },
-            { id: "atmo_blood", val: { zh:"鐵鏽與血腥" }, weight: 1 }
+        enemy: [
+            { val: { zh: "哥布林斥候", en: "Goblin Scout" }, tags: ['weak'] },
+            { val: { zh: "飢餓的野狼", en: "Hungry Wolf" }, tags: ['beast'] },
+            { val: { zh: "骷髏士兵", en: "Skeleton Soldier" }, tags: ['undead'] },
+            { val: { zh: "史萊姆", en: "Slime" }, tags: ['magic'] },
+            { val: { zh: "暗影刺客", en: "Shadow Assassin" }, tags: ['humanoid'] }
         ],
-        trap_loc: [
-            { id: "tl_cave", val: { zh:"廢棄礦坑" }, weight: 1 },
-            { id: "tl_dungeon", val: { zh:"地下水牢" }, weight: 1 }
+        item: [
+            { val: { zh: "古老的金幣", en: "Old Coin" } },
+            { val: { zh: "發光的寶石", en: "Glowing Gem" } },
+            { val: { zh: "破損的地圖", en: "Torn Map" }, tags: ['map_item'] }, 
+            { val: { zh: "生鏽的鑰匙", en: "Rusty Key" }, tags: ['key_item'] }
         ],
-        npc: [
-            { id: "npc_thief", val: { zh:"看起來很誠懇的嚮導" }, weight: 1 },
-            { id: "npc_merchant", val: { zh:"滿臉堆笑的古董商" }, weight: 1 },
-            { id: "npc_beggar", val: { zh:"神秘的兜帽客" }, weight: 1 }
-        ],
-        activity: [
-            { id: "act_sword", val: { zh:"背後的寶劍" }, weight: 1 },
-            { id: "act_magic", val: { zh:"身上的魔力波動" }, weight: 1 }
+        adj: [
+            { val: { zh: "令人不安的", en: "Unsettling" } },
+            { val: { zh: "充滿神秘的", en: "Mysterious" } },
+            { val: { zh: "寂靜的", en: "Silent" } },
+            { val: { zh: "腐臭的", en: "Putrid" } }
         ]
-    }
+    },
+
+    templates: [
+        // ================= SETUP =================
+        {
+            type: 'setup',
+            id: 'setup_quest',
+            structure: { baseDepth: 3, variance: 2 },
+            text: { zh: "你接下委託，來到了目的地。" },
+            slots: ['adj', 'location'],
+            dialogue: [
+                { speaker: "委託人", text: { zh: "就是這裡了，那個{adj}{location}。" } },
+                { speaker: "你", text: { zh: "看起來有點危險，但我會盡力而為。" } },
+                { speaker: "委託人", text: { zh: "祝你好運，我在城裡等你。" } }
+            ],
+            outTags: ['quest_start']
+        },
+        {
+            type: 'setup',
+            id: 'setup_accident',
+            structure: { baseDepth: 2, variance: 0 },
+            text: { zh: "糟糕！地板塌陷了！" },
+            slots: ['location'],
+            dialogue: [
+                { speaker: "你", text: { zh: "啊啊啊啊啊——！" } },
+                { speaker: "旁白", text: { zh: "你重重地摔在地上，四周一片漆黑。" } },
+                { speaker: "你", text: { zh: "痛死了... 這裡是哪裡？{location}？" } }
+            ],
+            outTags: ['accident']
+        },
+
+        // ================= EVENT =================
+        // 1. 戰鬥遭遇
+        {
+            type: 'event',
+            id: 'event_combat_1',
+            text: { zh: "敵人出現了！" },
+            slots: ['enemy'],
+            dialogue: [
+                { speaker: "你", text: { zh: "有動靜！" } },
+                { speaker: "{enemy}", text: { zh: "嘎啊啊啊！(發出敵意的吼叫)" } },
+                { speaker: "你", text: { zh: "看來無法溝通了，準備戰鬥！" } }
+            ],
+            options: [
+                { label: "拔劍戰鬥", check: { stat: 'STR', val: 6 }, nextTags: ['combat_win'], failNextTags: ['combat_defeat'], rewards: { exp: 20 } },
+                { label: "嘗試逃跑", check: { stat: 'AGI', val: 5 }, nextTags: ['escaped'] }
+            ]
+        },
+        // 2. 發現物品 (修復版：動態 Tag)
+        {
+            type: 'event',
+            id: 'event_find_item',
+            text: { zh: "你發現了寶物。" },
+            slots: ['item'],
+            dialogue: [
+                { speaker: "你", text: { zh: "嗯？那裡好像有什麼東西在發光。" } },
+                { speaker: "旁白", text: { zh: "你走近一看，是一個{item}。" } },
+                { speaker: "你", text: { zh: "運氣真好！這應該能賣點錢。" } }
+            ],
+            options: [
+                { 
+                    label: "撿起來", 
+                    action: "advance_chain", 
+                    // [Fix] 這裡的 {item} 現在會被 generator 自動替換成 '古老的金幣' 或 '生鏽的鑰匙'
+                    rewards: { tags: ['{item}'] } 
+                }
+            ]
+        },
+        // 3. 陷阱
+        {
+            type: 'event',
+            id: 'event_trap_1',
+            text: { zh: "陷阱觸發！" },
+            dialogue: [
+                { speaker: "旁白", text: { zh: "咔嚓。你踩到了一塊鬆動的地板。" } },
+                { speaker: "你", text: { zh: "糟了！" } },
+                { speaker: "旁白", text: { zh: "無數支箭矢從牆壁射出！" } }
+            ],
+            options: [
+                { label: "跳躍閃避", check: { stat: 'AGI', val: 7 }, rewards: { exp: 15 } },
+                { label: "護住頭部", action: "advance_chain", rewards: { energy: -10 } }
+            ]
+        },
+
+        // ================= ENDING =================
+        {
+            type: 'ending',
+            id: 'end_normal',
+            text: { zh: "冒險結束。" },
+            dialogue: [
+                { speaker: "你", text: { zh: "終於看到出口了。" } },
+                { speaker: "旁白", text: { zh: "你拍了拍身上的灰塵，雖然疲憊，但收穫滿滿。" } }
+            ],
+            rewards: { exp: 50, gold: 30 }
+        }
+    ]
 };
