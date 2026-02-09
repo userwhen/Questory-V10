@@ -1,124 +1,158 @@
-/* js/modules/story_view.js - V44.5 (Smart Paging & Idle Logic Fix) */
+/* js/modules/story_view.js - V75.0 (Full UI Integration) */
 
 window.storyView = {
-    // ============================================================
-    // 1. Ruby 解析
-    // ============================================================
-    parseRuby: function(text) {
-        if (!text) return "";
-        // 格式支援：漢字[平假名] -> <ruby>漢字<rt>平假名</rt></ruby>
-        return text.replace(/([\u4e00-\u9fa5]+)\[(.+?)\]/g, '<ruby>$1<rt>$2</rt></ruby>');
-    },
-	// [New] 2. 自動排版：句點換行
-    formatText: function(text) {
-        if (!text) return "";
-        // 先處理 Ruby
-        let formatted = this.parseRuby(text);
-        // 將句點替換為 句點+換行 (使用 <br> 或 \n 配合 pre-wrap)
-        // 這裡我們用 \n\n 讓段落更分明
-        formatted = formatted.replace(/。/g, '。\n\n');
-        return formatted;
-    },
-
-    // ============================================================
-    // 2. 主渲染函式 (UI 建構)
-    // ============================================================
     render: function() {
         window.TempState.currentView = 'story';
         const container = document.getElementById('page-story');
         if (!container) return;
 
-        // --- 容器樣式 ---
+        if (document.getElementById('story-text-wrapper')) {
+            this.updateTopBar();
+            // 檢查並更新 Tag 抽屜 (如果狀態改變)
+            this.updateDrawer();
+            
+            // 檢查是否為空，若是則強制重繪 Idle
+            const box = document.getElementById('story-content');
+            if (!box || box.innerHTML.trim() === "") this.renderIdle();
+            return;
+        }
 
         Object.assign(container.style, {
-            backgroundColor: '#111',
-            padding: '0',
-            height: '100%',       // [修正] 不使用 100vh
-            width: '100%',
-            overflow: 'hidden',   // 禁止整體滾動
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'absolute', // 確保填滿父層
-            top: '0',
-            left: '0'
+            backgroundColor: '#111', padding: '0', height: '100%', width: '100%',
+            overflow: 'hidden', display: 'flex', flexDirection: 'column',
+            position: 'absolute', top: '0', left: '0'
         });
 
-        // --- 數據準備 ---
+        const topBarContent = `<div id="story-topbar" style="display:flex; align-items:center; justify-content:space-between; width:100%; gap: 5px;"></div>`;
+        
+        const textBody = `
+            <div id="story-text-wrapper" 
+                 onclick="if(window.StoryEngine && window.StoryEngine.clickScreen) window.StoryEngine.clickScreen()"
+                 style="
+                    flex: 1; min-height: 0; padding: 5px 20px 20px 20px; overflow-y: auto; 
+                    color: #e0e0e0; font-size: 1.15rem; line-height: 1.6; padding-bottom: 40px;
+                    white-space: pre-wrap; cursor: pointer; position: relative; scroll-behavior: smooth;
+                 ">
+                <div id="story-content"></div>
+                <div id="story-cursor" style="
+                    display:none; color:#ffd700; font-weight:bold; font-size:1.2rem;
+                    position: absolute; bottom: 10px; right: 20px; 
+                    animation: bounce 1s infinite;
+                "></div>
+                <style>@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px); } }</style>
+            </div>`;
+
+        const actionsArea = `
+            <div id="story-actions" style="
+                min-height: 180px; width: 100%;
+                flex-shrink: 0; display: flex; flex-direction: column; 
+                justify-content: flex-start; gap: 10px; background: #222; border-top: 2px solid #555;
+                padding: 15px; box-sizing: border-box; overflow-y: auto; z-index: 10;
+            "></div>`;
+
+        // 預留抽屜容器
+        const tagDrawerHtml = `<div id="tag-drawer-container"></div>`;
+
+        container.innerHTML = `
+            <div style="display:flex; flex-direction:column; height:100%; width:100%; position:relative;">
+                <div style="flex-shrink:0; height:60px; background:#111; border-bottom:1px solid #333; display:flex; align-items:center; padding:0 10px;">${topBarContent}</div>
+                ${textBody}
+                ${actionsArea}
+                ${tagDrawerHtml}
+                
+                <style>
+                    /* 1. 調整 Toast 高度 (僅限 Story 模式) */
+                    /* 請根據您實際 UI 庫的 Toast class 名稱調整 (如 .toast-box, #toast-container) */
+                    .toast-box, .toast-container, div[id^="toast"] {
+                        bottom: 200px !important; /* 數值越大越往上 */
+                        z-index: 9999 !important;
+                    }
+
+                    /* 2. 調整 Tag 抽屜把手高度 */
+                    /* 透過覆寫 top 屬性來移動把手位置 (預設通常是 50%) */
+                    #tag-drawer-container .drawer-handle,
+                    #tag-drawer-container [class*="handle"] {
+                        top: 50% !important; /* 30% 代表偏上方，80% 代表偏下方 */
+                    }
+                </style>
+                </div>
+        `;
+        
+        this.updateTopBar();
+        this.updateDrawer(); // 初次渲染抽屜
+        this.renderIdle();
+    },
+
+    updateTopBar: function() {
+        const el = document.getElementById('story-topbar');
+        if (!el) return;
+        
         const gs = window.GlobalState;
+        const ui = window.ui || { 
+            progress: { bar: () => '' }, 
+            component: { btn: (o) => `<button onclick="${o.action}">${o.label}</button>` },
+            input: { select: () => '' }
+        };
+
         let currentMax = 100;
         if (window.StoryEngine && typeof StoryEngine.calculateMaxEnergy === 'function') {
             currentMax = StoryEngine.calculateMaxEnergy();
         }
         const energy = Math.floor(gs.story?.energy || 0);
         const locationName = window.TempState.storyLocation || '---';
-        const currentTagFilter = window.TempState.tagFilter || '全部';
-        const myTags = gs.story?.tags || []; 
-
-        // --- UI 庫防呆 ---
-        const ui = window.ui || {
-            input: { select: () => '' },
-            component: { btn: (o) => `<button onclick="${o.action}">${o.label}</button>`, pill: (l) => `<span>${l}</span>` },
-            progress: { bar: () => '' },
-            layout: { scrollX: () => '', drawer: (o,c) => c }
-        };
-
-        // --- A. TopBar ---
-        const langOpts = [
-            { value: 'mix', label: '😵 Mix' },
-            { value: 'zh',  label: '🇹🇼 ZH' },
-            { value: 'jp',  label: '🇯🇵 JP' },
-            { value: 'en',  label: '🇺🇸 EN' }
-        ];
         const currentLang = (gs.settings && gs.settings.targetLang) ? gs.settings.targetLang : 'mix';
         
-        // 使用 ui.input.select
-        const langSelectorHtml = `
-            <div style="width:85px; transform: scale(0.9);">
-                ${ui.input.select(langOpts, currentLang, "act.setLang(this.value)", "story-lang-select")}
-            </div>`;
-            
-        // 準備 "+" 按鈕 (開啟精力商店)
+        const langOpts = [{value:'mix',label:'Mix'}, {value:'zh',label:'ZH'}, {value:'jp',label:'JP'}, {value:'en',label:'EN'}];
+        const langSelector = `<div style="transform: scale(0.9);">${ui.input.select(langOpts, currentLang, "act.setLang(this.value)", "story-lang-select")}</div>`;
+
+        // [Restored] 精力商店按鈕
         const btnStamina = ui.component.btn({
-            label: '+', 
-            theme: 'correct', 
-            size: 'sm', 
+            label: '+', theme: 'correct', size: 'sm', 
             style: 'padding:0 6px; height:20px; line-height:1; margin-left:4px;', 
             action: 'if(window.shopView) shopView.renderStaminaShop()' 
         });
 
-        const topBarContent = `
-            <div style="display:flex; align-items:center; justify-content:space-between; width:100%; gap: 5px;">
-                <div style="display:flex; align-items:center; width: 120px; flex-shrink: 0;">
-                    <span style="color:#ffd700; font-size:0.9rem; margin-right:4px;">⚡</span>
-                    <div style="flex:1;">
-                        ${ui.progress.bar(energy, currentMax, `${energy}/${currentMax}`, 'height:12px; background:#333; color:#fff; font-size:0.7rem;')}
-                    </div>
-                    ${btnStamina}
+        el.innerHTML = `
+            <div style="display:flex; align-items:center; width: 130px; flex-shrink: 0;">
+                <span style="color:#ffd700; font-size:0.9rem; margin-right:4px;">⚡</span>
+                <div style="flex:1;">
+                    ${ui.progress.bar(energy, currentMax, `${energy}/${currentMax}`, 'height:12px; background:#333; color:#fff; font-size:0.7rem;')}
                 </div>
-
-                <div style="flex: 1; display:flex; justify-content:center; align-items:center; overflow:hidden;">
-                    <div style="text-align:center; color:#aaa; font-size:0.95rem; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                        📍 ${locationName}
-                    </div>
+                ${btnStamina}
+            </div>
+            <div style="flex: 1; display:flex; justify-content:center; align-items:center; overflow:hidden; padding: 0 5px;">
+                <div style="text-align:center; color:#aaa; font-size:0.95rem; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    📍 ${locationName}
                 </div>
-
-                <div style="display:flex; align-items:center; gap:2px; flex-shrink: 0;">
-                    ${langSelectorHtml}
-                    ${ui.component.btn({label:'✕', theme:'danger', size:'sm', style:'padding:2px 6px;', action:"act.navigate('main')"})}
-                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:2px; flex-shrink: 0;">
+                ${langSelector}
+                ${ui.component.btn({label:'✕', theme:'danger', size:'sm', style:'padding:2px 8px;', action:"act.navigate('main')"})}
             </div>`;
+    },
 
-        // --- B. Tag Pills & Drawer ---
+    // [New] 抽屜渲染邏輯 (從舊版移植)
+    updateDrawer: function() {
+        const container = document.getElementById('tag-drawer-container');
+        if (!container) return;
+
+        const ui = window.ui;
+        const gs = window.GlobalState;
+        const isTagOpen = window.TempState.isTagDrawerOpen || false;
+        const currentTagFilter = window.TempState.tagFilter || '全部';
+        const myTags = gs.story?.tags || [];
+
         const tagColors = { 'loc': '#795548', 'status': '#1976d2', 'warn': '#d32f2f', 'info': '#7b1fa2' };
-        let tagsPillsHtml = myTags.length === 0 ? '' : myTags.map(t => {
-                const label = typeof t === 'string' ? t : t.label;
-                const type = typeof t === 'string' ? 'info' : t.type;
-                if (currentTagFilter !== '全部' && type !== 'loc' && label !== currentTagFilter) return '';
-                return ui.component.pill(label, tagColors[type] || '#455a64', '', true);
-            }).join('');
+        
+        let tagsPillsHtml = myTags.length === 0 ? '<div style="color:#666; padding:10px;">尚無標籤</div>' : myTags.map(t => {
+            const label = typeof t === 'string' ? t : t.label;
+            const type = typeof t === 'string' ? 'info' : t.type;
+            if (currentTagFilter !== '全部' && type !== 'loc' && label !== currentTagFilter) return '';
+            return ui.component.pill(label, tagColors[type] || '#455a64', '', true);
+        }).join('');
+
         const tagsAreaHtml = `<div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">${tagsPillsHtml}</div>`;
 
-        const isTagOpen = window.TempState.isTagDrawerOpen || false;
         const tagDrawerContent = `
             <div style="display: flex; flex-direction: column; height: 100%; color: #fff;">
                 <div style="flex-shrink: 0; display: flex; align-items: center; gap: 12px; margin: 10px 0; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
@@ -132,270 +166,159 @@ window.storyView = {
                 <div style="flex: 1; overflow-y: auto; padding:10px;">${tagsAreaHtml}</div>
             </div>`;
 
-        const tagDrawerHtml = ui.layout.drawer(
+        // 使用 ui.layout.drawer 重新生成 HTML
+        const drawerHtml = ui.layout.drawer(
             isTagOpen, tagDrawerContent, "act.toggleTagDrawer()",
             { dir: 'right', fixedHandle: true, color: '#1a1a1a', iconOpen: '▶', iconClose: '◀' }
         );
-
-        // --- C. Text Body (加入 hint) ---
-        const hintHtml = `
-            <div id="story-next-hint" style="display:none; text-align:center; margin-top:10px; animation: bounce 1s infinite; cursor:pointer; color:#ffd700;">
-                ▼ 點擊繼續
-            </div>
-            <style>@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }</style>
-        `;
-
-        const textBody = `
-            <div id="story-text-wrapper" 
-                 onclick="if(window.TempState.waitingForPageClick && window.TempState.nextPageFunc) { window.TempState.nextPageFunc(); } else if(window.TempState.isRendering) { window.TempState.skipRendering=true; }" 
-                 style="
-                    flex: 1; min-height: 0; padding: 20px; overflow-y: auto; 
-                    color: #e0e0e0; font-size: 1.1rem; line-height: 1.6; padding-bottom: 20px;
-                    white-space: pre-wrap; /* [Critical Fix] 讓 \n 自動換行 */
-                 ">
-                <div id="story-content" style="min-height: 100px;"></div>
-                ${hintHtml}
-            </div>`;
-        // --- D. Actions Area ---
-        const actionsArea = `
-            <div id="story-actions" style="
-                min-height: 220px; width: 100%;
-                flex-shrink: 0; display: flex; flex-direction: column; 
-                justify-content: flex-start; gap: 10px; background: #222; border-top: 2px solid #555;
-                padding: 15px; box-sizing: border-box; overflow-y: auto; z-index: 10; position: relative;
-            "></div>`;
-
-        // --- F. 最終組裝 ---
-        container.innerHTML = `
-            <div style="display:flex; flex-direction:column; height:100%; width:100%; position:relative;">
-                <div style="flex-shrink:0; height:60px; background:#111; border-bottom:1px solid #333; display:flex; align-items:center; padding:0 10px;">${topBarContent}</div>
-                ${textBody}
-                ${actionsArea}
-                ${tagDrawerHtml} 
-            </div>
-        `;
-
-        // --- G. 內容渲染觸發 ---
-        if (!window.TempState.storyCard) { 
-            this.renderIdle(); 
-        } else { 
-            const currentText = window.TempState.storyCard.text;
-            const lastText = window.TempState.lastRenderedText;
-            const isInstant = (currentText && lastText && currentText === lastText);
-            this.renderScene(window.TempState.storyCard, isInstant); 
-        }
-
-        // 確保按鈕點擊有效
-        if (!window.act) window.act = {};
-        if (!window.act.choice) {
-            window.act.choice = (idx) => {
-                if (window.StoryEngine && window.StoryEngine.makeChoice) window.StoryEngine.makeChoice(idx);
-            };
-        }
-    },
-
-    // ============================================================
-    // 3. 場景渲染
-    // ============================================================
-    renderScene: function(card, isInstant = false) {
-        window.TempState.storyCard = card;
-        window.TempState.lastRenderedText = card.text;
-        if (card.location) window.TempState.storyLocation = card.location;
-
-        const actionBox = document.getElementById('story-actions');
-        if (actionBox) actionBox.innerHTML = ''; 
-
-        // 準備選項按鈕
-        const actions = (card.options || []).map((opt, idx) => ({
-            label: opt.label || "Option", 
-            theme: opt.style || 'normal',
-            action: `act.choice(${idx})`
-        }));
-		
-		const rawText = card.text || "";
-        const displayHtml = (this.formatText) ? this.formatText(rawText) : rawText;
-
-        if (isInstant) {
-            const box = document.getElementById('story-content');
-            const hint = document.getElementById('story-next-hint');
-            if (box) {
-                box.innerHTML = this.parseRuby(card.text); 
-                if(hint) hint.style.display = 'none';
-            }
-            this.renderActions(actions);
-        } else {
-            this.typeWriter(displayHtml, () => {
-                this.renderActions(actions);
-            });
-        }
-    },
-
-    // [Modified] 移除「返回大廳」按鈕
-    renderIdle: function() {
-        const idleText = "四周一片漆黑，唯有遠處傳來微弱的聲響...";
-        const lastText = window.TempState.lastRenderedText;
-        const isInstant = (lastText === idleText);
-
-        window.TempState.lastRenderedText = idleText;
-        window.TempState.storyCard = null;
-
-        const actions = [
-            { label: "🔍 繼續探索 (5⚡)", theme: 'correct', action: "act.explore()" }
-            // 移除了 "🏠 返回大廳"
-        ];
-
-        if (isInstant) {
-            const box = document.getElementById('story-content');
-            if (box) box.textContent = idleText;
-            this.renderActions(actions);
-        } else {
-            this.typeWriter(idleText, () => {
-                this.renderActions(actions);
-            }, 40);
-        }
-    },
-
-    renderActions: function(actions) {
-        const container = document.getElementById('story-actions');
-        if (!container) return;
         
-        const ui = window.ui || { component: { btn: (o) => `<button onclick="${o.action}">${o.label}</button>` } };
-
-        if (!actions || actions.length === 0) {
-            container.innerHTML = '<div style="color:#666; text-align:center; margin-top:20px;">(沒有可用選項)</div>';
-            return;
-        }
-        
-        container.innerHTML = actions.map(btn => ui.component.btn({
-            label: btn.label,
-            theme: btn.theme || 'normal',
-            action: btn.action,
-            style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1rem; text-align:center; border:1px solid #444; background:#2a2a2a; color:#eee; flex-shrink: 0;'
-        })).join('');
+        container.innerHTML = drawerHtml;
     },
 
-    // ============================================================
-    // 4. 智慧打字機 (Smart Paging) - 整合版
-    // ============================================================
-    typeWriter: function(text, onComplete, customSpeed) {
+    clearScreen: function() {
         const box = document.getElementById('story-content');
-        const hint = document.getElementById('story-next-hint');
-        if (!box) return;
+        const actBox = document.getElementById('story-actions');
+        const cursor = document.getElementById('story-cursor');
+        if (box) box.innerHTML = '';
+        if (actBox) actBox.innerHTML = '';
+        if (cursor) cursor.style.display = 'none';
+        const wrap = document.getElementById('story-text-wrapper');
+        if (wrap) wrap.scrollTop = 0;
+    },
+
+    appendChunk: function(htmlContent, isLastChunk) {
+        const box = document.getElementById('story-content');
+        const wrap = document.getElementById('story-text-wrapper');
+        const cursor = document.getElementById('story-cursor');
+        if (!box || !wrap) return;
+
+        if (cursor) cursor.style.display = 'none';
+
+        const currentHeight = box.offsetHeight;
+        const viewHeight = wrap.clientHeight;
+        const isOverflowing = currentHeight > (viewHeight * 0.7);
+        const isStart = (box.innerHTML.trim() === "");
         
-        if (window._typewriterTimer) {
-            clearTimeout(window._typewriterTimer);
-            window._typewriterTimer = null;
+        let justCleared = false;
+        if (!isStart && isOverflowing) {
+            box.innerHTML = ''; 
+            wrap.scrollTop = 0;
+            justCleared = true;
         }
 
-        const typingSpeed = customSpeed || 20; 
-        window.TempState.isRendering = false;
-        window.TempState.skipRendering = false;
-        window.TempState.waitingForPageClick = false;
+        const div = document.createElement('div');
+        div.style.marginBottom = '15px';
+        div.style.opacity = '0.9';
+        box.appendChild(div);
 
-        // [New] 簡易處理：如果是 HTML (有 <ruby> 或 <br>), 直接顯示不打字
-        if (text.includes('<') && text.includes('>')) {
-            box.innerHTML = text;
-            if(hint) hint.style.display = 'none';
-            window.TempState.isRendering = false;
+        this.typeWriter(div, htmlContent, justCleared, () => {
+            div.style.opacity = '1';
+            if (cursor) {
+                cursor.style.display = 'block';
+                cursor.innerHTML = isLastChunk ? '➤' : '▼'; 
+            }
+        });
+    },
+
+    typeWriter: function(element, htmlContent, justCleared, onComplete) {
+        if (htmlContent.includes('<')) {
+            element.innerHTML = htmlContent;
             if (onComplete) onComplete();
             return;
         }
 
-        // 分頁邏輯
-        const PAGE_SIZE = 80; // 每頁字數
-        let chunks = [];
-        for (let i = 0; i < text.length; i += PAGE_SIZE) {
-            chunks.push(text.substring(i, i + PAGE_SIZE));
-        }
-        
-        let chunkIndex = 0;
-        box.innerHTML = '';
-        if(hint) hint.style.display = 'none';
-        
-        window.TempState.isRendering = true;
+        let i = 0;
+        const speed = 25;
+        const text = htmlContent;
+        element.textContent = ''; 
 
-        const showChunk = () => {
-            let charIndex = 0;
-            const currentChunk = chunks[chunkIndex];
-            
-            const typeChar = () => {
-                // 安全檢查
-                if(window.TempState.currentView !== 'story') {
-                    window.TempState.isRendering = false;
-                    return;
-                }
-
-                if (window.TempState.skipRendering) {
-                    box.innerHTML += currentChunk.substring(charIndex);
-                    finishChunk();
-                    return;
-                }
-                
-                if (charIndex < currentChunk.length) {
-                    box.textContent += currentChunk[charIndex];
-                    charIndex++;
-                    // 自動捲動到底部
-                    const wrap = document.getElementById('story-text-wrapper');
-                    if(wrap) wrap.scrollTop = wrap.scrollHeight;
-                    
-                    window._typewriterTimer = setTimeout(typeChar, typingSpeed);
-                } else {
-                    finishChunk();
-                }
-            };
-
-            const finishChunk = () => {
-                chunkIndex++;
-                window.TempState.isRendering = false;
+        const timer = setInterval(() => {
+            if (window.TempState.skipRendering) {
+                element.textContent = text;
+                clearInterval(timer);
                 window.TempState.skipRendering = false;
-                window._typewriterTimer = null;
-                
-                if (chunkIndex < chunks.length) {
-                    // 還有下一頁
-                    if(hint) hint.style.display = 'block';
-                    window.TempState.waitingForPageClick = true;
-                    window.TempState.nextPageFunc = () => {
-                        if(hint) hint.style.display = 'none';
-                        window.TempState.waitingForPageClick = false;
-                        window.TempState.isRendering = true;
-                        showChunk();
-                    };
-                } else {
-                    // 全部結束
-                    if(hint) hint.style.display = 'none';
-                    window.TempState.waitingForPageClick = false;
-                    if (typeof onComplete === 'function') onComplete();
+                if (onComplete) onComplete();
+                return;
+            }
+
+            element.textContent += text.charAt(i);
+            i++;
+            
+            if (!justCleared) {
+                const wrap = document.getElementById('story-text-wrapper');
+                if(wrap && i % 5 === 0) {
+                    if (wrap.scrollHeight - wrap.scrollTop > wrap.clientHeight + 50) {
+                        wrap.scrollTop = wrap.scrollHeight;
+                    }
                 }
-            };
-            typeChar();
-        };
-        
-        showChunk();
+            } else {
+                const wrap = document.getElementById('story-text-wrapper');
+                if (wrap && wrap.scrollTop !== 0) wrap.scrollTop = 0;
+            }
+
+            if (i >= text.length) {
+                clearInterval(timer);
+                if (onComplete) onComplete();
+            }
+        }, speed);
     },
 
-    // 5. 檢定結果顯示
     appendInlineCheckResult: function(attrKey, total, isSuccess) {
         const box = document.getElementById('story-content');
         if (!box) return;
         const div = document.createElement('div'); 
         div.style.marginTop = '10px';
+        div.style.padding = '8px';
+        div.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+        div.style.borderRadius = '4px';
+        div.style.borderLeft = isSuccess ? '3px solid #4caf50' : '3px solid #f44336';
         const color = isSuccess ? '#4caf50' : '#f44336';
-        div.innerHTML = `<span style="color:#aaa;">(🎲) (${attrKey}判定)... ${total} ...</span><span style="color:${color}; font-weight:bold;">${isSuccess ? '成功' : '失敗'}</span>`;
+        const icon = isSuccess ? '✅' : '❌';
+        div.innerHTML = `<div style="font-size:0.9rem; color:#aaa;">🎲 檢定 ${attrKey} ... 擲出 ${total}</div><div style="font-size:1.1rem; font-weight:bold; color:${color};">${icon} ${isSuccess ? '成功' : '失敗'}</div>`;
         box.appendChild(div);
-        
         const wrapper = document.getElementById('story-text-wrapper');
         if(wrapper) wrapper.scrollTop = wrapper.scrollHeight;
     },
-	
-	// [New] 鎖定/解鎖按鈕
-    setButtonsDisabled: function(disabled) {
+
+    showOptions: function(options) {
         const container = document.getElementById('story-actions');
+        const cursor = document.getElementById('story-cursor');
         if (!container) return;
-        const btns = container.querySelectorAll('button');
-        btns.forEach(btn => {
-            btn.disabled = disabled;
-            btn.style.opacity = disabled ? '0.5' : '1';
-            btn.style.cursor = disabled ? 'not-allowed' : 'pointer';
-        });
+        if (cursor) cursor.style.display = 'none';
+        const ui = window.ui || { component: { btn: (o) => `<button onclick="${o.action}">${o.label}</button>` } };
+        if (!options || options.length === 0) {
+            container.innerHTML = '<div style="color:#666; text-align:center;">(沒有可用選項)</div>';
+            return;
+        }
+        container.style.opacity = '1';
+        container.style.transition = '';
+        container.innerHTML = options.map((btn, idx) => ui.component.btn({
+            label: btn.label, theme: btn.theme || 'normal',
+            action: `window.StoryEngine.selectOption(${idx})`,
+            style: 'width:100%; max-width:400px; margin:0 auto; padding:12px; font-size:1rem; text-align:center; border:1px solid #444; background:#2a2a2a; color:#eee;'
+        })).join('');
+        const wrap = document.getElementById('story-text-wrapper');
+        if(wrap) wrap.scrollTop = wrap.scrollHeight;
+    },
+
+    renderIdle: function() {
+        this.clearScreen();
+        const ui = window.ui || { component: { btn: (o) => `<button onclick="${o.action}">${o.label}</button>` } };
+        const box = document.getElementById('story-content');
+        const actBox = document.getElementById('story-actions');
+        const gs = window.GlobalState;
+        
+        const hasSavedStory = (window.TempState.currentSceneNode) || (gs.story && (gs.story.currentNode || gs.story.chain));
+
+        if (hasSavedStory) {
+            if(box) box.innerHTML = `<div style="text-align:center; padding-top:40px; color:#ffd700;">⚠️ 檢測到未完成的冒險</div>`;
+            const btnResume = ui.component.btn({ label: "▶ 繼續冒險", theme: 'correct', action: "window.StoryEngine.resumeStory()", style: 'width:100%; max-width:400px; margin:0 auto 10px; padding:14px; font-size:1.1rem;' });
+            const btnAbandon = ui.component.btn({ label: "🗑️ 放棄並重新開始", theme: 'danger', action: "window.StoryEngine.abandonStory()", style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1.1rem;' });
+            if(actBox) actBox.innerHTML = btnResume + btnAbandon;
+        } else {
+            if(box) box.innerHTML = `<div style="text-align:center; padding-top:40px; color:#888;">準備好開始新的旅程了嗎？</div>`;
+            const btnExplore = ui.component.btn({ label: "🔍 開始探索 (5⚡)", theme: 'correct', action: "window.StoryEngine.explore()", style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1.1rem;' });
+            if(actBox) actBox.innerHTML = btnExplore;
+        }
     }
 };

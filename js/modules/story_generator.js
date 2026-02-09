@@ -1,77 +1,148 @@
-/* js/modules/story_generator.js - V56.0 (Fix History & Dynamic Tags) */
+/* js/modules/story_generator.js - V79.0 (Smart Action & Auto-Button Fix) */
 
 window.StoryGenerator = {
-    _sysDict: { investigate: { zh: "調查" }, explore_deeper: { zh: "繼續深入" }, finish: { zh: "完成" }, next: { zh: "繼續" } },
+    // ============================================================
+    // 1. 系統設定與字典
+    // ============================================================
+    _sysDict: { 
+        investigate: { zh: "調查" }, 
+        explore_deeper: { zh: "繼續深入" }, 
+        finish: { zh: "完成" }, 
+        next: { zh: "繼續" },
+        tension_high: { zh: "感覺氣氛越來越凝重..." },
+        tension_climax: { zh: "決戰時刻到了！" }
+    },
     _t: function(k, l) { return (this._sysDict[k] && this._sysDict[k][l]) || this._sysDict[k]?.zh || k; },
 
-    generate: function(contextTags = [], isStart = false) {
-        const gs = window.GlobalState;
-        
-        // [Fix] 確保 history 陣列存在，防止 push 報錯
-        if (!gs.story.chain) gs.story.chain = { depth: 0, maxDepth: 3, accumulatedTags: [], memory: {}, history: [] };
-        if (!gs.story.chain.history) gs.story.chain.history = []; 
-
-        const chain = gs.story.chain;
-        let depth = chain.depth;
-        let maxDepth = chain.maxDepth;
-        let targetType = 'event';
-
-        if (isStart) {
-            targetType = 'setup';
-        } else if (contextTags.includes('combat_defeat')) {
-            targetType = 'ending';
-        } else if (depth >= maxDepth) {
-            // 動態展延: 30% 機率延長
-            if (Math.random() < 0.3 && depth < 8) {
-                console.log("🎲 觸發動態展延！");
-                targetType = 'event';
-                chain.maxDepth++; 
-            } else {
-                targetType = 'ending';
-            }
-        }
-
-        const template = this.pickTemplate(targetType, contextTags, chain.history);
-        const lang = gs.settings?.targetLang || 'zh';
-
-        if (!template) return {
-            id: `fallback_${Date.now()}`, text: "迷霧...", options: [{ label: "離開", action: "finish_chain" }]
-        };
-
-        if (template.id) {
-            chain.history.push(template.id);
-            if (chain.history.length > 3) chain.history.shift();
-        }
-
-        // 填充內容 (含動態 Tag 處理)
-        const filledData = this.fillTemplate(template, lang);
-        let finalText = filledData.text;
-
-        let quizWord = null;
-        if (finalText.includes('{learning_word}')) {
-            quizWord = window.StoryEngine.pickSpiralWord();
-            finalText = finalText.replace(/{learning_word}/g, quizWord ? quizWord.word : "???");
-        }
-
-        // 處理長對話
-        if (template.dialogue && template.dialogue.length > 0) {
-            return this.generateDialogueChain(template, filledData, lang);
-        } else {
-            // [Fix] 確保 dynamicOptions 使用處理過的 rewards (含動態 Tag)
-            const opts = this.generateOptions(template, filledData.fragments, lang, targetType, quizWord);
-            
-            return {
-                id: `gen_${Date.now()}`, 
-                text: finalText, 
-                location: filledData.locationStr || "Adventure",
-                options: opts, 
-                structure: template.structure, 
-                rewards: filledData.rewards // 使用替換後的 rewards
-            };
+    // ============================================================
+    // 2. 劇本骨架定義 (Skeletons)
+    // ============================================================
+    skeletons: {
+        'mystery': {
+            stages: ['setup_crime', 'investigate', 'interrogate', 'deduction_moment', 'confrontation'],
+            actors: ['detective', 'victim', 'suspect_A', 'suspect_B', 'killer'], 
+            baseTension: 10
+        },
+        'horror': {
+            stages: ['setup_omen', 'explore_eerie', 'encounter_monster', 'escape_chase', 'final_survival'],
+            actors: ['survivor', 'monster', 'haunted_place'],
+            baseTension: 20
+        },
+        'random': {
+            stages: ['setup', 'event', 'event', 'event', 'boss'],
+            actors: ['enemy'],
+            baseTension: 0
         }
     },
 
-    pickTemplate: function(type, contextTags, history = []) {
+    // ============================================================
+    // 3. 啟動新冒險 (Start Chain)
+    // ============================================================
+    initChain: function(mode = 'random') {
+        const skel = this.skeletons[mode] || this.skeletons['random'];
+        
+        const memory = {};
+        if (skel.actors && window.FragmentDB) {
+            skel.actors.forEach(role => {
+                const pool = window.FragmentDB.fragments[role] || window.FragmentDB.fragments['npc_name'] || [{val:{zh:"神秘人"}}];
+                const pick = pool[Math.floor(Math.random() * pool.length)];
+                memory[role] = pick.val.zh || pick.val; 
+            });
+        }
+
+        return {
+            depth: 0,
+            maxDepth: skel.stages.length, 
+            skeletonKey: mode,
+            stages: skel.stages,          
+            tension: skel.baseTension,    
+            memory: memory,               
+            history: [],
+            accumulatedTags: []
+        };
+    },
+
+    // ============================================================
+    // 4. 生成下一層 (Generate)
+    // ============================================================
+    generate: function(contextTags = [], isStart = false) {
+        const gs = window.GlobalState;
+        
+        // 1. 初始化檢查
+        if (!gs.story.chain || !gs.story.chain.stages || isStart) {
+            console.log("🔄 L3 Generator: 初始化...");
+            const modes = ['mystery', 'horror', 'random']; 
+            const randomMode = modes[Math.floor(Math.random() * modes.length)];
+            gs.story.chain = this.initChain(randomMode); 
+        }
+
+        const chain = gs.story.chain;
+        let depth = chain.depth;
+        
+        // 2. 張力計算
+        let tensionDelta = 10; 
+        if (contextTags.includes('risk_high')) tensionDelta += 20;
+        if (contextTags.includes('safe_spot')) tensionDelta -= 10;
+        if (contextTags.includes('clue_found')) tensionDelta += 15; 
+        
+        chain.tension = Math.min(100, Math.max(0, (chain.tension || 0) + tensionDelta));
+        console.log(`🎬 Director: Depth ${depth}, Tension ${chain.tension}%`);
+
+        // 3. 決定目標類型
+        let targetType = 'event'; 
+
+        if (chain.tension >= 100 && depth > 2) {
+            if (chain.stages && chain.stages.length > 0) {
+                targetType = chain.stages[chain.stages.length - 1];
+            } else {
+                targetType = 'ending'; 
+            }
+            console.log(`🔥 Tension Overload! Director forcing jump to: ${targetType}`);
+        } 
+        else if (depth < chain.stages.length) {
+            targetType = chain.stages[depth];
+        } 
+        else {
+            targetType = 'ending';
+        }
+
+        // 4. 挑選模板
+        const template = this.pickTemplate(targetType, contextTags, chain.history, chain.tension);
+        const lang = gs.settings?.targetLang || 'zh';
+
+        if (!template) {
+            return {
+                id: `fallback_${Date.now()}`, 
+                text: `(導演找不到劇本: ${targetType}) \n你繼續在迷霧中前行...`, 
+                options: [{ label: "離開", action: "finish_chain" }]
+            };
+        }
+
+        if (template.id) {
+            chain.history.push(template.id);
+            if (chain.history.length > 4) chain.history.shift();
+        }
+
+        // 5. 填充內容
+        const filledData = this.fillTemplate(template, lang, chain.memory);
+        let finalText = filledData.text;
+
+        // 6. 選項生成
+        const opts = this.generateOptions(template, filledData.fragments, lang, targetType, chain.tension);
+        
+        return {
+            id: `gen_${Date.now()}`, 
+            text: finalText, 
+            location: filledData.locationStr || "Mystery Scene",
+            options: opts, 
+            rewards: filledData.rewards
+        };
+    },
+
+    // ============================================================
+    // 5. 輔助函數
+    // ============================================================
+    pickTemplate: function(type, contextTags, history = [], currentTension) {
         const db = window.FragmentDB;
         if (!db || !db.templates) return null;
         const gs = window.GlobalState;
@@ -85,7 +156,12 @@ window.StoryGenerator = {
             return true;
         });
 
-        // 歷史過濾
+        candidates = candidates.filter(t => {
+            if (t.minTension && currentTension < t.minTension) return false;
+            if (t.maxTension && currentTension > t.maxTension) return false;
+            return true;
+        });
+
         const available = candidates.filter(t => !t.id || !history.includes(t.id));
         const finalPool = available.length > 0 ? available : candidates;
 
@@ -93,92 +169,84 @@ window.StoryGenerator = {
         return null;
     },
 
-    generateDialogueChain: function(template, filledData, lang) {
-        const dialogues = template.dialogue;
-        const buildNode = (index) => {
-            if (index >= dialogues.length) {
-                // 對話結束，顯示選項與獎勵
-                return {
-                    text: filledData.text,
-                    options: this.generateOptions(template, filledData.fragments, lang, template.type, null),
-                    rewards: filledData.rewards // 確保結尾獲得正確獎勵
-                };
-            }
-            const d = dialogues[index];
-            const dText = (d.text[lang] || d.text['zh']).replace(/{(\w+)}/g, (_, k) => filledData.fragments[k]?.val[lang] || filledData.fragments[k]?.val['zh'] || k);
-            return {
-                text: `【${d.speaker}】\n${dText}`,
-                options: [{ label: "繼續", action: "node_next", nextScene: buildNode(index + 1) }]
-            };
-        };
-        return buildNode(0);
-    },
-
-    fillTemplate: function(tmpl, lang) {
+    fillTemplate: function(tmpl, lang, memory) {
         const db = window.FragmentDB;
-        const gs = window.GlobalState;
-        const memory = gs.story.chain.memory || {}; 
-        let finalStr = tmpl.text[lang] || tmpl.text['zh'];
+        let rawContent = tmpl.text[lang] || tmpl.text['zh'];
+        let textArr = Array.isArray(rawContent) ? [...rawContent] : [rawContent];
         let chosenFragments = {};
 
-        // 1. 填詞
         (tmpl.slots || []).forEach(key => {
-            if (memory[key]) {
-                 const word = memory[key];
-                 finalStr = finalStr.replace(`{${key}}`, word);
-            } else {
+            let word = "";
+            if (memory && memory[key]) {
+                 word = memory[key];
+                 chosenFragments[key] = { val: { zh: word } }; 
+            } 
+            else {
                 const list = db.fragments[key];
                 if (list && list.length > 0) {
                     const item = list[Math.floor(Math.random() * list.length)];
-                    const word = item.val[lang] || item.val['zh'];
-                    finalStr = finalStr.replace(`{${key}}`, word);
+                    word = item.val[lang] || item.val['zh'];
                     chosenFragments[key] = item;
-                    memory[key] = word; // 記住這一次隨機到的詞
-                } else { finalStr = finalStr.replace(`{${key}}`, `(${key}?)`); }
+                } else { 
+                    word = `(${key}?)`; 
+                }
             }
+            textArr = textArr.map(line => line.replace(new RegExp(`{${key}}`, 'g'), word));
         });
-        gs.story.chain.memory = memory;
 
-        // 2. [New] 動態 Tag 替換 (將 {item} 換成 'Old Coin')
         let newRewards = null;
         if (tmpl.rewards) {
-            newRewards = JSON.parse(JSON.stringify(tmpl.rewards)); // 深拷貝
+            newRewards = JSON.parse(JSON.stringify(tmpl.rewards));
             if (newRewards.tags) {
                 newRewards.tags = newRewards.tags.map(tag => {
-                    // 檢查是否包含 {key}
-                    return tag.replace(/{(\w+)}/g, (_, k) => {
-                        // 如果 memory 中有這個 key (例如 item="Old Coin")
-                        return memory[k] || k;
-                    });
+                    return tag.replace(/{(\w+)}/g, (_, k) => memory[k] || k);
                 });
             }
         }
 
-        return { text: finalStr, fragments: chosenFragments, rewards: newRewards || tmpl.rewards };
+        return { text: textArr, fragments: chosenFragments, rewards: newRewards || tmpl.rewards };
     },
 
-    generateOptions: function(tmpl, fragments, lang, type, quizWord) {
+    generateOptions: function(tmpl, fragments, lang, type, tension) {
         let opts = [];
-        if (quizWord && tmpl.mode === 'learning_event') {
-            opts.push({ label: `意思是：${quizWord.meaning}`, action: "answer_quiz", isCorrect: true, wordId: quizWord.id, style: "primary" });
-            const wrongWords = window.StoryEngine.pickWrongOptions(quizWord.id, 2);
-            wrongWords.forEach(w => opts.push({ label: `意思是：${w.meaning}`, action: "answer_quiz", isCorrect: false, wordId: quizWord.id, style: "normal" }));
-            return opts.sort(() => Math.random() - 0.5);
-        }
-        
-        // 處理一般選項的動態 Tag
-        if (tmpl.options) {
+
+        // [Fix] 只有當 options 陣列有內容時才使用，空陣列視為無選項
+        if (tmpl.options && tmpl.options.length > 0) {
              return tmpl.options.map(o => {
                  let newRew = o.rewards ? JSON.parse(JSON.stringify(o.rewards)) : undefined;
                  if (newRew && newRew.tags) {
-                     newRew.tags = newRew.tags.map(t => t.replace(/{(\w+)}/g, (_, k) => fragments[k]?.val[lang] || fragments[k]?.val['zh'] || k));
+                     newRew.tags = newRew.tags.map(t => t.replace(/{(\w+)}/g, (_, k) => fragments[k]?.val?.zh || k));
                  }
-                 return { ...o, label: o.label, action: o.action || 'advance_chain', rewards: newRew };
+                 
+                 // [Critical Fix] 智能判斷：如果有 nextScene，動作必須是 node_next
+                 // 這解決了偵探結局無限迴圈的問題
+                 let defaultAction = (o.nextScene || o.nextSceneId) ? 'node_next' : 'advance_chain';
+                 
+                 return { 
+                     ...o, 
+                     action: o.action || defaultAction, 
+                     rewards: newRew,
+                 };
              });
         }
         
-        if (type === 'ending') opts.push({ label: this._t('finish', lang), style: "primary", action: "finish_chain" });
-        else opts.push({ label: this._t('explore_deeper', lang), style: "normal", action: "advance_chain" });
+        // 自動生成按鈕 (Fallback)
+        if (type === 'climax' || type === 'confrontation' || type === 'final_survival') {
+            opts.push({ label: "決一死戰！", style: "danger", action: "finish_chain" }); 
+        } else if (type === 'ending') {
+            opts.push({ label: this._t('finish', lang), style: "primary", action: "finish_chain" });
+        } else {
+            opts.push({ 
+                label: this._t('explore_deeper', lang), 
+                action: "advance_chain",
+                nextTags: ['risk_high'] 
+            });
+            opts.push({ 
+                label: "小心前進", 
+                action: "advance_chain",
+                nextTags: ['safe_spot'] 
+            });
+        }
         return opts;
     }
 };
