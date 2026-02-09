@@ -1,4 +1,4 @@
-/* js/modules/story_generator.js - V79.0 (Smart Action & Auto-Button Fix) */
+/* js/modules/story_generator.js - V79.1 (Fix Dialogue & Options Display) */
 
 window.StoryGenerator = {
     // ============================================================
@@ -71,6 +71,7 @@ window.StoryGenerator = {
         // 1. 初始化檢查
         if (!gs.story.chain || !gs.story.chain.stages || isStart) {
             console.log("🔄 L3 Generator: 初始化...");
+            // 隨機抽選模式
             const modes = ['mystery', 'horror', 'random']; 
             const randomMode = modes[Math.floor(Math.random() * modes.length)];
             gs.story.chain = this.initChain(randomMode); 
@@ -123,7 +124,7 @@ window.StoryGenerator = {
             if (chain.history.length > 4) chain.history.shift();
         }
 
-        // 5. 填充內容
+        // 5. 填充內容 (包含 Text 和 Dialogue)
         const filledData = this.fillTemplate(template, lang, chain.memory);
         let finalText = filledData.text;
 
@@ -132,7 +133,9 @@ window.StoryGenerator = {
         
         return {
             id: `gen_${Date.now()}`, 
-            text: finalText, 
+            text: finalText,
+            // [Critical Fix] 這裡必須把處理好的 dialogue 傳回去！
+            dialogue: filledData.dialogue, 
             location: filledData.locationStr || "Mystery Scene",
             options: opts, 
             rewards: filledData.rewards
@@ -169,18 +172,36 @@ window.StoryGenerator = {
         return null;
     },
 
+    // [Fix] 升級版填詞：同時處理 Text 和 Dialogue
     fillTemplate: function(tmpl, lang, memory) {
         const db = window.FragmentDB;
+        
+        // A. 準備 Main Text
         let rawContent = tmpl.text[lang] || tmpl.text['zh'];
         let textArr = Array.isArray(rawContent) ? [...rawContent] : [rawContent];
+        
+        // B. 準備 Dialogue (如果有)
+        // 先解析語言，轉成物件結構，稍後再填詞
+        let dialogueArr = null;
+        if (tmpl.dialogue) {
+            dialogueArr = tmpl.dialogue.map(d => ({
+                speaker: d.speaker, // 暫時保留 {slot}
+                text: d.text[lang] || d.text['zh']
+            }));
+        }
+
         let chosenFragments = {};
 
+        // C. 遍歷 Slots 進行統一填詞
         (tmpl.slots || []).forEach(key => {
             let word = "";
+            
+            // 優先從記憶讀取 (確保角色一致性)
             if (memory && memory[key]) {
                  word = memory[key];
                  chosenFragments[key] = { val: { zh: word } }; 
             } 
+            // 否則隨機抽取
             else {
                 const list = db.fragments[key];
                 if (list && list.length > 0) {
@@ -191,26 +212,45 @@ window.StoryGenerator = {
                     word = `(${key}?)`; 
                 }
             }
-            textArr = textArr.map(line => line.replace(new RegExp(`{${key}}`, 'g'), word));
+
+            // D. 執行替換 (Regex Global)
+            const regex = new RegExp(`{${key}}`, 'g');
+            
+            // 1. 替換 Main Text
+            textArr = textArr.map(line => line.replace(regex, word));
+            
+            // 2. 替換 Dialogue (Speaker 和 Text 都要換)
+            if (dialogueArr) {
+                dialogueArr.forEach(d => {
+                    if (d.speaker) d.speaker = d.speaker.replace(regex, word);
+                    if (d.text) d.text = d.text.replace(regex, word);
+                });
+            }
         });
 
+        // 處理動態獎勵標籤
         let newRewards = null;
         if (tmpl.rewards) {
             newRewards = JSON.parse(JSON.stringify(tmpl.rewards));
             if (newRewards.tags) {
                 newRewards.tags = newRewards.tags.map(tag => {
-                    return tag.replace(/{(\w+)}/g, (_, k) => memory[k] || k);
+                    return tag.replace(/{(\w+)}/g, (_, k) => memory[k] || k); // 這裡只支援從 memory 讀取
                 });
             }
         }
 
-        return { text: textArr, fragments: chosenFragments, rewards: newRewards || tmpl.rewards };
+        return { 
+            text: textArr, 
+            dialogue: dialogueArr, // 回傳處理好的對話
+            fragments: chosenFragments, 
+            rewards: newRewards || tmpl.rewards 
+        };
     },
 
     generateOptions: function(tmpl, fragments, lang, type, tension) {
         let opts = [];
 
-        // [Fix] 只有當 options 陣列有內容時才使用，空陣列視為無選項
+        // [Fix] 只有當 options 陣列有內容時才使用
         if (tmpl.options && tmpl.options.length > 0) {
              return tmpl.options.map(o => {
                  let newRew = o.rewards ? JSON.parse(JSON.stringify(o.rewards)) : undefined;
@@ -218,8 +258,7 @@ window.StoryGenerator = {
                      newRew.tags = newRew.tags.map(t => t.replace(/{(\w+)}/g, (_, k) => fragments[k]?.val?.zh || k));
                  }
                  
-                 // [Critical Fix] 智能判斷：如果有 nextScene，動作必須是 node_next
-                 // 這解決了偵探結局無限迴圈的問題
+                 // [Smart Fix] 自動判斷 action
                  let defaultAction = (o.nextScene || o.nextSceneId) ? 'node_next' : 'advance_chain';
                  
                  return { 

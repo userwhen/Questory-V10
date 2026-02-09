@@ -1,4 +1,4 @@
-/* js/data_scenes.js - V76.5 (Multi-Mode Architecture & Restored Content) */
+/* js/data_scenes.js - V79.0 (Fixed Syntax & Restored Missing Scenes) */
 
 // ============================================================
 // 0. 核心設置 (Core Setup)
@@ -12,36 +12,50 @@ function register(scene) {
 }
 
 // ============================================================
-// 📝 通用劇本模板 (Copy & Paste)
-// ============================================================
-/*
-register({
-    id: 'chapter1_start',
-    dialogue: [
-        { speaker: "角色A", text: { zh: "中文對話", en: "English" } },
-        { speaker: "角色B", text: "單一語言對話" }
-    ],
-    options: [
-        { 
-            label: "選項A (跳轉)", 
-            action: "node_next", 
-            nextSceneId: 'chapter1_next' 
-        },
-        { 
-            label: "選項B (檢定)", 
-            check: { stat: 'STR', val: 5 },
-            nextScene: { text: "成功內容" },
-            failScene: { text: "失敗內容" }
-        }
-    ]
-});
-*/
-
-// ============================================================
 // 1. 冒險者模式內容 (Adventurer Content)
 // ============================================================
 
-// --- A. 狼人殺 (Wolf) ---
+// --- A. 狼人殺 (Wolf) [已補完缺失部分] ---
+const WOLF_HUB = register({
+    id: 'wolf_hub',
+    text: "【狼人殺：迷霧村莊】\n昨晚村長被殺了。嫌疑人有 A、B、C。\n規則：狼人說謊，好人說實話。",
+    options: [
+        // 審問選項：有標籤後自動消失
+        { label: "審問 A", condition: { noTag: 'info_A' }, action: "node_next", nextSceneId: 'wolf_room_a' },
+        { label: "審問 B", condition: { noTag: 'info_B' }, action: "node_next", nextSceneId: 'wolf_room_b' },
+        { label: "審問 C", condition: { noTag: 'info_C' }, action: "node_next", nextSceneId: 'wolf_room_c' },
+        // 邏輯整合
+        {
+            label: "💡 整合所有線索",
+            condition: { hasTag: 'info_A' }, // 簡化檢查
+            action: "node_next",
+            nextScene: {
+                text: "筆記：\n若B是狼 -> B謊 -> C是狼 (雙狼矛盾)\n若C是狼 -> C謊 -> A非狼 -> A實話 -> B是狼 (雙狼矛盾)\n結論似乎只有一個...",
+                options: [{ label: "我明白了", action: "node_next", nextSceneId: 'wolf_hub' }]
+            }
+        },
+        { label: "⚖️ 開始投票", action: "node_next", nextSceneId: 'wolf_vote' },
+        { label: "離開", action: "finish_chain" }
+    ]
+});
+
+// 補回房間定義，否則 Hub 會報錯
+register({
+    id: 'wolf_room_a',
+    dialogue: [{ speaker: "A", text: "我不是狼人！B 才是狼人，我看見他半夜出門了！" }],
+    options: [{ label: "紀錄證詞", action: "node_next", rewards: { tags: ['info_A'] }, nextSceneId: 'wolf_hub' }]
+});
+register({
+    id: 'wolf_room_b',
+    dialogue: [{ speaker: "B", text: "A 在說謊！C 是好人，我們昨晚一直在一起喝酒。" }],
+    options: [{ label: "紀錄證詞", action: "node_next", rewards: { tags: ['info_B'] }, nextSceneId: 'wolf_hub' }]
+});
+register({
+    id: 'wolf_room_c',
+    dialogue: [{ speaker: "C", text: "我不知道誰是狼人... 但我敢發誓，A 是狼人！" }],
+    options: [{ label: "紀錄證詞", action: "node_next", rewards: { tags: ['info_C'] }, nextSceneId: 'wolf_hub' }]
+});
+
 register({
     id: 'wolf_vote',
     text: "真相只有一個，請指認兇手：",
@@ -55,7 +69,6 @@ register({
                 options: [{
                     label: "破案離開", 
                     action: "finish_chain",
-                    // [Fix] 離開時清除所有相關 TAG，確保重玩時正常
                     rewards: { removeTags: ['info_A', 'info_B', 'info_C'] } 
                 }] 
             } 
@@ -68,7 +81,6 @@ register({
                 options: [{
                     label: "失敗離開", 
                     action: "finish_chain",
-                    // [Fix] 失敗也要清除
                     rewards: { removeTags: ['info_A', 'info_B', 'info_C'] }
                 }] 
             } 
@@ -116,21 +128,13 @@ register({ id: 'route_a_enter', text: "推開門，客廳擺滿了顯示雜訊�
 register({ id: 'route_b_shout', text: "隔壁老太太探出頭：「那個人已經死了三天了！」", options: [{label:"離開", action:"finish_chain"}] });
 register({ id: 'route_c_leave', text: "你試圖下樓，卻發現一直在四樓鬼打牆...", options: [{label:"離開", action:"finish_chain"}] });
 
-// --- C. 海龜湯 (Turtle Soup - Restored) ---
+// --- C. 海龜湯 (Turtle Soup) ---
 const TURTLE_HUB = register({
     id: 'turtle_hub',
     text: "【海龜湯：半碗牛肉麵】\n題目：一個盲人去吃牛肉麵，吃到一半突然痛哭，然後自殺了。\n請調查線索還原真相。",
     options: [
-        { 
-            label: "🔍 調查桌面", 
-            action: "investigate", 
-            result: "桌上除了半碗麵，還有灑落一地的**蔥花**。" 
-        },
-        { 
-            label: "🔍 詢問老闆", 
-            action: "investigate", 
-            result: "老闆：「那個人說不要蔥，但我太忙忘記了，還是加了滿滿的蔥。」" 
-        },
+        { label: "🔍 調查桌面", action: "investigate", result: "桌上除了半碗麵，還有灑落一地的**蔥花**。" },
+        { label: "🔍 詢問老闆", action: "investigate", result: "老闆：「那個人說不要蔥，但我太忙忘記了，還是加了滿滿的蔥。」" },
         { 
             label: "💡 我知道真相了 (揭曉)", 
             action: "node_next", 
@@ -144,14 +148,13 @@ const TURTLE_HUB = register({
     ]
 });
 
-// --- D. 密室逃脫 (Escape Room - Restored) ---
+// --- D. 密室逃脫 (Escape Room) ---
 const ROOM_HUB = register({
     id: 'room_hub',
     text: "【密室逃脫：煉金術士的牢房】\n你被關在一個潮濕的石室裡。面前有一扇厚重的鐵門。",
-    options: [] // 動態填充
+    options: [] 
 });
 
-// 定義密室的各個狀態節點
 const ROOM_DOOR = register({
     id: 'room_door',
     text: "這扇門鎖得很緊。鎖孔呈現奇特的六角形。",
@@ -171,15 +174,8 @@ const ROOM_BED = register({
             action: "node_next", 
             nextScene: {
                 text: "你在石磚下發現了一把【生鏽的六角鑰匙】！",
-
                 options: [
-                    { 
-                        label: "拿走鑰匙", 
-                        action: "node_next", 
-                        // ✅ 改放在這裡 (點擊按鈕時執行)
-                        rewards: { tags: ['has_key'] }, 
-                        nextSceneId: 'room_hub' 
-                    }
+                    { label: "拿走鑰匙", action: "node_next", rewards: { tags: ['has_key'] }, nextSceneId: 'room_hub' }
                 ]
             }
         },
@@ -188,31 +184,28 @@ const ROOM_BED = register({
     ]
 });
 
-// 更新 HUB 選項 (根據是否拿到鑰匙變化)
 ROOM_HUB.options = [
     { label: "🚪 查看鐵門", action: "node_next", nextSceneId: 'room_door' },
     { label: "🛏️ 檢查床鋪", action: "node_next", nextSceneId: 'room_bed' },
     { 
         label: "🔑 使用鑰匙開門", 
-        condition: { hasTag: 'has_key' }, // 有鑰匙才顯示
+        condition: { hasTag: 'has_key' }, 
         action: "node_next", 
         nextScene: {
             text: "咔嚓一聲，鐵門應聲而開！自由的空氣湧了進來。",
-            rewards: { exp: 100, removeTags: ['has_key'] }, // 移除鑰匙Tag
+            rewards: { exp: 100, removeTags: ['has_key'] },
             options: [{ label: "逃離密室", action: "finish_chain" }]
         }
     },
     { label: "放棄並呼救", action: "finish_chain" }
 ];
 
-
 // ============================================================
-// 2. 后宮模式內容 (Harem Mode Content)
+// 2. 后宮模式內容 (Harem Mode)
 // ============================================================
-// 入口 ID: harem_root
 register({
     id: 'harem_root',
-    entry: true, // 標記為后宮模式的入口
+    entry: true,
     text: "【皇宮寢殿】\n柔和的晨光透過紗簾灑在床上。這裡是你的帝國，也是你的溫柔鄉。",
     options: [
         { label: "召喚女僕長", action: "node_next", nextSceneId: 'harem_maid_intro' },
@@ -244,26 +237,23 @@ register({
     ]
 });
 
-
 // ============================================================
-// 3. 機械公元內容 (Machine Mode Content)
+// 3. 機械公元內容 (Machine Mode) [FIXED]
 // ============================================================
-// 入口 ID: machine_root
 register({
     id: 'machine_root',
     entry: true,
-    // [New] 進入此節點時，初始化變數
     onEnter: { 
         varOps: [
             { key: 'time_left', val: 5, op: 'set', msg: '⏳ 系統連結剩餘時間: 5' }, 
             { key: 'hack_progress', val: 0, op: 'set' } 
         ]
     },
-    text: text: "【系統重啟...】\n你已接入企業伺服器。\n剩餘連接時間：{time_left} 單位\n破解進度：{hack_progress}%",
+    // [Fix] 移除了多餘的 text: 標籤
+    text: "【系統重啟...】\n你已接入企業伺服器。\n剩餘連接時間：{time_left} 單位\n破解進度：{hack_progress}%",
     options: [
         { 
             label: "暴力破解 (消耗 1 時間)", 
-            // [New] 變數條件檢查
             condition: { var: { key: 'time_left', val: 1, op: '>=' } }, 
             action: "node_next", 
             rewards: { 
@@ -272,7 +262,7 @@ register({
                     { key: 'hack_progress', val: 20, op: '+' }
                 ] 
             },
-            nextSceneId: 'machine_root' // 循環回到主選單，刷新數值顯示
+            nextSceneId: 'machine_root' 
         },
         { 
             label: "植入病毒 (消耗 2 時間)", 
@@ -300,7 +290,6 @@ register({
     options: [
         {
             label: "查看結果",
-            // [New] 檢查變數是否達標
             condition: { var: { key: 'hack_progress', val: 100, op: '>=' } },
             nextScene: { text: "完美入侵！你獲得了所有資料。", rewards: { gold: 100 }, options: [{label:"離開", action:"finish_chain"}] }
         },
@@ -312,49 +301,29 @@ register({
     ]
 });
 
-
 // ============================================================
-// 4. 入口配置 (SCENE_DB Configuration)
+// 4. 入口配置 (SCENE_DB)
 // ============================================================
-// 這裡定義了不同遊戲模式 (gs.settings.gameMode) 下的劇本結構
 window.SCENE_DB = {
-    // 模式 A: 預設冒險者 (Adventurer)
     'adventurer': [
         {
             id: 'root_hub',
-            entry: true, // 此模式的預設起點
+            entry: true,
             text: "【命運大廳】\n無數的時間線在你面前交織，請選擇你的旅程：",
             options: [
-                // 既有劇本
                 { label: "📦 快遞驚魂 (懸疑)", action: "node_next", nextSceneId: 'delivery_start' },
                 { label: "🐺 狼人殺 (推理)", action: "node_next", nextSceneId: 'wolf_hub' },
                 { label: "🐢 海龜湯 (解謎)", action: "node_next", nextSceneId: 'turtle_hub' },
                 { label: "🔒 密室逃脫 (探索)", action: "node_next", nextSceneId: 'room_hub' },
-                
-                // 隨機功能
                 { label: "🎲 無盡隨機冒險", action: "node_next", nextSceneId: 'GEN_MODULAR' },
-
-                // [測試用] 跨模式跳轉
                 { label: "--- 模式切換測試 ---", action: "investigate", result: "請選擇要預覽的模式入口：" },
                 { label: "🚀 跳轉：機械公元", action: "node_next", nextSceneId: 'machine_root', style: 'primary' },
                 { label: "💕 跳轉：后宮帝國", action: "node_next", nextSceneId: 'harem_root', style: 'primary' }
             ]
         }
     ],
-
-    // 模式 B: 后宮模式 (Harem) - 未來可搭配不同 UI
-    'harem': [
-        // 這裡只需要放該模式的「入口節點」，其他節點透過 ID 連結即可
-        // 引擎 loadDatabase 時會讀取這裡
-        { id: 'harem_root', entry: true } // 這裡引用上面註冊過的 harem_root
-    ],
-
-    // 模式 C: 機械模式 (Machine)
-    'machine': [
-        { id: 'machine_root', entry: true }
-    ]
+    'harem': [ { id: 'harem_root', entry: true } ],
+    'machine': [ { id: 'machine_root', entry: true } ]
 };
 
-// 務必註冊 root_hub
 register(window.SCENE_DB['adventurer'][0]);
-// 雖然 harem 和 machine 在上面 SCENE_DB 裡引用了，但它們的本體 (const定義) 已經透過 register() 寫入 _SCENE_POOL 了，所以引擎一定找得到。
