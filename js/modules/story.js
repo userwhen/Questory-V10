@@ -54,7 +54,9 @@ window.StoryEngine = {
         let roots = (sceneDB[mode] || []).filter(s => s.entry);
         window.StoryData.pool = [...roots];
         // [Opt] 增加更多隨機事件比例
-        for(let i=0; i<3; i++) window.StoryData.pool.push('GEN_MODULAR');
+        // [修改] 這裡的數字 5 代表放入 5 張隨機劇本卡 (原為 3)，您可以將 5 改為任何數字來調整機率
+		const RANDOM_CARD_COUNT = 5; 
+		for(let i=0; i < RANDOM_CARD_COUNT; i++) window.StoryData.pool.push('GEN_MODULAR');
         
         if (!gs.story.deck || gs.story.deck.length === 0) {
             gs.story.deck = this._shuffle([...window.StoryData.pool]);
@@ -66,131 +68,178 @@ window.StoryEngine = {
     // ============================================================
     // 核心：播放節點
     playSceneNode: function(node) {
-        if (!node) { this.drawAndPlay(); return; }
-        if (node.dialogue && node.dialogue.length > 0) { this.playDialogueChain(node); return; }
+    if (!node) { this.drawAndPlay(); return; }
+    
+    // [Fix] 確保如果是變數更新導致的重繪，不會被視為舊內容
+    // 我們透過深拷貝一個臨時節點來確保文字會被重新解析
+    let activeNode = { ...node }; 
 
-        if (!node.id) {
-            node.id = `gen_${Date.now()}_${Math.floor(Math.random()*9999)}`;
-            window.StoryData.sceneMap[node.id] = node;
-        }
+    if (activeNode.dialogue && activeNode.dialogue.length > 0) { 
+        this.playDialogueChain(activeNode); 
+        return; 
+    }
 
-        // [New] 節點進入時的自動邏輯 (可選：扣行動點、初始化變數)
-        if (node.onEnter) {
-            this._distributeRewards(node.onEnter);
-        }
+    if (!activeNode.id) {
+        activeNode.id = `gen_${Date.now()}_${Math.floor(Math.random()*9999)}`;
+        // 注意：這裡不一定要存回 Map，除非需要存檔引用
+    }
 
-        // 註冊子場景 & 存檔邏輯 (保持 V76.3 的修復)
-        if (node.options) {
-            node.options.forEach(opt => {
-                this._registerSubScene(opt.nextScene);
-                this._registerSubScene(opt.failScene);
-                if (opt.nextScene && !opt.nextSceneId) opt.nextSceneId = opt.nextScene.id;
-                if (opt.failScene && !opt.failSceneId) opt.failSceneId = opt.failScene.id;
-            });
-        }
-        
-        const safeNode = this._sanitizeNodeForSave(node);
-        window.GlobalState.story.currentNode = safeNode;
-        if (window.GlobalState.story.chain && !window.GlobalState.story.savedChain) {
-            window.GlobalState.story.savedChain = this._deepClone(window.GlobalState.story.chain);
-        }
+    // 觸發進入事件
+    if (activeNode.onEnter) {
+        this._distributeRewards(activeNode.onEnter);
+    }
 
-        window.TempState.currentSceneNode = node;
-        window.TempState.storyCard = node;
-        
-        let processedText = this._processText(node.text);
-        
-        // [Logic Update] 選項過濾現在支援數值判斷
-        let options = (node.options || [])
-            .filter(opt => this._checkCondition(opt.condition)) 
-            .map(opt => ({
-                ...opt, 
-                label: this._resolveDynamicText(opt.label),
-                action: opt.action || 'node_next'
-            }));
+    // 註冊子場景
+    if (activeNode.options) {
+        activeNode.options.forEach(opt => {
+            this._registerSubScene(opt.nextScene);
+            this._registerSubScene(opt.failScene);
+            if (opt.nextScene && !opt.nextSceneId) opt.nextSceneId = opt.nextScene.id;
+            if (opt.failScene && !opt.failSceneId) opt.failSceneId = opt.failScene.id;
+        });
+    }
+    
+    // 存檔邏輯
+    const safeNode = this._sanitizeNodeForSave(activeNode);
+    window.GlobalState.story.currentNode = safeNode;
+    
+    // 設置當前狀態
+    window.TempState.currentSceneNode = activeNode;
+    window.TempState.storyCard = activeNode;
+    
+    // [關鍵修正] 這裡會呼叫 _processText -> _resolveDynamicText
+    // 因為 activeNode.text 還是原始的 "{time_left}" 字串，所以這裡會解析出最新的數字
+    let processedText = this._processText(activeNode.text);
+    
+    // 處理選項
+    let options = (activeNode.options || [])
+        .filter(opt => this._checkCondition(opt.condition)) 
+        .map(opt => ({
+            ...opt, 
+            label: this._resolveDynamicText(opt.label),
+            action: opt.action || 'node_next'
+        }));
 
-        if (options.length === 0) options.push({ label: "離開", action: "finish_chain", style: "primary" });
+    if (options.length === 0 && !node.noDefaultExit) {
+    options.push({ label: "離開", action: "finish_chain", style: "primary" });}
+	
+    window.TempState.storyQueue = processedText;
+    window.TempState.storyStep = 0;
+    window.TempState.storyOptions = options;
+    window.TempState.isWaitingInput = true; 
+    window.TempState.isProcessing = false;
 
-        window.TempState.storyQueue = processedText;
-        window.TempState.storyStep = 0;
-        window.TempState.storyOptions = options;
-        window.TempState.isWaitingInput = true; 
-        window.TempState.isProcessing = false;
-
-        if (window.storyView && storyView.clearScreen) {
-            storyView.clearScreen();
-            this.playNextChunk();
-        } else {
-            console.log("TEXT:", processedText.join("\n"));
-        }
-        if(window.App) App.saveData();
-    },
+    // [關鍵修正] 強制 View 清除畫面並重繪，即使是同一個 Scene ID
+    if (window.storyView && storyView.clearScreen) {
+        storyView.clearScreen();
+        this.playNextChunk();
+    }
+    if(window.App) App.saveData();
+},
 
     // 2. [核心修改] selectOption - 支援數值運算
     selectOption: function(idx) {
-        if (window.TempState.isProcessing) return;
-        window.TempState.isProcessing = true;
-        setTimeout(() => { window.TempState.isProcessing = false; }, 1000);
+    // 1. 強力防連點
+    if (window.TempState.isProcessing) {
+        console.warn("⛔ 點擊被攔截：系統忙碌中");
+        return;
+    }
+    
+    // 2. [Critical Fix] 防止空節點崩潰
+    if (!window.TempState.storyOptions || window.TempState.storyOptions.length === 0) {
+        console.warn("⛔ 點擊無效：當前無選項");
+        return;
+    }
 
-        const ts = window.TempState;
-        const opt = ts.storyOptions[idx];
-        if (!opt) return;
+    window.TempState.isProcessing = true;
+    
+    // 3. 獲取選項數據
+    const ts = window.TempState;
+    const opt = ts.storyOptions[idx];
+    
+    if (!opt) {
+        window.TempState.isProcessing = false;
+        return;
+    }
 
-        // 處理 Quiz
+    // 4. 處理 Locked 按鈕
+    if (opt.action === 'locked') {
+        if (window.act && window.act.toast) act.toast(opt.msg || "🔒 條件不足");
+        setTimeout(() => { window.TempState.isProcessing = false; }, 200);
+        return;
+    }
+
+    // 5. 執行邏輯 (延遲)
+    setTimeout(() => {
+        // [Safety Check] 再次檢查節點是否還在 (防止延遲期間被 finishChain 清空)
+        if (!window.GlobalState.story.currentNode && opt.action !== 'finish_chain') {
+             // 如果節點沒了，且動作不是結束，就不要執行了
+             window.TempState.isProcessing = false;
+             return;
+        }
+
+        window.TempState.isProcessing = false;
+        
         if (opt.action === 'answer_quiz') {
             this.handleQuizResult(opt.wordId, opt.isCorrect);
-            setTimeout(() => { window.TempState.isProcessing = false; this.finishChain(); }, 1000);
+            this.finishChain();
             return;
         }
 
-        setTimeout(() => {
-            window.TempState.isProcessing = false;
-            let passed = true;
-            
-            // A. 屬性檢定 (原有)
-            if (opt.check) {
-                const stat = this.getPlayerStat(opt.check.stat);
-                const roll = Math.floor(Math.random()*20)+1;
-                passed = (stat + roll >= opt.check.val);
-                if(window.storyView && storyView.appendInlineCheckResult) storyView.appendInlineCheckResult(opt.check.stat, stat+roll, passed);
-            }
+        let passed = true;
+        if (opt.check) {
+            const stat = this.getPlayerStat(opt.check.stat);
+            const roll = Math.floor(Math.random()*20)+1;
+            passed = (stat + roll >= opt.check.val);
+            if(window.storyView && storyView.appendInlineCheckResult) storyView.appendInlineCheckResult(opt.check.stat, stat+roll, passed);
+        }
 
-            // B. 發放獎勵 (含數值運算)
-            if (passed && opt.rewards) this._distributeRewards(opt.rewards);
+        if (passed && opt.rewards) this._distributeRewards(opt.rewards);
 
-            // C. 執行動作
-            if (opt.action === 'node_next') {
-                this._handleNodeJump(opt, passed);
-            } else if (opt.action === 'investigate') {
-                if(opt.result) this.playSceneNode({ ...window.TempState.currentSceneNode, text: [opt.result], options: ts.storyOptions });
-                else this.playSceneNode(window.TempState.currentSceneNode);
-            } else if (opt.action === 'advance_chain') {
-                const tags = passed ? (opt.nextTags||[]) : (opt.failNextTags||[]);
-                this.advanceChain(tags);
-            } else {
-                this.finishChain();
-            }
-            if(window.App) App.saveData();
-        }, this.CONSTANTS.CLICK_DELAY);
-    },
+        if (opt.action === 'node_next') {
+            this._handleNodeJump(opt, passed);
+        } else if (opt.action === 'investigate') {
+            if(opt.result) this.playSceneNode({ ...window.TempState.currentSceneNode, text: [opt.result], options: ts.storyOptions });
+            else this.playSceneNode(window.TempState.currentSceneNode);
+        } else if (opt.action === 'advance_chain') {
+            const tags = passed ? (opt.nextTags||[]) : (opt.failNextTags||[]);
+            this.advanceChain(tags);
+        } else {
+            this.finishChain();
+        }
+        
+        if(window.App) App.saveData();
+    }, this.CONSTANTS.CLICK_DELAY);
+},
 
     // 處理節點跳轉 (抽出邏輯)
-    _handleNodeJump: function(opt, passed) {
-        let targetId = passed ? opt.nextSceneId : opt.failSceneId;
-        let targetNode = this.findSceneById(targetId);
-        
-        // [Fix] Fallback: 如果 ID 找不到，嘗試直接使用物件引用
-        if (!targetNode) {
-            targetNode = passed ? opt.nextScene : opt.failScene;
-        }
-        
-        if (targetNode) {
-            this.playSceneNode(targetNode);
-        } else {
-            console.error(`Scene ID not found: ${targetId} and no object fallback.`);
-            this.finishChain(); 
-        }
-    },
+// [替換] 修正版跳轉處理
+_handleNodeJump: function(opt, passed) {
+    let targetId = passed ? opt.nextSceneId : opt.failSceneId;
+    
+    // [Critical Fix] 攔截特殊指令 GEN_MODULAR
+    if (targetId === 'GEN_MODULAR') {
+        console.log("🎲 偵測到隨機冒險指令，啟動生成器...");
+        this.startRandomChain();
+        return;
+    }
+
+    // 正常場景跳轉
+    let targetNode = this.findSceneById(targetId);
+    
+    // Fallback: 如果 ID 找不到，嘗試直接使用物件引用
+    if (!targetNode) {
+        targetNode = passed ? opt.nextScene : opt.failScene;
+    }
+    
+    if (targetNode) {
+        this.playSceneNode(targetNode);
+    } else {
+        console.error(`❌ Scene ID not found: ${targetId} (且無物件 fallback)`);
+        // 防止卡死，回到大廳或結束
+        if (targetId !== 'GEN_MODULAR') this.finishChain(); 
+    }
+},
 	
 	// ============================================================
     // 🔄 [SECTION 2.5] SESSION MANAGEMENT (補回這部分)
@@ -248,117 +297,173 @@ window.StoryEngine = {
 
     // 檢查條件 (Tags, Stats)
     _checkCondition: function(cond) {
-        if (!cond) return true;
-        const gs = window.GlobalState;
-        const myTags = gs.story.tags || [];
-        const myVars = gs.story.vars || {};
+    if (!cond) return true;
+    
+    const gs = window.GlobalState;
+    const myTags = (gs.story && gs.story.tags) ? gs.story.tags : [];
+    const myVars = (gs.story && gs.story.vars) ? gs.story.vars : {};
+    const chainMem = (gs.story && gs.story.chain && gs.story.chain.memory) ? gs.story.chain.memory : {};
 
-        // A. Tag 檢查 (原有)
-        if (cond.hasTag && !myTags.includes(cond.hasTag)) return false;
-        if (cond.noTag && myTags.includes(cond.noTag)) return false;
-        
-        // B. 屬性檢查 (原有)
-        if (cond.stat) { 
-            const val = this.getPlayerStat(cond.stat.key || cond.stat); 
-            if (val < (cond.val || 0)) return false; 
+    // 1. Tag 檢查
+    if (cond.hasTag && !myTags.includes(cond.hasTag)) return false;
+    if (cond.noTag && myTags.includes(cond.noTag)) return false;
+    
+    // 2. 屬性檢查
+    if (cond.stat) { 
+        const val = this.getPlayerStat(cond.stat.key || cond.stat); 
+        if (val < (cond.val || 0)) return false; 
+    }
+
+    // 3. [Critical Fix] 多重變數檢查 (vars 陣列)
+    // 解決 JS 物件 key 覆蓋問題
+    let checks = [];
+    if (cond.vars && Array.isArray(cond.vars)) {
+        checks = cond.vars;
+    } else if (cond.var) {
+        checks = [cond.var];
+    }
+
+    for (let i = 0; i < checks.length; i++) {
+        const check = checks[i];
+        let key, targetVal, op;
+
+        if (typeof check === 'object') {
+            key = check.key;
+            targetVal = (check.val !== undefined) ? check.val : 0;
+            op = check.op || '>=';
+        } else {
+            // 容錯舊格式
+            continue; 
         }
 
-        // C. [New] 變數數值檢查 (Variable Check)
-        // 格式: { var: 'maid_love', val: 50, op: '>' }
-        if (cond.var) {
-            const key = cond.var.key || cond.var;
-            const targetVal = cond.val || 0;
-            const currentVal = myVars[key] || 0;
-            const op = cond.op || '>=';
+        // 數值來源查找
+        let currentVal = 0;
+        if (key === 'gold') currentVal = gs.gold || 0;
+        else if (key === 'exp') currentVal = gs.exp || 0;
+        else if (key === 'energy') currentVal = gs.story.energy || 0;
+        else if (myVars[key] !== undefined) currentVal = myVars[key]; 
+        else if (chainMem[key] !== undefined) currentVal = chainMem[key];
+        else currentVal = 0;
 
-            if (op === '>' && currentVal <= targetVal) return false;
-            if (op === '>=' && currentVal < targetVal) return false;
-            if (op === '<' && currentVal >= targetVal) return false;
-            if (op === '<=' && currentVal > targetVal) return false;
-            if (op === '==' && currentVal !== targetVal) return false;
-        }
+        currentVal = Number(currentVal);
+        targetVal = Number(targetVal);
 
-        return true;
-    },
+        // 判定
+        if (op === '>' && currentVal <= targetVal) return false;
+        if (op === '>=' && currentVal < targetVal) return false;
+        if (op === '<' && currentVal >= targetVal) return false;
+        if (op === '<=' && currentVal > targetVal) return false;
+        if (op === '==' && currentVal !== targetVal) return false;
+        if (op === '!=' && currentVal === targetVal) return false;
+    }
+
+    return true;
+},
 
     // 4. [核心修改] distributeRewards - 支援變數加減 (Action Points)
     _distributeRewards: function(rewards) {
-        const gs = window.GlobalState;
-        if (!gs.story.vars) gs.story.vars = {};
-        let msgs = [];
-        
-        // A. 基礎資源
-        if (rewards.gold) { gs.gold += rewards.gold; msgs.push(`💰 +${rewards.gold}`); }
-        if (rewards.exp) { gs.exp += rewards.exp; msgs.push(`✨ +${rewards.exp}`); }
-        if (rewards.energy) { 
-            gs.story.energy = Math.min(this.calculateMaxEnergy(), gs.story.energy + rewards.energy); 
-            msgs.push(`⚡ ${rewards.energy>0?'+':''}${rewards.energy}`); 
-        }
-        
-        // B. Tags 操作
-        if (rewards.tags) rewards.tags.forEach(tag => { 
-            const finalTag = this._resolveDynamicText(tag);
-            if (!gs.story.tags.includes(finalTag)) { gs.story.tags.push(finalTag); msgs.push(`🏷️ 獲得: ${finalTag}`); } 
-        });
-        // [Fix] 支援 removeTags
-        if (rewards.removeTags) rewards.removeTags.forEach(tag => { 
-            const idx = gs.story.tags.indexOf(tag); 
-            if (idx > -1) { gs.story.tags.splice(idx, 1); msgs.push(`🗑️ 消耗: ${tag}`); } 
-        });
+    const gs = window.GlobalState;
+    if (!gs.story.vars) gs.story.vars = {};
+    let msgs = [];
+    
+    // A. 基礎資源 (直接修改 GlobalState)
+    if (rewards.gold) { 
+        gs.gold = (gs.gold || 0) + rewards.gold; 
+        msgs.push(`💰 ${rewards.gold > 0 ? '+' : ''}${rewards.gold}`); 
+    }
+    if (rewards.exp) { 
+        gs.exp = (gs.exp || 0) + rewards.exp; 
+        msgs.push(`✨ ${rewards.exp > 0 ? '+' : ''}${rewards.exp}`); 
+    }
+    if (rewards.energy) { 
+        gs.story.energy = Math.min(this.calculateMaxEnergy(), (gs.story.energy || 0) + rewards.energy); 
+        msgs.push(`⚡ ${rewards.energy > 0 ? '+' : ''}${rewards.energy}`); 
+    }
+    
+    // B. Tags 操作
+    if (rewards.tags) rewards.tags.forEach(tag => { 
+        const finalTag = this._resolveDynamicText(tag);
+        if (!gs.story.tags.includes(finalTag)) { gs.story.tags.push(finalTag); msgs.push(`🏷️ 獲得: ${finalTag}`); } 
+    });
+    if (rewards.removeTags) rewards.removeTags.forEach(tag => { 
+        const idx = gs.story.tags.indexOf(tag); 
+        if (idx > -1) { gs.story.tags.splice(idx, 1); msgs.push(`🗑️ 消耗: ${tag}`); } 
+    });
 
-        // C. [New] 變數運算 (Variable Operations)
-        // 格式: varOps: [ { key: 'maid_love', val: 10, op: '+' }, { key: 'ap', val: 1, op: '-' } ]
-        if (rewards.varOps) {
-            rewards.varOps.forEach(op => {
-                const k = op.key;
-                const v = op.val || 0;
+    // C. 變數運算
+    if (rewards.varOps) {
+        rewards.varOps.forEach(op => {
+            const k = op.key;
+            const v = op.val || 0;
+            
+            // 特殊處理 gold/exp 的 varOps (如果有的話)
+            if (k === 'gold') {
+                 if (op.op === '+' || op.op === 'add') gs.gold += v;
+                 else if (op.op === '-' || op.op === 'sub') gs.gold -= v;
+            } else {
+                // 一般劇情變數
                 if (typeof gs.story.vars[k] === 'undefined') gs.story.vars[k] = 0;
-                
                 let oldVal = gs.story.vars[k];
                 if (op.op === '+' || op.op === 'add') gs.story.vars[k] += v;
                 else if (op.op === '-' || op.op === 'sub') gs.story.vars[k] -= v;
                 else if (op.op === '=' || op.op === 'set') gs.story.vars[k] = v;
+                
+                // 顯示提示
+                if (op.msg) msgs.push(op.msg);
+                else if (k === 'maid_love') msgs.push(`❤️ ${gs.story.vars[k] - oldVal > 0 ? '+' : ''}${gs.story.vars[k] - oldVal}`);
+            }
+        });
+    }
 
-                // 顯示提示 (可選)
-                if (op.msg) msgs.push(op.msg); 
-                else if (k === 'time_left') msgs.push(`⏳ 時間 ${gs.story.vars[k] - oldVal}`);
-                else if (k === 'maid_love') msgs.push(`❤️ 好感度 ${gs.story.vars[k] - oldVal > 0 ? '+' : ''}${gs.story.vars[k] - oldVal}`);
-            });
-        }
-
-        if (msgs.length > 0 && window.act && window.act.toast) act.toast(msgs.join("  "));
-        if (window.storyView && storyView.updateTopBar) storyView.updateTopBar();
-    },
+    // [Critical Fix] 立即刷新 UI
+    if (msgs.length > 0 && window.act && window.act.toast) act.toast(msgs.join("  "));
+    
+    if (window.view && window.view.updateStoryHUD) {
+        window.view.updateStoryHUD(); // 強制刷新頂部欄
+    } else if (window.storyView && window.storyView.updateTopBar) {
+        window.storyView.updateTopBar(); // Fallback
+    }
+},
 
     // 探索入口
     explore: function() { 
-        const gs = window.GlobalState; 
-        if (!gs.story) this.init(); 
-        
-        if (gs.story.energy < this.CONSTANTS.ENERGY_COST) { 
-            if(window.act) act.toast("❌ 精力不足"); 
-            return { success: false, msg: "精力不足" }; 
-        }
-        
-        gs.story.energy -= this.CONSTANTS.ENERGY_COST;
-        if (window.storyView) storyView.updateTopBar();
+    const gs = window.GlobalState; 
+    if (!gs.story) this.init(); 
+    
+    if (gs.story.energy < this.CONSTANTS.ENERGY_COST) { 
+        if(window.act) act.toast("❌ 精力不足"); 
+        return { success: false, msg: "精力不足" }; 
+    }
+    
+    gs.story.energy -= this.CONSTANTS.ENERGY_COST;
+    if (window.storyView) storyView.updateTopBar();
 
-        // 過場動畫
+    // 定義過場文字庫
+    const transitionTexts = [
+        "探索中...",
+        "正在前往未知的區域...",
+        "腳步聲在迴廊中迴盪...",
+        "四周變得越來越暗...",
+        "似乎發現了什麼..."
+    ];
+    const randomText = transitionTexts[Math.floor(Math.random() * transitionTexts.length)];
+
+    // 1. 播放過場文字 (這會重置 isProcessing 為 false)
+    this.playSceneNode({ text: randomText, options: [],noDefaultExit: true }); 
+    
+    // 2. [修正] 在播放後「再次強制鎖定」，確保過場期間不可互動
+    window.TempState.isProcessing = true; 
+    window.TempState.lockInput = true;    // 額外防止點擊文字換頁
+    
+    setTimeout(() => { 
         window.TempState.lockInput = false; 
-        
-        window.TempState.isProcessing = true; // 保持 true 以防止玩家在讀取時亂按
-        
-        this.playSceneNode({ text: ["探索中...", "正在前往未知的區域..."], options: [] }); 
-        
-        setTimeout(() => { 
-            window.TempState.lockInput = false; 
-            window.TempState.isProcessing = false; 
-            this.drawAndPlay(); 
-            if(window.App) App.saveData(); 
-        }, this.CONSTANTS.TRANSITION_DELAY);
-        
-        return { success: true }; 
-    },
+        window.TempState.isProcessing = false; 
+        this.drawAndPlay(); 
+        if(window.App) App.saveData(); 
+    }, this.CONSTANTS.TRANSITION_DELAY);
+    
+    return { success: true }; 
+},
 
     // ============================================================
     // 📝 [SECTION 4] TEXT & DIALOGUE (文字處理區)
@@ -561,24 +666,60 @@ window.StoryEngine = {
 
     // 結束鏈
     finishChain: function() {
-        window.GlobalState.story.chain = null; 
-        window.GlobalState.story.currentNode = null; 
-        window.GlobalState.story.savedChain = null;
-        window.TempState.currentSceneNode = null; 
-        window.TempState.storyCard = null;
-        
-        // 呼叫 View 回到 Idle 狀態
-        if (window.storyView) storyView.renderIdle();
-        if(window.App) App.saveData();
-    },
+    // 1. 清除導航狀態
+    window.GlobalState.story.chain = null; 
+    window.GlobalState.story.currentNode = null; 
+    window.GlobalState.story.savedChain = null;
+    window.TempState.currentSceneNode = null; 
+    window.TempState.storyCard = null;
+    
+    // 2. [Critical Fix] 清除劇情暫存數據 (Tags 和 Vars)
+    // 注意：gold/exp/energy 屬於全局資源，不應該被清除
+    if (window.GlobalState.story) {
+        window.GlobalState.story.tags = []; // 清空標籤
+        window.GlobalState.story.vars = {}; // 清空劇情變數 (好感度、警報值等)
+    }
+
+    // 3. UI 復原
+    if (window.storyView) storyView.renderIdle();
+    if (window.App) App.saveData();
+    
+    // 4. 再次刷新 HUD 確保狀態正確
+    if (window.view && window.view.updateStoryHUD) window.view.updateStoryHUD();
+    
+    console.log("🏁 Story Chain Finished & Data Cleared.");
+},
 
     drawAndPlay: function() {
-        const gs = window.GlobalState;
-        if (gs.story.deck.length === 0) this.loadDatabase();
-        const card = gs.story.deck.shift();
-        if (card === 'GEN_MODULAR') this.startRandomChain(); 
-        else this.playSceneNode(card);
-    },
+    const gs = window.GlobalState;
+    
+    // 如果牌庫沒了，嘗試載入
+    if (!gs.story.deck || gs.story.deck.length === 0) {
+        this.loadDatabase();
+    }
+    
+    // [Safety] 如果載入後還是空的 (或者剛初始化)，不要硬抽
+    if (!gs.story.deck || gs.story.deck.length === 0) {
+        console.warn("⚠️ 牌庫為空，無法抽卡");
+        return;
+    }
+
+    const card = gs.story.deck.shift();
+    
+    // [Critical Fix] 確保 card 有值
+    if (!card) return;
+
+    if (card === 'GEN_MODULAR') {
+        // 這裡不要自動開始，而是確保這是玩家意圖
+        // (通常 GEN_MODULAR 是按鈕觸發的，不應該由 drawAndPlay 自動觸發)
+        // 但為了兼容舊邏輯，我們先保留，但加上 log
+        console.log("🎲 drawAndPlay 抽到了隨機卡");
+        this.startRandomChain(); 
+    }
+    else {
+        this.playSceneNode(card);
+    }
+},
 
     // 設置語言 (供外部調用)
     setLang: function(lang) {

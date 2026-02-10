@@ -32,15 +32,63 @@ window.StoryGenerator = {
             stages: ['setup', 'event', 'event', 'event', 'boss'],
             actors: ['enemy'],
             baseTension: 0
-        }
+        },
+		'romance': {
+        // 戀愛劇本的五個階段：相遇 -> 了解 -> 約會 -> 危機 -> 告白
+        stages: ['love_meet', 'love_chat', 'love_date', 'love_crisis', 'love_confession'],
+        // 角色：戀人 (lover)、情敵 (rival)
+        actors: ['lover', 'rival'], 
+        // 戀愛劇本通常從 0 張力開始，甚至可以是負的（輕鬆氣氛）
+        baseTension: 0 
+		},
+		'raising': {
+        // 階段：出身 -> 童年 -> 青春期 -> 慶典/競賽 -> 職業結局
+        stages: ['r_birth', 'r_childhood', 'r_adolescence', 'r_event', 'r_ending'],
+        actors: ['daughter', 'butler', 'rival'], 
+        baseTension: 0 
+		},
     },
 
     // ============================================================
     // 3. 啟動新冒險 (Start Chain)
     // ============================================================
     initChain: function(mode = 'random') {
+        // 1. 取得基礎骨架
         const skel = this.skeletons[mode] || this.skeletons['random'];
         
+        // 2. [New] 動態調整骨架長度 (彈性機制)
+        let dynamicStages = [...skel.stages]; // 複製一份
+        
+        // 隨機增減中間環節 (不影響開頭與結尾)
+        // 只有當骨架長度 > 3 時才進行變異，避免太短
+        if (dynamicStages.length > 3) {
+            const variant = Math.random();
+            
+            if (mode === 'random') {
+                // 純隨機模式：大幅波動 (3 ~ 7 層)
+                const len = 3 + Math.floor(Math.random() * 5); 
+                dynamicStages = ['setup'];
+                for(let i=0; i<len; i++) dynamicStages.push('event');
+                dynamicStages.push('boss');
+            } 
+            else {
+                // 敘事模式 (Mystery/Horror)：微調節奏
+                // 30% 機率插入一個額外事件 (延長)
+                if (variant > 0.7) {
+                    // 在 Setup 後面插入一個通用填充事件
+                    const fillType = mode === 'mystery' ? 'investigate' : 'explore_eerie';
+                    dynamicStages.splice(1, 0, fillType); 
+                    console.log(`📏 劇本延長: 插入 ${fillType}`);
+                }
+                // 20% 機率移除一個中間事件 (加速)
+                else if (variant < 0.2 && dynamicStages.length > 4) {
+                    dynamicStages.splice(2, 1);
+                    console.log(`⏩ 劇本加速: 移除階段`);
+                }
+            }
+        }
+
+        // 3. 初始化記憶
         const memory = {};
         if (skel.actors && window.FragmentDB) {
             skel.actors.forEach(role => {
@@ -52,9 +100,9 @@ window.StoryGenerator = {
 
         return {
             depth: 0,
-            maxDepth: skel.stages.length, 
+            maxDepth: dynamicStages.length, // 更新為動態長度
             skeletonKey: mode,
-            stages: skel.stages,          
+            stages: dynamicStages,          // 使用動態骨架
             tension: skel.baseTension,    
             memory: memory,               
             history: [],
@@ -66,112 +114,148 @@ window.StoryGenerator = {
     // 4. 生成下一層 (Generate)
     // ============================================================
     generate: function(contextTags = [], isStart = false) {
-        const gs = window.GlobalState;
-        
-        // 1. 初始化檢查
-        if (!gs.story.chain || !gs.story.chain.stages || isStart) {
-            console.log("🔄 L3 Generator: 初始化...");
-            // 隨機抽選模式
-            const modes = ['mystery', 'horror', 'random']; 
-            const randomMode = modes[Math.floor(Math.random() * modes.length)];
-            gs.story.chain = this.initChain(randomMode); 
+    const gs = window.GlobalState;
+    
+    // 初始化檢查
+    if (!gs.story.chain || !gs.story.chain.stages || isStart) {
+        console.log("🔄 L3 Generator: 初始化...");
+        const modes = ['mystery', 'horror', 'random']; 
+        const randomMode = modes[Math.floor(Math.random() * modes.length)];
+        gs.story.chain = this.initChain(randomMode); 
+    }
+
+    const chain = gs.story.chain;
+    let depth = chain.depth;
+    
+    // 張力計算
+    let tensionDelta = 10; 
+    if (contextTags.includes('risk_high')) tensionDelta += 20;
+    if (contextTags.includes('safe_spot')) tensionDelta -= 10;
+    if (contextTags.includes('clue_found')) tensionDelta += 15; 
+    
+    chain.tension = Math.min(100, Math.max(0, (chain.tension || 0) + tensionDelta));
+    console.log(`🎬 Director: Depth ${depth}, Tension ${chain.tension}%`);
+
+    // 決定目標類型
+    let targetType = 'event'; 
+
+    if (chain.tension >= 100 && depth > 2) {
+        if (chain.stages && chain.stages.length > 0) {
+            targetType = chain.stages[chain.stages.length - 1];
+        } else {
+            targetType = 'ending'; 
         }
+        console.log(`🔥 Tension Overload! Director forcing jump to: ${targetType}`);
+    } 
+    else if (depth < chain.stages.length) {
+        targetType = chain.stages[depth];
+    } 
+    else {
+        targetType = 'ending';
+    }
 
-        const chain = gs.story.chain;
-        let depth = chain.depth;
-        
-        // 2. 張力計算
-        let tensionDelta = 10; 
-        if (contextTags.includes('risk_high')) tensionDelta += 20;
-        if (contextTags.includes('safe_spot')) tensionDelta -= 10;
-        if (contextTags.includes('clue_found')) tensionDelta += 15; 
-        
-        chain.tension = Math.min(100, Math.max(0, (chain.tension || 0) + tensionDelta));
-        console.log(`🎬 Director: Depth ${depth}, Tension ${chain.tension}%`);
+    // 挑選模板
+    const template = this.pickTemplate(targetType, contextTags, chain.history, chain.tension);
+    const lang = gs.settings?.targetLang || 'zh';
 
-        // 3. 決定目標類型
-        let targetType = 'event'; 
-
-        if (chain.tension >= 100 && depth > 2) {
-            if (chain.stages && chain.stages.length > 0) {
-                targetType = chain.stages[chain.stages.length - 1];
-            } else {
-                targetType = 'ending'; 
-            }
-            console.log(`🔥 Tension Overload! Director forcing jump to: ${targetType}`);
-        } 
-        else if (depth < chain.stages.length) {
-            targetType = chain.stages[depth];
-        } 
-        else {
-            targetType = 'ending';
-        }
-
-        // 4. 挑選模板
-        const template = this.pickTemplate(targetType, contextTags, chain.history, chain.tension);
-        const lang = gs.settings?.targetLang || 'zh';
-
-        if (!template) {
-            return {
-                id: `fallback_${Date.now()}`, 
-                text: `(導演找不到劇本: ${targetType}) \n你繼續在迷霧中前行...`, 
-                options: [{ label: "離開", action: "finish_chain" }]
-            };
-        }
-
-        if (template.id) {
-            chain.history.push(template.id);
-            if (chain.history.length > 4) chain.history.shift();
-        }
-
-        // 5. 填充內容 (包含 Text 和 Dialogue)
-        const filledData = this.fillTemplate(template, lang, chain.memory);
-        let finalText = filledData.text;
-
-        // 6. 選項生成
-        const opts = this.generateOptions(template, filledData.fragments, lang, targetType, chain.tension);
-        
+    if (!template) {
         return {
-            id: `gen_${Date.now()}`, 
-            text: finalText,
-            // [Critical Fix] 這裡必須把處理好的 dialogue 傳回去！
-            dialogue: filledData.dialogue, 
-            location: filledData.locationStr || "Mystery Scene",
-            options: opts, 
-            rewards: filledData.rewards
+            id: `fallback_${Date.now()}`, 
+            text: `(導演找不到劇本: ${targetType}) \n你繼續在迷霧中前行...`, 
+            options: [{ label: "離開", action: "finish_chain" }]
         };
-    },
+    }
+
+    // [記錄邏輯]
+    if (template.id) {
+        // A. 記錄到單局歷史 (避免本局重複)
+        chain.history.push(template.id);
+        if (chain.history.length > 4) chain.history.shift();
+
+        // B. [Critical New] 如果是開頭，記錄到全域歷史 (跨局防重複)
+        if (targetType === 'setup' || isStart) {
+            if (!gs.story.recentOpenings) gs.story.recentOpenings = [];
+            
+            // 只有當 ID 不在清單中才加入 (雖然 pickTemplate 已經過濾了，但雙重保險)
+            if (!gs.story.recentOpenings.includes(template.id)) {
+                gs.story.recentOpenings.push(template.id);
+            }
+            
+            // [設定] 至少 2 次不重複 -> 我們保留最近的 2 個 ID
+            // 您可以把 2 改成 3 或 5 來增加不重複的週期
+            if (gs.story.recentOpenings.length > 2) {
+                gs.story.recentOpenings.shift(); // 移除最舊的，讓它重新變為可用
+            }
+            console.log("📚 全域開頭歷史更新:", gs.story.recentOpenings);
+        }
+    }
+
+    // 填充內容
+    const filledData = this.fillTemplate(template, lang, chain.memory);
+    let finalText = filledData.text;
+
+    // 選項生成
+    const opts = this.generateOptions(template, filledData.fragments, lang, targetType, chain.tension);
+    
+    return {
+        id: `gen_${Date.now()}`,
+        // 傳遞原始模板類型給 Engine (用於診斷)
+        type: targetType, 
+        text: finalText,
+        dialogue: filledData.dialogue, 
+        location: filledData.locationStr || "Mystery Scene",
+        options: opts, 
+        rewards: filledData.rewards
+    };
+},
 
     // ============================================================
     // 5. 輔助函數
     // ============================================================
     pickTemplate: function(type, contextTags, history = [], currentTension) {
-        const db = window.FragmentDB;
-        if (!db || !db.templates) return null;
-        const gs = window.GlobalState;
-        const myTags = gs.story.tags || [];
-        
-        let candidates = db.templates.filter(t => t.type === type);
-        
-        candidates = candidates.filter(t => {
-            if (t.reqTag && !myTags.includes(t.reqTag)) return false;
-            if (t.noTag && myTags.includes(t.noTag)) return false;
-            return true;
-        });
+    const db = window.FragmentDB;
+    if (!db || !db.templates) return null;
+    const gs = window.GlobalState;
+    const myTags = gs.story.tags || [];
+    
+    // 1. 篩選類型
+    let candidates = db.templates.filter(t => t.type === type);
+    
+    // 2. 篩選標籤條件
+    candidates = candidates.filter(t => {
+        if (t.reqTag && !myTags.includes(t.reqTag)) return false;
+        if (t.noTag && myTags.includes(t.noTag)) return false;
+        // [新增] 骨架專屬過濾 (如果未來有加入 reqChain 屬性)
+        if (t.reqChain && gs.story.chain && gs.story.chain.skeletonKey !== t.reqChain) return false;
+        return true;
+    });
 
-        candidates = candidates.filter(t => {
-            if (t.minTension && currentTension < t.minTension) return false;
-            if (t.maxTension && currentTension > t.maxTension) return false;
-            return true;
-        });
+    // 3. 篩選張力區間
+    candidates = candidates.filter(t => {
+        if (t.minTension && currentTension < t.minTension) return false;
+        if (t.maxTension && currentTension > t.maxTension) return false;
+        return true;
+    });
 
-        const available = candidates.filter(t => !t.id || !history.includes(t.id));
-        const finalPool = available.length > 0 ? available : candidates;
+    // 4. [Critical New] 全域開頭過濾 (Global Opening Filter)
+    // 如果是 'setup' 類型，檢查全域歷史紀錄
+    if (type === 'setup' && gs.story.recentOpenings && gs.story.recentOpenings.length > 0) {
+        // 過濾掉最近用過的開頭
+        const filtered = candidates.filter(t => !gs.story.recentOpenings.includes(t.id));
+        // 防呆：如果過濾完沒東西了(例如模板太少)，就還是用原本的候選池，避免卡死
+        if (filtered.length > 0) {
+            candidates = filtered;
+        }
+    }
 
-        if (finalPool.length > 0) return finalPool[Math.floor(Math.random() * finalPool.length)];
-        return null;
-    },
+    // 5. 單局歷史過濾 (Local History Filter)
+    // 避免同一場冒險重複出現同樣的事件
+    const available = candidates.filter(t => !t.id || !history.includes(t.id));
+    const finalPool = available.length > 0 ? available : candidates;
 
+    if (finalPool.length > 0) return finalPool[Math.floor(Math.random() * finalPool.length)];
+    return null;
+},
     // [Fix] 升級版填詞：同時處理 Text 和 Dialogue
     fillTemplate: function(tmpl, lang, memory) {
         const db = window.FragmentDB;
@@ -198,20 +282,24 @@ window.StoryGenerator = {
             
             // 優先從記憶讀取 (確保角色一致性)
             if (memory && memory[key]) {
-                 word = memory[key];
-                 chosenFragments[key] = { val: { zh: word } }; 
-            } 
-            // 否則隨機抽取
-            else {
-                const list = db.fragments[key];
-                if (list && list.length > 0) {
-                    const item = list[Math.floor(Math.random() * list.length)];
-                    word = item.val[lang] || item.val['zh'];
-                    chosenFragments[key] = item;
-                } else { 
-                    word = `(${key}?)`; 
-                }
-            }
+     word = memory[key];
+     chosenFragments[key] = { val: { zh: word } }; 
+} 
+// 否則隨機抽取
+else {
+    const list = db.fragments[key];
+    if (list && list.length > 0) {
+        const item = list[Math.floor(Math.random() * list.length)];
+        word = item.val[lang] || item.val['zh'];
+        chosenFragments[key] = item;
+        
+        // [修正] 新增這行：將隨機抽到的詞寫入記憶，確保後續一致
+        if (memory) memory[key] = word; 
+        
+    } else { 
+        word = `(${key}?)`; 
+    }
+}
 
             // D. 執行替換 (Regex Global)
             const regex = new RegExp(`{${key}}`, 'g');

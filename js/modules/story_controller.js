@@ -16,10 +16,34 @@ window.StoryController = {
             
             // 1. 進入劇情模式
             enterStoryMode: () => {
-                if (window.act.navigate) act.navigate('story');
-                // 確保進入時刷新一次介面
-                if (window.view && view.updateStoryHUD) view.updateStoryHUD();
-            },
+    // 1. 切換頁面
+    if (window.act.navigate) act.navigate('story');
+    
+    // 2. 確保 View 介面刷新
+    if (window.view && view.updateStoryHUD) view.updateStoryHUD();
+
+    // 3. [新增] 檢查是否有未完成的進度，並決定顯示什麼畫面
+    const gs = window.GlobalState;
+    const hasActiveChain = gs.story && gs.story.chain && gs.story.chain.history.length > 0;
+    const hasActiveNode = gs.story && gs.story.currentNode;
+
+    if (hasActiveChain || hasActiveNode) {
+        // A. 如果有存檔進度 -> 顯示「繼續冒險」介面 (呼叫 renderIdle)
+        // 確保 View 層知道現在是 Idle 狀態，會顯示 Resume 按鈕
+        if (window.storyView && storyView.renderIdle) {
+            storyView.renderIdle(); 
+        }
+    } else {
+        // B. 如果沒有進度 -> 顯示「冒險者大廳」或初始畫面
+        // 這裡我們假設 'root_hub' 是大廳 ID
+        if (window.StoryEngine && window.StoryEngine.playSceneNode) {
+            // 如果您希望每次進來都顯示大廳，請用這行：
+            const hubId = (window.SCENE_DB && window.SCENE_DB.adventurer) ? window.SCENE_DB.adventurer[0].id : 'root_hub';
+            const hubNode = window.StoryEngine.findSceneById(hubId);
+            if(hubNode) window.StoryEngine.playSceneNode(hubNode);
+        }
+    }
+},
 
             // 2. [Critical Fix] 探索功能
             explore: () => {
@@ -46,10 +70,7 @@ window.StoryController = {
                 } else {
                     console.error("❌ StoryEngine.selectOption 未定義！請確認引擎版本。");
                 }
-
-                // 點擊後更新頂部數值 (金幣/精力)
-                if (window.view && view.updateHUD) view.updateHUD(window.GlobalState);
-            },
+			},
             
             // 4. 語言切換
             setLang: (lang) => {
