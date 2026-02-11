@@ -42,8 +42,16 @@ window.StoryEngine = {
         // 預設模式 fallback
         const mode = (gs.settings && gs.settings.gameMode) ? gs.settings.gameMode : 'adventurer';
         
-        // 建立全域查找表
-        window.StoryData.sceneMap = window._SCENE_POOL || {};
+        // [Critical Fix] 建立或獲取全域查找表
+        // 注意：這裡不能直接 = window._SCENE_POOL，因為那樣會清空動態生成的 sub_ 場景
+        if (!window.StoryData.sceneMap) window.StoryData.sceneMap = {};
+
+        // 1. 將靜態場景池「合併」進去 (而不是覆蓋)
+        if (window._SCENE_POOL) {
+            Object.assign(window.StoryData.sceneMap, window._SCENE_POOL);
+        }
+
+        // 2. 載入模式特定的場景
         if (sceneDB[mode]) {
             sceneDB[mode].forEach(scene => {
                 if (scene.id) window.StoryData.sceneMap[scene.id] = scene;
@@ -53,14 +61,17 @@ window.StoryEngine = {
         // 建立牌庫 (Deck)
         let roots = (sceneDB[mode] || []).filter(s => s.entry);
         window.StoryData.pool = [...roots];
-        // [Opt] 增加更多隨機事件比例
-        // [修改] 這裡的數字 5 代表放入 5 張隨機劇本卡 (原為 3)，您可以將 5 改為任何數字來調整機率
+        
+        // 增加更多隨機事件比例
 		const RANDOM_CARD_COUNT = 5; 
 		for(let i=0; i < RANDOM_CARD_COUNT; i++) window.StoryData.pool.push('GEN_MODULAR');
         
+        // 只有當牌庫真的為空時才重新洗牌，避免頻繁重置
         if (!gs.story.deck || gs.story.deck.length === 0) {
             gs.story.deck = this._shuffle([...window.StoryData.pool]);
         }
+        
+        console.log(`📚 Database Loaded: Mode [${mode}], Map Size: ${Object.keys(window.StoryData.sceneMap).length}`);
     },
 
     // ============================================================
@@ -204,7 +215,27 @@ window.StoryEngine = {
         } else if (opt.action === 'advance_chain') {
             const tags = passed ? (opt.nextTags||[]) : (opt.failNextTags||[]);
             this.advanceChain(tags);
+        
+        // [Fix] 針對 finish_chain 的特殊處理
+        } else if (opt.action === 'finish_chain') {
+            // 檢查是否有「結局劇情」需要播放 (nextScene 或 nextSceneId)
+            // 如果檢定有過用 next，沒過用 fail
+            let hasEndingScene = passed 
+                ? (opt.nextScene || opt.nextSceneId) 
+                : (opt.failScene || opt.failSceneId);
+
+            if (hasEndingScene) {
+                // A. 如果有結局文本 -> 把它當作一次普通的跳轉
+                // 引擎會播放這段文字。因為這段文字通常沒有 options，
+                // playSceneNode 會自動幫它加上一個「離開」按鈕 (這個按鈕的 action 也是 finish_chain)
+                this._handleNodeJump(opt, passed);
+            } else {
+                // B. 如果沒有結局文本 (直接結束) -> 才執行清理
+                this.finishChain();
+            }
+            
         } else {
+            // 預設行為
             this.finishChain();
         }
         

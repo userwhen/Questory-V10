@@ -1,629 +1,513 @@
-/* js/data_piece.js - V80.1 (Expanded & Universal Style) */
+/* js/data_piece.js - V83.3 (Logic Fixed: Removed Blocking Tags) */
 
 window.FragmentDB = {
-    // ============================================================
-    // 1. 碎片庫 (Fragments) - 名詞與形容詞
-    // ============================================================
     fragments: {
-        // --- 通用形容詞 (可用於任何物品/地點) ---
-        adj_spooky: [ 
-            { val: { zh: "沾滿乾涸血跡的" } }, { val: { zh: "積滿厚重灰塵的" } }, { val: { zh: "被某種力量詛咒的" } }, { val: { zh: "散發著腐敗氣息的" } } 
-        ],
-        adj_luxury: [ 
-            { val: { zh: "鑲嵌著寶石的" } }, { val: { zh: "價值連城的" } }, { val: { zh: "散發著柔和光芒的" } }, { val: { zh: "帶有皇家紋章的" } } 
-        ],
-        // --- 角色性格形容詞 (用於戀愛/NPC) ---
-        adj_personality: [ 
-            { val: { zh: "眼神總是帶著傲氣的" } }, { val: { zh: "性格溫柔如水的" } }, { val: { zh: "看似無害實則腹黑的" } }, { val: { zh: "總是少根筋的天然呆" } } 
-        ],
+    // ============================================================
+    // [Layer 0] 基底元素 (Base Elements) - 最單純的名詞與形容詞
+    // ============================================================
+    
+    // 0-1. 物品材質與狀態
+    base_mat_metal: [ { val: "黃銅" }, { val: "白銀" }, { val: "生鏽的鐵" }, { val: "漆黑的鋼" } ],
+    base_mat_organic: [ { val: "皮革" }, { val: "象牙" }, { val: "不知名的骨頭" }, { val: "染血的布料" } ],
+    base_state_bad: [ { val: "破碎的" }, { val: "積滿灰塵的" }, { val: "變形的" }, { val: "散發惡臭的" } ],
+    base_state_good: [ { val: "精緻的" }, { val: "散發微光的" }, { val: "鑲嵌寶石的" }, { val: "保存完好的" } ],
 
-        // --- 基礎名詞 ---
-        item_base: [ 
-            { val: { zh: "匕首" } }, { val: { zh: "日記本" } }, { val: { zh: "懷錶" } }, { val: { zh: "黃銅鑰匙" } } 
-        ],
-        location_base: [ 
-            { val: { zh: "古老的大廳" } }, { val: { zh: "陰暗的地下室" } }, { val: { zh: "寂靜的圖書館" } }, { val: { zh: "荒廢的花園" } } 
-        ],
-        
-        // --- 角色身份 (通用化，讓他們出現在任何劇本都合理) ---
-        npc_role: [
-            { val: { zh: "神祕學妹" } }, { val: { zh: "年輕總裁" } }, { val: { zh: "青梅竹馬" } }, { val: { zh: "異國轉學生" } } 
-        ],
-        lover: [ { val: { zh: "命定之人" } } ], // 記憶佔位符
+    // 0-2. 物品本體
+    base_item_tool: [ { val: "懷錶" }, { val: "提燈" }, { val: "指南針" }, { val: "打火機" } ],
+    base_item_doc: [ { val: "日記本" }, { val: "契約書" }, { val: "泛黃信紙" }, { val: "舊照片" } ],
+    base_item_key: [ { val: "鑰匙" }, { val: "徽章" }, { val: "戒指" }, { val: "護身符" } ],
+    base_item_weapon: [ { val: "匕首" }, { val: "手斧" }, { val: "拆信刀" } ],
 
-        // --- 養成專用 ---
-        daughter: [ { val: { zh: "這孩子" } }, { val: { zh: "少女" } } ], 
-        butler: [ { val: { zh: "隨行的老管家" } }, { val: { zh: "神祕的引路人" } } ],
-        rival: [ { val: { zh: "高傲的名門之後" } }, { val: { zh: "天賦異稟的競爭者" } } ],
-        r_hobby: [ { val: { zh: "古代繪畫修復" } }, { val: { zh: "實戰劍術訓練" } }, { val: { zh: "元素魔法理論" } }, { val: { zh: "宮廷禮儀學習" } } ],
-        r_job: [ { val: { zh: "圖書館管理員" } }, { val: { zh: "藥草園農夫" } }, { val: { zh: "貴族家庭教師" } } ],
-        r_dream: [ { val: { zh: "統治這片土地的女王" } }, { val: { zh: "守護世界的傳說勇者" } }, { val: { zh: "富可敵國的商業巨擘" } } ],
+    // 0-3. 環境細節
+    base_env_light: [ { val: "微弱的燭光" }, { val: "刺眼的閃電" }, { val: "冷冽的月光" }, { val: "忽明忽暗的燈光" } ],
+    base_env_sound: [ { val: "水滴聲" }, { val: "風聲" }, { val: "老鼠的吱吱聲" }, { val: "沈悶的腳步聲" } ],
+    base_env_smell: [ { val: "霉味" }, { val: "鐵鏽味" }, { val: "燒焦味" }, { val: "淡淡的香水味" } ],
 
-        // --- 舊版相容保留區 (Mystery/Horror/Isekai) ---
-        location: [
-            { val: { zh: "被暴風雪封鎖的深山別墅" }, tags: ['cold', 'isolated'] },
-            { val: { zh: "午夜時分的廢棄綜合醫院" }, tags: ['scary', 'dark'] },
-            { val: { zh: "行駛在太平洋上的豪華郵輪" }, tags: ['luxury', 'sea'] },
-            { val: { zh: "停電後的國立圖書館禁書區" }, tags: ['quiet', 'dark'] },
-            { val: { zh: "剛發生過火災的百年古堡" }, tags: ['ruin', 'history'] }
-        ],
-        item: [
-            { val: { zh: "一把沾著乾涸血跡的銀質拆信刀" }, tags: ['weapon'] },
-            { val: { zh: "一本被撕去了最後幾頁的皮革日記" }, tags: ['clue'] },
-            { val: { zh: "一卷錄有奇怪雜訊的舊式錄音帶" }, tags: ['clue'] },
-            { val: { zh: "一條散發著苦杏仁味的絲質手帕" }, tags: ['poison'] }
-        ],
-        enemy: [
-            { val: { zh: "手持生鏽巨斧的處刑者" } }, { val: { zh: "雙眼散發紅光的變異野狼" } }, { val: { zh: "全身纏滿繃帶的古代守衛" } }
-        ],
-        location: [
-            { val: { zh: "被暴風雪封鎖的深山別墅", en: "Snowy Villa" }, tags: ['cold', 'isolated'] },
-            { val: { zh: "午夜時分的廢棄綜合醫院", en: "Abandoned Hospital" }, tags: ['scary', 'dark'] },
-            { val: { zh: "行駛在太平洋上的豪華郵輪", en: "Luxury Cruise" }, tags: ['luxury', 'sea'] },
-            { val: { zh: "停電後的國立圖書館禁書區", en: "Dark Library" }, tags: ['quiet', 'dark'] },
-            { val: { zh: "剛發生過火災的百年古堡", en: "Burnt Castle" }, tags: ['ruin', 'history'] },
-            { val: { zh: "充滿迷霧的倫敦地下水道", en: "London Sewer" }, tags: ['damp', 'dirty'] }
-        ],
-        item: [
-            { val: { zh: "一把沾著乾涸血跡的銀質拆信刀" }, tags: ['weapon'] },
-            { val: { zh: "一本被撕去了最後幾頁的皮革日記" }, tags: ['clue'] },
-            { val: { zh: "一卷錄有奇怪雜訊的舊式錄音帶" }, tags: ['clue'] },
-            { val: { zh: "一串刻有神祕符號的黃銅鑰匙" }, tags: ['key'] },
-            { val: { zh: "一條散發著苦杏仁味的絲質手帕" }, tags: ['poison'] },
-            { val: { zh: "一份剛剛修改過的遺產繼承文件" }, tags: ['motive'] },
-            { val: { zh: "一隻停在案發時間的破碎懷錶" }, tags: ['time'] }
-        ],
-        enemy: [
-            { val: { zh: "手持生鏽巨斧的處刑者" } },
-            { val: { zh: "雙眼散發紅光的變異野狼" } },
-            { val: { zh: "全身纏滿繃帶的古代守衛" } },
-            { val: { zh: "發出金屬摩擦聲的機械人偶" } }
-        ],
-        // 角色庫
-        detective: [ { val: { zh: "眼神銳利的私家偵探" } }, { val: { zh: "經驗豐富的刑警隊長" } }, { val: { zh: "路過的推理小說家" } } ],
-        victim: [ { val: { zh: "性格孤僻的珠寶大亨" } }, { val: { zh: "剛繼承遺產的年輕寡婦" } }, { val: { zh: "聲名狼藉的地下錢莊老闆" } } ],
-        suspect_A: [ { val: { zh: "神色慌張的兼職女僕" } }, { val: { zh: "沈默寡言的園丁老伯" } } ],
-        suspect_B: [ { val: { zh: "欠下鉅款的遠房姪子" } }, { val: { zh: "野心勃勃的生意合夥人" } } ],
-        killer: [ { val: { zh: "一直表現完美的管家" } }, { val: { zh: "負責驗屍的法醫助手" } } ],
-        survivor: [ { val: { zh: "唯一的倖存者愛麗絲" } }, { val: { zh: "受傷的記者里昂" } } ],
-        monster: [ { val: { zh: "揮舞電鋸的瘋狂殺手" } }, { val: { zh: "長髮遮面的紅衣女鬼" } }, { val: { zh: "來自深淵的觸手怪物" } } ],
-        haunted_place: [ { val: { zh: "被詛咒的第13號病房" } }, { val: { zh: "傳說中的猛鬼學校" } } ]
-    },
+    // 0-4. 角色特徵
+    base_npc_trait: [ { val: "眼神銳利的" }, { val: "神色慌張的" }, { val: "面無表情的" }, { val: "滿身酒氣的" } ],
+    base_npc_id: [ { val: "老人" }, { val: "年輕女子" }, { val: "流浪漢" }, { val: "穿著制服的男人" } ],
 
     // ============================================================
-    // 2. 劇本模板 (Templates)
+    // [Layer 1] 組合層 (Composite Layers) - 使用 {} 進行嵌套
+    // ============================================================
+
+    // 1-1. 進化版物品 (取代原本的 noun_item_common)
+    // 邏輯：材質 + 物品 OR 狀態 + 物品
+    noun_item_common: [
+        { val: "{base_mat_metal}製的{base_item_tool}" },    // -> 黃銅製的懷錶
+        { val: "{base_state_bad}{base_item_tool}" },        // -> 破碎的懷錶
+        { val: "{base_mat_organic}製成的{base_item_doc}" }, // -> 皮革製成的日記本
+        { val: "{base_state_good}{base_item_key}" },        // -> 精緻的鑰匙
+        { val: "刻有名字的{base_item_tool}" }
+    ],
+    
+    noun_item_weapon: [
+        { val: "{base_state_bad}{base_item_weapon}" },      // -> 生鏽的匕首
+        { val: "{base_mat_metal}打造的{base_item_weapon}" }, // -> 白銀打造的手斧
+        { val: "沾有血跡的{base_item_weapon}" }
+    ],
+
+    // 1-2. 進化版環境氛圍 (取代原本的 adj_env_vibe)
+    // 邏輯：不再只是形容詞，而是「感官描寫」
+    adj_env_vibe: [
+        { val: "空氣中瀰漫著{base_env_smell}" },            // -> 空氣中瀰漫著霉味
+        { val: "遠處不時傳來{base_env_sound}" },            // -> 遠處不時傳來水滴聲
+        { val: "在{base_env_light}的照耀下顯得格外詭異" },   // -> 在冷冽的月光的照耀下顯得格外詭異
+        { val: "安靜得令人窒息" }
+    ],
+
+    // 1-3. 進化版 NPC (取代 noun_npc_generic)
+    noun_npc_generic: [
+        { val: "一位{base_npc_trait}{base_npc_id}" },       // -> 一位眼神銳利的老人
+        { val: "躲在陰影中的{base_npc_id}" },
+        { val: "似乎受了傷的{base_npc_id}" }
+    ],
+
+    // ============================================================
+    // [Layer 2] 句型層 (Sentence Patterns) - 這是新功能！
+    // ============================================================
+    // 這些是讓你的 Templates 變得極度簡潔的關鍵
+
+    // 描述「發現東西」的句型
+    pattern_found_item: [
+        { val: "你發現了{noun_item_common}。" },
+        { val: "在角落裡，你撿到了一個{noun_item_common}。" },
+        { val: "你的腳邊踢到了什麼，仔細一看，是{noun_item_common}。" },
+        { val: "{noun_item_common}！它就這樣被隨意丟棄在這裡。" }
+    ],
+
+    // 描述「觀察環境」的句型
+    pattern_look_around: [
+        { val: "你環顧四周，{adj_env_vibe}。" },
+        { val: "這裡{adj_env_vibe}，讓你本能地感到不安。" },
+        { val: "四周一片死寂，只有{base_env_sound}迴盪在耳邊。" }
+    ],
+
+    // 描述「遭遇敵人」的句型
+    pattern_enemy_appear: [
+        { val: "突然，一隻{noun_role_monster}從陰影中竄了出來！" },
+        { val: "你感覺到背後有動靜，猛然回頭，發現了{noun_role_monster}。" },
+        { val: "{noun_role_monster}擋住了你的去路，它發出了低沈的嘶吼。" }
+    ],
+
+    // ============================================================
+    // [Layer 3] 保留區 (Legacy Support) - 為了相容骨架與特定邏輯
+    // ============================================================
+    // 這些必須保留，因為你的 Skeletons (actors) 和其他邏輯會直接呼叫它們
+
+    // [D] 角色 (保留原本的結構，但可以用嵌套優化內容)
+    noun_role_job: [ { val: "私家偵探" }, { val: "刑警隊長" }, { val: "探險家" } ],
+    noun_role_monster: [ { val: "變異野狼" }, { val: "古代守衛" }, { val: "失控的機械人偶" }, { val: "嗜血蝙蝠" } ],
+    
+    noun_location_room: [ { val: "大廳" }, { val: "地下室" }, { val: "圖書館" }, { val: "手術室" } ],
+    noun_location_building: [ { val: "深山別墅" }, { val: "廢棄醫院" }, { val: "豪華郵輪" }, { val: "古老教堂" } ],
+    noun_env_feature: [ { val: "角落的陰影" }, { val: "地面的塵埃" }, { val: "破碎的窗戶" } ],
+    
+    // [A] 動作與副詞 (保留常用詞)
+    adv_manner: [ { val: "小心翼翼地" }, { val: "猶豫不決地" }, { val: "大膽地" }, { val: "顫抖著" } ],
+    adv_time: [ { val: "突然" }, { val: "隱約" }, { val: "毫無預警地" } ],
+    verb_contact: [ { val: "觸碰" }, { val: "拾起" }, { val: "檢查" } ],
+    verb_detect: [ { val: "聽見" }, { val: "嗅到" }, { val: "感覺到" } ],
+
+    // [E] 骨架專用 (這些是關鍵變數，保留)
+    detective: [ { val: "私家偵探" }, { val: "刑警" } ],
+    victim: [ { val: "珠寶大亨" }, { val: "年輕寡婦" }, { val: "銀行家" } ],
+    suspect_A: [ { val: "女僕" }, { val: "園丁" } ], 
+    suspect_B: [ { val: "管家" }, { val: "姪子" } ],
+    survivor: [ { val: "愛麗絲" }, { val: "里昂" } ],
+    lover: [ { val: "青梅竹馬" }, { val: "神秘轉學生" } ], 
+    rival: [ { val: "學生會長" }, { val: "高傲的貴族" } ],
+    trainee: [ { val: "孤兒少女" }, { val: "新人歌手" }, { val: "受傷的幼龍" } ],
+	adj_npc_trait: [ { val: "{base_npc_trait}" } ],
+    adj_item_look: [{ val: "{base_state_bad}" },{ val: "{base_state_good}" }],
+    noun_item_record: [ { val: "{base_item_doc}" } ],
+    verb_move_univ: [{ val: "緩慢爬行" },{ val: "瘋狂逼近" },{ val: "在陰影中蠕動" },{ val: "悄悄靠近" }]
+},
+
+    // ============================================================
+    // 2. 劇本模板庫 (Templates)
     // ============================================================
     templates: [
-        
+        // [通用碎片] Universal Fillers - 句型化升級版
+        // 1. 環境描寫 - 一般情況
+        // 說明：最單純的環境渲染，呼叫 Phase 1 的 pattern_look_around
+        { 
+            type: 'univ_filler', 
+            id: 'uni_env_normal',
+            // 新增權重 (尚未實裝權重邏輯，但建議先寫上，未來可擴充)
+            weight: 10,
+            text: { zh: ["{pattern_look_around}"] }, 
+            options: [
+                { label: "保持警惕，繼續前進", action: "advance_chain" },
+                { label: "仔細觀察周圍 (INT檢定)", check: { stat: 'INT', val: 5 }, action: "advance_chain", rewards: { tags: ['observed'] } }
+            ] 
+        },
+
+        // 2. 環境描寫 - 危險/高壓狀態 (Conditional)
+        // 說明：只有在「高風險」或「恐怖」狀態下才會觸發
+        { 
+            type: 'univ_filler', 
+            id: 'uni_env_danger',
+            // 條件：只有帶有 risk_high 標籤時才會抽到這個
+            conditions: { "risk_high": true },
+            text: { zh: [
+                "你的心跳聲在{base_env_sound}中顯得格外刺耳。",
+                "光線在{base_env_light}中扭曲，你總覺得角落裡有東西在看著你。",
+                "{pattern_enemy_appear} 不... 仔細一看，那只是{noun_env_feature}投下的陰影。" // 虛驚一場
+            ] }, 
+            options: [
+                { label: "握緊武器", action: "advance_chain", rewards: { varOps: [{key:'stress', val:5, op:'+'}] } },
+                { label: "深呼吸平復心情", action: "advance_chain", rewards: { varOps: [{key:'stress', val:5, op:'-'}] } }
+            ] 
+        },
+
+        // 3. 物品發現 (Looting)
+        // 說明：呼叫 pattern_found_item，自動生成各種發現物品的情境
+        { 
+            type: 'univ_filler', 
+            id: 'uni_item_discovery',
+            text: { zh: ["{pattern_found_item}"] }, 
+            // 這裡我們用一個小技巧：讓 text 裡的 {noun_item_common} 自動存入 memory
+            // 但目前的簡單引擎可能做不到「反向存取」，所以我們在這裡手動給獎勵
+            rewards: { tags: ['found_something'] },
+            options: [
+                { label: "撿起來看看", action: "advance_chain", rewards: { tags: ['item_checked'] } },
+                { label: "不要亂碰比較好", action: "advance_chain" }
+            ] 
+        },
+
+        // 4. 感官敘事 (Sensory) - 混合寫法
+        // 說明：展示如何混合「固定語句」與「巢狀變數」
+        {
+            type: 'univ_filler', 
+            id: 'uni_sense_mix',
+            text: { zh: [
+                "{adv_time}，一股{base_env_smell}飄了過來，讓你皺起了眉頭。",
+                "你停下腳步。{base_env_sound}... 聲音似乎是從{noun_location_room}深處傳來的。",
+                "一陣寒意{adv_time}爬上了你的脊椎。這裡肯定發生過什麼。"
+            ] },
+            options: [{ label: "循著感覺探索", action: "advance_chain" }]
+        },
+
+        // 5. 休息片段 (Pacing)
+        // 說明：調整節奏用
+        {
+            type: 'univ_filler', 
+            id: 'uni_rest_moment',
+            text: { zh: [
+                "連續的探索讓你感到有些疲憊。這裡暫時看起來是安全的。",
+                "你靠在{noun_env_feature}旁，稍微整理了一下思緒。",
+                "雖然{adj_env_vibe}，但你必須讓自己冷靜下來。"
+            ] },
+            options: [
+                { label: "原地休息片刻 (HP+10)", action: "advance_chain", rewards: { varOps: [{key:'hp', val:10, op:'+'}] } },
+                { label: "檢查裝備", action: "advance_chain" }
+            ]
+        },
         // ==========================================
         // [BLOCK A] 🕵️‍♂️ 懸疑偵探流 (Mystery)
         // ==========================================
         {
-            type: 'setup_crime', id: 'mys_setup_classic',
+            type: 'setup', id: 'mys_start_route_A',
+            text: { zh: [ "雷雨交加的夜晚，{noun_location_building}被封鎖了。{victim}倒在{noun_location_room}中央。", "在場只有兩個人有嫌疑：{adj_npc_trait}{suspect_A}，以及{adj_npc_trait}{suspect_B}。", "雖然表面平靜，但你注意到{suspect_A}的眼神有些閃爍，似乎在隱藏什麼。" ]},
+            slots: ['noun_location_building', 'noun_location_room', 'victim', 'suspect_A', 'suspect_B', 'adj_npc_trait'],
+            options: [{ label: "封鎖現場，開始調查", action: "advance_chain", rewards: { tags: ['truth_A', 'case_started'] } }]
+        },
+        {
+            type: 'setup', id: 'mys_start_route_B',
+            text: { zh: [ "雷雨交加的夜晚，{noun_location_building}被封鎖了。{victim}倒在{noun_location_room}中央。", "在場只有兩個人有嫌疑：{adj_npc_trait}{suspect_A}，以及{adj_npc_trait}{suspect_B}。", "雖然表面平靜，但你注意到{suspect_B}的手在微微顫抖，似乎非常緊張。" ]},
+            slots: ['noun_location_building', 'noun_location_room', 'victim', 'suspect_A', 'suspect_B', 'adj_npc_trait'],
+            options: [{ label: "封鎖現場，開始調查", action: "advance_chain", rewards: { tags: ['truth_B', 'case_started'] } }]
+        },
+        {
+            type: 'investigate', id: 'mys_clue_for_A', reqTag: 'truth_A', 
+            text: { zh: [ "你來到{noun_location_room}的角落，{verb_contact}了一個被藏起來的{noun_item_common}。", "仔細檢查後，你發現上面刻著{suspect_A}的名字，而且還沾著些許{adj_item_look}痕跡！", "這無疑是{suspect_A}犯案的關鍵證據。" ]},
+            slots: ['noun_location_room', 'verb_contact', 'noun_item_common', 'suspect_A', 'adj_item_look'],
+            options: [{ label: "收好這份關鍵證據", action: "advance_chain", rewards: { tags: ['evidence_got_A'], varOps: [{key:'clue', val:1, op:'+'}] } }]
+        },
+        {
+            type: 'investigate', id: 'mys_clue_for_B', reqTag: 'truth_B', 
+            text: { zh: [ "你在沙發縫隙中{verb_detect}一股異味，隨後找到了一把{noun_item_weapon}。", "這東西屬於{suspect_B}，且表面{adj_item_look}。為什麼它會出現在這裡？", "所有的線索都指向了{suspect_B}。" ]},
+            slots: ['verb_detect', 'noun_item_weapon', 'suspect_B', 'adj_item_look'],
+            options: [{ label: "這就是鐵證", action: "advance_chain", rewards: { tags: ['evidence_got_B'], varOps: [{key:'clue', val:1, op:'+'}] } }]
+        },
+        {
+            type: 'twist', id: 'mys_twist_event',
+            text: { zh: [ "就在調查進行到一半時，{noun_location_building}的燈光{adv_time}熄滅了！", "黑暗中傳來了玻璃破碎的聲音和{noun_npc_generic}的尖叫聲。", "當燈光再次亮起，你發現現場被破壞了，有人試圖掩蓋真相。" ]},
+            slots: ['noun_location_building', 'adv_time', 'noun_npc_generic'],
+            options: [{ label: "鎮定眾人，準備推理", action: "advance_chain" }]
+        },
+        {
+            type: 'deduction', id: 'mys_final_logic',
+            text: { zh: [ "所有的碎片都已經拼湊完成。面對在場的眾人，你{adv_manner}走到了大廳中央。", "現在，是時候指出那個隱藏在幕後的真兇了。" ]},
+            slots: ['adv_manner'],
+            options: [
+                { label: "兇手是 {suspect_A}！", condition: { tags: ['truth_A', 'evidence_got_A'] }, action: "finish_chain", nextScene: { text: "「不...怎麼可能被發現...」{suspect_A}崩潰地跪倒在地，承認了罪行。\n你成功還原了真相。", rewards: { exp: 500, title: "名偵探" } } },
+                { label: "兇手是 {suspect_B}！", condition: { tags: ['truth_B', 'evidence_got_B'] }, action: "finish_chain", nextScene: { text: "{suspect_B}冷笑了一聲，試圖反駁，但在你的鐵證面前，他無話可說。\n正義得到了伸張。", rewards: { exp: 500, title: "名偵探" } } },
+                { label: "我...還不確定...", action: "finish_chain", nextScene: { text: "你猶豫了。就在這瞬間，真兇抓住了機會製造混亂逃跑了。\n雖然無人再受傷，但真相永遠石沈大海。", rewards: { exp: 50 } } }
+            ]
+        },
+
+        // ============================================================
+        // [BLOCK B] 👻 現代心理恐怖流 (Asian Psychological Horror)
+        // ============================================================
+        {
+            type: 'setup_omen', id: 'hor_psych_setup',
+            text: { zh: [ "這裡本該是你熟悉的{noun_location_room}，但此刻看起來卻異常陌生。", "空氣中瀰漫著一股{adj_env_vibe}濕氣，牆角的陰影似乎比平常更深、更濃。", "你{adv_manner}停下腳步，總覺得有某種視線正在從{noun_env_feature}的縫隙中窺視著你。" ]},
+            slots: ['noun_location_room', 'adj_env_vibe', 'adv_manner', 'noun_env_feature'],
+            dialogue: [{ speaker: "旁白", text: { zh: "（耳邊傳來一陣若有似無的竊笑聲，聽起來既像老人，又像嬰兒...）" } }],
+            options: [
+                { label: "強裝鎮定，忽視它", action: "advance_chain", rewards: { tags: ['horror_started'], varOps: [{ key: 'sanity', val: 90, op: 'set' }] } },
+                { label: "檢查聲音的來源", action: "advance_chain", rewards: { tags: ['horror_started', 'marked_by_curse'], varOps: [{ key: 'sanity', val: 80, op: 'set' }] }, nextScene: { text: "你湊近一看，那裡什麼都沒有，只有一團糾結的黑色髮絲，散發著腥臭味。" } }
+            ]
+        },
+        {
+            type: 'encounter_stalk', id: 'hor_psych_stalk',
+            // [Fix] 移除 reqTag: 'horror_started' 以防止標籤延遲導致的找不到劇本
+            // 因為骨架已經限制了流程，所以這裡不需要嚴格檢查
+            text: { zh: [ "你試圖離開，但走廊彷彿沒有盡頭。身後傳來了「啪嗒、啪嗒」的濕黏腳步聲。", "那聲音極不規律，就像是某種肢體扭曲的東西，正手腳並用在地上{adv_manner}爬行。", "它正在{verb_move_univ}，而且它知道你在哪裡。" ]},
+            slots: ['adv_manner', 'verb_move_univ'],
+            dialogue: [{ speaker: "？？？", text: { zh: "嘻嘻... 找到... 你了..." } }],
+            options: [
+                { label: "屏住呼吸，躲進死角", style: "primary", check: { stat: 'INT', val: 5 }, action: "advance_chain", nextScene: { text: "你摀住口鼻，心臟劇烈跳動。那東西停在你的藏身處外，發出了指甲刮擦地板的聲音... 然後慢慢離開了。" }, failScene: { text: "恐懼讓你發出了喘息聲。那腳步聲立刻停了下來，然後猛地轉向你！", rewards: { varOps: [{key:'sanity', val:20, op:'-'}] }, nextTags:['danger_high'] } },
+                { label: "不要回頭，狂奔！", action: "advance_chain", nextTags: ['risk_high'], nextScene: { text: "你{adv_manner}向前衝刺，感覺冰冷的手指擦過了你的後頸..." } }
+            ]
+        },
+        {
+            type: 'encounter_climax', id: 'hor_psych_look',
+            // [Fix] 移除 reqTag: 'danger_high'，確保就算玩家玩得很好（沒觸發危險）也能進入高潮劇情
+            text: { zh: [ "無路可退了。那個{noun_role_monster}（或者說是曾經是人的東西）就懸掛在天花板上。", "它的頭顱以詭異的角度轉了180度，死白色的眼珠正死死盯著你。", "所有的本能都在尖叫：**絕對不能和它對視**。" ]},
+            slots: ['noun_role_monster'],
+            options: [
+                { label: "緊閉雙眼，唸誦祈禱", action: "advance_chain", check: { stat: 'LUCK', val: 5 }, nextScene: { text: "你感到一股冰冷的氣息貼著臉頰滑過，耳邊是骨骼摩擦的脆響... 但最終，它似乎對靜止的獵物失去了興趣。" }, failScene: { text: "你忍不住睜開了一條縫... 一張布滿血絲的臉正貼在你的鼻尖前，露出了裂到耳根的笑容。", rewards: { varOps: [{key:'sanity', val:50, op:'-'}] } } },
+                { label: "用手電筒強光照射它！", style: "danger", action: "finish_chain", nextScene: { text: "光線照亮了它的全貌——那景象超越了人類理智的極限。你的意識在尖叫中斷線了。\n【結局：精神崩潰】" } }
+            ]
+        },
+        {
+            type: 'final_survival', id: 'hor_psych_end',
+            text: { zh: [ "不知道過了多久，周圍終於恢復了死寂。你{adv_manner}推開門，衝進了外面的陽光中。", "人群的喧囂聲讓你感到一陣恍惚。你以為你逃掉了。", "但當你低頭看時，發現自己的腳踝上，多了一個青紫色的手印，而且...還在發燙。" ]},
+            slots: ['adv_manner'], 
+            options: [{ label: "這只是一個開始...", action: "finish_chain", rewards: { removeTags: ['horror_started', 'danger_high'], title: "倖存者(？)", exp: 300 } }]
+        },
+
+        // ============================================================
+        // [BLOCK C] ⚔️ 異世界戰記 (Isekai Chronicles)
+        // ============================================================
+        {
+            type: 'setup', id: 'isekai_start_class',
+            text: { zh: [ "強烈的暈眩感退去後，你發現自己身處於一片{adj_env_vibe}{noun_location_building}之中。", "天空中懸掛著破碎的月亮，遠處傳來了{noun_role_monster}的嘶吼聲。", "你低頭看了看自己的雙手，意識到自己必須依靠手中的武器活下去。" ]},
+            slots: ['adj_env_vibe', 'noun_location_building', 'noun_role_monster'],
+            options: [
+                { label: "握緊重劍 (戰士路線)", action: "advance_chain", rewards: { tags: ['class_warrior'], varOps: [{key:'hp', val:120, op:'set'}, {key:'str', val:10, op:'set'}] }, nextScene: { text: "沉重的劍身給了你安全感。無論前方有什麼，你都將一刀兩斷。" } },
+                { label: "詠唱咒文 (法師路線)", action: "advance_chain", rewards: { tags: ['class_mage'], varOps: [{key:'mp', val:100, op:'set'}, {key:'int', val:10, op:'set'}] }, nextScene: { text: "元素在你指尖跳動。知識就是力量，而你掌握著毀滅的知識。" } },
+                { label: "檢查短刀 (刺客路線)", action: "advance_chain", rewards: { tags: ['class_rogue'], varOps: [{key:'agi', val:10, op:'set'}] }, nextScene: { text: "你壓低了身形，與陰影融為一體。在被發現之前，敵人就已經死了。" } }
+            ]
+        },
+        {
+            type: 'event_battle', id: 'isekai_battle_ambush',
+            text: { zh: [ "草叢中傳來了急促的沙沙聲。你{adv_manner}轉過身，正好迎面撞上了一隻{noun_role_monster}！", "它{adv_manner}張開了利爪，眼裡閃爍著{adj_npc_trait}紅光，顯然已經飢餓難耐。", "避無可避，唯有死戰。" ]},
+            slots: ['adv_manner', 'noun_role_monster', 'adj_npc_trait'],
+            options: [
+                { label: "正面迎擊 (STR檢定)", check: { stat: 'STR', val: 5 }, action: "advance_chain", nextScene: { text: "你發出怒吼，武器帶著破風聲重重擊中了它！怪物發出哀嚎，倒在地上抽搐著。" }, failScene: { text: "你的力量輸給了它的野性。它將你撲倒在地，利爪在你身上留下了深可見骨的傷痕。", rewards: { energy: -20 } } },
+                { label: "尋找破綻 (INT檢定)", check: { stat: 'INT', val: 5 }, action: "advance_chain", nextScene: { text: "你冷靜地觀察它的動作，在它撲過來的瞬間側身閃過，並精準地刺入了它的要害。" }, failScene: { text: "它的動作比你預想的更快！你判斷失誤，只能狼狽地在地上打滾躲避攻擊。", rewards: { energy: -15 } } }
+            ]
+        },
+        {
+            type: 'event_battle', id: 'isekai_battle_magic', reqTag: 'class_mage', 
+            text: { zh: [ "前方的道路被一群{noun_role_monster}擋住了。牠們似乎對魔法波動非常敏感。", "你感覺到周圍的元素正在躁動，這是一個釋放大型魔法的絕佳機會。" ]},
+            slots: ['noun_role_monster'],
+            options: [{ label: "詠唱「爆裂火球」！", action: "advance_chain", rewards: { varOps: [{key:'mp', val:20, op:'-'}] }, nextScene: { text: "巨大的火球在怪物群中炸裂！空氣中充滿了焦糊味，敵人瞬間化為了灰燼。" } }]
+        },
+        {
+            type: 'event_explore', id: 'isekai_explore_ruin',
+            text: { zh: [ "你發現了一座被藤蔓覆蓋的古代遺跡。這裡的空氣異常{adj_env_vibe}。", "在斷裂的石柱旁，躺著一具白骨，他的手裡還死死抓著一個{noun_item_common}。", "那是某種信物？還是帶來不幸的詛咒之物？" ]},
+            slots: ['adj_env_vibe', 'noun_item_common'],
+            options: [
+                { label: "撿起物品", action: "advance_chain", rewards: { tags: ['item_found'], gold: 50 }, nextScene: { text: "你擦去了上面的灰塵。雖然年代久遠，但它依然散發著微弱的魔力波動。" } },
+                { label: "雙手合十，轉身離開", action: "advance_chain", rewards: { varOps: [{key:'sanity', val:10, op:'+'}] } }
+            ]
+        },
+        {
+            type: 'event_explore', id: 'isekai_explore_trap',
+            text: { zh: [ "你正{adv_manner}走在狹窄的通道中，腳下的地磚突然下陷！", "「喀嚓」一聲，機關被觸發了。兩側的牆壁開始噴射出毒箭。", "這是一個致命的陷阱！" ]},
+            slots: ['adv_manner'],
+            options: [{ label: "靠反應閃避 (AGI檢定)", check: { stat: 'AGI', val: 5 }, action: "advance_chain", nextScene: { text: "你的身體比意識更快做出了反應！你在箭雨中穿梭，毫髮無傷地落在了安全區。" }, failScene: { text: "你盡力躲避了，但一支毒箭還是擦傷了你的手臂。傷口傳來了一陣麻痺感。", rewards: { energy: -30 } } }]
+        },
+        {
+            type: 'boss', id: 'isekai_boss_dragon',
+            text: { zh: [ "大地的震動越來越劇烈。在{noun_location_building}的最深處，一雙巨大的眼睛睜開了。", "那是傳說中的災厄——{noun_role_monster}（變異體）！", "它{adv_manner}發出了震耳欲聾的咆哮，強大的風壓幾乎讓你站立不穩。", "這就是旅途的終點嗎？還是成為傳說的起點？" ]},
+            slots: ['noun_location_building', 'noun_role_monster', 'adv_manner'],
+            options: [{ label: "拔劍，決一死戰！", style: "danger", check: { stat: 'STR', val: 8 }, action: "finish_chain", nextScene: { text: "【結局：屠龍英雄】\n你燃燒了最後的生命力，將劍送入了怪物的心臟。你的名字將被吟遊詩人永遠傳唱。", rewards: { exp: 2000, title: "傳說勇者" } }, failScene: { text: "【結局：無名的屍骸】\n實力的差距是絕望的。你的武器折斷了，視野逐漸被黑暗吞沒...", rewards: { exp: 500 } } }]
+        },
+
+        // ============================================================
+        // [BLOCK D] 💕 戀愛博弈流 (Romance Strategy)
+        // ============================================================
+        {
+            type: 'love_meet', id: 'rom_meet_drama',
+            text: { zh: [ "在{noun_location_building}的{noun_location_room}，你正專注於手中的事務。", "突然，一位{adj_npc_trait}{lover}因躲避人群而撞到了你懷裡，帶著一股淡淡的香氣。", "就在這時，遠處傳來了{rival}尖銳的聲音：「在那裡！別讓那個『小偷』跑了！」", "這似乎是一場誤會，但卻將你捲入了風暴中心。" ]},
+            slots: ['noun_location_building', 'noun_location_room', 'lover', 'rival', 'adj_npc_trait'],
+            options: [
+                { label: "挺身而出保護他/她", action: "advance_chain", rewards: { tags: ['romantic_vibe'], varOps: [{key:'love_meter', val:15, op:'set'}, {key:'trust', val:10, op:'set'}] }, nextScene: { text: "你冷靜地擋在{lover}身前，懾人的氣勢讓追兵猶豫了。{lover}抬頭看著你，眼中閃過一絲驚訝與感激。" } },
+                { label: "冷靜地協助解圍", action: "advance_chain", rewards: { varOps: [{key:'love_meter', val:5, op:'set'}, {key:'trust', val:20, op:'set'}] }, nextScene: { text: "你用幾句巧妙的謊言打發了追兵。{lover}鬆了一口氣，對你的機智印象深刻。" } }
+            ]
+        },
+        {
+            type: 'love_bond', id: 'rom_bond_secret', reqTag: 'romantic_vibe',
+            text: { zh: [ "為了感謝你的幫助，{lover}約你在一個{adj_env_vibe}角落見面。", "這裡沒有{rival}的眼線。{lover}向你吐露了心聲，原來他/她一直受到{rival}的打壓與排擠。", "你看著對方{adj_npc_trait}側臉，心中產生了保護欲。" ]},
+            slots: ['adj_env_vibe', 'lover', 'rival', 'adj_npc_trait'],
+            options: [
+                { label: "承諾成為同盟", action: "advance_chain", rewards: { varOps: [{key:'love_meter', val:10, op:'+'}, {key:'trust', val:10, op:'+'}] }, nextScene: { text: "你們的手指不經意間碰在了一起。從今天起，你們是共犯，也是彼此的依靠。" } },
+                { label: "提供戰術建議 (INT檢定)", check: { stat: 'INT', val: 5 }, action: "advance_chain", nextScene: { text: "你精準地分析了局勢，{lover}聽得入神，眼神中充滿了崇拜。" } }
+            ]
+        },
+        {
+            type: 'love_scheme', id: 'rom_scheme_rumor',
+            text: { zh: [ "平靜的日子被打破了。{noun_location_building}裡開始流傳關於你的惡毒謠言。", "人們對你指指點點，謠言的源頭直指{rival}。", "更糟糕的是，{rival}拿著一份偽造的{noun_item_record}找到了{lover}，試圖證明你接近他是別有用心。" ]},
+            slots: ['noun_location_building', 'rival', 'noun_item_record', 'lover'],
+            dialogue: [{ speaker: "{rival}", text: { zh: "看清楚了吧？這個人只是在利用你！只有我才是真正為你好。" } }],
+            options: [
+                { label: "立刻衝去解釋", action: "advance_chain", rewards: { varOps: [{key:'trust', val:10, op:'-'}] }, nextScene: { text: "你的焦急反而顯得心虛。{lover}雖然沒有完全相信，但眼中多了一絲疑慮。" } },
+                { label: "蒐集證據，準備反擊", action: "advance_chain", rewards: { tags: ['counter_ready'] }, nextScene: { text: "你按兵不動，{adv_manner}調查了謠言的來源，終於抓到了{rival}的把柄。" } }
+            ]
+        },
+        {
+            type: 'love_counter', id: 'rom_counter_slap',
+            text: { zh: [ "這是一場盛大的{noun_location_room}聚會，所有人都在場。", "{rival}正得意洋洋地高談闊論，準備將你徹底逐出社交圈。", "這是最後的機會，你要如何挽回局面？" ]},
+            slots: ['noun_location_room', 'rival'],
+            options: [
+                { label: "當眾揭穿陰謀 (需反擊標籤)", condition: { tags: ['counter_ready'] }, style: "primary", action: "advance_chain", rewards: { varOps: [{key:'love_meter', val:30, op:'+'}, {key:'fame', val:50, op:'+'}] }, nextScene: { text: "你拿出了證據，條理清晰地駁斥了所有謊言。{rival}臉色慘白，在眾人的嘲笑聲中狼狽逃離。\n{lover}感動地看著你，眼裡只有你一人。" } },
+                { label: "深情告白感動全場", check: { stat: 'CHR', val: 8 }, action: "advance_chain", nextScene: { text: "你無視了所有指控，只是堅定地說出了對{lover}的心意。真誠打動了所有人，{rival}的謠言不攻自破。" }, failScene: { text: "你的聲音在顫抖，大家似乎並不買帳。局面變得更加尷尬了。", rewards: { varOps: [{key:'love_meter', val:20, op:'-'}] } } }
+            ]
+        },
+        {
+            type: 'love_confession', id: 'rom_end_victory',
+            text: { zh: [ "風波終於平息。在{adj_env_vibe}月光下，你和{lover}再次來到了初遇的地方。", "經歷了背叛與考驗，你們之間的羈絆已經堅不可摧。", "{lover}主動牽起了你的手，等待著你的回應。" ]},
+            slots: ['adj_env_vibe', 'lover'],
+            options: [
+                { label: "「我們是最佳拍檔，也是戀人。」", condition: { var: { key: 'love_meter', val: 50, op: '>=' } }, style: "primary", action: "finish_chain", nextScene: { text: "【True End: 權力與愛情】\n{lover}笑著吻了你。「沒錯，只要我們聯手，沒有人能將我們分開。」\n你們不僅收穫了愛情，更成為了令人敬畏的傳奇伴侶。", rewards: { exp: 1200, title: "社交界霸主" } } },
+                { label: "「我累了，只想過平靜的生活。」", action: "finish_chain", nextScene: { text: "【Normal End: 遠離塵囂】\n你拒絕了權力的遊戲，帶著{lover}遠走高飛。雖然失去了地位，但至少你們擁有了彼此的寧靜。", rewards: { exp: 500 } } },
+                { label: "默然離去 (好感不足)", condition: { var: { key: 'love_meter', val: 50, op: '<' } }, action: "finish_chain", nextScene: { text: "【Bad End: 錯過的緣分】\n儘管誤會解開，但你們之間的傷痕太深。你轉身離開，留下了一個孤獨的背影。" } }
+            ]
+        },
+
+        // ============================================================
+        // [BLOCK E] 🌱 明星推手/養成流 (The Mentor)
+        // ============================================================
+        {
+            type: 'raise_meet', id: 'raise_start_select',
+            text: { zh: [ "這是一個{adj_env_vibe}日子，你在{noun_location_building}的角落發現了那個獨特的存在。", "那是一位{adj_npc_trait}{trainee}，雖然現在還很弱小，但你從對方的眼神中看到了無限的潛力。", "命運將你們聯繫在了一起，你決定成為對方的..." ]},
+            slots: ['adj_env_vibe', 'noun_location_building', 'adj_npc_trait', 'trainee'],
+            options: [
+                { label: "嚴厲的導師 (注重實力)", action: "advance_chain", rewards: { tags: ['style_power'], varOps: [{key:'str', val:30, op:'set'}, {key:'chr', val:10, op:'set'}] }, nextScene: { text: "你走上前去，伸出了手。「想變強嗎？那就跟著我。」對方猶豫片刻後，緊緊握住了你的手。" } },
+                { label: "溫柔的守護者 (注重魅力)", action: "advance_chain", rewards: { tags: ['style_charm'], varOps: [{key:'str', val:10, op:'set'}, {key:'chr', val:30, op:'set'}] }, nextScene: { text: "你溫柔地笑了笑，給予了對方最需要的溫暖。從那一刻起，你成為了對方最依賴的港灣。" } }
+            ]
+        },
+        {
+            type: 'raise_train', id: 'raise_train_day',
+            text: { zh: [ "時光飛逝，{trainee}在你的指導下飛速成長。", "今天是一個關鍵的訓練日，你看著對方{adv_manner}練習著。", "現在正是突破瓶頸的好機會，你決定安排..." ]},
+            slots: ['trainee', 'adv_manner'],
+            options: [
+                { label: "魔鬼特訓 (體能/戰鬥)", action: "advance_chain", rewards: { varOps: [{key:'str', val:20, op:'+'}, {key:'stress', val:15, op:'+'}] }, nextScene: { text: "汗水（或血汗）揮灑在訓練場上。雖然過程痛苦，但對方的眼神越來越銳利，實力大幅提升。" } },
+                { label: "藝術薰陶 (表演/靈性)", action: "advance_chain", rewards: { varOps: [{key:'chr', val:20, op:'+'}, {key:'gold', val:-50, op:'+'}] }, nextScene: { text: "優雅的舉止與氣質逐漸成形。對方的一舉一動都開始散發著迷人的魅力，吸引了周圍的目光。" } },
+                { label: "放鬆休息 (消除壓力)", action: "advance_chain", rewards: { varOps: [{key:'stress', val:30, op:'-'}] }, nextScene: { text: "勞逸結合是必要的。看著{trainee}開心的睡臉（或笑臉），你感到一陣欣慰。" } }
+            ]
+        },
+        {
+            type: 'raise_debut', id: 'raise_event_show',
+            text: { zh: [ "{trainee}迎來了第一次公開展示的機會——在{noun_location_room}舉行的選拔賽。", "台下（或場邊）坐滿了挑剔的觀眾和評審。你的勁敵{rival}也帶著他培育的精英出現了。", "{rival}冷笑著說：「這種水準也敢出來丟人現眼？」" ]},
+            slots: ['trainee', 'noun_location_room', 'rival'],
+            options: [
+                { label: "展示華麗的技巧 (檢定魅力)", check: { stat: 'CHR', val: 50 }, action: "advance_chain", nextScene: { text: "全場都被那驚人的美感征服了！掌聲雷動，{rival}的臉色變得鐵青。", rewards: { gold: 300, tags: ['fame_mid'] } }, failScene: { text: "或許是太緊張了，表演中出現了一個小失誤。雖然觀眾給予了鼓勵，但離完美還差一點。", rewards: { varOps: [{key:'stress', val:10, op:'+'}] } } },
+                { label: "展示壓倒性的力量 (檢定實力)", check: { stat: 'STR', val: 50 }, action: "advance_chain", nextScene: { text: "轟！震撼的實力展示讓全場鴉雀無聲，隨後爆發出驚嘆的歡呼。這是強者的證明！", rewards: { gold: 300, tags: ['fame_mid'] } } }
+            ]
+        },
+        {
+            type: 'raise_climax', id: 'raise_final_battle', reqTag: 'fame_mid', 
+            text: { zh: [ "決戰之日終於來臨。這不僅是{trainee}的舞台，也是檢驗你教育成果的時刻。", "站在巔峰的對手強大得令人窒息，但你的{trainee}已經不再是當初那個弱小的存在了。", "在此刻，你想對他說/牠最後一句話是..." ]},
+            slots: ['trainee'],
+            options: [{ label: "「去吧，讓世界看到你的光芒！」", action: "advance_chain", rewards: { varOps: [{key:'chr', val:10, op:'+'}, {key:'str', val:10, op:'+'}] }, nextScene: { text: "{trainee}回頭看了你一眼，眼神中充滿了信任。然後，毅然決然地踏上了決戰的舞台。" } }]
+        },
+        {
+            type: 'raise_ending', id: 'raise_end_result',
+            text: { zh: [ "塵埃落定。傳說已經誕生。", "你看著眼前這個光芒萬丈的存在，回想起最初在{noun_location_building}相遇的那一刻。", "這段旅程，終於畫上了句點。" ]},
+            slots: ['noun_location_building'],
+            options: [
+                { label: "見證：至高偶像/女神 (CHR > 100)", condition: { vars: [{key:'chr', val:100, op:'>='}] }, style: "primary", action: "finish_chain", nextScene: { text: "【結局：世界的寵兒】\n{trainee}成為了被世人傳頌的偶像（或神獸）。無論走到哪裡，都伴隨著鮮花與掌聲。\n而你，是造就這奇蹟的傳奇導師。", rewards: { exp: 2000, title: "金牌製作人" } } },
+                { label: "見證：最強戰神/獸王 (STR > 100)", condition: { vars: [{key:'str', val:100, op:'>='}] }, style: "danger", action: "finish_chain", nextScene: { text: "【結局：頂點的霸者】\n以絕對的力量君臨天下！{trainee}的名字成為了力量的代名詞。\n這份榮耀，有一半屬於在背後默默支持的你。", rewards: { exp: 2000, title: "王者之師" } } },
+                { label: "回歸平凡的幸福", action: "finish_chain", nextScene: { text: "【結局：相伴的旅途】\n雖然沒有成為傳說，但你們收穫了彼此的信任。你們決定離開聚光燈，去尋找屬於自己的平靜生活。", rewards: { exp: 800 } } }
+            ]
+        },
+		
+		// ============================================================
+        // [Safety Net] 全域通用備案 (Generic Fallbacks)
+        // ============================================================
+        // 這些劇本沒有 conditions，權重最低，保證永遠有東西可以顯示
+
+        // 1. 通用戰鬥備案 (當特定戰鬥條件不符時)
+        {
+            type: 'event_battle',
+            id: 'fallback_battle',
+            text: { zh: ["路邊突然衝出了一隻{noun_role_monster}！", "它似乎飢餓難耐，直接向你發動了攻擊。", "避無可避，唯有戰鬥。"] },
+            slots: ['noun_role_monster'],
+            options: [
+                { label: "正面迎擊", check: { stat: 'STR', val: 5 }, action: "advance_chain", nextScene: { text: "你費盡九牛二虎之力擊退了它。" }, failScene: { text: "你受了點傷才勉強趕跑它。", rewards: { varOps: [{key:'hp', val:10, op:'-'}] } } },
+                { label: "嘗試逃跑", check: { stat: 'AGI', val: 5 }, action: "advance_chain", nextScene: { text: "你像風一樣消失在牠的視野中。" } }
+            ]
+        },
+
+        // 2. 通用高潮備案 (當特定 Boss 條件不符時)
+        {
+            type: 'climax', // 同時涵蓋 boss, raise_climax 等 (需視你的 type 定義而定)
+            id: 'fallback_climax',
+            text: { zh: ["終於來到了旅途的終點。", "強大的氣息從前方傳來，你知道，最後的試煉就在眼前。", "無論勝敗，這都將是決定性的一戰。"] },
+            options: [
+                { label: "放手一搏！", style: "danger", action: "finish_chain", nextScene: { text: "戰鬥結束了... 你的命運就此定格。" } }
+            ]
+        },
+
+        // 3. 通用獎勵/休息備案
+        {
+            type: 'univ_filler',
+            id: 'fallback_rest',
+            text: { zh: ["四周暫時恢復了平靜。", "你利用這難得的機會整理裝備，並包紮傷口。"] },
+            options: [{ label: "休息 (HP+10)", action: "advance_chain", rewards: { varOps: [{key:'hp', val:10, op:'+'}] } }]
+        },
+		{
+            type: 'raise_climax', 
+            id: 'raise_final_battle_low_fame',
+            // 沒有 reqTag/conditions，作為預設值
             text: { zh: [
-                "窗外的雷聲轟鳴，閃電瞬間照亮了{location}的大廳。當燈光再次亮起時，原本坐在主位上的{victim}已經癱軟在椅子上。",
-                "他的胸口插著一把兇器，鮮血染紅了名貴的地毯。空氣中瀰漫著一股令人窒息的血腥味與火藥味，今晚註定無人能眠。"
+                "決戰之日來臨，雖然{trainee}的名氣還不足以撼動全場，但這是一次證明自己的機會。",
+                "對手{rival}甚至沒有正眼看過來，這份輕視或許能成為反擊的動力。",
+                "在此刻，你想對他說/牠最後一句話是..."
             ]},
-            slots: ['location', 'victim', 'detective'],
-            dialogue: [
-                { speaker: "{detective}", text: { zh: "諸位請冷靜！在警方到達之前，任何人不得離開這個房間。" } },
-                { speaker: "你", text: { zh: "（吞了口口水）看來這將是一個漫長的夜晚..." } }
-            ],
+            slots: ['trainee', 'rival'],
             options: [{ 
-                label: "協助封鎖現場", 
+                label: "「輸贏不重要，只要發揮出你的全力！」", 
                 action: "advance_chain", 
-                rewards: { tags: ['case_started'], varOps: [{ key: 'clue_progress', val: 0, op: 'set' }] } 
+                rewards: { varOps: [{key:'stress', val:10, op:'-'}] }, // 減壓
+                nextScene: { text: "{trainee}深吸了一口氣，點點頭。雖然沒有觀眾的歡呼，但他的眼神依然堅定。" } 
             }]
         },
+
+        // 2. 針對 [love_bond] 的備案：還沒變情侶時的互動
+        // 說明：當沒有 'romantic_vibe' 時觸發
         {
-            type: 'investigate', id: 'mys_inv_detail',
-            reqTag: 'case_started',
+            type: 'love_bond', 
+            id: 'rom_bond_normal',
             text: { zh: [
-                "你蹲下身子，避開地上的血跡，仔細檢查案發現場的角落。在昏暗的燈光下，沙發底部的陰影中似乎藏著什麼東西。",
-                "你伸手去摸索，指尖觸碰到了一個冰冷、堅硬的物體，那觸感讓你背脊發涼。"
+                "雖然你們還稱不上是親密夥伴，但{lover}似乎有話想對你說。",
+                "他/她約你在{noun_location_room}見面，表情顯得有些嚴肅。",
+                "「關於{rival}的事情... 我覺得你需要知道真相。」"
             ]},
-            slots: ['item'],
-            dialogue: [
-                { speaker: "旁白", text: { zh: "你用鑷子小心翼翼地夾起了一個物件——{item}。" } }
-            ],
+            slots: ['lover', 'noun_location_room', 'rival'],
             options: [
                 { 
-                    label: "仔細收好證物", 
+                    label: "洗耳恭聽", 
                     action: "advance_chain", 
-                    rewards: { tags: ['clue_found'], varOps: [{ key: 'clue_progress', val: 20, op: '+' }] }, 
-                    nextTags: ['clue_found'] 
-                },
-                { label: "這看起來無關緊要", action: "advance_chain", nextTags: ['risk_high'] }
-            ]
-        },
-        {
-            type: 'confrontation', id: 'mys_final_reveal',
-            text: { zh: [
-                "所有的燈光聚焦在大廳中央。你在眾人的注視下，緩緩舉起手，指向了人群中那個看似最無辜的人。",
-                "所有的證據都已經拼湊完成，現在是揭開這場悲劇真相的時刻了。"
-            ]},
-            slots: ['killer', 'detective', 'victim'],
-            dialogue: [
-                { speaker: "{detective}", text: { zh: "殺害{victim}的真兇，就是你——{killer}！" } },
-                { speaker: "{killer}", text: { zh: "呵呵... 既然被發現了，那就沒辦法了。你們都得死在這裡！" } }
-            ],
-            options: [
-                { 
-                    label: "與偵探聯手制伏兇手！", 
-                    style: "danger", check: { stat: 'STR', val: 5 },
-                    nextScene: { text: "經過一番搏鬥，兇手被壓制在地上。正義終於得到了伸張。", options: [{ label: "案件終結", action: "finish_chain" }] },
-                    failScene: { text: "兇手撞破窗戶逃入了黑暗之中... 雖然真相大白，但正義遲到了。", options: [{ label: "結束調查", action: "finish_chain" }] }
-                }
-            ]
-        },
-
-        // ==========================================
-        // [BLOCK B] 👻 恐怖生存流 (Horror)
-        // ==========================================
-        {
-            type: 'setup_omen', id: 'hor_setup',
-            text: { zh: [
-                "你不該來這裡的... 大門在你身後重重關上，發出令人牙酸的金屬撞擊聲。",
-                "這個傳說中的{haunted_place}比想像中更加陰冷，空氣中飄浮著灰塵和霉味。你的手電筒閃爍了兩下，似乎電力不足了。"
-            ]},
-            slots: ['haunted_place', 'survivor'],
-            dialogue: [
-                { speaker: "{survivor}", text: { zh: "聽說進來過的人，沒有一個能活著出去。" } },
-                { speaker: "旁白", text: { zh: "黑暗中，似乎有無數雙眼睛正在盯著你。" } }
-            ],
-            options: [{ label: "吞了口口水，握緊手電筒", action: "advance_chain", rewards: { tags: ['horror_started'] } }]
-        },
-        {
-            type: 'encounter_monster', id: 'hor_monster',
-            reqTag: 'horror_started',
-            text: { zh: [
-                "一陣令人作嘔的腐臭味撲鼻而來。走廊盡頭的黑暗開始蠕動，慢慢凝聚成一個巨大的實體。",
-                "那是{monster}！牠手裡的武器拖在地板上，發出刺耳的摩擦聲，一步步向你逼近。"
-            ]},
-            slots: ['monster'],
-            dialogue: [{ speaker: "{monster}", text: { zh: "吼喔喔喔喔——！！" } }],
-            options: [{ label: "轉身逃跑！", action: "advance_chain", nextTags: ['risk_high'] }]
-        },
-        {
-            type: 'final_survival', id: 'hor_end',
-            text: { zh: [
-                "前方出現了一絲微弱的光亮，那是出口！你用盡最後一絲力氣撞開了被封死的木板。",
-                "新鮮的空氣湧入肺部，你跌跌撞撞地衝出了大門，癱倒在草地上，身後的黑暗發出了不甘的怒吼。"
-            ]},
-            slots: ['survivor', 'haunted_place'], 
-            options: [{ label: "逃出生天", action: "finish_chain", rewards: { removeTags: ['horror_started', 'risk_high'] } }]
-        },
-
-        // ==========================================
-        // [BLOCK C] ⚔️ 異世界/冒險流 (Isekai)
-        // ==========================================
-        {
-            type: 'setup', id: 'isekai_start',
-            noTag: 'style_selected',
-            text: { zh: [
-                "一陣暈眩過後，你睜開眼，發現自己不再熟悉的城市裡。眼前是一片荒蕪的{location}，天空中掛著兩個月亮。",
-                "遠處傳來了{enemy}的咆哮聲，而你手邊只有一把生鏽的劍和一件破舊的斗篷。"
-            ]},
-            slots: ['location', 'enemy'],
-            options: [
-                { label: "拿起劍，準備戰鬥", action: "advance_chain", rewards: { tags: ['style_selected', 'style_combat'], varOps: [{key:'hp', val:100, op:'set'}] } },
-                { label: "披上斗篷，隱匿氣息", action: "advance_chain", rewards: { tags: ['style_selected', 'style_stealth'], varOps: [{key:'stealth', val:50, op:'set'}] } }
-            ]
-        },
-        {
-            type: 'event', id: 'isekai_event_fight',
-            reqTag: 'style_combat',
-            text: { zh: [
-                "一群{enemy}從岩石後方竄了出來，擋住了你的去路！牠們看起來飢腸轆轆，顯然把你當成了今晚的晚餐。",
-                "你握緊手中的劍，掌心微微出汗，準備迎接這場生死之戰。"
-            ]},
-            slots: ['enemy'],
-            options: [
-                { label: "正面突破！(STR檢定)", check: { stat: 'STR', val: 5 }, action: "advance_chain", nextScene: { text: "你像戰神一樣揮舞武器，殺出了一條血路！" }, failScene: { text: "雙拳難敵四手，你受了傷，勉強才突圍。", rewards: { energy: -10 } } }
-            ]
-        },
-
-        // ==========================================
-        // [BLOCK E] 💕 戀愛養成流 (Universal Romance)
-        // 設計理念：不寫死「學校」，而是用「相遇」，讓它能發生在冒險途中。
-        // ==========================================
-
-        // --- 階段 1: 命運的相遇 (Love Meet) ---
-        {
-            type: 'love_meet', id: 'rom_meet_bump',
-            text: { zh: [
-                "在轉角的陰影處，命運讓你們猛烈地撞在了一起。你感覺自己撞上了一個柔軟卻堅韌的軀體。",
-                "書本與隨身物品散落了一地，當你抬起頭時，看見了一位{adj_personality}{npc_role}正揉著肩膀。"
-            ]},
-            slots: ['adj_personality', 'npc_role', 'lover'], 
-            dialogue: [
-                { speaker: "{lover}", text: { zh: "好痛... 這裡怎麼會有人突然衝出來？" } },
-                { speaker: "你", text: { zh: "抱歉！我沒注意到路況，讓我幫你撿起來！" } }
-            ],
-            options: [
-                { 
-                    label: "展現紳士風度 (魅力檢定)", 
-                    check: { stat: 'CHR', val: 3 }, 
-                    action: "advance_chain", 
-                    rewards: { 
-                        varOps: [{ key: 'love_meter', val: 10, op: 'set' }], 
-                        tags: ['romantic_vibe'] 
-                    },
-                    nextScene: { text: "對方看著你認真的側臉，臉頰微微泛紅，似乎對你留下了不錯的印象。" }
-                },
-                { 
-                    label: "匆忙道歉後離開", 
-                    action: "advance_chain", 
-                    rewards: { varOps: [{ key: 'love_meter', val: 0, op: 'set' }] } 
-                }
-            ]
-        },
-
-        // --- 階段 2: 旅途中的交心 (Love Chat) ---
-        {
-            type: 'love_chat', id: 'rom_chat_hobby',
-            reqTag: 'romantic_vibe', 
-            text: { zh: [
-                "冒險的途中難得有片刻的寧靜。你和{lover}並肩坐在營火旁（或是咖啡廳的角落），享受著短暫的休息。",
-                "話題不知不覺轉到了彼此的興趣上，氣氛變得輕鬆起來。"
-            ]},
-            slots: ['lover'],
-            options: [
-                { 
-                    label: "聊聊彼此的夢想 (+10 好感)", 
-                    action: "advance_chain", 
-                    rewards: { varOps: [{ key: 'love_meter', val: 10, op: '+' }] },
-                    nextScene: { text: "你們發現彼此竟然有著驚人的相似之處，距離瞬間拉近了。" }
-                },
-                { 
-                    label: "沈默地看著風景", 
-                    action: "advance_chain",
-                    nextScene: { text: "{lover} 似乎有些睏了，靠在一旁閉目養神。" }
-                }
-            ]
-        },
-
-        // --- 階段 3: 共度的時光 (Love Date) ---
-        {
-            type: 'love_date', id: 'rom_date_park',
-            text: { zh: [
-                "你們來到了一個{location_base}。這裡的氛圍異常獨特，周圍充滿了{adj_luxury}裝飾。",
-                "遠離了日常的喧囂與危險，此刻的世界彷彿只剩下你們兩個人。"
-            ]},
-            slots: ['location_base', 'adj_luxury', 'lover'],
-            dialogue: [
-                { speaker: "{lover}", text: { zh: "如果時間能永遠停留在這一刻，那該有多好。" } }
-            ],
-            options: [
-                { 
-                    label: "輕輕牽起對方的手 (需好感 20)", 
-                    condition: { var: { key: 'love_meter', val: 20, op: '>=' } },
-                    action: "advance_chain",
-                    rewards: { varOps: [{ key: 'love_meter', val: 20, op: '+' }], tags: ['hand_hold'] },
-                    nextScene: { text: "指尖傳來了溫暖的觸感，對方沒有拒絕，反握住了你的手。" }
-                },
-                { label: "保持禮貌的距離", action: "advance_chain" }
-            ]
-        },
-
-        // --- 階段 4: 情感的危機 (Love Crisis) ---
-        {
-            type: 'love_crisis', id: 'rom_crisis_rival',
-            text: { zh: [
-                "就在氣氛正好時，一個{adj_personality}人影擋住了去路。氣氛瞬間降到了冰點。",
-                "那是你的宿敵——{rival}！他看著你們牽在一起的手，發出了一聲冷笑。"
-            ]},
-            slots: ['adj_personality', 'rival', 'lover'],
-            dialogue: [
-                { speaker: "{rival}", text: { zh: "{lover}，這就是你選擇的人？這種貨色配得上你嗎？" } }
-            ],
-            options: [
-                { 
-                    label: "挺身而出維護對方", 
-                    action: "advance_chain", 
-                    rewards: { varOps: [{ key: 'love_meter', val: 30, op: '+' }] },
-                    nextScene: { text: "你堅定的態度讓情敵知難而退。{lover}看著你的背影，眼神充滿了崇拜。" }
-                },
-                { 
-                    label: "猶豫不決", 
-                    action: "advance_chain",
-                    rewards: { varOps: [{ key: 'love_meter', val: 10, op: '-' }] }
-                }
-            ]
-        },
-
-        // --- 階段 5: 告白結局 (Love Confession) ---
-        {
-            type: 'love_confession', id: 'rom_end_best',
-            text: { zh: [
-                "夕陽將天空染成了金紅色，{lover}停下了腳步，轉身看著你。",
-                "風吹過髮梢，對方臉上的紅暈比晚霞還要迷人，似乎在等待著什麼。"
-            ]},
-            slots: ['lover'],
-            options: [
-                { 
-                    label: "「我喜歡你！」 (需好感 60)", 
-                    style: "primary",
-                    condition: { var: { key: 'love_meter', val: 60, op: '>=' } },
-                    action: "finish_chain", 
-                    nextScene: { 
-                        text: "【Happy End】\n{lover}微笑著抱住了你。「我也等你這句話很久了，無論未來如何，我們都一起面對。」",
-                        rewards: { exp: 1000, tags: ['relationship_official'] }
-                    }
-                },
-                { 
-                    label: "將這份心意藏在心底...", 
-                    condition: { var: { key: 'love_meter', val: 60, op: '<' } },
-                    action: "finish_chain", 
-                    nextScene: { 
-                        text: "【Normal End】\n你最終沒有說出口。{lover}露出了一絲失落的表情，轉身離去，你們終究只是過客。",
-                        rewards: { exp: 100 }
-                    }
-                }
-            ]
-        },
-
-        // ==========================================
-        // [BLOCK F] 🌱 養成模擬流 (Universal Raising)
-        // 設計理念：把「養女兒」轉化為「守護/導師」關係，適合任何背景。
-        // ==========================================
-
-        // --- 階段 1: 命運的託付 (Birth/Found) ---
-        {
-            type: 'r_birth', id: 'raise_start',
-            text: { zh: [
-                "這是一個星光璀璨的夜晚，命運將這個孩子託付給了你。",
-                "你看著{daughter}在廢墟（或搖籃）中熟睡的臉龐，感受到了一股沈重的責任。",
-                "無論外面的世界多麼危險，你決心將她培養成一位出色的人。"
-            ]},
-            slots: ['daughter', 'butler'],
-            dialogue: [
-                { speaker: "{butler}", text: { zh: "主人，這孩子的未來就掌握在您手中了。您的選擇將決定她的命運。" } }
-            ],
-            options: [
-                { 
-                    label: "專注於培養氣質 (魅力型)", 
-                    action: "advance_chain", 
-                    rewards: { varOps: [{key:'chr', val:50, op:'set'}, {key:'str', val:10, op:'set'}] } 
-                },
-                { 
-                    label: "專注於鍛鍊體魄 (戰鬥型)", 
-                    action: "advance_chain", 
-                    rewards: { varOps: [{key:'chr', val:10, op:'set'}, {key:'str', val:50, op:'set'}] } 
-                }
-            ]
-        },
-
-        // --- 階段 2: 成長的興趣 (Childhood) ---
-        {
-            type: 'r_childhood', id: 'raise_child_hobby',
-            text: { zh: [
-                "時光飛逝，{daughter}已經開始展現出她獨特的個性。",
-                "最近她似乎對【{r_hobby}】特別著迷，整天都在模仿書上的動作，眼裡閃爍著光芒。"
-            ]},
-            slots: ['daughter', 'r_hobby'],
-            options: [
-                { 
-                    label: "全力支持她的興趣 (金幣-50)", 
-                    action: "advance_chain", 
-                    condition: { var: { key: 'gold', val: 50, op: '>=' } },
-                    rewards: { gold: -50, varOps: [{key:'stress', val:10, op:'+'}, {key:'int', val:20, op:'+'}] },
-                    nextScene: { text: "她開心地投入了練習，進步神速，你看著她的背影感到無比欣慰。" }
-                },
-                { 
-                    label: "讓她幫忙處理雜務 (魅力+)", 
-                    action: "advance_chain", 
-                    rewards: { varOps: [{key:'stress', val:10, op:'-'}, {key:'chr', val:5, op:'+'}] },
-                    nextScene: { text: "她雖然嘟著嘴，但還是乖乖去幫忙了，這也培養了她的責任感。" }
-                }
-            ]
-        },
-
-        // --- 階段 3: 社會的歷練 (Adolescence) ---
-        {
-            type: 'r_adolescence', id: 'raise_teen_work',
-            text: { zh: [
-                "{daughter}長大了，她開始嘗試接觸外面的世界，不再躲在你的羽翼之下。",
-                "憑藉著自己的努力，她找到了一份【{r_job}】的工作，開始體驗人生的酸甜苦辣。"
-            ]},
-            slots: ['daughter', 'r_job'],
-            options: [
-                { 
-                    label: "鼓勵她努力工作 (獲得金幣)", 
-                    action: "advance_chain", 
-                    rewards: { gold: 100, varOps: [{key:'stress', val:20, op:'+'}] } 
-                },
-                { 
-                    label: "帶她去海邊散心 (消除壓力)", 
-                    action: "advance_chain",
-                    rewards: { varOps: [{key:'stress', val:50, op:'-'}] } 
-                }
-            ]
-        },
-
-        // --- 階段 4: 命運的試煉 (Event) ---
-        {
-            type: 'r_event', id: 'raise_festival',
-            text: { zh: [
-                "一年一度的盛大慶典開始了！廣場上人山人海，各地的精英都匯聚於此。",
-                "你的勁敵{rival}也出現了，她挑釁地看著你們，這是一場關乎榮譽的對決。"
-            ]},
-            slots: ['rival'],
-            dialogue: [
-                { speaker: "{rival}", text: { zh: "哼，這次冠軍非我莫屬。你們最好現在就棄權。" } }
-            ],
-            options: [
-                { 
-                    label: "參加選美大賽 (檢定魅力)", 
-                    check: { stat: 'CHR', val: 50 }, 
-                    action: "advance_chain",
-                    nextScene: { text: "全場都被她的優雅與美貌驚豔了！她捧起了冠軍獎盃！", rewards: { gold: 500, tags: ['fame_high'] } },
-                    failScene: { text: "可惜，評審似乎更喜歡另一種風格，但她已經盡力了。", rewards: { varOps: [{key:'stress', val:20, op:'+'}] } }
-                },
-                { 
-                    label: "參加武鬥大會 (檢定力量)", 
-                    check: { stat: 'STR', val: 50 }, 
-                    action: "advance_chain",
-                    nextScene: { text: "她一拳擊倒了對手！歡呼聲響徹雲霄，她是當之無愧的冠軍！", rewards: { gold: 500, tags: ['fame_high'] } }
-                }
-            ]
-        },
-
-        // --- 階段 5: 養成的終章 (Ending) ---
-        {
-            type: 'r_ending', id: 'raise_end_check',
-            text: { zh: [
-                "終於，到了她獨立的這一天。你看著眼前這位獨當一面的女性，心中充滿了感慨。",
-                "她轉過身，眼神堅定地望向遠方，那是她即將踏上的旅程。"
-            ]},
-            slots: ['daughter', 'r_dream'],
-            dialogue: [
-                { speaker: "{daughter}", text: { zh: "謝謝您養育我長大... 我決定去追尋我的夢想：成為{r_dream}！" } }
-            ],
-            options: [
-                { 
-                    label: "見證她的加冕 (CHR > 100)", 
-                    style: "primary",
-                    condition: { 
-                        vars: [{key:'chr', val:100, op:'>='}, {key:'fame_high', op:'hasTag'}] 
-                    }, 
-                    action: "finish_chain", 
-                    nextScene: { text: "【結局：傳說的女王】\n她成為了史上最受愛戴的女王，而你將永遠是她背後的守護者。" }
-                },
-                { 
-                    label: "送她上戰場 (STR > 80)", 
-                    condition: { var: { key: 'str', val: 80, op: '>=' } }, 
-                    action: "finish_chain",
-                    nextScene: { text: "【結局：帝國將軍】\n她的名字將響徹沙場，成為吟遊詩人口中的傳奇。" }
-                },
-                { 
-                    label: "祝福平凡的她", 
-                    action: "finish_chain",
-                    nextScene: { text: "【結局：平凡的幸福】\n她選擇了遠離紛爭，過著平靜而快樂的日子。這或許才是最好的結局。" }
-                }
-            ]
-        },
-
-        // ==========================================
-        // [BLOCK D] 🧩 萬用填充區 (Universal Filler)
-        // ==========================================
-        {
-            type: 'event', id: 'filler_rest',
-            text: { zh: [
-                "經歷了剛才的波折，你感到身心俱疲。你找到了一個相對乾燥且隱蔽的角落，決定稍作休息。",
-                "這裡暫時沒有危險的氣息，只有遠處偶爾傳來的風聲，正好可以整理一下思緒。"
-            ]},
-            options: [{ label: "閉目養神，恢復體力 (精力+5)", action: "advance_chain", rewards: { energy: 5 } }]
-        },
-        {
-            type: 'event', id: 'filler_noise',
-            text: { zh: [
-                "突然，一陣奇怪的聲響讓你立刻停下了腳步。你屏住呼吸，死死盯著黑暗的深處。",
-                "手心捏了一把冷汗，心臟劇烈跳動。幾秒鐘後，一隻肥碩的老鼠從角落竄出，原來只是虛驚一場。"
-            ]},
-            options: [{ label: "鬆了一口氣，繼續前進", action: "advance_chain" }]
-        },
-        {
-            type: 'event', id: 'univ_merchant',
-            text: { zh: [
-                "在轉角的陰影中，你遇到了一位戴著烏鴉面具的神秘商人。他身邊堆滿了各種奇奇怪怪的道具。",
-                "這看起來像是一個移動的雜貨舖，不知道他為什麼會出現在這種危險的地方。"
-            ]},
-            dialogue: [{ speaker: "商人", text: { zh: "嘿嘿... 旅行者，需要點好東西來保命嗎？只要你有足夠的金幣。" } }],
-            options: [
-                { 
-                    label: "購買關鍵情報 (金幣-50)", 
-                    condition: { var: { key: 'gold', val: 50, op: '>=' } },
-                    action: "advance_chain", 
-                    rewards: { gold: -50, tags: ['clue_found', 'motive_confirmed'] } 
-                },
-                { label: "搖搖頭離開", action: "advance_chain" }
-            ]
-        },
-        {
-            type: 'event', id: 'univ_lucky_chest',
-            text: { zh: [
-                "在廢墟的瓦礫堆中，你發現了一個散發著微弱金光的寶箱。箱子上沒有鎖，上面刻著一行古老的文字。",
-                "『獻給有緣人』。這是命運的餽贈？還是一個致命的陷阱？"
-            ]},
-            options: [
-                { 
-                    label: "賭一把打開它 (LUCK檢定)", 
-                    check: { stat: 'LUCK', val: 1 }, 
-                    action: "advance_chain",
-                    nextScene: { text: "哇！裡面裝滿了古代金幣和寶石！運氣太好了！", rewards: { gold: 100, tags: ['lucky_buff'] } },
-                    failScene: { text: "是寶箱怪！它狠狠咬了你的手一口，你痛得甩開了它。", rewards: { energy: -10 } }
-                },
-                { label: "太可疑了，無視", action: "advance_chain" }
-            ]
-        },
-		{
-            type: 'boss', id: 'univ_boss_shadow',
-            // 注意：這裡不設 reqTag，確保任何人都能抽到
-            text: { zh: [
-                "冒險的終點，一股強大的惡意擋住了去路。",
-                "那是一個模糊的{enemy}，它似乎是由你一路上所有的恐懼凝聚而成的。",
-                "避無可避，只能背水一戰！"
-            ]},
-            slots: ['enemy'], // 會自動從名詞庫隨機抽一個敵人
-            dialogue: [
-                { speaker: "旁白", text: { zh: "它發出了震耳欲聾的咆哮，準備發動最後的攻擊！" } }
-            ],
-            options: [
-                { 
-                    label: "正面迎擊！(STR檢定)", 
-                    check: { stat: 'STR', val: 5 }, 
-                    action: "finish_chain",
-                    nextScene: { text: "你用盡全力擊倒了它！勝利屬於你！", rewards: { exp: 500, gold: 100 } },
-                    failScene: { text: "你雖然擊退了它，但也受了重傷...", rewards: { exp: 200, energy: -20 } }
-                },
-                { 
-                    label: "尋找弱點突襲 (INT檢定)", 
-                    check: { stat: 'INT', val: 5 }, 
-                    action: "finish_chain",
-                    nextScene: { text: "你發現了它的破綻，一擊必殺！", rewards: { exp: 600, gold: 150 } },
-                    failScene: { text: "你判斷失誤，險些喪命...", rewards: { exp: 200, energy: -20 } }
-                }
-            ]
-        },
-		{
-            type: 'setup', id: 'univ_setup_tavern',
-            text: { zh: [
-                "你推開了酒館沈重的橡木門，喧鬧的聲音撲面而來。",
-                "冒險者們在此交換著情報與故事，而你正在尋找下一個委託。",
-                "酒保擦著杯子，眼神示意牆角有一個神祕的人在等你。"
-            ]},
-            slots: ['location_base'], 
-            options: [
-                { 
-                    label: "走向角落的神祕人 (進入懸疑線)", 
-                    action: "advance_chain", 
-                    rewards: { tags: ['case_started'] } // 雖然是通用開頭，但也可以引導去懸疑線
-                },
-                { 
-                    label: "向酒保打聽消息 (進入冒險線)", 
-                    action: "advance_chain",
-                    rewards: { tags: ['style_selected'] }
-                }
-            ]
-        },
-        {
-            type: 'setup', id: 'univ_setup_crossroad',
-            text: { zh: [
-                "你站在命運的十字路口，濃霧遮蔽了前方的道路。",
-                "路標上的字跡已經模糊不清，但你必須做出選擇。",
-                "左邊傳來了野獸的低吼，右邊則瀰漫著一股詭異的花香。"
-            ]},
-            options: [
-                { 
-                    label: "往左邊走 (戰鬥)", 
-                    action: "advance_chain", 
-                    rewards: { tags: ['style_combat'], varOps: [{key:'hp', val:100, op:'set'}] } 
-                },
-                { 
-                    label: "往右邊走 (探索)", 
-                    action: "advance_chain", 
-                    rewards: { tags: ['clue_found'] }
+                    rewards: { varOps: [{key:'trust', val:5, op:'+'}] }, // 增加信任但沒增加愛意
+                    nextScene: { text: "你們交換了情報。雖然氣氛有些公事公辦，但這也是一種進展。" } 
                 }
             ]
         },

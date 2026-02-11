@@ -1,8 +1,8 @@
-/* js/modules/story_generator.js - V79.1 (Fix Dialogue & Options Display) */
+/* js/modules/story_generator.js - V83.3 (Logic Fixed: Skeletons Included) */
 
 window.StoryGenerator = {
     // ============================================================
-    // 1. 系統設定與字典
+    // 1. 系統核心設定
     // ============================================================
     _sysDict: { 
         investigate: { zh: "調查" }, 
@@ -15,98 +15,149 @@ window.StoryGenerator = {
     _t: function(k, l) { return (this._sysDict[k] && this._sysDict[k][l]) || this._sysDict[k]?.zh || k; },
 
     // ============================================================
-    // 2. 劇本骨架定義 (Skeletons)
+    // 2. 劇本骨架定義 (Skeletons) - 保留在此處
     // ============================================================
     skeletons: {
         'mystery': {
-            stages: ['setup_crime', 'investigate', 'interrogate', 'deduction_moment', 'confrontation'],
-            actors: ['detective', 'victim', 'suspect_A', 'suspect_B', 'killer'], 
+            // [New] 導演種子：決定這場戲的背景
+            seeds: {
+                weather: [
+                    { val: "暴風雨之夜", tag: "env_storm" },
+                    { val: "濃霧瀰漫的清晨", tag: "env_fog" },
+                    { val: "原本平靜的午後", tag: "env_normal" }
+                ],
+                atmosphere: ["詭異的", "悲傷的", "充滿敵意的"], // 形容詞種子
+                motive: ["遺產爭奪", "情殺", "復仇"] // 動機種子 (可作為文本變數)
+            },
+            // [New] 動態流程：每次長度不一樣
+            getStages: function() {
+                // 基礎結構
+                let flow = ['setup', 'univ_filler'];
+                
+                // 隨機插入 1~3 個調查階段
+                let investCount = 1 + Math.floor(Math.random() * 3);
+                for(let i=0; i<investCount; i++) {
+                    // 隨機決定是「單純調查」還是「遭遇事件」
+                    flow.push(Math.random() > 0.3 ? 'investigate' : 'univ_filler');
+                }
+                
+                flow.push('twist');
+                flow.push('deduction');
+                return flow;
+            },
+            // 角色分配 (從 FragmentDB 抓取)
+            actors: ['detective', 'victim', 'suspect_A', 'suspect_B', 'noun_npc_generic'], 
             baseTension: 10
         },
+
         'horror': {
-            stages: ['setup_omen', 'explore_eerie', 'encounter_monster', 'escape_chase', 'final_survival'],
-            actors: ['survivor', 'monster', 'haunted_place'],
-            baseTension: 20
+            seeds: {
+                weather: [
+                    { val: "伸手不見五指的深夜", tag: "risk_high" }, // 一開場就很危險
+                    { val: "雷雨交加的夜晚", tag: "env_storm" }
+                ],
+                curse_type: ["古代詛咒", "怨靈附身", "生物變異"]
+            },
+            // 恐怖片的節奏比較快，直線型
+            stages: ['setup_omen', 'univ_filler', 'encounter_stalk', 'univ_filler', 'encounter_climax', 'final_survival'],
+            actors: ['survivor', 'noun_role_monster', 'noun_location_building'], 
+            baseTension: 30
         },
-        'random': {
-            stages: ['setup', 'event', 'event', 'event', 'boss'],
-            actors: ['enemy'],
-            baseTension: 0
+
+        'isekai': { 
+            seeds: {
+                world_state: ["戰亂", "魔物肆虐", "和平但腐敗"],
+                start_bonus: ["神聖", "被詛咒的", "生鏽的"] // 起始武器的形容詞
+            },
+            getStages: function() {
+                // 異世界冒險可能是「戰鬥-探索-戰鬥-Boss」
+                return ['setup', 'event_battle', 'univ_filler', 'event_explore', 'event_battle', 'boss'];
+            },
+            actors: ['noun_role_monster', 'noun_location_building', 'noun_item_weapon'], 
+            baseTension: 20 
         },
-		'romance': {
-        // 戀愛劇本的五個階段：相遇 -> 了解 -> 約會 -> 危機 -> 告白
-        stages: ['love_meet', 'love_chat', 'love_date', 'love_crisis', 'love_confession'],
-        // 角色：戀人 (lover)、情敵 (rival)
-        actors: ['lover', 'rival'], 
-        // 戀愛劇本通常從 0 張力開始，甚至可以是負的（輕鬆氣氛）
-        baseTension: 0 
-		},
-		'raising': {
-        // 階段：出身 -> 童年 -> 青春期 -> 慶典/競賽 -> 職業結局
-        stages: ['r_birth', 'r_childhood', 'r_adolescence', 'r_event', 'r_ending'],
-        actors: ['daughter', 'butler', 'rival'], 
-        baseTension: 0 
-		},
+        
+        // ... (其他骨架可依此類推，若不修改也可保留舊格式，initChain 會相容)
+        'romance': {
+             stages: ['love_meet', 'love_bond', 'love_scheme', 'love_counter', 'love_confession'],
+             actors: ['lover', 'rival', 'noun_npc_generic'], 
+             baseTension: 5 
+        },
+        'raising': {
+             stages: ['raise_meet', 'raise_train', 'raise_debut', 'raise_climax', 'raise_ending'],
+             actors: ['trainee', 'rival', 'butler'], 
+             baseTension: 0 
+        }
     },
 
     // ============================================================
     // 3. 啟動新冒險 (Start Chain)
     // ============================================================
-    initChain: function(mode = 'random') {
-        // 1. 取得基礎骨架
-        const skel = this.skeletons[mode] || this.skeletons['random'];
+    initChain: function(forcedMode = null) {
+        // 1. 決定模式 (Genre Selection)
+        let mode = forcedMode;
+        if (!mode || !this.skeletons[mode]) {
+            const keys = Object.keys(this.skeletons);
+            mode = keys[Math.floor(Math.random() * keys.length)];
+            console.log(`🎲 隨機選擇骨架: ${mode}`);
+        }
+
+        const skel = this.skeletons[mode];
         
-        // 2. [New] 動態調整骨架長度 (彈性機制)
-        let dynamicStages = [...skel.stages]; // 複製一份
-        
-        // 隨機增減中間環節 (不影響開頭與結尾)
-        // 只有當骨架長度 > 3 時才進行變異，避免太短
-        if (dynamicStages.length > 3) {
-            const variant = Math.random();
-            
-            if (mode === 'random') {
-                // 純隨機模式：大幅波動 (3 ~ 7 層)
-                const len = 3 + Math.floor(Math.random() * 5); 
-                dynamicStages = ['setup'];
-                for(let i=0; i<len; i++) dynamicStages.push('event');
-                dynamicStages.push('boss');
-            } 
-            else {
-                // 敘事模式 (Mystery/Horror)：微調節奏
-                // 30% 機率插入一個額外事件 (延長)
-                if (variant > 0.7) {
-                    // 在 Setup 後面插入一個通用填充事件
-                    const fillType = mode === 'mystery' ? 'investigate' : 'explore_eerie';
-                    dynamicStages.splice(1, 0, fillType); 
-                    console.log(`📏 劇本延長: 插入 ${fillType}`);
-                }
-                // 20% 機率移除一個中間事件 (加速)
-                else if (variant < 0.2 && dynamicStages.length > 4) {
-                    dynamicStages.splice(2, 1);
-                    console.log(`⏩ 劇本加速: 移除階段`);
+        // 2. 初始化 Memory 與 Tags (Seed Injection)
+        let memory = {};
+        let initialTags = [];
+
+        // [New] 處理環境種子 (Seeds)
+        // 這些變數決定了整篇故事的「背景設定」
+        if (skel.seeds) {
+            for (let [key, options] of Object.entries(skel.seeds)) {
+                // 隨機選一個設定 (例如 weather: 'storm')
+                const pick = options[Math.floor(Math.random() * options.length)];
+                
+                // 如果選項是物件，可以包含 tag 和 val
+                if (typeof pick === 'object') {
+                    memory[key] = pick.val;
+                    if (pick.tag) initialTags.push(pick.tag);
+                } else {
+                    // 如果只是字串
+                    memory[key] = pick;
                 }
             }
         }
 
-        // 3. 初始化記憶
-        const memory = {};
+        // 3. 處理角色 (Actors) - 維持原本邏輯，但加上防呆
         if (skel.actors && window.FragmentDB) {
-            skel.actors.forEach(role => {
-                const pool = window.FragmentDB.fragments[role] || window.FragmentDB.fragments['npc_name'] || [{val:{zh:"神秘人"}}];
-                const pick = pool[Math.floor(Math.random() * pool.length)];
-                memory[role] = pick.val.zh || pick.val; 
+            skel.actors.forEach(roleKey => {
+                const pool = window.FragmentDB.fragments[roleKey];
+                if (pool && pool.length > 0) {
+                    const pick = pool[Math.floor(Math.random() * pool.length)];
+                    let val = pick.val.zh || pick.val;
+                    // 如果角色自帶 tag (例如 'rich'), 也加入全域 tags
+                    if (pick.tags) initialTags.push(...pick.tags);
+                    memory[roleKey] = val; 
+                } else {
+                    memory[roleKey] = "???";
+                }
             });
         }
 
+        // 4. 動態生成流程 (Dynamic Flow)
+        // 如果骨架有定義 getStages 函數，就用它；否則用靜態陣列
+        let dynamicStages = skel.getStages ? skel.getStages() : [...skel.stages];
+
+        console.log(`🎬 Director: Mode [${mode}], Seeds:`, memory, `Flow:`, dynamicStages);
+
         return {
+            mode: mode,
             depth: 0,
-            maxDepth: dynamicStages.length, // 更新為動態長度
-            skeletonKey: mode,
-            stages: dynamicStages,          // 使用動態骨架
-            tension: skel.baseTension,    
+            maxDepth: dynamicStages.length,
+            stages: dynamicStages,
+            currentStageIdx: 0,
+            tension: skel.baseTension || 0,
             memory: memory,               
             history: [],
-            accumulatedTags: []
+            tags: initialTags // 初始標籤現在包含了天氣、氛圍等資訊
         };
     },
 
@@ -114,265 +165,221 @@ window.StoryGenerator = {
     // 4. 生成下一層 (Generate)
     // ============================================================
     generate: function(contextTags = [], isStart = false) {
-    const gs = window.GlobalState;
-    
-    // 初始化檢查
-    if (!gs.story.chain || !gs.story.chain.stages || isStart) {
-        console.log("🔄 L3 Generator: 初始化...");
-        const modes = ['mystery', 'horror', 'random']; 
-        const randomMode = modes[Math.floor(Math.random() * modes.length)];
-        gs.story.chain = this.initChain(randomMode); 
-    }
-
-    const chain = gs.story.chain;
-    let depth = chain.depth;
-    
-    // 張力計算
-    let tensionDelta = 10; 
-    if (contextTags.includes('risk_high')) tensionDelta += 20;
-    if (contextTags.includes('safe_spot')) tensionDelta -= 10;
-    if (contextTags.includes('clue_found')) tensionDelta += 15; 
-    
-    chain.tension = Math.min(100, Math.max(0, (chain.tension || 0) + tensionDelta));
-    console.log(`🎬 Director: Depth ${depth}, Tension ${chain.tension}%`);
-
-    // 決定目標類型
-    let targetType = 'event'; 
-
-    if (chain.tension >= 100 && depth > 2) {
-        if (chain.stages && chain.stages.length > 0) {
-            targetType = chain.stages[chain.stages.length - 1];
-        } else {
-            targetType = 'ending'; 
+        const gs = window.GlobalState;
+        
+        if (!gs.story.chain || !gs.story.chain.stages || isStart) {
+            console.log("🔄 Generator: 初始化新鏈結...");
+            gs.story.chain = this.initChain(); 
         }
-        console.log(`🔥 Tension Overload! Director forcing jump to: ${targetType}`);
-    } 
-    else if (depth < chain.stages.length) {
-        targetType = chain.stages[depth];
-    } 
-    else {
-        targetType = 'ending';
-    }
 
-    // 挑選模板
-    const template = this.pickTemplate(targetType, contextTags, chain.history, chain.tension);
-    const lang = gs.settings?.targetLang || 'zh';
+        const chain = gs.story.chain;
+        if(contextTags.length > 0) {
+            chain.tags = [...new Set([...chain.tags, ...contextTags])];
+        }
 
-    if (!template) {
+        if (chain.currentStageIdx >= chain.stages.length) return null;
+        
+        let targetType = chain.stages[chain.currentStageIdx];
+        
+        // 張力調整
+        let tensionDelta = 5; 
+        if (chain.tags.includes('risk_high')) tensionDelta += 15;
+        chain.tension = Math.min(100, Math.max(0, (chain.tension || 0) + tensionDelta));
+        console.log(`🎬 Director: Stage [${targetType}], Tension ${chain.tension}%`);
+
+        // [Logic Fix] 傳遞完整參數給 pickTemplate
+        const template = this.pickTemplate(targetType, chain.tags, chain.history, chain.tension);
+        const lang = gs.settings?.targetLang || 'zh';
+
+        if (!template) {
+            console.error(`❌ 無法生成劇本: Type=${targetType}`);
+            return {
+                id: `err_${Date.now()}`,
+                text: "（系統錯誤：迷霧太濃...）",
+                options: [{ label: "強制結束", action: "finish_chain" }]
+            };
+        }
+
+        // 記錄歷史
+        if (template.id) {
+            chain.history.push(template.id);
+            if (chain.history.length > 5) chain.history.shift();
+        }
+
+        // 填充內容
+        const filledData = this.fillTemplate(template, lang, chain.memory);
+        const opts = this.generateOptions(template, filledData.fragments, lang, targetType);
+        
+        chain.currentStageIdx++;
+        chain.depth++; 
+
         return {
-            id: `fallback_${Date.now()}`, 
-            text: `(導演找不到劇本: ${targetType}) \n你繼續在迷霧中前行...`, 
-            options: [{ label: "離開", action: "finish_chain" }]
-        };
-    }
-
-    // [記錄邏輯]
-    if (template.id) {
-        // A. 記錄到單局歷史 (避免本局重複)
-        chain.history.push(template.id);
-        if (chain.history.length > 4) chain.history.shift();
-
-        // B. [Critical New] 如果是開頭，記錄到全域歷史 (跨局防重複)
-        if (targetType === 'setup' || isStart) {
-            if (!gs.story.recentOpenings) gs.story.recentOpenings = [];
-            
-            // 只有當 ID 不在清單中才加入 (雖然 pickTemplate 已經過濾了，但雙重保險)
-            if (!gs.story.recentOpenings.includes(template.id)) {
-                gs.story.recentOpenings.push(template.id);
-            }
-            
-            // [設定] 至少 2 次不重複 -> 我們保留最近的 2 個 ID
-            // 您可以把 2 改成 3 或 5 來增加不重複的週期
-            if (gs.story.recentOpenings.length > 2) {
-                gs.story.recentOpenings.shift(); // 移除最舊的，讓它重新變為可用
-            }
-            console.log("📚 全域開頭歷史更新:", gs.story.recentOpenings);
-        }
-    }
-
-    // 填充內容
-    const filledData = this.fillTemplate(template, lang, chain.memory);
-    let finalText = filledData.text;
-
-    // 選項生成
-    const opts = this.generateOptions(template, filledData.fragments, lang, targetType, chain.tension);
-    
-    return {
-        id: `gen_${Date.now()}`,
-        // 傳遞原始模板類型給 Engine (用於診斷)
-        type: targetType, 
-        text: finalText,
-        dialogue: filledData.dialogue, 
-        location: filledData.locationStr || "Mystery Scene",
-        options: opts, 
-        rewards: filledData.rewards
-    };
-},
-
-    // ============================================================
-    // 5. 輔助函數
-    // ============================================================
-    pickTemplate: function(type, contextTags, history = [], currentTension) {
-    const db = window.FragmentDB;
-    if (!db || !db.templates) return null;
-    const gs = window.GlobalState;
-    const myTags = gs.story.tags || [];
-    
-    // 1. 篩選類型
-    let candidates = db.templates.filter(t => t.type === type);
-    
-    // 2. 篩選標籤條件
-    candidates = candidates.filter(t => {
-        if (t.reqTag && !myTags.includes(t.reqTag)) return false;
-        if (t.noTag && myTags.includes(t.noTag)) return false;
-        // [新增] 骨架專屬過濾 (如果未來有加入 reqChain 屬性)
-        if (t.reqChain && gs.story.chain && gs.story.chain.skeletonKey !== t.reqChain) return false;
-        return true;
-    });
-
-    // 3. 篩選張力區間
-    candidates = candidates.filter(t => {
-        if (t.minTension && currentTension < t.minTension) return false;
-        if (t.maxTension && currentTension > t.maxTension) return false;
-        return true;
-    });
-
-    // 4. [Critical New] 全域開頭過濾 (Global Opening Filter)
-    // 如果是 'setup' 類型，檢查全域歷史紀錄
-    if (type === 'setup' && gs.story.recentOpenings && gs.story.recentOpenings.length > 0) {
-        // 過濾掉最近用過的開頭
-        const filtered = candidates.filter(t => !gs.story.recentOpenings.includes(t.id));
-        // 防呆：如果過濾完沒東西了(例如模板太少)，就還是用原本的候選池，避免卡死
-        if (filtered.length > 0) {
-            candidates = filtered;
-        }
-    }
-
-    // 5. 單局歷史過濾 (Local History Filter)
-    // 避免同一場冒險重複出現同樣的事件
-    const available = candidates.filter(t => !t.id || !history.includes(t.id));
-    const finalPool = available.length > 0 ? available : candidates;
-
-    if (finalPool.length > 0) return finalPool[Math.floor(Math.random() * finalPool.length)];
-    return null;
-},
-    // [Fix] 升級版填詞：同時處理 Text 和 Dialogue
-    fillTemplate: function(tmpl, lang, memory) {
-        const db = window.FragmentDB;
-        
-        // A. 準備 Main Text
-        let rawContent = tmpl.text[lang] || tmpl.text['zh'];
-        let textArr = Array.isArray(rawContent) ? [...rawContent] : [rawContent];
-        
-        // B. 準備 Dialogue (如果有)
-        // 先解析語言，轉成物件結構，稍後再填詞
-        let dialogueArr = null;
-        if (tmpl.dialogue) {
-            dialogueArr = tmpl.dialogue.map(d => ({
-                speaker: d.speaker, // 暫時保留 {slot}
-                text: d.text[lang] || d.text['zh']
-            }));
-        }
-
-        let chosenFragments = {};
-
-        // C. 遍歷 Slots 進行統一填詞
-        (tmpl.slots || []).forEach(key => {
-            let word = "";
-            
-            // 優先從記憶讀取 (確保角色一致性)
-            if (memory && memory[key]) {
-     word = memory[key];
-     chosenFragments[key] = { val: { zh: word } }; 
-} 
-// 否則隨機抽取
-else {
-    const list = db.fragments[key];
-    if (list && list.length > 0) {
-        const item = list[Math.floor(Math.random() * list.length)];
-        word = item.val[lang] || item.val['zh'];
-        chosenFragments[key] = item;
-        
-        // [修正] 新增這行：將隨機抽到的詞寫入記憶，確保後續一致
-        if (memory) memory[key] = word; 
-        
-    } else { 
-        word = `(${key}?)`; 
-    }
-}
-
-            // D. 執行替換 (Regex Global)
-            const regex = new RegExp(`{${key}}`, 'g');
-            
-            // 1. 替換 Main Text
-            textArr = textArr.map(line => line.replace(regex, word));
-            
-            // 2. 替換 Dialogue (Speaker 和 Text 都要換)
-            if (dialogueArr) {
-                dialogueArr.forEach(d => {
-                    if (d.speaker) d.speaker = d.speaker.replace(regex, word);
-                    if (d.text) d.text = d.text.replace(regex, word);
-                });
-            }
-        });
-
-        // 處理動態獎勵標籤
-        let newRewards = null;
-        if (tmpl.rewards) {
-            newRewards = JSON.parse(JSON.stringify(tmpl.rewards));
-            if (newRewards.tags) {
-                newRewards.tags = newRewards.tags.map(tag => {
-                    return tag.replace(/{(\w+)}/g, (_, k) => memory[k] || k); // 這裡只支援從 memory 讀取
-                });
-            }
-        }
-
-        return { 
-            text: textArr, 
-            dialogue: dialogueArr, // 回傳處理好的對話
-            fragments: chosenFragments, 
-            rewards: newRewards || tmpl.rewards 
+            id: template.id || `gen_${Date.now()}`,
+            type: targetType, 
+            text: filledData.text[0],
+            dialogue: filledData.dialogue, 
+            options: opts, 
+            rewards: filledData.rewards
         };
     },
 
-    generateOptions: function(tmpl, fragments, lang, type, tension) {
-        let opts = [];
+    // ============================================================
+    // 5. 輔助函數 (Helpers)
+    // ============================================================
+    
+   _expandGrammar: function(text, db, memory, depth = 0) {
+        if (!text) return "";
+        if (depth > 10) return text; // 防止無窮迴圈
+        
+        // 尋找所有 {key} 格式的標籤
+        return text.replace(/{(\w+)}/g, (match, key) => {
+            // 優先順序 1: 記憶 (Memory) - 之前確定的角色名或物品
+            if (memory && memory[key]) {
+                return memory[key];
+            }
+            
+            // 優先順序 2: 資料庫碎片 (FragmentDB)
+            if (db.fragments[key]) {
+                const list = db.fragments[key];
+                if (list.length > 0) {
+                    const pick = list[Math.floor(Math.random() * list.length)];
+                    let val = pick.val.zh || pick.val; // 假設目標語言是 zh
+                    
+                    // 遞迴關鍵：如果抽到的詞裡面還有 {tag}，繼續展開
+                    if (val.includes('{')) {
+                        return this._expandGrammar(val, db, memory, depth + 1);
+                    }
+                    return val;
+                }
+            }
+            
+            // 如果都找不到，保留原樣以免報錯
+            return match;
+        });
+    },
 
-        // [Fix] 只有當 options 陣列有內容時才使用
+    // ============================================================
+    // 修改：填充模板 (使用新引擎)
+    // ============================================================
+    fillTemplate: function(tmpl, lang, memory) {
+        const db = window.FragmentDB;
+        
+        // 1. 取得原始文本
+        let rawText = tmpl.text[lang] || tmpl.text['zh'];
+        if (Array.isArray(rawText)) rawText = rawText.join("\n");
+
+        // 2. 使用新的遞迴引擎展開主文本
+        // 注意：這裡移除了舊的 slots.forEach 迴圈，因為 _expandGrammar 會自動處理所有括號
+        const finalTxT = this._expandGrammar(rawText, db, memory);
+        
+        // 3. 處理對話 (如果有的話)
+        let dialogueArr = null;
+        if (tmpl.dialogue) {
+            dialogueArr = tmpl.dialogue.map(d => ({
+                speaker: this._expandGrammar(d.speaker, db, memory), 
+                text: this._expandGrammar((d.text[lang] || d.text['zh']), db, memory)
+            }));
+        }
+
+        // 4. 處理獎勵中的變數
+        let newRewards = tmpl.rewards ? JSON.parse(JSON.stringify(tmpl.rewards)) : undefined;
+        if (newRewards && newRewards.tags) {
+            newRewards.tags = newRewards.tags.map(t => this._expandGrammar(t, db, memory));
+        }
+
+        return { 
+            text: [finalTxT], // 統一回傳陣列格式
+            dialogue: dialogueArr, 
+            fragments: {}, // 舊系統需要這個，新系統已內化，回傳空物件即可
+            rewards: newRewards
+        };
+    },
+
+    // ============================================================
+    // 修改：挑選模板 (加入數值條件判斷)
+    // ============================================================
+    pickTemplate: function(type, currentTags, history, tension, currentStats = {}) {
+        const db = window.FragmentDB;
+        // 1. 初步篩選類型
+        let candidates = db.templates.filter(t => t.type === type);
+
+        // 2. 嚴格過濾 (Tag + Conditions)
+        let validCandidates = candidates.filter(t => {
+            // A. 基本 Tag 過濾
+            if (t.reqTag && !currentTags.includes(t.reqTag)) return false;
+            if (t.noTag && currentTags.includes(t.noTag)) return false;
+
+            // B. 數值/狀態條件過濾 (New Logic)
+            if (t.conditions) {
+                for (let [key, val] of Object.entries(t.conditions)) {
+                    let userVal = currentStats[key] || 0;
+                    
+                    // 處理字串型運算符 (例如 ">50", "<10")
+                    if (typeof val === 'string') {
+                        if (val.startsWith('>')) {
+                            if (userVal <= parseFloat(val.substring(1))) return false;
+                        } else if (val.startsWith('<')) {
+                            if (userVal >= parseFloat(val.substring(1))) return false;
+                        } else if (val !== userVal.toString()) {
+                            // 純字串比對
+                             return false;
+                        }
+                    } else {
+                        // 純數值比對
+                        if (userVal !== val) return false;
+                    }
+                }
+            }
+            return true;
+        });
+
+        // 3. 決策邏輯
+        let finalPool = [];
+
+        if (validCandidates.length > 0) {
+            // 如果有符合條件的，再過濾掉最近出現過的 (History)
+            const historyFiltered = validCandidates.filter(t => !t.id || !history.includes(t.id));
+            finalPool = historyFiltered.length > 0 ? historyFiltered : validCandidates;
+        } 
+        else {
+            // 4. 救命機制：如果都沒找到
+            // 只有一個候選人(強制劇情)時，忽略條件強制執行
+            if (candidates.length === 1) {
+                console.warn(`⚠️ 針對 [${type}] 條件不符，但為唯一劇情，強制執行。`);
+                return candidates[0];
+            }
+            
+            // 否則嘗試尋找通用填充物 (univ_filler)
+            const isCritical = type.includes('setup') || type.includes('boss') || type.includes('ending');
+            if (!isCritical) {
+                console.warn(`⚠️ 針對 [${type}] 無可用劇本，切換至通用碎片。`);
+                return db.templates.find(t => t.type === 'univ_filler') || candidates[0];
+            }
+            
+            // 真的沒辦法了，只好拿第一個
+            return candidates[0];
+        }
+
+        // 5. 隨機回傳
+        return finalPool[Math.floor(Math.random() * finalPool.length)];
+    },
+
+    generateOptions: function(tmpl, fragments, lang, type) {
+        let opts = [];
         if (tmpl.options && tmpl.options.length > 0) {
              return tmpl.options.map(o => {
                  let newRew = o.rewards ? JSON.parse(JSON.stringify(o.rewards)) : undefined;
-                 if (newRew && newRew.tags) {
-                     newRew.tags = newRew.tags.map(t => t.replace(/{(\w+)}/g, (_, k) => fragments[k]?.val?.zh || k));
-                 }
-                 
-                 // [Smart Fix] 自動判斷 action
                  let defaultAction = (o.nextScene || o.nextSceneId) ? 'node_next' : 'advance_chain';
-                 
-                 return { 
-                     ...o, 
-                     action: o.action || defaultAction, 
-                     rewards: newRew,
-                 };
+                 return { ...o, action: o.action || defaultAction, rewards: newRew };
              });
         }
         
-        // 自動生成按鈕 (Fallback)
-        if (type === 'climax' || type === 'confrontation' || type === 'final_survival') {
+        if (type.includes('climax') || type.includes('boss')) {
             opts.push({ label: "決一死戰！", style: "danger", action: "finish_chain" }); 
-        } else if (type === 'ending') {
+        } else if (type.includes('ending')) {
             opts.push({ label: this._t('finish', lang), style: "primary", action: "finish_chain" });
         } else {
-            opts.push({ 
-                label: this._t('explore_deeper', lang), 
-                action: "advance_chain",
-                nextTags: ['risk_high'] 
-            });
-            opts.push({ 
-                label: "小心前進", 
-                action: "advance_chain",
-                nextTags: ['safe_spot'] 
-            });
+            opts.push({ label: this._t('explore_deeper', lang), action: "advance_chain", nextTags: ['risk_high'] });
         }
         return opts;
     }
