@@ -347,33 +347,19 @@ _handleNodeJump: function(opt, passed) {
 
     // 3. [Critical Fix] 多重變數檢查 (vars 陣列)
     // 解決 JS 物件 key 覆蓋問題
-    let checks = [];
-    if (cond.vars && Array.isArray(cond.vars)) {
-        checks = cond.vars;
-    } else if (cond.var) {
-        checks = [cond.var];
-    }
+    let checks = Array.isArray(cond.vars) ? cond.vars : (cond.var ? [cond.var] : []);
 
-    for (let i = 0; i < checks.length; i++) {
-        const check = checks[i];
-        let key, targetVal, op;
-
-        if (typeof check === 'object') {
-            key = check.key;
-            targetVal = (check.val !== undefined) ? check.val : 0;
-            op = check.op || '>=';
-        } else {
-            // 容錯舊格式
-            continue; 
-        }
-
-        // 數值來源查找
+    for (let check of checks) {
+        let key = check.key;
+        let targetVal = Number(check.val);
+        let op = check.op || '>=';
         let currentVal = 0;
+
+        // 【讀取分流】
         if (key === 'gold') currentVal = gs.gold || 0;
-        else if (key === 'exp') currentVal = gs.exp || 0;
         else if (key === 'energy') currentVal = gs.story.energy || 0;
-        else if (myVars[key] !== undefined) currentVal = myVars[key]; 
-        else if (chainMem[key] !== undefined) currentVal = chainMem[key];
+        else if (key === 'exp') currentVal = gs.exp || 0;
+        else if (myVars[key] !== undefined) currentVal = myVars[key]; // 從區域變數讀取
         else currentVal = 0;
 
         currentVal = Number(currentVal);
@@ -397,21 +383,24 @@ _handleNodeJump: function(opt, passed) {
     if (!gs.story.vars) gs.story.vars = {};
     let msgs = [];
     
-    // A. 基礎資源 (直接修改 GlobalState)
+    // 1. 處理【全域資源】：直接連動全域 GlobalState
+    // 金幣 (gold)
     if (rewards.gold) { 
         gs.gold = (gs.gold || 0) + rewards.gold; 
         msgs.push(`💰 ${rewards.gold > 0 ? '+' : ''}${rewards.gold}`); 
     }
-    if (rewards.exp) { 
-        gs.exp = (gs.exp || 0) + rewards.exp; 
-        msgs.push(`✨ ${rewards.exp > 0 ? '+' : ''}${rewards.exp}`); 
-    }
+    // 精力 (energy)
     if (rewards.energy) { 
         gs.story.energy = Math.min(this.calculateMaxEnergy(), (gs.story.energy || 0) + rewards.energy); 
         msgs.push(`⚡ ${rewards.energy > 0 ? '+' : ''}${rewards.energy}`); 
     }
+    // 經驗 (exp) - 同樣視為全域
+    if (rewards.exp) { 
+        gs.exp = (gs.exp || 0) + rewards.exp; 
+        msgs.push(`✨ ${rewards.exp > 0 ? '+' : ''}${rewards.exp}`); 
+    }
     
-    // B. Tags 操作
+    // 2. 處理【區域標籤】：Tags 隨劇本結束清空
     if (rewards.tags) rewards.tags.forEach(tag => { 
         const finalTag = this._resolveDynamicText(tag);
         if (!gs.story.tags.includes(finalTag)) { gs.story.tags.push(finalTag); msgs.push(`🏷️ 獲得: ${finalTag}`); } 
@@ -421,39 +410,51 @@ _handleNodeJump: function(opt, passed) {
         if (idx > -1) { gs.story.tags.splice(idx, 1); msgs.push(`🗑️ 消耗: ${tag}`); } 
     });
 
-    // C. 變數運算
+    // 3. 處理【區域/全域變數運算】：varOps 分流處理
     if (rewards.varOps) {
         rewards.varOps.forEach(op => {
             const k = op.key;
-            const v = op.val || 0;
+            const v = Number(op.val) || 0;
             
-            // 特殊處理 gold/exp 的 varOps (如果有的話)
+            // --- 分流判定 ---
             if (k === 'gold') {
-                 if (op.op === '+' || op.op === 'add') gs.gold += v;
-                 else if (op.op === '-' || op.op === 'sub') gs.gold -= v;
-            } else {
-                // 一般劇情變數
+                // 【全域】金幣
+                if (op.op === '+' || op.op === 'add') gs.gold += v;
+                else if (op.op === '-' || op.op === 'sub') gs.gold -= v;
+                else if (op.op === '=' || op.op === 'set') gs.gold = v;
+                msgs.push(`💰 金幣變動: ${v}`);
+            } 
+            else if (k === 'energy') {
+                // 【全域】精力
+                if (op.op === '+' || op.op === 'add') gs.story.energy += v;
+                else if (op.op === '-' || op.op === 'sub') gs.story.energy -= v;
+                else if (op.op === '=' || op.op === 'set') gs.story.energy = v;
+                gs.story.energy = Math.min(this.calculateMaxEnergy(), Math.max(0, gs.story.energy));
+                msgs.push(`⚡ 精力變動: ${v}`);
+            }
+            else {
+                // 【區域】其餘變數 (SAN、好感度、名譽、警報值)
                 if (typeof gs.story.vars[k] === 'undefined') gs.story.vars[k] = 0;
                 let oldVal = gs.story.vars[k];
+                
                 if (op.op === '+' || op.op === 'add') gs.story.vars[k] += v;
                 else if (op.op === '-' || op.op === 'sub') gs.story.vars[k] -= v;
                 else if (op.op === '=' || op.op === 'set') gs.story.vars[k] = v;
                 
-                // 顯示提示
+                // 顯示提示訊息 (優先用 op.msg，否則自動產生)
                 if (op.msg) msgs.push(op.msg);
-                else if (k === 'maid_love') msgs.push(`❤️ ${gs.story.vars[k] - oldVal > 0 ? '+' : ''}${gs.story.vars[k] - oldVal}`);
+                else {
+                    let diff = gs.story.vars[k] - oldVal;
+                    if (diff !== 0) msgs.push(`🔧 ${k}: ${diff > 0 ? '+' : ''}${diff}`);
+                }
             }
         });
     }
 
-    // [Critical Fix] 立即刷新 UI
+    // 4. 強制刷新介面
     if (msgs.length > 0 && window.act && window.act.toast) act.toast(msgs.join("  "));
-    
-    if (window.view && window.view.updateStoryHUD) {
-        window.view.updateStoryHUD(); // 強制刷新頂部欄
-    } else if (window.storyView && window.storyView.updateTopBar) {
-        window.storyView.updateTopBar(); // Fallback
-    }
+    if (window.view && window.view.updateStoryHUD) window.view.updateStoryHUD();
+    console.log("📊 Stats Updated:", { gold: gs.gold, energy: gs.story.energy, localVars: gs.story.vars });
 },
 
     // 探索入口
@@ -542,7 +543,7 @@ _handleNodeJump: function(opt, passed) {
     },
 
     // ============================================================
-    // 👁️ [SECTION 5] VIEW BRIDGE & HELPERS (視圖與輔助區)
+    //  [SECTION 5] VIEW BRIDGE & HELPERS (視圖與輔助區)
     // ============================================================
     // 代理 Controller 的點擊
     makeChoice: function(idx) { this.selectOption(idx); },
@@ -697,28 +698,27 @@ _handleNodeJump: function(opt, passed) {
 
     // 結束鏈
     finishChain: function() {
+    const gs = window.GlobalState;
     // 1. 清除導航狀態
-    window.GlobalState.story.chain = null; 
-    window.GlobalState.story.currentNode = null; 
-    window.GlobalState.story.savedChain = null;
+    gs.story.chain = null; 
+    gs.story.currentNode = null; 
+    gs.story.savedChain = null;
     window.TempState.currentSceneNode = null; 
     window.TempState.storyCard = null;
     
-    // 2. [Critical Fix] 清除劇情暫存數據 (Tags 和 Vars)
-    // 注意：gold/exp/energy 屬於全局資源，不應該被清除
-    if (window.GlobalState.story) {
-        window.GlobalState.story.tags = []; // 清空標籤
-        window.GlobalState.story.vars = {}; // 清空劇情變數 (好感度、警報值等)
+    // 2. 【關鍵】徹底清空區域變數與標籤 (這部分不會影響 gs.gold 與 gs.exp)
+    if (gs.story) {
+        gs.story.tags = []; // 清空標籤
+        gs.story.vars = {}; // 清空此劇本專屬數值 (如 SAN、好感度)
+        console.log("🧹 區域變數與標籤已清空");
     }
 
-    // 3. UI 復原
+    // 3. UI 復原與存檔
     if (window.storyView) storyView.renderIdle();
     if (window.App) App.saveData();
-    
-    // 4. 再次刷新 HUD 確保狀態正確
     if (window.view && window.view.updateStoryHUD) window.view.updateStoryHUD();
     
-    console.log("🏁 Story Chain Finished & Data Cleared.");
+    console.log("🏁 劇本流程結束，全域數值已保留。");
 },
 
     drawAndPlay: function() {

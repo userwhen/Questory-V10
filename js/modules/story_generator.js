@@ -13,7 +13,22 @@ window.StoryGenerator = {
         tension_climax: { zh: "決戰時刻到了！" }
     },
     _t: function(k, l) { return (this._sysDict[k] && this._sysDict[k][l]) || this._sysDict[k]?.zh || k; },
-
+	
+	globalSeeds: {
+        // 1. 玩家特質 (Player Traits)
+        player_trait: [
+            { val: "幸運的", tag: "trait_lucky" },
+            { val: "倒楣的", tag: "trait_unlucky" },
+            { val: "富有的", tag: "trait_rich" }, // -> 可以在通用劇本裡用 condition: { tags: ['trait_rich'] }
+            { val: "貧窮的", tag: "trait_poor" }
+        ],
+        // 2. 世界氛圍 (World Atmosphere)
+        world_vibe: [
+            { val: "戰亂", tag: "world_war" },
+            { val: "和平", tag: "world_peace" },
+            { val: "魔法復甦", tag: "world_magic" }
+        ]
+    },
     // ============================================================
     // 2. 劇本骨架定義 (Skeletons) - 保留在此處
     // ============================================================
@@ -64,7 +79,7 @@ window.StoryGenerator = {
             baseTension: 30
         },
 
-        'isekai': { 
+        'adventure': { 
             seeds: {
                 world_state: ["戰亂", "魔物肆虐", "和平但腐敗"],
                 start_bonus: ["神聖", "被詛咒的", "生鏽的"] // 起始武器的形容詞
@@ -93,20 +108,48 @@ window.StoryGenerator = {
     // ============================================================
     // 3. 啟動新冒險 (Start Chain)
     // ============================================================
-    initChain: function(forcedMode = null) {
-        // 1. 決定模式 (Genre Selection)
-        let mode = forcedMode;
-        if (!mode || !this.skeletons[mode]) {
-            const keys = Object.keys(this.skeletons);
-            mode = keys[Math.floor(Math.random() * keys.length)];
-            console.log(`🎲 隨機選擇骨架: ${mode}`);
-        }
+initChain: function(skeletonKey = null, themeTag = null) {
+    
+    // 1. 決定骨架 (Skeleton) - 這決定了「劇情的節奏與結構」
+    // 例如：'mystery' (搜查->推理), 'adventure' (戰鬥->探索)
+    let selectedSkeleton = skeletonKey;
+    
+    // 防呆：如果沒傳骨架，或骨架不存在，就隨機選一個
+    if (!selectedSkeleton || !this.skeletons[selectedSkeleton]) {
+        const keys = Object.keys(this.skeletons);
+        selectedSkeleton = keys[Math.floor(Math.random() * keys.length)];
+    }
 
-        const skel = this.skeletons[mode];
-        
-        // 2. 初始化 Memory 與 Tags (Seed Injection)
-        let memory = {};
-        let initialTags = [];
+    const skel = this.skeletons[selectedSkeleton];
+    
+    // 2. 決定風格 (Theme) - 這決定了「劇情的內容與文字」
+    // 例如：'harem' (后宮風), 'mech' (機械風), 'dark' (暗黑風)
+    // 如果外部沒傳風格進來，預設風格就等於骨架名稱 (相容舊版)
+    let mainTag = themeTag || selectedSkeleton;
+
+    // 3. 初始化標籤
+    let initialTags = [];
+    let memory = {};
+	// ==========================================
+    // [New] 1. 先抽全域種子 (Everyone gets these)
+    // ==========================================
+    if (this.globalSeeds) {
+        for (let [key, options] of Object.entries(this.globalSeeds)) {
+            const pick = options[Math.floor(Math.random() * options.length)];
+            if (typeof pick === 'object') {
+                if (pick.tag) initialTags.push(pick.tag); // 把 trait_rich 加進去
+                memory[key] = pick.val; // 把 "富有的" 存進記憶
+            }
+        }
+    }
+    // 將風格打上標籤 (這是給劇本篩選用的)
+    initialTags.push(mainTag);
+    
+    // 為了保險，我們也把骨架名稱打上去，以防萬一劇本需要判斷結構
+    // 例如: reqTag: 'struct_mystery'
+    initialTags.push(`struct_${selectedSkeleton}`); 
+
+    console.log(`🎬 引擎啟動 | 結構: [${selectedSkeleton}] | 風格: [${mainTag}]`);
 
         // [New] 處理環境種子 (Seeds)
         // 這些變數決定了整篇故事的「背景設定」
@@ -153,11 +196,12 @@ window.StoryGenerator = {
         // 如果骨架有定義 getStages 函數，就用它；否則用靜態陣列
         let dynamicStages = skel.getStages ? skel.getStages() : [...skel.stages];
 
-        console.log(`🎬 Director: Mode [${mode}], Seeds:`, memory, `Flow:`, dynamicStages);
+        console.log(`🎬 Director: Skeleton [${selectedSkeleton}], Theme [${mainTag}], Seeds:`, memory, `Flow:`, dynamicStages);
 
         return {
-            mode: mode,
-            depth: 0,
+        skeleton: selectedSkeleton, // 改名：儲存當前骨架名稱
+        theme: mainTag,             // 新增：儲存當前風格
+        depth: 0,
             maxDepth: dynamicStages.length,
             stages: dynamicStages,
             currentStageIdx: 0,
@@ -172,63 +216,89 @@ window.StoryGenerator = {
     // 4. 生成下一層 (Generate)
     // ============================================================
     generate: function(contextTags = [], isStart = false) {
-        const gs = window.GlobalState;
-        
-        if (!gs.story.chain || !gs.story.chain.stages || isStart) {
-            console.log("🔄 Generator: 初始化新鏈結...");
-            gs.story.chain = this.initChain(); 
-        }
+    const gs = window.GlobalState;
+    
+    // 1. 初始化檢查
+    if (!gs.story.chain || !gs.story.chain.stages || isStart) {
+        console.log("🔄 Generator: 初始化新鏈結...");
+        // 這裡確保 initChain 有被正確定義，若依照之前的修改，這裡可能需要參數
+        // 但為了保險，先維持無參數調用，或依你的需求調整
+        gs.story.chain = this.initChain(); 
+    }
 
-        const chain = gs.story.chain;
-        if(contextTags.length > 0) {
-            chain.tags = [...new Set([...chain.tags, ...contextTags])];
-        }
+    const chain = gs.story.chain;
 
-        if (chain.currentStageIdx >= chain.stages.length) return null;
-        
-        let targetType = chain.stages[chain.currentStageIdx];
-        
-        // 張力調整
-        let tensionDelta = 5; 
-        if (chain.tags.includes('risk_high')) tensionDelta += 15;
-        chain.tension = Math.min(100, Math.max(0, (chain.tension || 0) + tensionDelta));
-        console.log(`🎬 Director: Stage [${targetType}], Tension ${chain.tension}%`);
+    // 2. 合併外部傳入的 Tags
+    if(contextTags.length > 0) {
+        chain.tags = [...new Set([...chain.tags, ...contextTags])];
+    }
 
-        // [Logic Fix] 傳遞完整參數給 pickTemplate
-        const template = this.pickTemplate(targetType, chain.tags, chain.history, chain.tension);
-        const lang = gs.settings?.targetLang || 'zh';
+    // 3. 檢查流程是否結束
+    if (chain.currentStageIdx >= chain.stages.length) return null;
+    
+    let targetType = chain.stages[chain.currentStageIdx];
+    
+    // 4. 張力調整 (Tension)
+    let tensionDelta = 5; 
+    if (chain.tags.includes('risk_high')) tensionDelta += 15;
+    chain.tension = Math.min(100, Math.max(0, (chain.tension || 0) + tensionDelta));
+    console.log(`🎬 Director: Stage [${targetType}], Tension ${chain.tension}%`);
 
-        if (!template) {
-            console.error(`❌ 無法生成劇本: Type=${targetType}`);
-            return {
-                id: `err_${Date.now()}`,
-                text: "（系統錯誤：迷霧太濃...）",
-                options: [{ label: "強制結束", action: "finish_chain" }]
-            };
-        }
+    // 5. 選擇劇本 (Pick Template)
+    // 這裡記得要傳入 currentStats 以便支援數值條件篩選 (如果有用到 pickTemplate 的數值篩選功能)
+    const currentStats = gs.stats || {}; 
+    const template = this.pickTemplate(targetType, chain.tags, chain.history, chain.tension, currentStats);
+    
+    const lang = gs.settings?.targetLang || 'zh';
 
-        // 記錄歷史
-        if (template.id) {
-            chain.history.push(template.id);
-            if (chain.history.length > 5) chain.history.shift();
-        }
-
-        // 填充內容
-        const filledData = this.fillTemplate(template, lang, chain.memory);
-        const opts = this.generateOptions(template, filledData.fragments, lang, targetType);
-        
-        chain.currentStageIdx++;
-        chain.depth++; 
-
+    // 6. 錯誤處理 (找不到劇本)
+    if (!template) {
+        console.error(`❌ 無法生成劇本: Type=${targetType}`);
         return {
-            id: template.id || `gen_${Date.now()}`,
-            type: targetType, 
-            text: filledData.text[0],
-            dialogue: filledData.dialogue, 
-            options: opts, 
-            rewards: filledData.rewards
+            id: `err_${Date.now()}`,
+            text: "（系統錯誤：迷霧太濃...找不到符合條件的劇本）",
+            options: [{ label: "強制結束", action: "finish_chain" }]
         };
-    },
+    }
+
+    // 7. 記錄歷史 (避免重複)
+    if (template.id) {
+        chain.history.push(template.id);
+        if (chain.history.length > 5) chain.history.shift();
+    }
+
+    // 8. 填充內容 (Fill Content)
+    const filledData = this.fillTemplate(template, lang, chain.memory);
+
+    // ==========================================
+    // 🔴 [修改重點] 這裡就是你要改的地方！
+    // ==========================================
+    // 我們將 chain.tags (標籤) 和 currentStats (數值) 傳進去
+    // 這樣 generateOptions 才能幫你過濾掉「資格不符」的選項 (例如證據不足不能指認兇手)
+    const opts = this.generateOptions(
+        template, 
+        filledData.fragments, 
+        lang, 
+        targetType, 
+        chain.tags,     // 傳入目前的標籤 (Tags)
+        currentStats    // 傳入目前的數值 (Stats)
+    );
+    // ==========================================
+    
+    // 9. 推進進度
+    chain.currentStageIdx++;
+    chain.depth++; 
+
+    // 10. 回傳結果
+    return {
+        id: template.id || `gen_${Date.now()}`,
+        type: targetType, 
+        text: filledData.text[0],
+        dialogue: filledData.dialogue, 
+        options: opts, 
+        rewards: filledData.rewards
+    };
+},
 
     // ============================================================
     // 5. 輔助函數 (Helpers)
@@ -426,23 +496,61 @@ window.StoryGenerator = {
     return finalPool[Math.floor(Math.random() * finalPool.length)];
 },
 
-    generateOptions: function(tmpl, fragments, lang, type) {
-        let opts = [];
-        if (tmpl.options && tmpl.options.length > 0) {
-             return tmpl.options.map(o => {
-                 let newRew = o.rewards ? JSON.parse(JSON.stringify(o.rewards)) : undefined;
-                 let defaultAction = (o.nextScene || o.nextSceneId) ? 'node_next' : 'advance_chain';
-                 return { ...o, action: o.action || defaultAction, rewards: newRew };
-             });
-        }
-        
+    generateOptions: function(tmpl, fragments, lang, type, currentTags = [], currentStats = {}) {
+    let opts = [];
+    
+    // 1. 檢查劇本自帶的選項
+    if (tmpl.options && tmpl.options.length > 0) {
+        // [Fix] 增加 .filter() 來過濾不符合 condition 的選項
+        let validOpts = tmpl.options.filter(o => {
+            // 如果沒有條件，直接通過
+            if (!o.condition) return true;
+
+            // A. 檢查標籤條件 (Tags)
+            if (o.condition.tags) {
+                // 必須包含所有指定的 tag
+                for (let tag of o.condition.tags) {
+                    if (!currentTags.includes(tag)) return false;
+                }
+            }
+            
+            // B. 檢查數值條件 (Stats)
+            if (o.condition.stats) {
+                for (let [key, val] of Object.entries(o.condition.stats)) {
+                    let userVal = currentStats[key] || 0;
+                    // 處理 ">50", "<10" 這種字串
+                    if (typeof val === 'string') {
+                        let num = parseFloat(val.substring(1));
+                        if (val.startsWith('>') && userVal <= num) return false;
+                        if (val.startsWith('<') && userVal >= num) return false;
+                    } else {
+                        if (userVal < val) return false;
+                    }
+                }
+            }
+
+            return true; // 所有條件都通過
+        });
+
+        // 映射並回傳
+        opts = validOpts.map(o => {
+             let newRew = o.rewards ? JSON.parse(JSON.stringify(o.rewards)) : undefined;
+             let defaultAction = (o.nextScene || o.nextSceneId) ? 'node_next' : 'advance_chain';
+             return { ...o, action: o.action || defaultAction, rewards: newRew };
+         });
+    }
+    
+    // 2. 處理 Boss/Ending 的自動選項 (保持原本邏輯)
+    if (opts.length === 0) {
         if (type.includes('climax') || type.includes('boss')) {
             opts.push({ label: "決一死戰！", style: "danger", action: "finish_chain" }); 
         } else if (type.includes('ending')) {
-            opts.push({ label: this._t('finish', lang), style: "primary", action: "finish_chain" });
+            opts.push({ label: "結束冒險", action: "finish_chain" });
         } else {
-            opts.push({ label: this._t('explore_deeper', lang), action: "advance_chain", nextTags: ['risk_high'] });
+            opts.push({ label: "繼續...", action: "advance_chain" });
         }
-        return opts;
     }
+
+    return opts;
+},
 };
