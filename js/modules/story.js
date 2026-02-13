@@ -19,13 +19,13 @@ window.StoryEngine = {
     init: function() {
         const gs = window.GlobalState;
         if (!gs) return;
-        
+        if (!gs.story.lastEnergyUpdate) gs.story.lastEnergyUpdate = Date.now();
         // 1. 初始化資料結構
         if (!gs.story) gs.story = { energy: this.calculateMaxEnergy(), deck: [], learning: {}, tags: [], vars: {} };
         if (!gs.story.tags) gs.story.tags = [];
         if (!gs.story.learning) gs.story.learning = {};
         if (!gs.story.vars) gs.story.vars = {}; // [New] 數值變數儲存區
-        
+        if (!gs.story.flags) gs.story.flags = {}; // [新增] 全域 (永久保留)
         window.TempState.isProcessing = false;
         window.TempState.lockInput = false;
         window.TempState.isWaitingInput = false;
@@ -154,6 +154,9 @@ window.StoryEngine = {
     if (window.TempState.isProcessing) {
         console.warn("⛔ 點擊被攔截：系統忙碌中");
         return;
+    }
+	if (window.storyView && storyView.disableOptions) {
+        storyView.disableOptions(idx);
     }
     
     // 2. [Critical Fix] 防止空節點崩潰
@@ -293,20 +296,27 @@ _handleNodeJump: function(opt, passed) {
 
     // [Fix] 放棄冒險
     abandonStory: function() {
-        window.GlobalState.story.chain = null;
-        window.GlobalState.story.currentNode = null;
-        window.GlobalState.story.savedChain = null;
-        window.TempState.currentSceneNode = null;
-        window.TempState.storyCard = null;
-        
-        window.TempState.isProcessing = false;
-        window.TempState.lockInput = false;
-        
-        if(window.act && window.act.toast) act.toast("🗑️ 已放棄目前的冒險");
-        
-        if (window.storyView) storyView.renderIdle();
-        if(window.App) App.saveData();
-    },
+    const gs = window.GlobalState;
+    gs.story.chain = null;
+    gs.story.currentNode = null;
+    gs.story.savedChain = null;
+    window.TempState.currentSceneNode = null;
+    window.TempState.storyCard = null;
+    if (gs.story) {
+        gs.story.tags = []; // 清空標籤
+        gs.story.vars = {}; // 清空區域數值
+    }
+
+    window.TempState.isProcessing = false;
+    window.TempState.lockInput = false;
+    
+    if(window.act && window.act.toast) act.toast("🗑️ 已放棄目前的冒險");
+    
+    if (window.storyView) storyView.renderIdle();
+    if(window.App) App.saveData();
+    // 更新介面，確保金幣/精力顯示正確
+    if (window.view && window.view.updateStoryHUD) window.view.updateStoryHUD();
+},
 
     // ============================================================
     // 📊 [SECTION 3] STATE & LOGIC (數值與狀態區)
@@ -359,7 +369,8 @@ _handleNodeJump: function(opt, passed) {
         if (key === 'gold') currentVal = gs.gold || 0;
         else if (key === 'energy') currentVal = gs.story.energy || 0;
         else if (key === 'exp') currentVal = gs.exp || 0;
-        else if (myVars[key] !== undefined) currentVal = myVars[key]; // 從區域變數讀取
+        else if (myVars[key] !== undefined) currentVal = Number(myVars[key]); // 查區域
+		else if (gs.story.flags && gs.story.flags[key] !== undefined) currentVal = Number(gs.story.flags[key]); // 查全域
         else currentVal = 0;
 
         currentVal = Number(currentVal);
@@ -383,78 +394,141 @@ _handleNodeJump: function(opt, passed) {
     if (!gs.story.vars) gs.story.vars = {};
     let msgs = [];
     
-    // 1. 處理【全域資源】：直接連動全域 GlobalState
-    // 金幣 (gold)
+    // 計算最大精力
+    const maxEnergy = this.calculateMaxEnergy ? this.calculateMaxEnergy() : 30;
+
+    // ==========================================
+    // 1. 處理【直接資源】 (Direct Rewards)
+    // ==========================================
+    
+    // 金幣 (Gold)
     if (rewards.gold) { 
         gs.gold = (gs.gold || 0) + rewards.gold; 
+        // ✅ [Check] 確保顯示 Toast
         msgs.push(`💰 ${rewards.gold > 0 ? '+' : ''}${rewards.gold}`); 
     }
-    // 精力 (energy)
+    
+    // 精力 (Energy)
     if (rewards.energy) { 
-        gs.story.energy = Math.min(this.calculateMaxEnergy(), (gs.story.energy || 0) + rewards.energy); 
-        msgs.push(`⚡ ${rewards.energy > 0 ? '+' : ''}${rewards.energy}`); 
+        let oldE = gs.story.energy || 0;
+        let newE = oldE + rewards.energy;
+        
+        if (rewards.energy > 0) {
+            gs.story.energy = Math.min(maxEnergy, newE); // 加法鎖上限
+        } else {
+            gs.story.energy = Math.max(0, newE); // 減法鎖 0
+        }
+        
+        // ✅ [Check] 數值有變才顯示
+        if (gs.story.energy !== oldE) {
+            msgs.push(`⚡ ${rewards.energy > 0 ? '+' : ''}${rewards.energy}`); 
+        }
     }
-    // 經驗 (exp) - 同樣視為全域
+    
+    // 經驗 (Exp)
     if (rewards.exp) { 
         gs.exp = (gs.exp || 0) + rewards.exp; 
+        // ✅ [Check] 確保顯示 Toast
         msgs.push(`✨ ${rewards.exp > 0 ? '+' : ''}${rewards.exp}`); 
     }
     
-    // 2. 處理【區域標籤】：Tags 隨劇本結束清空
+    // 標籤 (Tags) - 您原本的代碼有顯示，若想保留則不動
     if (rewards.tags) rewards.tags.forEach(tag => { 
         const finalTag = this._resolveDynamicText(tag);
-        if (!gs.story.tags.includes(finalTag)) { gs.story.tags.push(finalTag); msgs.push(`🏷️ 獲得: ${finalTag}`); } 
+        if (!gs.story.tags.includes(finalTag)) { 
+            gs.story.tags.push(finalTag);  
+            // msgs.push(`🏷️ 獲得: ${finalTag}`); // 如果您想隱藏 Tag 提示，請註解此行
+        } 
     });
     if (rewards.removeTags) rewards.removeTags.forEach(tag => { 
         const idx = gs.story.tags.indexOf(tag); 
-        if (idx > -1) { gs.story.tags.splice(idx, 1); msgs.push(`🗑️ 消耗: ${tag}`); } 
+        if (idx > -1) { 
+            gs.story.tags.splice(idx, 1);  
+            // msgs.push(`🗑️ 消耗: ${tag}`); // 如果您想隱藏 Tag 提示，請註解此行
+        } 
     });
 
-    // 3. 處理【區域/全域變數運算】：varOps 分流處理
+    // ==========================================
+    // 2. 處理【變數運算】 (VarOps)
+    // ==========================================
     if (rewards.varOps) {
         rewards.varOps.forEach(op => {
             const k = op.key;
             const v = Number(op.val) || 0;
-            
-            // --- 分流判定 ---
+
+            // --- 分流 A: 金幣 (Gold) ---
             if (k === 'gold') {
-                // 【全域】金幣
                 if (op.op === '+' || op.op === 'add') gs.gold += v;
                 else if (op.op === '-' || op.op === 'sub') gs.gold -= v;
                 else if (op.op === '=' || op.op === 'set') gs.gold = v;
-                msgs.push(`💰 金幣變動: ${v}`);
+                
+                // ✅ [Fix] 補上金幣的 Toast
+                msgs.push(`💰 金幣: ${v > 0 ? '+' : ''}${v}`);
             } 
+            // --- 分流 B: 精力 (Energy) ---
             else if (k === 'energy') {
-                // 【全域】精力
-                if (op.op === '+' || op.op === 'add') gs.story.energy += v;
-                else if (op.op === '-' || op.op === 'sub') gs.story.energy -= v;
-                else if (op.op === '=' || op.op === 'set') gs.story.energy = v;
-                gs.story.energy = Math.min(this.calculateMaxEnergy(), Math.max(0, gs.story.energy));
-                msgs.push(`⚡ 精力變動: ${v}`);
+                let oldE = gs.story.energy || 0;
+                let targetE = oldE;
+
+                if (op.op === '+' || op.op === 'add') targetE += v;
+                else if (op.op === '-' || op.op === 'sub') targetE -= v;
+                else if (op.op === '=' || op.op === 'set') targetE = v;
+
+                if (targetE > oldE) gs.story.energy = Math.min(maxEnergy, targetE);
+                else gs.story.energy = Math.max(0, targetE);
+
+                let diff = gs.story.energy - oldE;
+                
+                // ✅ [Fix] 修復原本的空語句錯誤 "if (diff !== 0) ;"
+                if (diff !== 0) {
+                    msgs.push(`⚡ 精力: ${diff > 0 ? '+' : ''}${diff}`);
+                }
             }
+            // --- 分流 C: 全域變數 (Global Flags) ---
+            else if (k.startsWith("g_")) {
+                const realKey = k.substring(2);
+                if (!gs.story.flags) gs.story.flags = {};
+                if (typeof gs.story.flags[realKey] === 'undefined') gs.story.flags[realKey] = 0;
+
+                if (op.op === '+' || op.op === 'add') gs.story.flags[realKey] += v;
+                else if (op.op === '-' || op.op === 'sub') gs.story.flags[realKey] -= v;
+                else if (op.op === '=' || op.op === 'set') gs.story.flags[realKey] = v;
+                
+                // 這裡通常不顯示 Toast，除非有設定 msg
+            }
+            // --- 分流 D: 區域變數 (Local Vars) ---
             else {
-                // 【區域】其餘變數 (SAN、好感度、名譽、警報值)
                 if (typeof gs.story.vars[k] === 'undefined') gs.story.vars[k] = 0;
-                let oldVal = gs.story.vars[k];
                 
                 if (op.op === '+' || op.op === 'add') gs.story.vars[k] += v;
                 else if (op.op === '-' || op.op === 'sub') gs.story.vars[k] -= v;
                 else if (op.op === '=' || op.op === 'set') gs.story.vars[k] = v;
-                
-                // 顯示提示訊息 (優先用 op.msg，否則自動產生)
-                if (op.msg) msgs.push(op.msg);
-                else {
-                    let diff = gs.story.vars[k] - oldVal;
-                    if (diff !== 0) msgs.push(`🔧 ${k}: ${diff > 0 ? '+' : ''}${diff}`);
+
+                // 顯示邏輯：如果有 msg 就顯示
+                if (op.msg) {
+                    msgs.push(op.msg);
                 }
             }
         });
     }
 
-    // 4. 強制刷新介面
-    if (msgs.length > 0 && window.act && window.act.toast) act.toast(msgs.join("  "));
+    // ==========================================
+    // 3. 發送 Toast 與 更新介面
+    // ==========================================
+    
+    // [Check] 這裡使用 act.toast 發送訊息
+    if (msgs.length > 0) {
+        // 優先使用 EventBus (解耦)，如果沒有則嘗試 act.toast
+        if (window.EventBus) {
+            window.EventBus.emit('SYSTEM_TOAST', msgs.join("  "));
+        } else if (window.act && window.act.toast) {
+            act.toast(msgs.join("  "));
+        }
+    }
+    
     if (window.view && window.view.updateStoryHUD) window.view.updateStoryHUD();
-    console.log("📊 Stats Updated:", { gold: gs.gold, energy: gs.story.energy, localVars: gs.story.vars });
+    // 如果有 storyView，也更新它的頂部欄 (精力條)
+    if (window.storyView && storyView.updateTopBar) storyView.updateTopBar();
 },
 
     // 探索入口
@@ -507,19 +581,30 @@ _handleNodeJump: function(opt, passed) {
 
     // 5. [核心修改] resolveDynamicText - 支援顯示變數值
     _resolveDynamicText: function(text) {
-        if (!text || typeof text !== 'string') return text;
-        const gs = window.GlobalState;
-        const memory = (gs.story.chain && gs.story.chain.memory) ? gs.story.chain.memory : {};
-        const vars = gs.story.vars || {};
+    if (!text || typeof text !== 'string') return text;
+    const gs = window.GlobalState;
+    const memory = (gs.story.chain && gs.story.chain.memory) ? gs.story.chain.memory : {};
+    const vars = gs.story.vars || {};
+    // [新增] 讀取全域變數 (flags)
+    const flags = gs.story.flags || {}; 
 
-        return text.replace(/{(\w+)}/g, (match, key) => {
-            // 優先找 Chain 記憶 (演員名)
-            if (memory[key]) return memory[key];
-            // 其次找 全局變數 (數值)
-            if (typeof vars[key] !== 'undefined') return vars[key];
-            return match;
-        });
-    },
+    return text.replace(/{(\w+)}/g, (match, key) => {
+        // 1. 優先找 Chain 記憶 (劇本角色名, e.g. "detective")
+        if (memory[key]) return memory[key];
+        
+        // 2. 其次找 區域變數 (當前劇本數值, e.g. "sanity")
+        if (typeof vars[key] !== 'undefined') return vars[key];
+        
+        // 3. 再找 全域標記 (跨劇本數值, e.g. "total_wins")
+        if (typeof flags[key] !== 'undefined') return flags[key];
+
+        // 4. 【核心修復】最後找 全域狀態 (金幣, 經驗, 等級)
+        // 這樣 {gold} 就能正確顯示 gs.gold 的值了
+        if (typeof gs[key] !== 'undefined') return gs[key];
+
+        return match;
+    });
+},
 
     _formatText: function(text) {
         // [Opt] 簡單的正則樣式替換
@@ -550,10 +635,29 @@ _handleNodeJump: function(opt, passed) {
     
     // UI 點擊畫面 (打字機加速)
     clickScreen: function() {
-        if (window.TempState.isWaitingInput && !window.TempState.lockInput) {
+    // 1. 如果處於輸入鎖定狀態 (防連點冷卻中)，直接無視點擊
+    if (window.TempState.lockInput) return;
+
+    // 2. 判斷現在是「正在打字」還是「等待閱讀」
+    // 我們透過檢查 typingTimer 是否存在來判斷
+    if (window.TempState.typingTimer) {
+        // [情況 A] 正在打字 -> 玩家想加速顯示 (Skip)
+        window.TempState.skipRendering = true;
+        
+        // 【核心修復】 加速後，強制鎖定 0.3 秒
+        // 這能防止玩家點太快，把「加速」變成「下一頁」
+        window.TempState.lockInput = true;
+        setTimeout(() => {
+            window.TempState.lockInput = false;
+        }, 300); 
+        
+    } else {
+        // [情況 B] 打字已完成 -> 玩家想看下一段 (Next)
+        if (window.TempState.isWaitingInput) {
             this.playNextChunk();
         }
-    },
+    }
+},
 
     playNextChunk: function() {
         const ts = window.TempState;
@@ -762,12 +866,42 @@ _handleNodeJump: function(opt, passed) {
     
     // 循環：精力恢復
     checkEnergyLoop: function() {
-        setInterval(() => { 
+    // 定義更新邏輯函式
+    const updateEnergy = () => {
+        const gs = window.GlobalState;
+        const now = Date.now();
+        const timeDiff = now - (gs.story.lastEnergyUpdate || now);
+        const REGEN_MS = this.CONSTANTS.ENERGY_REGEN_MS;
+
+        // 如果經過時間大於 1 個週期
+        if (timeDiff >= REGEN_MS) {
+            const recoverAmount = Math.floor(timeDiff / REGEN_MS);
             const max = this.calculateMaxEnergy();
-            if (window.GlobalState.story.energy < max) {
-                window.GlobalState.story.energy++; 
+            
+            // 只有未滿時才計算
+            if (gs.story.energy < max) {
+                // 計算回復後的數值，但不超過上限
+                // 注意：這裡不應該用 += recoverAmount 直接加，因為可能溢出
+                // 邏輯：(當前 + 回復量) 與 Max 取小
+                const potentialEnergy = gs.story.energy + recoverAmount;
+                gs.story.energy = Math.min(max, potentialEnergy);
+                
+                // 更新 UI
                 if (window.storyView && storyView.updateTopBar) storyView.updateTopBar();
             }
-        }, this.CONSTANTS.ENERGY_REGEN_MS); 
-    }
+
+            // 更新時間戳 (扣除餘數，保留未滿一分鐘的時間累計)
+            gs.story.lastEnergyUpdate = now - (timeDiff % REGEN_MS);
+            
+            // 存檔 (重要，避免刷新後時間重置)
+            if(window.App) App.saveData();
+        }
+    };
+
+    // 1. 啟動時先算一次 (處理離線回復)
+    updateEnergy();
+
+    // 2. 之後每 10 秒檢查一次即可 (不用精準對齊 60秒，因為是靠時間戳算)
+    setInterval(updateEnergy, 10000); 
+},
 };

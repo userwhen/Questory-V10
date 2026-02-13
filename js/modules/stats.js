@@ -158,24 +158,25 @@ window.StatsEngine = {
 
     // [內部] 增加屬性經驗並檢查升級
     _addAttributeExp: function(attrKey, amount) {
-        const gs = window.GlobalState;
-        const attr = gs.attrs[attrKey];
-        if (!attr) return;
+    const gs = window.GlobalState;
+    const attr = gs.attrs[attrKey];
+    if (!attr) return;
 
-        attr.exp += amount;
+    attr.exp += amount;
+    
+    // 使用 while 處理連續升級
+    // 注意：升級後 attr.v 變大，下一級門檻 (attr.v * 100) 也會變高
+    let nextLevelCap = attr.v * 100;
+    
+    while (attr.exp >= nextLevelCap) {
+        attr.exp -= nextLevelCap;
+        attr.v++;
+        if(window.EventBus) window.EventBus.emit(window.EVENTS.System.TOAST, `🎉 ${attr.name} 提升至 Lv.${attr.v}`);
         
-        // 屬性升級公式: Lv * 100 (假設)
-        const max = attr.v * 100;
-        
-        if (attr.exp >= max) {
-            attr.exp -= max;
-            attr.v++;
-            if(window.EventBus) window.EventBus.emit(window.EVENTS.System.TOAST, `🎉 ${attr.name} 提升至 Lv.${attr.v}`);
-            
-            // 遞迴檢查 (防止一次加太多)
-            if (attr.exp >= attr.v * 100) this._addAttributeExp(attrKey, 0);
-        }
-    },
+        // 更新下一級門檻
+        nextLevelCap = attr.v * 100;
+    }
+},
 
     // [關鍵修改] 減少技能經驗 -> 同步減少主屬性經驗
     _reduceSkillProficiency: function(name, amount) {

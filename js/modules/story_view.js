@@ -1,4 +1,4 @@
-/* js/modules/story_view.js - V84.0 (UI Fixes: Persistence & Layout) */
+/* js/modules/story_view.js - V84.1 (Fixed: Init & CSS) */
 
 window.storyView = {
     render: function() {
@@ -56,7 +56,7 @@ window.storyView = {
                 ${tagDrawerHtml}
                 
                 <style>
-                    [UI Modify] 調整 Toast 位置 */
+                    /* [UI Modify] 調整 Toast 位置 */
                     .toast-box, .toast-container, div[id^="toast"] {
                         top: auto !important;           /* 取消頂部定位 */
                         bottom: 220px !important;       /* 設為 210px (略高於 180px 的按鈕區) */
@@ -130,7 +130,6 @@ window.storyView = {
 
     updateDrawer: function() {
         const container = document.getElementById('tag-drawer-container');
-        // 防呆：如果 ui.layout 不存在，就不渲染抽屜，避免報錯
         if (!container || !window.ui || !window.ui.layout) return;
 
         const ui = window.ui;
@@ -172,7 +171,6 @@ window.storyView = {
     },
 
     clearScreen: function() {
-        // [Logic Fix] 清除舊的打字機計時器，防止計時器洩漏
         if (window.TempState.typingTimer) {
             clearInterval(window.TempState.typingTimer);
             window.TempState.typingTimer = null;
@@ -180,7 +178,6 @@ window.storyView = {
 
         const box = document.getElementById('story-content');
         const actBox = document.getElementById('story-actions');
-        // 不要隱藏 cursor，因為我們會移動它
         const cursor = document.getElementById('story-cursor');
         
         if (box) box.innerHTML = '';
@@ -197,16 +194,14 @@ window.storyView = {
         const cursor = document.getElementById('story-cursor');
         if (!box || !wrap) return;
 
-        // [Logic Fix] 檢查是否有「延遲顯示」的檢定結果 (Persistence Logic)
         let finalHtml = htmlContent;
         if (window.TempState.deferredHtml) {
             finalHtml = window.TempState.deferredHtml + finalHtml;
-            window.TempState.deferredHtml = null; // 清空緩存
+            window.TempState.deferredHtml = null;
         }
 
         if (cursor) cursor.style.display = 'none';
 
-        // 自動清屏邏輯 (如果太長)
         const currentHeight = box.offsetHeight;
         const viewHeight = wrap.clientHeight;
         const isOverflowing = currentHeight > (viewHeight * 0.7);
@@ -222,51 +217,45 @@ window.storyView = {
         const div = document.createElement('div');
         div.style.marginBottom = '15px';
         div.style.opacity = '0.9';
-        // 確保顏色能正確顯示
         div.style.position = 'relative'; 
         box.appendChild(div);
 
         this.typeWriter(div, finalHtml, justCleared, () => {
             div.style.opacity = '1';
-            
-            // [UI Fix] 游標邏輯：直接插入到最後一個文字區塊的內部，實現 Inline 跟隨
             if (cursor) {
                 cursor.style.display = 'inline-block';
                 cursor.innerHTML = isLastChunk ? '➤' : '▼'; 
-                div.appendChild(cursor); // 將游標移到當前打字的 div 裡
+                div.appendChild(cursor); 
             }
         });
     },
 
-    // [Logic Fix] 升級版打字機 (支援 HTML 標籤跳過)
     typeWriter: function(element, htmlContent, justCleared, onComplete) {
-        // 清除舊計時器
         if (window.TempState.typingTimer) clearInterval(window.TempState.typingTimer);
 
         let i = 0;
-        const speed = 20; // 打字速度
+        const speed = 20;
         const text = htmlContent;
-        element.innerHTML = ''; // 必須清空
+        element.innerHTML = '';
 
         window.TempState.typingTimer = setInterval(() => {
-            // 如果被標記為跳過 (點擊畫面)
+            // 跳過渲染
             if (window.TempState.skipRendering) {
-                element.innerHTML = text; // 直接顯示全文
+                element.innerHTML = text;
                 clearInterval(window.TempState.typingTimer);
+                window.TempState.typingTimer = null; 
                 window.TempState.skipRendering = false;
                 if (onComplete) onComplete();
                 return;
             }
 
-            // [HTML Tag Detection] 
-            // 如果遇到 <，直接找到對應的 >，並一次性印出整個標籤
+            // HTML 標籤偵測
             if (text.charAt(i) === '<') {
                 const closeIdx = text.indexOf('>', i);
                 if (closeIdx !== -1) {
                     element.innerHTML += text.substring(i, closeIdx + 1);
                     i = closeIdx + 1;
                 } else {
-                    // 防呆：如果只有 < 沒有 >，就當作普通字符
                     element.innerHTML += text.charAt(i);
                     i++;
                 }
@@ -278,7 +267,7 @@ window.storyView = {
             // 自動捲動
             if (!justCleared) {
                 const wrap = document.getElementById('story-text-wrapper');
-                if(wrap && i % 3 === 0) { // 頻率稍微調高一點
+                if(wrap && i % 3 === 0) {
                     if (wrap.scrollHeight - wrap.scrollTop > wrap.clientHeight + 50) {
                         wrap.scrollTop = wrap.scrollHeight;
                     }
@@ -288,6 +277,7 @@ window.storyView = {
                 if (wrap && wrap.scrollTop !== 0) wrap.scrollTop = 0;
             }
 
+            // 結束檢查
             if (i >= text.length) {
                 clearInterval(window.TempState.typingTimer);
                 window.TempState.typingTimer = null;
@@ -296,15 +286,11 @@ window.storyView = {
         }, speed);
     },
 
-    // [Logic Fix] 檢定結果：改為存入「暫存區」而非直接顯示
     appendInlineCheckResult: function(attrKey, total, isSuccess) {
-        const color = isSuccess ? '#4caf50' : '#ff5252'; // 成功綠，失敗紅
+        const color = isSuccess ? '#4caf50' : '#ff5252';
         const icon = isSuccess ? '✅' : '❌';
         const resultText = isSuccess ? '成功' : '失敗';
         
-        // 使用 Flexbox + Span 確保絕對單行
-        // width: 100% 確保撐滿容器
-        // border-bottom: 虛線分隔，取代原本的色塊背景
         const html = `
             <div style="
                 margin: 8px 0; padding: 5px 0; 
@@ -314,31 +300,26 @@ window.storyView = {
                 color: #aaa; font-family: monospace, sans-serif; font-size: 0.95rem;
             ">
                 <span>🎲 檢定 ${attrKey} ... (擲出 ${total})</span>
-                
                 <span style="font-weight:bold; color:${color}; margin-left: 10px; white-space: nowrap;">
                     ${resultText} ${icon}
                 </span>
             </div>
         `;
 
-        // 1. 如果當前有內容，嘗試直接插入
         const box = document.getElementById('story-content');
         if (box && box.innerHTML.trim() !== "") {
             const div = document.createElement('div');
             div.innerHTML = html;
             box.appendChild(div);
-            // 捲動到底部
             const wrap = document.getElementById('story-text-wrapper');
             if(wrap) wrap.scrollTop = wrap.scrollHeight;
         }
 
-        // 2. 同時存入暫存，供換頁時使用 (這能解決換頁後檢定結果消失的問題)
         window.TempState.deferredHtml = (window.TempState.deferredHtml || "") + html;
     },
 
     showOptions: function(options) {
         const container = document.getElementById('story-actions');
-        // 游標由 appendChunk 控制，這裡不需要隱藏
         if (!container) return;
 
         const ui = window.ui || { component: { btn: (o) => `<button onclick="${o.action}">${o.label}</button>` } };
@@ -378,5 +359,60 @@ window.storyView = {
             const btnExplore = ui.component.btn({ label: "🔍 開始探索 (5⚡)", theme: 'correct', action: "window.StoryEngine.explore()", style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1.1rem;' });
             if(actBox) actBox.innerHTML = btnExplore;
         }
+    },
+
+    disableOptions: function(clickedIdx) {
+        const container = document.getElementById('story-actions');
+        if (!container) return;
+        
+        const btns = container.querySelectorAll('button');
+        btns.forEach((btn) => {
+            btn.disabled = true; 
+            btn.style.pointerEvents = 'none'; 
+        });
+    },
+
+    // 【核心修正】這就是您之前缺少的 init 函數！
+    // 必須放在 window.storyView 物件內部
+    init: function() {
+        if (!window.EventBus) return;
+        console.log("📺 StoryView Listening...");
+
+        // 綁定事件：當 Controller 發出請求時，執行對應動作
+        EventBus.on('STORY_RENDER_IDLE', () => {
+            if (window.storyView) storyView.renderIdle();
+        });
+
+        EventBus.on('STORY_REFRESH_VIEW', () => {
+            if (window.storyView) storyView.render();
+        });
     }
 };
+
+// 【自動啟動邏輯】保持不變，但現在 init 函數存在了，所以不會報錯
+(function autoInit() {
+    const tryInit = () => {
+        if (window.storyView && window.storyView.init) {
+            window.storyView.init();
+            
+            // 額外保險：如果畫面是空的且當前在 story 頁面，嘗試補畫一次
+            const container = document.getElementById('page-story');
+            if (container && container.innerHTML.trim() === "") {
+                console.log("📺 StoryView init found empty container, forcing render...");
+                window.storyView.render();
+            }
+        }
+    };
+
+    if (!window.EventBus) {
+        console.warn("⏳ StoryView waiting for EventBus...");
+        setTimeout(autoInit, 100); 
+        return;
+    }
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        tryInit();
+    } else {
+        document.addEventListener('DOMContentLoaded', tryInit);
+    }
+})();
