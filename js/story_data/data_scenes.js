@@ -930,7 +930,24 @@ register({
             action: "node_next",
             nextSceneId: 'rose_brother_fight'
         },
-
+		{
+        label: "🍃 前往露台 (休息/偷聽)",
+        condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+        action: "node_next",
+        nextSceneId: 'rose_terrace' // 指向擴充一
+    },
+    {
+        label: "📚 進入圖書室 (探索)",
+        condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+        action: "node_next",
+        nextSceneId: 'rose_library' // 指向擴充二
+    },
+    {
+        label: "🎲 去偏廳賭一把 (賺錢)",
+        condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+        action: "node_next",
+        nextSceneId: 'rose_gamble' // 指向擴充三
+    },
         // [E] 晉見家主
         {
             label: "🐉 強闖家主書房 (需威望50)",
@@ -1153,6 +1170,134 @@ register({
                 rewards: { energy: -20 }
             }
         }
+    ]
+});
+
+register({
+    id: 'rose_terrace',
+    text: [
+        "【露台】",
+        "你推開落地窗，冷冽的夜風撲面而來，吹散了宴會廳的脂粉氣。",
+        "欄杆外是漆黑的懸崖，遠處的海浪聲隱約可聞。",
+        "角落裡，兩個喝醉的家族長老正在抽煙，似乎在談論什麼秘密。"
+    ],
+    options: [
+        // 選項 A: 偷聽 (獲得情報)
+        {
+            label: "👂 躲在陰影處偷聽 (INT檢定)",
+            check: { stat: 'INT', val: 6 },
+            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
+            nextScene: {
+                text: "你屏住呼吸，聽到長老低聲說道：\n「老爺子的遺囑藏在『那幅畫』後面...就是畫著『獨眼巨人』的那幅。」\n(獲得情報：遺囑位置)",
+                onEnter: { tags: ['info_will_location'] }, // 獲得情報標籤
+                options: [{label: "記在心裡，返回宴會", action: "node_next", nextSceneId: 'rose_hub'}]
+            },
+            failScene: {
+                text: "你靠得太近，不小心踢到了花盆。\n「誰在那裡？！」\n長老們警覺地閉上了嘴並離開了。你什麼都沒聽到。",
+                options: [{label: "尷尬地返回", action: "node_next", nextSceneId: 'rose_hub'}]
+            }
+        },
+        // 選項 B: 休息 (恢復 SAN)
+        {
+            label: "🚬 獨自吹風冷靜 (SAN +10)",
+            action: "node_next",
+            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
+            nextScene: {
+                text: "你看著遠處的燈塔，深吸了一口冰冷的空氣。\n混亂的思緒逐漸清晰，恐懼感也消退了不少。",
+                onEnter: { varOps: [{key:'sanity', val:10, op:'+'}] },
+                options: [{label: "精神飽滿地返回", action: "node_next", nextSceneId: 'rose_hub'}]
+            }
+        },
+        { label: "返回宴會廳", action: "node_next", nextSceneId: 'rose_hub' }
+    ]
+});
+register({
+    id: 'rose_library',
+    text: [
+        "【圖書室】",
+        "巨大的桃花心木書架直通天花板，空氣中瀰漫著舊紙張的味道。",
+        "這裡平時鮮有人至，是尋找家族黑歷史的最佳場所。"
+    ],
+    options: [
+        // 選項 A: 尋找地圖 (替代管家線的密道獲取方式)
+        {
+            label: "🔍 翻找建築圖紙 (INT > 7)",
+            condition: { noTag: 'secret_passage' }, // 只有沒地圖時才顯示
+            check: { stat: 'INT', val: 7 },
+            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
+            nextScene: {
+                text: "在一本厚重的《家族建築史》夾層中，你發現了一張發黃的藍圖。\n上面標記著廚房壁爐後方有一條通往河邊的走私密道。\n(獲得標籤：逃生密道)",
+                onEnter: { tags: ['secret_passage'] },
+                options: [{label: "收好圖紙", action: "node_next", nextSceneId: 'rose_hub'}]
+            },
+            failScene: {
+                text: "書海浩瀚，你翻得頭昏腦脹，除了灰塵什麼也沒找到。",
+                rewards: { varOps: [{key:'sanity', val:5, op:'-'}] },
+                options: [{label: "放棄尋找", action: "node_next", nextSceneId: 'rose_hub'}]
+            }
+        },
+        // 選項 B: 閱讀戰術書 (提升能力)
+        {
+            label: "📚 閱讀《權力博弈論》 (INT +1)",
+            action: "node_next",
+            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
+            nextScene: {
+                text: "你閱讀了關於談判與施壓的章節，感覺對人心的掌控力提升了。",
+                onEnter: { 
+                    // 這裡假設您的系統有直接加屬性的功能，如果沒有，可以用變數模擬
+                    // 或是直接給予威望
+                     varOps: [{key:'prestige', val:5, op:'+'}]
+                },
+                options: [{label: "合上書本", action: "node_next", nextSceneId: 'rose_hub'}]
+            }
+        },
+        { label: "離開圖書室", action: "node_next", nextSceneId: 'rose_hub' }
+    ]
+});register({
+    id: 'rose_gamble',
+    text: [
+        "【偏廳賭桌】",
+        "煙霧繚繞的偏廳裡，幾個紈褲子弟正在玩撲克。",
+        "桌上堆滿了金幣和籌碼。這是快速獲取資金的地方，也是深淵。"
+    ],
+    options: [
+        // 選項 A: 參與賭局
+        {
+            label: "🎲 加入牌局 (金幣 -10 / LUK檢定)",
+            condition: { var: { key: 'gold', val: 10, op: '>=' } },
+            check: { stat: 'LUK', val: 5 }, // 運氣檢定
+            rewards: { 
+                gold: -10, // 入場費
+                varOps: [{key:'time_left', val:1, op:'-'}] 
+            },
+            nextScene: {
+                text: "你的運氣好得驚人！連續幾把同花順讓其他人看得目瞪口呆。\n你面前的籌碼堆成了小山。\n(金幣 +50)",
+                onEnter: { gold: 50, varOps: [{key:'prestige', val:5, op:'+'}] },
+                options: [{label: "見好就收", action: "node_next", nextSceneId: 'rose_hub'}]
+            },
+            failScene: {
+                text: "今晚幸運女神沒有站在你這邊。\n你輸光了手裡的籌碼，還被旁人嘲笑了一番。",
+                onEnter: { varOps: [{key:'sanity', val:5, op:'-'}] },
+                options: [{label: "灰溜溜地離開", action: "node_next", nextSceneId: 'rose_hub'}]
+            }
+        },
+        // 選項 B: 出千 (高風險)
+        {
+            label: "🃏 嘗試出千 (AGI > 8)",
+            check: { stat: 'AGI', val: 8 },
+            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
+            nextScene: {
+                text: "你的手指靈活地換了底牌。沒有人發現破綻。\n你大殺四方，贏走了桌上所有的錢！\n(金幣 +100)",
+                onEnter: { gold: 100 },
+                options: [{label: "趕緊溜走", action: "node_next", nextSceneId: 'rose_hub'}]
+            },
+            failScene: {
+                text: "「他在袖子裡藏牌！」\n一聲大喝，你被憤怒的賭徒們圍毆了一頓，扔出了偏廳。\n(HP/精力扣除)",
+                rewards: { energy: -10, varOps: [{key:'prestige', val:20, op:'-'}] },
+                options: [{label: "狼狽爬起", action: "node_next", nextSceneId: 'rose_hub'}]
+            }
+        },
+        { label: "沒興趣", action: "node_next", nextSceneId: 'rose_hub' }
     ]
 });
 // ============================================================
