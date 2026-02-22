@@ -88,21 +88,22 @@ window.StoryGenerator = {
                 // 異世界冒險可能是「戰鬥-探索-戰鬥-Boss」
                 return ['setup', 'event_battle', 'univ_filler', 'event_explore', 'event_battle', 'boss'];
             },
-            actors: ['noun_role_monster', 'noun_location_building', 'noun_item_weapon'], 
-            baseTension: 20 
+            actors: ['noun_monster', 'noun_location_building', 'noun_item_weapon'], 
+            baseTension: 20
         },
         
-        // ... (其他骨架可依此類推，若不修改也可保留舊格式，initChain 會相容)
         'romance': {
-             stages: ['love_meet', 'love_bond', 'love_scheme', 'love_counter', 'love_confession'],
+             // 【重要修正】加入了 love_date 和 love_crisis 讓感情線完整
+             stages: ['love_meet', 'love_bond', 'love_date', 'love_scheme', 'love_crisis', 'love_counter', 'love_confession'],
              actors: ['lover', 'rival', 'noun_npc_generic'], 
              baseTension: 5 
         },
         'raising': {
+             // 養成維持 5 階段，與我們剛剛寫的劇本完美對齊
              stages: ['raise_meet', 'raise_train', 'raise_debut', 'raise_climax', 'raise_ending'],
              actors: ['trainee', 'rival', 'butler'], 
              baseTension: 0 
-        }
+        },
     },
 
     // ============================================================
@@ -216,89 +217,85 @@ initChain: function(skeletonKey = null, themeTag = null) {
     // 4. 生成下一層 (Generate)
     // ============================================================
     generate: function(contextTags = [], isStart = false) {
-    const gs = window.GlobalState;
-    
-    // 1. 初始化檢查
-    if (!gs.story.chain || !gs.story.chain.stages || isStart) {
-        console.log("🔄 Generator: 初始化新鏈結...");
-        // 這裡確保 initChain 有被正確定義，若依照之前的修改，這裡可能需要參數
-        // 但為了保險，先維持無參數調用，或依你的需求調整
-        gs.story.chain = this.initChain(); 
-    }
+        const gs = window.GlobalState;
+        
+        // 1. 初始化檢查
+        if (!gs.story.chain || !gs.story.chain.stages || isStart) {
+            console.log("🔄 Generator: 初始化新鏈結...");
+            gs.story.chain = this.initChain(); 
+        }
 
-    const chain = gs.story.chain;
+        const chain = gs.story.chain;
 
-    // 2. 合併外部傳入的 Tags
-    if(contextTags.length > 0) {
-        chain.tags = [...new Set([...chain.tags, ...contextTags])];
-    }
+        // 2. 合併外部傳入的 Tags
+        if(contextTags.length > 0) {
+            chain.tags = [...new Set([...chain.tags, ...contextTags])];
+        }
 
-    // 3. 檢查流程是否結束
-    if (chain.currentStageIdx >= chain.stages.length) return null;
-    
-    let targetType = chain.stages[chain.currentStageIdx];
-    
-    // 4. 張力調整 (Tension)
-    let tensionDelta = 5; 
-    if (chain.tags.includes('risk_high')) tensionDelta += 15;
-    chain.tension = Math.min(100, Math.max(0, (chain.tension || 0) + tensionDelta));
-    console.log(`🎬 Director: Stage [${targetType}], Tension ${chain.tension}%`);
+        // 🌟【關鍵修復】將玩家身上的實體標籤與劇本標籤合併！
+        const playerTags = (gs.story && gs.story.tags) ? gs.story.tags : [];
+        const mergedTags = [...new Set([...chain.tags, ...playerTags])];
 
-    // 5. 選擇劇本 (Pick Template)
-    // 這裡記得要傳入 currentStats 以便支援數值條件篩選 (如果有用到 pickTemplate 的數值篩選功能)
-    const currentStats = gs.stats || {}; 
-    const template = this.pickTemplate(targetType, chain.tags, chain.history, chain.tension, currentStats);
-    
-    const lang = gs.settings?.targetLang || 'zh';
+        // 3. 檢查流程是否結束
+        if (chain.currentStageIdx >= chain.stages.length) return null;
+        
+        let targetType = chain.stages[chain.currentStageIdx];
+        
+        // 4. 張力調整 (Tension)
+        let tensionDelta = 5; 
+        if (mergedTags.includes('risk_high')) tensionDelta += 15;
+        chain.tension = Math.min(100, Math.max(0, (chain.tension || 0) + tensionDelta));
+        console.log(`🎬 Director: Stage [${targetType}], Tension ${chain.tension}%`);
 
-    // 6. 錯誤處理 (找不到劇本)
-    if (!template) {
-        console.error(`❌ 無法生成劇本: Type=${targetType}`);
+        // 5. 選擇劇本 (Pick Template) - 改為傳入 mergedTags
+        const currentStats = gs.stats || {}; 
+        const template = this.pickTemplate(targetType, mergedTags, chain.history, chain.tension, currentStats);
+        
+        const lang = gs.settings?.targetLang || 'zh';
+
+        // 6. 錯誤處理 (找不到劇本)
+        if (!template) {
+            console.error(`❌ 無法生成劇本: Type=${targetType}`);
+            return {
+                id: `err_${Date.now()}`,
+                text: "（系統錯誤：迷霧太濃...找不到符合條件的劇本）",
+                options: [{ label: "強制結束", action: "finish_chain" }]
+            };
+        }
+
+        // 7. 記錄歷史 (避免重複)
+        if (template.id) {
+            chain.history.push(template.id);
+            if (chain.history.length > 5) chain.history.shift();
+        }
+
+        // 8. 填充內容 (Fill Content)
+        const filledData = this.fillTemplate(template, lang, chain.memory);
+
+        // 🌟【關鍵修復】傳入 mergedTags 讓選項過濾器能正確讀取到玩家剛獲得的 TAG
+        const opts = this.generateOptions(
+            template, 
+            filledData.fragments, 
+            lang, 
+            targetType, 
+            mergedTags,     // <--- 這裡原本是 chain.tags，現在改為合併後的標籤
+            currentStats
+        );
+        
+        // 9. 推進進度
+        chain.currentStageIdx++;
+        chain.depth++; 
+
+        // 10. 回傳結果
         return {
-            id: `err_${Date.now()}`,
-            text: "（系統錯誤：迷霧太濃...找不到符合條件的劇本）",
-            options: [{ label: "強制結束", action: "finish_chain" }]
+            id: template.id || `gen_${Date.now()}`,
+            type: targetType, 
+            text: filledData.text[0],
+            dialogue: filledData.dialogue, 
+            options: opts, 
+            rewards: filledData.rewards
         };
-    }
-
-    // 7. 記錄歷史 (避免重複)
-    if (template.id) {
-        chain.history.push(template.id);
-        if (chain.history.length > 5) chain.history.shift();
-    }
-
-    // 8. 填充內容 (Fill Content)
-    const filledData = this.fillTemplate(template, lang, chain.memory);
-
-    // ==========================================
-    // 🔴 [修改重點] 這裡就是你要改的地方！
-    // ==========================================
-    // 我們將 chain.tags (標籤) 和 currentStats (數值) 傳進去
-    // 這樣 generateOptions 才能幫你過濾掉「資格不符」的選項 (例如證據不足不能指認兇手)
-    const opts = this.generateOptions(
-        template, 
-        filledData.fragments, 
-        lang, 
-        targetType, 
-        chain.tags,     // 傳入目前的標籤 (Tags)
-        currentStats    // 傳入目前的數值 (Stats)
-    );
-    // ==========================================
-    
-    // 9. 推進進度
-    chain.currentStageIdx++;
-    chain.depth++; 
-
-    // 10. 回傳結果
-    return {
-        id: template.id || `gen_${Date.now()}`,
-        type: targetType, 
-        text: filledData.text[0],
-        dialogue: filledData.dialogue, 
-        options: opts, 
-        rewards: filledData.rewards
-    };
-},
+    },
 
     // ============================================================
     // 5. 輔助函數 (Helpers)

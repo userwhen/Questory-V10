@@ -1,4 +1,4 @@
-/* js/story_data/story_horro.js */
+/* js/story_data/story_horror.js */
 (function() {
     // 1. 取得核心活頁簿
     const DB = window.FragmentDB;
@@ -9,74 +9,73 @@
 
     // 2. 追加劇本 (Templates)
     DB.templates.push(
-    // ============================================================
+        // ============================================================
         // [BLOCK B] 👻 現代心理恐怖流 (Asian Psychological Horror)
         // ============================================================
         {
             type: 'setup_omen', id: 'hor_psych_setup',
-            text: { zh: [ "這裡本該是你熟悉的{noun_location_room}，但此刻看起來卻異常陌生。", "空氣中瀰漫著一股{adj_env_vibe}濕氣，牆角的陰影似乎比平常更深、更濃。", "你{adv_manner}停下腳步，總覺得有某種視線正在從{noun_env_feature}的縫隙中窺視著你。" ]},
-            slots: ['noun_location_room', 'adj_env_vibe', 'adv_manner', 'noun_env_feature'],
+            // [修正] 改用 {sentence_env_vibe} 確保文法通順
+            text: { zh: [ "這裡本該是你熟悉的{noun_location_room}，但此刻看起來卻異常陌生。", "{sentence_env_vibe}，牆角的陰影似乎比平常更深、更濃。", "你{atom_manner}停下腳步，總覺得有某種視線正在從{noun_env_feature}的縫隙中窺視著你。" ]},
             dialogue: [{ speaker: "旁白", text: { zh: "（耳邊傳來一陣若有似無的竊笑聲，聽起來既像老人，又像嬰兒...）" } }],
             options: [
-                { label: "強裝鎮定，忽視它", action: "advance_chain", rewards: { tags: ['horror_started'], varOps: [{ key: 'sanity', val: 90, op: 'set' }] } },
+                { label: "強裝鎮定，忽視對方", action: "advance_chain", rewards: { tags: ['horror_started'], varOps: [{ key: 'sanity', val: 90, op: 'set' }] } },
                 { label: "檢查聲音的來源", action: "advance_chain", rewards: { tags: ['horror_started', 'marked_by_curse'], varOps: [{ key: 'sanity', val: 80, op: 'set' }] }, nextScene: { text: "你湊近一看，那裡什麼都沒有，只有一團糾結的黑色髮絲，散發著腥臭味。" } }
             ]
         },
         {
             type: 'encounter_stalk', id: 'hor_psych_stalk',
-            // [Fix] 移除 reqTag: 'horror_started' 以防止標籤延遲導致的找不到劇本
-            // 因為骨架已經限制了流程，所以這裡不需要嚴格檢查
-            text: { zh: [ "你試圖離開，但走廊彷彿沒有盡頭。身後傳來了「啪嗒、啪嗒」的濕黏腳步聲。", "那聲音極不規律，就像是某種肢體扭曲的東西，正手腳並用在地上{adv_manner}爬行。", "它正在{verb_move_univ}，而且它知道你在哪裡。" ]},
-            slots: ['adv_manner', 'verb_move_univ'],
+            // [修正] 移除未定義的 verb_move_univ
+            text: { zh: [ "你試圖離開，但走廊彷彿沒有盡頭。身後傳來了「啪嗒、啪嗒」的濕黏腳步聲。", "那聲音極不規律，就像是某種肢體扭曲的東西，正手腳並用在地上{atom_manner}爬行。", "對方正在逼近，而且對方知道你在哪裡。" ]},
             dialogue: [{ speaker: "？？？", text: { zh: "嘻嘻... 找到... 你了..." } }],
             options: [
-                { label: "屏住呼吸，躲進死角", style: "primary", check: { stat: 'INT', val: 5 }, action: "advance_chain", nextScene: { text: "你摀住口鼻，心臟劇烈跳動。那東西停在你的藏身處外，發出了指甲刮擦地板的聲音... 然後慢慢離開了。" }, failScene: { text: "恐懼讓你發出了喘息聲。那腳步聲立刻停了下來，然後猛地轉向你！", rewards: { varOps: [{key:'sanity', val:20, op:'-'}] }, nextTags:['danger_high'] } },
-                { label: "不要回頭，狂奔！", action: "advance_chain", nextTags: ['risk_high'], nextScene: { text: "你{adv_manner}向前衝刺，感覺冰冷的手指擦過了你的後頸..." } }
+                // [修正] 將 nextTags 改為標準的 rewards: { tags: [...] }
+                { label: "屏住呼吸，躲進死角", style: "primary", check: { stat: 'INT', val: 5 }, action: "advance_chain", nextScene: { text: "你摀住口鼻，心臟劇烈跳動。那東西停在你的藏身處外，發出了指甲刮擦地板的聲音... 然後慢慢離開了。" }, failScene: { text: "恐懼讓你發出了喘息聲。那腳步聲立刻停了下來，然後猛地轉向你！", rewards: { tags: ['danger_high'], varOps: [{key:'sanity', val:20, op:'-'}] } } },
+                { label: "不要回頭，狂奔！", action: "advance_chain", rewards: { tags: ['risk_high'] }, nextScene: { text: "你{atom_manner}向前衝刺，感覺冰冷的手指擦過了你的後頸..." } }
             ]
         },
         {
             type: 'encounter_climax', id: 'hor_psych_look',
-            // [Fix] 移除 reqTag: 'danger_high'，確保就算玩家玩得很好（沒觸發危險）也能進入高潮劇情
-            text: { zh: [ "無路可退了。那個{noun_role_monster}（或者說是曾經是人的東西）就懸掛在天花板上。", "它的頭顱以詭異的角度轉了180度，死白色的眼珠正死死盯著你。", "所有的本能都在尖叫：**絕對不能和它對視**。" ]},
-            slots: ['noun_role_monster'],
+            // [修正] 將 noun_role_monster 對齊核心庫的 noun_monster
+            text: { zh: [ "無路可退了。那個{noun_monster}（或者說是曾經是人的東西）就懸掛在天花板上。", "對方的頭顱以詭異的角度轉了180度，死白色的眼珠正死死盯著你。", "所有的本能都在尖叫：絕對不能和對方對視。" ]},
             options: [
-                { label: "緊閉雙眼，唸誦祈禱", action: "advance_chain", check: { stat: 'LUCK', val: 5 }, nextScene: { text: "你感到一股冰冷的氣息貼著臉頰滑過，耳邊是骨骼摩擦的脆響... 但最終，它似乎對靜止的獵物失去了興趣。" }, failScene: { text: "你忍不住睜開了一條縫... 一張布滿血絲的臉正貼在你的鼻尖前，露出了裂到耳根的笑容。", rewards: { varOps: [{key:'sanity', val:50, op:'-'}] } } },
-                { label: "用手電筒強光照射它！", style: "danger", action: "finish_chain", nextScene: { text: "光線照亮了它的全貌——那景象超越了人類理智的極限。你的意識在尖叫中斷線了。\n【結局：精神崩潰】" } }
+                { label: "緊閉雙眼，唸誦祈禱", action: "advance_chain", check: { stat: 'LUK', val: 5 }, nextScene: { text: "你感到一股冰冷的氣息貼著臉頰滑過，耳邊是骨骼摩擦的脆響... 但最終，對方似乎對靜止的獵物失去了興趣。" }, failScene: { text: "你忍不住睜開了一條縫... 一張布滿血絲的臉正貼在你的鼻尖前，露出了裂到耳根的笑容。", rewards: { varOps: [{key:'sanity', val:50, op:'-'}] } } },
+                { label: "用手電筒強光照射對方！", style: "danger", action: "finish_chain", nextScene: { text: "光線照亮了對方的全貌——那景象超越了人類理智的極限。你的意識在尖叫中斷線了。\n【結局：精神崩潰】" } }
             ]
         },
         {
             type: 'final_survival', id: 'hor_psych_end',
-            text: { zh: [ "不知道過了多久，周圍終於恢復了死寂。你{adv_manner}推開門，衝進了外面的陽光中。", "人群的喧囂聲讓你感到一陣恍惚。你以為你逃掉了。", "但當你低頭看時，發現自己的腳踝上，多了一個青紫色的手印，而且...還在發燙。" ]},
-            slots: ['adv_manner'], 
+            text: { zh: [ "不知道過了多久，周圍終於恢復了死寂。你{atom_manner}推開門，衝進了外面的陽光中。", "人群的喧囂聲讓你感到一陣恍惚。你以為你逃掉了。", "但當你低頭看時，發現自己的腳踝上，多了一個青紫色的手印，而且...還在發燙。" ]},
             options: [{ label: "這只是一個開始...", action: "finish_chain", rewards: { removeTags: ['horror_started', 'danger_high'], title: "倖存者(？)", exp: 300 } }]
         },
-		{
-    type: 'setup',
-    id: 'mys_setup_letter',
-    text: { zh: [
-        "一切都始於那封奇怪的信。",
-        "信上說，關於{motive}的真相，就藏在這座莊園裡。",
-        "外面的{weather}讓這一切顯得更加詭異。"
-    ]},
-    slots: ['motive', 'weather'],
-    options: [
-        { label: "推開莊園大門", action: "advance_chain" }
-    ]
-},
-{
-    type: 'setup_omen', // Horror 專用
-    id: 'hor_setup_omen',
-    text: { zh: [
-        "你不該來這裡的。",
-        "{weather}，你的車拋錨在了半路。",
-        "遠處那棟廢棄的{noun_location_building}似乎是你唯一的避難所。"
-    ]},
-    slots: ['weather', 'noun_location_building'],
-    options: [
-        { label: "硬著頭皮進去", action: "advance_chain" }
-    ]
-}
+        
+        // ============================================================
+        // [通用擴充] 其他懸疑/恐怖開場
+        // ============================================================
+        {
+            type: 'setup',
+            id: 'mys_setup_letter',
+            text: { zh: [
+                "一切都始於那封奇怪的信。",
+                "信上說，關於真相，就藏在這座莊園裡。",
+                "外面的{atom_weather}讓這一切顯得更加詭異。"
+            ]},
+            options: [
+                { label: "推開莊園大門", action: "advance_chain" }
+            ]
+        },
+        {
+            type: 'setup_omen', 
+            id: 'hor_setup_omen',
+            text: { zh: [
+                "你不該來這裡的。",
+                "{atom_weather}，你的車拋錨在了半路。",
+                "遠處那棟廢棄的{combo_building}似乎是你唯一的避難所。"
+            ]},
+            options: [
+                { label: "硬著頭皮進去", action: "advance_chain" }
+            ]
+        }
     );
 
-    console.log("🕵️‍♂️ 劇本已載入");
+    console.log("🕵️‍♂️ 恐怖劇本已載入");
 })();

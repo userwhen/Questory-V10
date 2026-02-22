@@ -291,29 +291,7 @@ window.storyView = {
         const icon = isSuccess ? '✅' : '❌';
         const resultText = isSuccess ? '成功' : '失敗';
         
-        const html = `
-            <div style="
-                margin: 8px 0; padding: 5px 0; 
-                border-bottom: 1px dashed #444; 
-                display: flex; align-items: center; justify-content: space-between;
-                width: 100%;
-                color: #aaa; font-family: monospace, sans-serif; font-size: 0.95rem;
-            ">
-                <span>🎲 檢定 ${attrKey} ... (擲出 ${total})</span>
-                <span style="font-weight:bold; color:${color}; margin-left: 10px; white-space: nowrap;">
-                    ${resultText} ${icon}
-                </span>
-            </div>
-        `;
-
-        const box = document.getElementById('story-content');
-        if (box && box.innerHTML.trim() !== "") {
-            const div = document.createElement('div');
-            div.innerHTML = html;
-            box.appendChild(div);
-            const wrap = document.getElementById('story-text-wrapper');
-            if(wrap) wrap.scrollTop = wrap.scrollHeight;
-        }
+        const html = `<span style="color: #aaa; font-family: monospace, sans-serif; font-size: 0.95rem;">🎲 檢定 ${attrKey} (擲出 ${total})........ </span><span style="font-weight:bold; color:${color};">${resultText} ${icon}</span><br><br>`;
 
         window.TempState.deferredHtml = (window.TempState.deferredHtml || "") + html;
     },

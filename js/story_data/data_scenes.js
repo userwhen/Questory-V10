@@ -819,7 +819,7 @@ register({
         "這是一個被家族遺棄多年的地下酒窖。牆壁上滲出的水漬像是一張張哭泣的臉。",
         "微弱的燭光在風中搖曳，隨時可能熄滅。",
         "面前是一扇厚重的橡木門，門鎖早已鏽跡斑斑。",
-        "而在角落的酒桶旁，蜷縮著一具穿著僕人制服的白骨，它的手指呈現出詭異的扭曲狀，似乎死前正死死抓著什麼希望。"
+        "而在角落的酒桶旁，蜷縮著一具穿著僕人制服的白骨，對方的手指呈現出詭異的扭曲狀，似乎死前正死死抓著什麼希望。"
     ],
     options: [
         // [A] 搜查屍體
@@ -846,7 +846,7 @@ register({
                 options: [{label: "衝出地窖", action: "node_next", nextSceneId: 'rose_hallway'}] 
             }, 
             failScene: { 
-                text: "你狠狠撞向大門，但它比想像中更堅固。劇痛從肩膀傳遍全身，你狼狽地跌坐在地，揚起一陣灰塵。\n這扇門在嘲笑你的無力。", 
+                text: "你狠狠撞向大門，但對方比想像中更堅固。劇痛從肩膀傳遍全身，你狼狽地跌坐在地，揚起一陣灰塵。\n這扇門在嘲笑你的無力。", 
                 rewards: { varOps: [{key:'sanity', val:5, op:'-'}] } 
             } 
         },
@@ -1311,11 +1311,11 @@ window.SCENE_DB = {
             text: "【命運大廳】\n無數的時間線在你面前交織，請選擇你的旅程：",
             options: [
 				{ label: "--- 模式切換測試 ---", action: "investigate", result: "請選擇要預覽的模式入口：" },
+				{ label: "🎲 無盡隨機冒險", action: "node_next", nextSceneId: 'GEN_MODULAR' },
                 { label: "📦 快遞驚魂 (懸疑)", action: "node_next", nextSceneId: 'delivery_start' },
                 { label: "🐺 狼人殺 (推理)", action: "node_next", nextSceneId: 'wolf_hub' },
                 { label: "🐢 海龜湯 (解謎)", action: "node_next", nextSceneId: 'turtle_hub' },
                 { label: "🔒 密室逃脫 (探索)", action: "node_next", nextSceneId: 'room_hub' },
-                { label: "🎲 無盡隨機冒險", action: "node_next", nextSceneId: 'GEN_MODULAR' },
                 { label: "🌹 測試劇本：豪門夜宴 (Full Feature)", action: "node_next", nextSceneId: 'rose_start' },
                 { label: "🚀 跳轉：機械公元", action: "node_next", nextSceneId: 'machine_entry', style: 'primary' },
                 { label: "💕 跳轉：后宮帝國", action: "node_next", nextSceneId: 'harem_root', style: 'primary' },
