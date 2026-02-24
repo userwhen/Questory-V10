@@ -19,13 +19,17 @@ window.StoryEngine = {
     init: function() {
         const gs = window.GlobalState;
         if (!gs) return;
-        if (!gs.story.lastEnergyUpdate) gs.story.lastEnergyUpdate = Date.now();
-        // 1. 初始化資料結構
+        
+        // ✅ 1. 先建立基礎結構 (如果不存在的話)
         if (!gs.story) gs.story = { energy: this.calculateMaxEnergy(), deck: [], learning: {}, tags: [], vars: {} };
+        
+        // ✅ 2. 結構存在後，再來檢查或補齊裡面的屬性
+        if (!gs.story.lastEnergyUpdate) gs.story.lastEnergyUpdate = Date.now();
         if (!gs.story.tags) gs.story.tags = [];
         if (!gs.story.learning) gs.story.learning = {};
         if (!gs.story.vars) gs.story.vars = {}; // [New] 數值變數儲存區
         if (!gs.story.flags) gs.story.flags = {}; // [新增] 全域 (永久保留)
+        
         window.TempState.isProcessing = false;
         window.TempState.lockInput = false;
         window.TempState.isWaitingInput = false;
@@ -620,7 +624,7 @@ _handleNodeJump: function(opt, passed) {
         let textQueue = dialogues.map(d => {
              const txt = d.text[lang] || d.text['zh'] || d.text;
              const speaker = d.speaker;
-             return (speaker === '旁白' || !speaker) ? `（${txt}）` : `<b>${speaker}</b>：「${txt}」`;
+             return (speaker === '旁白' || !speaker) ? `${txt}` : `<b>${speaker}</b>：「${txt}」`;
         });
         
         // 將對話轉為單一節點播放，結束後保留原有的 options
@@ -866,12 +870,16 @@ _handleNodeJump: function(opt, passed) {
     
     // 循環：精力恢復
     checkEnergyLoop: function() {
-    // 定義更新邏輯函式
-    const updateEnergy = () => {
-        const gs = window.GlobalState;
-        const now = Date.now();
-        const timeDiff = now - (gs.story.lastEnergyUpdate || now);
-        const REGEN_MS = this.CONSTANTS.ENERGY_REGEN_MS;
+        // 定義更新邏輯函式
+        const updateEnergy = () => {
+            const gs = window.GlobalState;
+            
+            // ✅ 加上防呆：如果故事系統還沒初始化完畢，直接跳過不計算
+            if (!gs || !gs.story) return; 
+
+            const now = Date.now();
+            const timeDiff = now - (gs.story.lastEnergyUpdate || now);
+            const REGEN_MS = this.CONSTANTS.ENERGY_REGEN_MS;
 
         // 如果經過時間大於 1 個週期
         if (timeDiff >= REGEN_MS) {

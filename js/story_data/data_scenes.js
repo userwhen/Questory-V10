@@ -105,28 +105,73 @@ register({
 register({
     id: 'delivery_start',
     dialogue: [
-        { speaker: "旁白", text: "雨水順著雨衣的帽簷滑落... 這裡安靜得不正常。" },
+        { speaker: "旁白", text: "zh:{atom_weather}，雨水順著雨衣的帽簷滑落... 這裡安靜得不正常。" },
         { speaker: "你", text: "有人在嗎？快遞。" },
         { speaker: "旁白", text: "沒有回應。但我能感覺到，門後似乎有什麼東西在動..." }
     ],
     options: [{ label: "繼續等待...", action: "node_next", nextSceneId: 'delivery_choice' }]
 });
+
 register({
     id: 'delivery_choice',
     text: [
         "(備註欄寫著紅字：『必須親手交付，絕不能帶回。』)",
         "時間是晚上 11:58。還有兩分鐘。",
-        "(那個燒焦的味道，似乎就是從門縫裡飄出來的...)"
+        "(那個{atom_smell}的味道，似乎就是從門縫裡飄出來的...)"
     ],
     options: [
-        { label: "【A】直接推門進去 (STR檢定)", check: { stat: 'STR', val: 6 }, nextSceneId: 'route_a_enter', failScene: { text: "門鎖住了，你撞不開。", options: [{label:"離開", action:"finish_chain"}]} },
-        { label: "【B】大喊名字", action: "node_next", nextSceneId: 'route_b_shout' },
-        { label: "【C】拍照走人", action: "node_next", nextSceneId: 'route_c_leave' }
+        // 補上 action: "node_next"
+        { label: "直接推門進去 (STR檢定)", action: "node_next", check: { stat: 'STR', val: 6 }, nextSceneId: 'route_a_enter', failScene: { text: "門鎖住了，你撞不開。", options: [{label:"離開", action:"finish_chain"}]} },
+        { label: "大喊名字", action: "node_next", nextSceneId: 'route_b_shout' },
+        { label: "拍照走人", action: "node_next", nextSceneId: 'route_c_leave' }
     ]
 });
-register({ id: 'route_a_enter', text: "推開門，客廳擺滿了顯示雜訊的電視機...", options: [{label:"離開", action:"finish_chain"}] });
-register({ id: 'route_b_shout', text: "隔壁老太太探出頭：「那個人已經死了三天了！」", options: [{label:"離開", action:"finish_chain"}] });
-register({ id: 'route_c_leave', text: "你試圖下樓，卻發現一直在四樓鬼打牆...", options: [{label:"離開", action:"finish_chain"}] });
+
+register({ 
+    id: 'route_a_enter', 
+    // 補上 speaker: "旁白"
+    dialogue: [
+        { speaker: "旁白", text: "推開門，客廳擺滿了顯示雜訊的電視機..." },
+        { speaker: "旁白", text: "不祥的預感讓你渾身寒顫，" },
+        { speaker: "旁白", text: "餘光中，一雙乾枯腐敗，如同枯骨的手從黑暗緩緩伸出..." }
+    ],  
+    options: [
+        // 補上 action: "node_next"
+        { label: "奮力開門逃跑 (STR檢定)", action: "node_next", check: { stat: 'STR', val: 6 }, nextSceneId: 'leave01', failScene: { text: "門鎖住了，你撞不開。", options: [{ label: "無助的等候死亡", action: "node_next", nextSceneId: 'dead01' }]}},
+        { label: "無助的等候死亡", action: "node_next", nextSceneId: 'dead01' }
+    ]
+});
+
+register({ 
+    id: 'route_b_shout',
+    // 補上 speaker
+    dialogue: [
+        { speaker: "隔壁老太太", text: "那個人已經死了三天了！" },
+        { speaker: "旁白", text: "不祥的預感讓你渾身寒顫，" },
+        { speaker: "旁白", text: "那麼從門內傳來的陣陣詭異笑聲是...?" }
+    ],
+    options: [
+        { label: "恐懼抓住你的腳步，但你深知這裡並不宜久留...", action: "node_next", nextSceneId: 'leave01' }
+    ]
+});
+        
+register({ 
+    id: 'route_c_leave', 
+    text: "你試圖下樓，卻發現一直在四樓鬼打牆...", 
+    options: [{label:"加快腳步離開", action: "node_next", nextSceneId: 'leave01' }] 
+});
+
+register({ 
+    id: 'dead01', 
+    text: "你雙眼緊閉，祈禱著痛苦能快點過去...", 
+    options: [{label:"結束一切", action:"finish_chain"}] 
+});
+
+register({ 
+    id: 'leave01', 
+    text: "腎上腺素幫助你逃離了令人恐懼的老舊國宅...", 
+    options: [{label:"離開這裡", action:"finish_chain"}] 
+});
 
 // --- C. 海龜湯 (Turtle Soup) ---
 const TURTLE_HUB = register({

@@ -141,7 +141,7 @@
         },
         {
             type: 'love_date', id: 'rom_date_triangle', reqTag: 'route_triangle',
-            text: { zh: [ "幾天後的一個{weather}，你在{noun_location_building}的屋簷下躲雨。", "一輛熟悉的車停在面前，車窗搖下，是{rival}那張帶著玩味笑容的臉。", "「上車嗎？還是你要在這裡打給正在忙的{lover}？」" ]},
+            text: { zh: [ "幾天後的一個{atom_weather}，你在{noun_location_building}的屋簷下躲雨。", "一輛熟悉的車停在面前，車窗搖下，是{rival}那張帶著玩味笑容的臉。", "「上車嗎？還是你要在這裡打給正在忙的{lover}？」" ]},
             options: [
                 { 
                     label: "堅持等{lover} (拒絕誘惑)", action: "node_next", rewards: { varOps: [{key:'loyalty', val:20, op:'+'}] }, 

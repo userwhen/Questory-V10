@@ -17,8 +17,7 @@
         {
             type: 'setup', 
             id: 'mys_start_route_A',
-            // 完美結合 generator 的 {weather} 種子與 V4 詞庫
-            text: { zh: [ "在一個{weather}，這座{noun_location_building}被封鎖了。{victim}倒在{noun_location_room}中央。", "在場只有兩個人有嫌疑：{suspect_A}，以及{suspect_B}。", "雖然表面平靜，但你注意到{suspect_A}的眼神有些閃爍，似乎在隱藏什麼。" ]},
+            text: { zh: [ "在一個{atom_weather}，這座{noun_location_building}被封鎖了。{victim}倒在{noun_location_room}中央。", "在場只有兩個人有嫌疑：{suspect_A}，以及{suspect_B}。", "雖然表面平靜，但你注意到{suspect_A}的眼神有些閃爍，似乎在隱藏什麼。" ]},
             options: [{ label: "封鎖現場，開始調查", action: "advance_chain", rewards: { tags: ['truth_A', 'case_started'] } }]
         },
         
@@ -26,7 +25,7 @@
         {
             type: 'setup', 
             id: 'mys_start_route_B',
-            text: { zh: [ "在一個{weather}，這座{noun_location_building}被封鎖了。{victim}倒在{noun_location_room}中央。", "在場只有兩個人有嫌疑：{suspect_A}，以及{suspect_B}。", "雖然表面平靜，但你注意到{suspect_B}的手在微微顫抖，似乎非常緊張。" ]},
+            text: { zh: [ "在一個{atom_weather}，這座{noun_location_building}被封鎖了。{victim}倒在{noun_location_room}中央。", "在場只有兩個人有嫌疑：{suspect_A}，以及{suspect_B}。", "雖然表面平靜，但你注意到{suspect_B}的手在微微顫抖，似乎非常緊張。" ]},
             options: [{ label: "封鎖現場，開始調查", action: "advance_chain", rewards: { tags: ['truth_B', 'case_started'] } }]
         },
 

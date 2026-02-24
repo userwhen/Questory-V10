@@ -29,83 +29,128 @@ window.StoryGenerator = {
             { val: "魔法復甦", tag: "world_magic" }
         ]
     },
+	buildUnifiedFlow: function(skel) {
+        // 相容舊版：如果沒有設定 flow，就退回使用固定的 stages
+        if (!skel.flow) return skel.stages || ['univ_filler']; 
+
+        let finalFlow = [];
+        const flow = skel.flow;
+        
+        // 1. 開頭 (Start)
+        if (flow.start) finalFlow.push(...(Array.isArray(flow.start) ? flow.start : [flow.start]));
+
+        // 2. 中間主線 (Middle) + 通用劇情 (univ_filler)
+        let middleArr = flow.middle || [];
+        
+        if (flow.isSequential) {
+            // 💖 【循序漸進模式】(適用：戀愛、養成)
+            // 照著陣列順序走，但每個主線節點前，有 30% 機率插入通用劇情
+            for (let i = 0; i < middleArr.length; i++) {
+                if (Math.random() < 0.3) finalFlow.push('univ_filler');
+                finalFlow.push(middleArr[i]);
+            }
+        } else {
+            // ⚔️ 【隨機抽取模式】(適用：懸疑、冒險、恐怖)
+            // 決定中間要跑幾回合
+            let min = flow.minMiddle || 2;
+            let max = flow.maxMiddle || 4;
+            let middleCount = min + Math.floor(Math.random() * (max - min + 1));
+
+            for (let i = 0; i < middleCount; i++) {
+                // 30% 機率是通用碎片，70% 從中間主線池裡隨機抽
+                if (Math.random() < 0.3) {
+                    finalFlow.push('univ_filler');
+                } else if (middleArr.length > 0) {
+                    finalFlow.push(middleArr[Math.floor(Math.random() * middleArr.length)]);
+                }
+            }
+        }
+
+        // 3. 結尾 (End)
+        if (flow.end) finalFlow.push(...(Array.isArray(flow.end) ? flow.end : [flow.end]));
+
+        return finalFlow;
+    },
     // ============================================================
     // 2. 劇本骨架定義 (Skeletons) - 保留在此處
     // ============================================================
     skeletons: {
         'mystery': {
-            // [New] 導演種子：決定這場戲的背景
             seeds: {
-                weather: [
-                    { val: "暴風雨之夜", tag: "env_storm" },
-                    { val: "濃霧瀰漫的清晨", tag: "env_fog" },
-                    { val: "原本平靜的午後", tag: "env_normal" }
-                ],
-                atmosphere: ["詭異的", "悲傷的", "充滿敵意的"], // 形容詞種子
-                motive: ["遺產爭奪", "情殺", "復仇"] // 動機種子 (可作為文本變數)
+                weather: [ { val: "暴風雨之夜", tag: "env_storm" }, { val: "濃霧瀰漫的清晨", tag: "env_fog" } ],
+                atmosphere: ["詭異的", "悲傷的", "充滿敵意的"],
+                motive: ["遺產爭奪", "情殺", "復仇"]
             },
-            // [New] 動態流程：每次長度不一樣
-            getStages: function() {
-                // 基礎結構
-                let flow = ['setup', 'univ_filler'];
-                
-                // 隨機插入 1~3 個調查階段
-                let investCount = 1 + Math.floor(Math.random() * 3);
-                for(let i=0; i<investCount; i++) {
-                    // 隨機決定是「單純調查」還是「遭遇事件」
-                    flow.push(Math.random() > 0.3 ? 'investigate' : 'univ_filler');
-                }
-                
-                flow.push('twist');
-                flow.push('deduction');
-                return flow;
-            },
-            // 角色分配 (從 FragmentDB 抓取)
             actors: ['detective', 'victim', 'suspect_A', 'suspect_B', 'noun_npc_generic'], 
-            baseTension: 10
+            baseTension: 10,
+            // 🌟 新版宣告法：懸疑劇本
+            flow: {
+                isSequential: false, // 隨機模式
+                start: ['setup'],
+                middle: ['investigate'], // 中間只抽調查
+                end: ['twist', 'deduction'],
+                minMiddle: 2, maxMiddle: 4 // 中間會有 2~4 次調查或通用劇情
+            }
         },
 
         'horror': {
             seeds: {
-                weather: [
-                    { val: "伸手不見五指的深夜", tag: "risk_high" }, // 一開場就很危險
-                    { val: "雷雨交加的夜晚", tag: "env_storm" }
-                ],
+                weather: [ { val: "伸手不見五指的深夜", tag: "risk_high" }, { val: "雷雨交加的夜晚", tag: "env_storm" } ],
                 curse_type: ["古代詛咒", "怨靈附身", "生物變異"]
             },
-            // 恐怖片的節奏比較快，直線型
-            stages: ['setup_omen', 'univ_filler', 'encounter_stalk', 'univ_filler', 'encounter_climax', 'final_survival'],
-            actors: ['survivor', 'noun_role_monster', 'noun_location_building'], 
-            baseTension: 30
+            actors: ['survivor', 'noun_monster', 'noun_location_building'], 
+            baseTension: 30,
+            // 🌟 新版宣告法：恐怖劇本
+            flow: {
+                isSequential: false, 
+                start: ['setup_omen'],
+                middle: ['encounter_stalk'], 
+                end: ['encounter_climax', 'final_survival'],
+                minMiddle: 2, maxMiddle: 3
+            }
         },
 
         'adventure': { 
             seeds: {
                 world_state: ["戰亂", "魔物肆虐", "和平但腐敗"],
-                start_bonus: ["神聖", "被詛咒的", "生鏽的"] // 起始武器的形容詞
-            },
-            getStages: function() {
-                // 異世界冒險可能是「戰鬥-探索-戰鬥-Boss」
-                return ['setup', 'event_battle', 'univ_filler', 'event_explore', 'event_battle', 'boss'];
+                start_bonus: ["神聖", "被詛咒的", "生鏽的"]
             },
             actors: ['noun_monster', 'noun_location_building', 'noun_item_weapon'], 
-            baseTension: 20
+            baseTension: 20,
+            // 🌟 新版宣告法：冒險劇本
+            flow: {
+                isSequential: false,
+                start: ['setup'],
+                middle: ['event_battle', 'event_explore'], // 中間隨機抽打怪或探索
+                end: ['boss'],
+                minMiddle: 3, maxMiddle: 5
+            }
         },
         
         'romance': {
-             // 【重要修正】加入了 love_date 和 love_crisis 讓感情線完整
-             stages: ['love_meet', 'love_bond', 'love_date', 'love_scheme', 'love_crisis', 'love_counter', 'love_confession'],
              actors: ['lover', 'rival', 'noun_npc_generic'], 
-             baseTension: 5 
+             baseTension: 5,
+             // 🌟 新版宣告法：戀愛劇本 (注意是循序模式！)
+             flow: {
+                 isSequential: true, // 循序漸進模式
+                 start: ['love_meet'],
+                 middle: ['love_bond', 'love_date', 'love_scheme', 'love_crisis', 'love_counter'], // 必須照順序來，但會隨機安插通用劇情
+                 end: ['love_confession']
+             }
         },
-        'raising': {
-             // 養成維持 5 階段，與我們剛剛寫的劇本完美對齊
-             stages: ['raise_meet', 'raise_train', 'raise_debut', 'raise_climax', 'raise_ending'],
-             actors: ['trainee', 'rival', 'butler'], 
-             baseTension: 0 
-        },
-    },
 
+        'raising': {
+             actors: ['trainee', 'rival', 'butler'], 
+             baseTension: 0,
+             // 🌟 新版宣告法：養成劇本 (循序模式！)
+             flow: {
+                 isSequential: true, 
+                 start: ['raise_meet'],
+                 middle: ['raise_train', 'raise_debut', 'raise_climax'],
+                 end: ['raise_ending']
+             }
+        }
+    },
     // ============================================================
     // 3. 啟動新冒險 (Start Chain)
     // ============================================================
@@ -194,8 +239,7 @@ initChain: function(skeletonKey = null, themeTag = null) {
         }
 
         // 4. 動態生成流程 (Dynamic Flow)
-        // 如果骨架有定義 getStages 函數，就用它；否則用靜態陣列
-        let dynamicStages = skel.getStages ? skel.getStages() : [...skel.stages];
+        let dynamicStages = this.buildUnifiedFlow(skel);
 
         console.log(`🎬 Director: Skeleton [${selectedSkeleton}], Theme [${mainTag}], Seeds:`, memory, `Flow:`, dynamicStages);
 
@@ -362,10 +406,14 @@ initChain: function(skeletonKey = null, themeTag = null) {
         // 3. 處理對話 (如果有的話)
         let dialogueArr = null;
         if (tmpl.dialogue) {
-            dialogueArr = tmpl.dialogue.map(d => ({
-                speaker: this._expandGrammar(d.speaker, db, memory), 
-                text: this._expandGrammar((d.text[lang] || d.text['zh']), db, memory)
-            }));
+            dialogueArr = tmpl.dialogue.map(d => {
+                // 自動判斷是純字串還是物件格式
+                let rawDiagText = typeof d.text === 'string' ? d.text : (d.text[lang] || d.text['zh'] || '');
+                return {
+                    speaker: this._expandGrammar(d.speaker, db, memory), 
+                    text: this._expandGrammar(rawDiagText, db, memory) // 這樣就能正確編譯了！
+                };
+            });
         }
 
         // 4. 處理獎勵中的變數

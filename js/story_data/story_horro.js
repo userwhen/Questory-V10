@@ -74,7 +74,103 @@
             options: [
                 { label: "硬著頭皮進去", action: "advance_chain" }
             ]
-        }
+        },
+		// ==========================================
+        // 第一階：開局 (隨機抽中，發放路線標籤)
+        // ==========================================
+        {
+            type: 'setup_omen', 
+            id: 'hor_cult_setup',
+            // 這裡不寫 reqTag，讓系統在開局時有機會隨機抽到它
+            text: { zh: [ 
+                "你迷路了。眼前出現了一個與世隔絕的村落，村口立著一尊面目猙獰的詭異神像。",
+                "村民們直勾勾地盯著你，嘴裡唸著你聽不懂的咒語。",
+                "你感覺到一陣強烈的惡寒..." 
+            ]},
+            options: [
+                { 
+                    label: "硬著頭皮進村", 
+                    action: "node_next", 
+                    // 【關鍵1】發放路線標籤 (route_cult)，並初始化理智值
+                    rewards: { tags: ['route_cult'], varOps: [{key:'sanity', val:100, op:'set'}] },
+                    nextScene: { text: "你踏入了村莊，身後的霧氣瞬間合攏，退路消失了。", options: [{label: "繼續", action: "advance_chain"}] }
+                }
+            ]
+        },
+
+        // ==========================================
+        // 第二階：探索 (使用 reqTag 鎖定路線)
+        // ==========================================
+        {
+            type: 'encounter_stalk', 
+            id: 'hor_cult_explore',
+            // 【關鍵2】reqTag 確保只有身上有 'route_cult' 的玩家才會抽到這個場景
+            reqTag: 'route_cult',
+            text: { zh: [ 
+                "你在村長的空屋裡搜查。屋內貼滿了黃色的符紙，神桌上放著一個木盒。",
+                "突然，門外傳來了密集的腳步聲，村民們包圍了屋子！" 
+            ]},
+            options: [
+                { 
+                    label: "打開木盒看看", 
+                    action: "node_next", 
+                    // 玩家做對了選擇，獲得了隱藏道具 Tag：talisman (護身符)
+                    rewards: { tags: ['talisman'] },
+                    nextScene: { text: "盒子裡是一張畫著血色眼睛的護身符，你趕緊把它塞進口袋。", options: [{label: "準備突圍", action: "advance_chain"}] }
+                },
+                { 
+                    label: "躲進床底", 
+                    action: "node_next", 
+                    // 玩家錯過了道具，且因為恐懼扣除理智值
+                    rewards: { varOps: [{key:'sanity', val:40, op:'-'}] },
+                    nextScene: { text: "你躲在床底，看著無數雙赤腳在房間裡走動，恐懼讓你的理智開始崩潰。", options: [{label: "尋找機會逃跑", action: "advance_chain"}] }
+                }
+            ]
+        },
+
+        // ==========================================
+        // 第三階：高潮 (使用 condition 檢驗生死)
+        // ==========================================
+        {
+            type: 'encounter_climax', 
+            id: 'hor_cult_boss',
+            reqTag: 'route_cult',
+            text: { zh: [ 
+                "你被村民逼到了祭壇前。那個面目猙獰的神像竟然活了過來，巨大的陰影將你籠罩。",
+                "「留下來... 成為我們的一部分...」",
+                "你的意識開始模糊，生死就在一線之間！" 
+            ]},
+            options: [
+                // 【關鍵3 - 完美結局】
+                // condition: 同時要求「擁有護身符 (tags)」且「理智值大於等於 60 (vars)」
+                { 
+                    label: "高舉護身符念出破除咒語！", 
+                    condition: { tags: ['talisman'], vars: [{key:'sanity', val:60, op:'>='}] },
+                    style: "primary", 
+                    action: "finish_chain", 
+                    nextScene: { text: "護身符爆發出刺眼的光芒，神像發出淒厲的慘叫並崩解！你趁亂逃出了村莊。\n【True End: 破除邪祟】" }
+                },
+
+                // 【關鍵4 - 慘勝結局】
+                // condition: 有護身符，但理智值已經太低 (<60)
+                { 
+                    label: "胡亂揮舞護身符求生", 
+                    condition: { tags: ['talisman'], vars: [{key:'sanity', val:60, op:'<'}] },
+                    action: "finish_chain", 
+                    nextScene: { text: "護身符雖然逼退了村民，但你的精神已經受到不可逆的重創。\n【Normal End: 瘋狂的倖存者】" }
+                },
+
+                // 【關鍵5 - 保底壞結局 (防呆設計)】
+                // 注意這裡不寫 condition，代表只要前面兩個選項不符合，玩家就只能被迫按這個按鈕
+                { 
+                    label: "無路可逃，絕望閉上眼睛", 
+                    style: "danger", 
+                    action: "finish_chain", 
+                    nextScene: { text: "你連抵抗的力氣都沒有了。黑暗徹底吞噬了你，你成為了村莊的新祭品。\n【Bad End: 永遠的村民】" }
+                }
+            ]
+        },
+		
     );
 
     console.log("🕵️‍♂️ 恐怖劇本已載入");
