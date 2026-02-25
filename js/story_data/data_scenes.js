@@ -105,7 +105,7 @@ register({
 register({
     id: 'delivery_start',
     dialogue: [
-        { speaker: "旁白", text: "zh:{atom_weather}，雨水順著雨衣的帽簷滑落... 這裡安靜得不正常。" },
+        { speaker: "旁白", text: "{atom_weather}，雨水順著雨衣的帽簷滑落... 這裡安靜得不正常。" },
         { speaker: "你", text: "有人在嗎？快遞。" },
         { speaker: "旁白", text: "沒有回應。但我能感覺到，門後似乎有什麼東西在動..." }
     ],
@@ -115,9 +115,9 @@ register({
 register({
     id: 'delivery_choice',
     text: [
-        "(備註欄寫著紅字：『必須親手交付，絕不能帶回。』)",
+        "備註欄寫著紅字：『必須親手交付，絕不能帶回。』",
         "時間是晚上 11:58。還有兩分鐘。",
-        "(那個{atom_smell}的味道，似乎就是從門縫裡飄出來的...)"
+        "那個{atom_smell}的味道，似乎就是從門縫裡飄出來的..."
     ],
     options: [
         // 補上 action: "node_next"
@@ -568,7 +568,7 @@ register({
     text: "【致命錯誤】\n防火牆追蹤到了你的神經訊號！\n你的大腦受到強烈電擊...",
     options: [
         { 
-            label: "意識中斷... (HP -20)", 
+            label: "意識中斷... (精力 -20)", 
             action: "finish_chain", 
             rewards: { energy: -20 } // 大幅扣除精力
         }
@@ -602,12 +602,10 @@ register({
 
 register({
     id: 'confessional_encounter',
-    text: [
-        "一個全身濕透的女人跌跌撞撞地闖了進來。",
-        "她穿著昂貴但沾滿泥濘的風衣，臉色蒼白如紙，眼神渙散。",
-        "她看見了你身上的聖袍，撲通一聲跪在告解室前。"
-    ],
     dialogue: [
+        {text:"一個全身濕透的女人跌跌撞撞地闖了進來。"},
+        {text:"她穿著昂貴但沾滿泥濘的風衣，臉色蒼白如紙，眼神渙散。"},
+        {text:"她看見了你身上的聖袍，撲通一聲跪在告解室前。"},
         { speaker: "女人", text: "神父……我有罪。" },
         { speaker: "你", text: "（壓低嗓音）孩子，這麼晚了，教堂已經關門了。" },
         { speaker: "女人", text: "不，請聽我說。我剛才……殺了人。" }
@@ -626,12 +624,10 @@ register({
     id: 'confessional_poison_reveal',
     dialogue: [
         { speaker: "你", text: "你殺了誰？" },
-        { speaker: "女人", text: "我殺了這裡的神父。十分鐘前，我在那瓶紅酒裡下了足以殺死一頭大象的氰化物。" }
-    ],
-    text: [
-        "匡噹！你手中的酒杯掉在地上摔得粉碎。",
-        "深紅色的液體潑灑在鞋子上，像極了血。",
-        "女人看著地上的碎片，嘴角勾起一抹詭異的微笑。"
+        { speaker: "女人", text: "我殺了這裡的神父。十分鐘前，我在那瓶紅酒裡下了足以殺死一頭大象的氰化物。" },
+		{text:"匡噹！你手中的酒杯掉在地上摔得粉碎。"},
+		{text:"深紅色的液體潑灑在鞋子上，像極了血。"},
+		{text:"女人看著地上的碎片，嘴角勾起一抹詭異的微笑。"}
     ],
     options: [
         { 
@@ -656,6 +652,9 @@ register({
         "你衝過去揪住她的衣領，但她眼神鋒利，毫無懼色。"
     ],
     dialogue: [
+		{text:"【第二章：死亡倒數】"},
+        {text:"恐懼像冰水一樣澆透了全身。喉嚨開始發緊——是心理作用？還是毒藥生效了？"},
+        {text:"你衝過去揪住她的衣領，但她眼神鋒利，毫無懼色。"},
         { speaker: "女人", text: "這是一個考驗。如果您是真的神父，上帝會拯救您。" },
         { speaker: "你", text: "別裝神弄鬼！解藥在哪裡？" },
         { speaker: "女人", text: "解藥在我的車上。但我設定了密碼鎖，四十分鐘後自動銷毀。" },
@@ -672,17 +671,15 @@ register({
 
 register({
     id: 'confessional_truth',
-    text: [
-        "【第三章：致命的真相】",
-        "時間流逝，你的手指開始發麻，視線邊緣出現模糊。",
-        "女人講述了一個關於丈夫外遇、黑幫棄屍點以及外科醫生丈夫的故事。",
-        "就在這時——咚、咚、咚。",
-        "教堂後門傳來了沈重的敲擊聲。"
-    ],
     dialogue: [
-        { speaker: "女人", text: "（縮成一團）他們來了。我丈夫，還有那個神父。他們回來『清理』了。" },
-        { speaker: "你", text: "該死...還有二十分鐘..." }
-    ],
+                { text: { zh: "【第三章：致命的真相】" } },
+                { text: { zh: "時間流逝，你的手指開始發麻，視線邊緣出現模糊。" } },
+                { text: { zh: "女人講述了一個關於丈夫外遇、黑幫棄屍點以及外科醫生丈夫的故事。" } },
+                { text: { zh: "就在這時——咚、咚、咚。" } },
+                { text: { zh: "教堂後門傳來了沈重的敲擊聲。" } },
+                { speaker: "女人", text: { zh: "（縮成一團）他們來了。我丈夫，還有那個神父。他們回來『清理』了。" } },
+                { speaker: "你", text: { zh: "該死...還有二十分鐘..." } }
+            ],
     options: [
         // 這裡是結局分歧點
         // 選項 A: 壞結局
@@ -710,15 +707,13 @@ register({
 // --- 結局 A：虛假的救贖 (Bad End) ---
 register({
     id: 'confessional_end_bad',
-    text: [
-        "你打開門，向門外的黑影高喊：「我抓住了她！給我解藥！」",
-        "進來的是個戴眼鏡的男人，他微笑著遞給你一支針筒。",
-        "你迫不及待地注射，卻發現身體瞬間失去了力氣——那是肌肉鬆弛劑。"
-    ],
     dialogue: [
-        { speaker: "丈夫", text: "親愛的，今晚的獵物素質不錯。" },
-        { speaker: "女人", text: "（蹲在你耳邊）可惜，神父的演技太差了。" }
-    ],
+                { text: { zh: "你打開門，向門外的黑影高喊：「我抓住了她！給我解藥！」" } },
+                { text: { zh: "進來的是個戴眼鏡的男人，他微笑著遞給你一支針筒。" } },
+                { text: { zh: "你迫不及待地注射，卻發現身體瞬間失去了力氣——那是肌肉鬆弛劑。" } },
+                { speaker: "丈夫", text: { zh: "親愛的，今晚的獵物素質不錯。" } },
+                { speaker: "女人", text: { zh: "（蹲在你耳邊）可惜，神父的演技太差了。" } }
+            ],
     options: [
         { 
             label: "意識陷入黑暗... (結局)", 
@@ -731,15 +726,13 @@ register({
 // --- 結局 B：真正的神父 (True End) ---
 register({
     id: 'confessional_end_true',
-    text: [
-        "你猛地踢開告解室的門，一把扯下聖壇下的地毯，露出了一個通風口。",
-        "你冷冷地看著驚恐的女人。"
-    ],
     dialogue: [
-        { speaker: "你", text: "根本沒有毒酒。如果是氰化物，我早就死了。" },
-        { speaker: "你", text: "我的手指發麻是因為發燒淋雨。你編故事只是為了讓我替你擋住門外的人！" },
-        { speaker: "女人", text: "你..." }
-    ],
+                { text: { zh: "你猛地踢開告解室的門，一把扯下聖壇下的地毯，露出了一個通風口。" } },
+                { text: { zh: "你冷冷地看著驚恐的女人。" } },
+                { speaker: "你", text: { zh: "根本沒有毒酒。如果是氰化物，我早就死了。" } },
+                { speaker: "你", text: { zh: "我的手指發麻是因為發燒淋雨。你編故事只是為了讓我替你擋住門外的人！" } },
+                { speaker: "女人", text: { zh: "你..." } }
+            ],
     options: [
         {
             label: "從通風口逃走",
@@ -766,28 +759,24 @@ register({
 // --- 結局 C：血色黎明 (Action End) ---
 register({
     id: 'confessional_end_action',
-    text: [
-        "你利用教堂的地形，推倒了雕像，並點燃了聖油。",
-        "當入侵者闖入時，你展開了一場血腥的搏鬥。",
-        "（戰鬥過程省略...）你受了重傷，但成功殺死了對方。"
-    ],
     dialogue: [
-        { speaker: "你", text: "呼...呼...解藥...給我..." },
-        { speaker: "女人", text: "（哭著拿出藥瓶）對不起。" }
-    ],
+                { text: { zh: "你利用教堂的地形，推倒了雕像，並點燃了聖油。" } },
+                { text: { zh: "當入侵者闖入時，你展開了一場血腥的搏鬥。" } },
+                { text: { zh: "經歷了一番苦戰，雖然你受了重傷，但仍成功殺死了對方。" } },
+                { speaker: "你", text: { zh: "呼...呼...解藥...給我..." } },
+                { speaker: "女人", text: { zh: "（哭著拿出藥瓶）對不起。" } }
+            ],
     options: [
         {
             label: "喝下藥水",
             action: "node_next",
             nextScene: {
-                text: [
-                    "腹痛瞬間加劇，如同火燒。",
-                    "女人後退一步：「酒裡真的有毒，但那是除草劑。根本沒有解藥。」",
-                    "女人拿走了屍體上的車鑰匙離開了。你靠在聖壇上，看著窗外的第一縷晨光。"
-                ],
                 dialogue: [
-                    { speaker: "你", text: "至少……這場雨停了。" }
-                ],
+                            { text: { zh: "腹痛瞬間加劇，如同火燒。" } },
+                            { text: { zh: "女人後退一步：「酒裡真的有毒，但那是除草劑。根本沒有解藥。」" } },
+                            { text: { zh: "女人拿走了屍體上的車鑰匙離開了。你靠在聖壇上，看著窗外的第一縷晨光。" } },
+                            { speaker: "你", text: { zh: "至少……這場雨停了。" } }
+                        ],
                 options: [{ 
                     label: "在晨光中閉上眼 (Normal End)", 
                     action: "finish_chain", 
@@ -801,7 +790,7 @@ register({
 // 1. 全局初始化 (Initialization)
 // ============================================================
 register({
-    id: 'rose_start',
+    id: 'rose_start1',
     entry: true, // 入口標記
     onEnter: { 
         varOps: [
@@ -816,8 +805,9 @@ register({
     text: [
         "【序章：囚鳥】",
         "頭痛欲裂。你緩緩睜開眼，發現自己躺在冰冷潮濕的石板地上。",
-        "空氣中瀰漫著陳年紅酒與鐵鏽（或許是血？）混合的腥味。遠處傳來雷聲，彷彿是這座深宅大院的低吼。",
-        "你是被召回家族的私生子，本該參加今晚的家主壽宴，此刻卻身陷囹圄。"
+        "空氣中瀰漫著陳年紅酒與{atom_smell}混合的腥味",
+		"遠處傳來雷聲，彷彿是這座深宅大院的低吼。",
+        "其實你是被召回家族的私生子，本該參加今晚的家主壽宴，此刻卻身陷囹圄。"
     ],
     options: [
         { label: "掙扎著站起來", action: "node_next", nextSceneId: 'rose_cellar_1' }
@@ -828,7 +818,7 @@ register({
 // 1. 全局初始化
 // ============================================================
 register({
-    id: 'rose_start',
+    id: 'rose_start2',
     entry: true,
     onEnter: { 
         varOps: [
@@ -860,52 +850,76 @@ register({
 // ============================================================
 register({
     id: 'rose_cellar_1',
-    text: [
-        "這是一個被家族遺棄多年的地下酒窖。牆壁上滲出的水漬像是一張張哭泣的臉。",
-        "微弱的燭光在風中搖曳，隨時可能熄滅。",
-        "面前是一扇厚重的橡木門，門鎖早已鏽跡斑斑。",
-        "而在角落的酒桶旁，蜷縮著一具穿著僕人制服的白骨，對方的手指呈現出詭異的扭曲狀，似乎死前正死死抓著什麼希望。"
-    ],
-    options: [
-        // [A] 搜查屍體
-        { 
-            label: "💀 檢查那具白骨 (SAN -5)", 
-            condition: { noTag: 'has_key' },
-            action: "node_next", 
-            nextSceneId: 'rose_cellar_1', // 刷新場景
-            rewards: { 
-                tags: ['has_key'], 
-                varOps: [{key:'sanity', val:5, op:'-'}] // 扣除 SAN
-            },
-            nextScene: { 
-                text: "你強忍著恐懼與噁心，靠近那具屍體。制服上的銘牌寫著「老湯姆」——那是小時候唯一給過你糖果的僕人。\n\n你掰開他僵硬的指骨，清脆的斷裂聲在寂靜的地窖中格外刺耳。\n一枚冰冷的【黃銅鑰匙】滑落在你掌心。\n「抱歉了，湯姆。」你低聲說道。" 
-            }
-        },
-        
-        // [B] 暴力破門 (描述更暴力)
-        { 
-            label: "💪 用身體撞開木門 (STR > 8)", 
-            check: { stat: 'STR', val: 8 }, 
-            nextScene: { 
-                text: "你後退幾步，深吸一口氣，將全身的力量集中在肩膀上。\n\n「砰！」\n\n伴隨著腐朽木屑的飛濺，橡木門發出一聲哀鳴，轟然倒塌。你揉了揉發痛的肩膀，眼神堅定。", 
-                options: [{label: "衝出地窖", action: "node_next", nextSceneId: 'rose_hallway'}] 
-            }, 
-            failScene: { 
-                text: "你狠狠撞向大門，但對方比想像中更堅固。劇痛從肩膀傳遍全身，你狼狽地跌坐在地，揚起一陣灰塵。\n這扇門在嘲笑你的無力。", 
-                rewards: { varOps: [{key:'sanity', val:5, op:'-'}] } 
-            } 
-        },
-
-        // [C] 使用鑰匙 (增加細節)
-        { 
-            label: "🗝️ 插入黃銅鑰匙", 
-            condition: { hasTag: 'has_key' }, 
-            action: "node_next", 
-            nextScene: { 
-                text: "鑰匙插入鎖孔，發出乾澀的摩擦聲。\n你輕輕轉動，鏽死的機關在抗議聲中妥協了。\n\n「喀噠。」鎖開了。", 
-                options: [{label: "推門離開", action: "node_next", nextSceneId: 'rose_hallway'}] 
-            } 
-        }
+    dialogue: [
+                { text: { zh: "這是一個被家族遺棄多年的地下酒窖。牆壁上滲出的水漬像是一張張哭泣的臉。" } },
+                { text: { zh: "微弱的燭光在風中搖曳，隨時可能熄滅。" } },
+                { text: { zh: "面前是一扇厚重的橡木門，門鎖早已鏽跡斑斑。" } },
+                { text: { zh: "而在角落的酒桶旁，蜷縮著一具穿著僕人制服的白骨，對方的手指呈現出詭異的扭曲狀，似乎死前正死死抓著什麼希望。" } }
+            ],
+            options: [
+                // [A] 搜查屍體
+                { 
+                    label: "💀 檢查那具白骨 (SAN -5)", 
+                    // 條件：沒有 has_key 標籤時才出現
+                    condition: { noTag: 'has_key' },
+                    action: "node_next", 
+                    // 當玩家按下這個選項時，直接給予獎勵
+                    rewards: { 
+                        tags: ['has_key'], 
+                        varOps: [{key:'sanity', val:5, op:'-'}] 
+                    },
+                    // 並且跳轉到這個內建的場景
+                    nextScene: { 
+                        dialogue: [
+                            { text: { zh: "你強忍著恐懼與噁心，靠近那具屍體。制服上的銘牌寫著「老湯姆」——那是小時候唯一給過你糖果的僕人。" } },
+                            { text: { zh: "你掰開他僵硬的指骨，清脆的斷裂聲在寂靜的地窖中格外刺耳。" } },
+                            { text: { zh: "一枚冰冷的【黃銅鑰匙】滑落在你掌心。" } },
+                            { speaker: "你", text: { zh: "抱歉了，湯姆。" } }
+                        ],
+                        // 拿完鑰匙後，回到地窖首頁 (因為已經有了 has_key，所以這個選項會消失)
+                        options: [{ label: "返回", action: "node_next", nextSceneId: 'rose_cellar_1' }]
+                    }
+                },
+                
+                // [B] 暴力破門 
+                { 
+                    label: "💪 用身體撞開木門 (STR > 8)", 
+                    check: { stat: 'STR', val: 8 }, 
+                    action: "node_next", // 記得加上 action
+                    nextScene: { 
+                        dialogue: [
+                            { text: { zh: "你後退幾步，深吸一口氣，將全身的力量集中在肩膀上。" } },
+                            { text: { zh: "「砰！」" } },
+                            { text: { zh: "伴隨著腐朽木屑的飛濺，橡木門發出一聲哀鳴，轟然倒塌。你揉了揉發痛的肩膀，眼神堅定。" } }
+                        ], 
+                        options: [{label: "衝出地窖", action: "node_next", nextSceneId: 'rose_hallway'}] 
+                    }, 
+                    failScene: { 
+                        dialogue: [
+                            { text: { zh: "你狠狠撞向大門，但對方比想像中更堅固。" } },
+                            { text: { zh: "劇痛從肩膀傳遍全身，你狼狽地跌坐在地，揚起一陣灰塵。這扇門在嘲笑你的無力。" } }
+                        ],
+                        // 撞門失敗扣除 SAN 值
+                        rewards: { varOps: [{key:'sanity', val:5, op:'-'}] },
+                        // 失敗後留在原地
+                        options: [{ label: "揉揉肩膀站起來", action: "node_next", nextSceneId: 'rose_cellar_1' }]
+                    }
+				},
+				{ 
+                    label: "用鑰匙開鎖", 
+                    condition: { hasTag: 'has_key' },
+                    action: "node_next", 
+                    nextScene: { 
+                        dialogue: [
+                            { text: { zh: "你心裡不斷的回憶起老湯姆對你的好，" } },
+                            { text: { zh: "暗自在心裡發誓，等到你復仇成功後，" } },
+                            { text: { zh: "一定會回來替你報仇。" } },
+                            { text: { zh: "吱呀一聲，你藉著黃銅鑰匙開啟了上鎖的門。" } }
+                        ],
+                        // 拿完鑰匙後，回到地窖首頁 (因為已經有了 has_key，所以這個選項會消失)
+                        options: [{ label: "返回", action: "node_next", nextSceneId: 'rose_hallway' }]
+                    }
+                },
     ]
 });
 
@@ -919,10 +933,98 @@ register({
         "你拍去身上的塵土，整理好凌亂的衣領。從現在起，你是獵人，不是獵物。"
     ],
     options: [
-        { label: "推開宴會廳大門，入局", action: "node_next", nextSceneId: 'rose_hub' }
+        { label: "推開宴會廳大門，入局", action: "node_next", nextSceneId: 'rose_hub0' }
     ]
 });
+register({
+    id: 'rose_hub0',
+    text: [
+        "【宴會廳】",
+        "水晶吊燈灑下金色的光輝，香檳塔折射著奢靡的色彩。衣香鬢影之間，沒人注意到角落裡那個剛從地獄爬回來的人。",
+        "大少爺正在人群中心高談闊論，享受著恭維。",
+        "家主書房的鐘聲每隔一小時就會敲響，那是倒數的喪鐘。",
+        "------------------------------",
+        "⏳ 距離審判還有： {time_left} 時辰",
+        "📊 當前局勢：威望 {prestige} | 理智 {sanity} | 金幣 {gold} | 💕管家好感 {favor_butler}"
+    ],
+    options: [
+        // [A] 結局判定
+        {
+            label: "🔔 午夜鐘聲響起 (前往結局)",
+            style: "danger",
+            condition: { var: { key: 'time_left', val: 0, op: '<=' } },
+            action: "node_next",
+            nextSceneId: 'rose_climax'
+        },
 
+        // [B] 社交 (增加具體情境)
+        {
+            label: "🍷 融入貴族圈子 (威望+10 / 耗時)",
+            condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+            action: "node_next",
+            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
+            nextScene: { 
+                text: "你端起一杯紅酒，掩飾住嘴角的冷笑，走向了家族的旁支長老們。\n你若無其事地提起了大少爺最近在賭場的巨額虧損，以及幾筆不明的賬目。\n\n長老們的臉色變了。謠言像病毒一樣在宴會廳擴散。", 
+                onEnter: { varOps: [{key:'prestige', val:10, op:'+'}] },
+                options: [{label:"深藏功與名，退回人群", action:"node_next", nextSceneId:'rose_hub'}] 
+            }
+        },
+
+        // [C] 管家線
+        {
+            label: "🌹 尋找那位年輕管家",
+            condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+            action: "node_next",
+            nextSceneId: 'rose_butler_interaction'
+        },
+
+        // [D] 對峙線
+        {
+            label: "⚔️ 主動走向大少爺 (INT檢定 / 耗時)",
+            condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+            action: "node_next",
+            nextSceneId: 'rose_brother_fight'
+        },
+		{
+        label: "🍃 前往露台 (休息/偷聽)",
+        condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+        action: "node_next",
+        nextSceneId: 'rose_terrace' // 指向擴充一
+    },
+    {
+        label: "📚 進入圖書室 (探索)",
+        condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+        action: "node_next",
+        nextSceneId: 'rose_library' // 指向擴充二
+    },
+    {
+        label: "🎲 去偏廳賭一把 (賺錢)",
+        condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+        action: "node_next",
+        nextSceneId: 'rose_gamble' // 指向擴充三
+    },
+        // [E] 晉見家主
+        {
+            label: "🐉 強闖家主書房 (需威望50)",
+            style: "primary",
+            condition: { 
+                vars: [
+                    { key: 'prestige', val: 50, op: '>=' },
+                    { key: 'time_left', val: 1, op: '>=' }
+                ]
+            },
+            action: "node_next",
+            nextSceneId: 'rose_master_meet'
+        },
+        {
+            label: "🐉 強闖家主書房 (🔒 威望不足)",
+            style: "disabled",
+            condition: { var: { key: 'prestige', val: 50, op: '<' } },
+            action: "locked",
+            msg: "門口的保鏢冷冷地看著你：「私生子沒有資格進去。」"
+        }
+    ]
+});
 // ============================================================
 // 3. 第二章：豪門夜宴 (HUB - 增加氛圍描述)
 // ============================================================
@@ -930,10 +1032,7 @@ register({
     id: 'rose_hub',
     text: [
         "【宴會廳】",
-        "水晶吊燈灑下金色的光輝，香檳塔折射著奢靡的色彩。衣香鬢影之間，沒人注意到角落裡那個剛從地獄爬回來的人。",
-        "大少爺正在人群中心高談闊論，享受著恭維。",
-        "家主書房的鐘聲每隔一小時就會敲響，那是倒數的喪鐘。",
-        "------------------------------",
+
         "⏳ 距離審判還有： {time_left} 時辰",
         "📊 當前局勢：威望 {prestige} | 理智 {sanity} | 金幣 {gold} | 💕管家好感 {favor_butler}"
     ],
@@ -1337,7 +1436,7 @@ register({
                 options: [{label: "趕緊溜走", action: "node_next", nextSceneId: 'rose_hub'}]
             },
             failScene: {
-                text: "「他在袖子裡藏牌！」\n一聲大喝，你被憤怒的賭徒們圍毆了一頓，扔出了偏廳。\n(HP/精力扣除)",
+                text: "「他在袖子裡藏牌！」\n一聲大喝，你被憤怒的賭徒們圍毆了一頓，扔出了偏廳。\n(精力扣除)",
                 rewards: { energy: -10, varOps: [{key:'prestige', val:20, op:'-'}] },
                 options: [{label: "狼狽爬起", action: "node_next", nextSceneId: 'rose_hub'}]
             }
@@ -1361,10 +1460,11 @@ window.SCENE_DB = {
                 { label: "🐺 狼人殺 (推理)", action: "node_next", nextSceneId: 'wolf_hub' },
                 { label: "🐢 海龜湯 (解謎)", action: "node_next", nextSceneId: 'turtle_hub' },
                 { label: "🔒 密室逃脫 (探索)", action: "node_next", nextSceneId: 'room_hub' },
-                { label: "🌹 測試劇本：豪門夜宴 (Full Feature)", action: "node_next", nextSceneId: 'rose_start' },
-                { label: "🚀 跳轉：機械公元", action: "node_next", nextSceneId: 'machine_entry', style: 'primary' },
-                { label: "💕 跳轉：后宮帝國", action: "node_next", nextSceneId: 'harem_root', style: 'primary' },
-				{ label: "⛪ 告解室的最後一小時 (懸疑)", action: "node_next", nextSceneId: 'confessional_start' },
+                { label: "🌹 豪門夜宴", action: "node_next", nextSceneId: ['rose_start1', 'rose_start2'] },
+				{ label: "⛪ 告解室 (懸疑)", action: "node_next", nextSceneId: 'confessional_start' },
+                { label: "🚀 機械公元", action: "node_next", nextSceneId: 'machine_entry', style: 'primary' },
+                { label: "💕 后宮帝國", action: "node_next", nextSceneId: 'harem_root', style: 'primary' },
+				
 			]
         }
     ],

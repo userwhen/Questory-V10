@@ -176,7 +176,24 @@
             ]},
             options: [{ label: "感謝情報", action: "advance_chain" }]
         },
-
+		{
+            type: 'twist', 
+            id: 'fallback_mystery_twist',
+            dialogue: [
+                { text: { zh: "隨著調查深入，你發現了一個驚人的事實！" } },
+                { text: { zh: "原本以為無關緊要的線索，居然全部串聯了起來。" } }
+            ],
+            options: [{ label: "進入最終推理！", action: "advance_chain" }]
+        },
+        {
+            type: 'deduction', 
+            id: 'fallback_mystery_end',
+            dialogue: [
+                { text: { zh: "你指著名單上的那個名字，一切真相大白。" } },
+                { text: { zh: "犯人低下了頭，承認了所有的罪行。這場風波終於平息了。" } }
+            ],
+            options: [{ label: "結案 (獲得獎勵)", action: "finish_chain", rewards: { exp: 100, gold: 50 } }]
+        },
         // ==========================================
         // [Deduction] 最終推理 (含保底機制)
         // ==========================================

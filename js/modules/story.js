@@ -253,31 +253,36 @@ window.StoryEngine = {
     // 處理節點跳轉 (抽出邏輯)
 // [替換] 修正版跳轉處理
 _handleNodeJump: function(opt, passed) {
-    let targetId = passed ? opt.nextSceneId : opt.failSceneId;
-    
-    // [Critical Fix] 攔截特殊指令 GEN_MODULAR
-    if (targetId === 'GEN_MODULAR') {
-        console.log("🎲 偵測到隨機冒險指令，啟動生成器...");
-        this.startRandomChain();
-        return;
-    }
+        let targetId = passed ? opt.nextSceneId : opt.failSceneId;
+        
+        // 🌟 【全新升級】如果 targetId 是一個陣列，系統就會自動幫你隨機抽一個！
+        if (Array.isArray(targetId)) {
+            targetId = targetId[Math.floor(Math.random() * targetId.length)];
+            console.log(`🎲 陣列隨機跳轉觸發！抽中路線: ${targetId}`);
+        }
 
-    // 正常場景跳轉
-    let targetNode = this.findSceneById(targetId);
-    
-    // Fallback: 如果 ID 找不到，嘗試直接使用物件引用
-    if (!targetNode) {
-        targetNode = passed ? opt.nextScene : opt.failScene;
-    }
-    
-    if (targetNode) {
-        this.playSceneNode(targetNode);
-    } else {
-        console.error(`❌ Scene ID not found: ${targetId} (且無物件 fallback)`);
-        // 防止卡死，回到大廳或結束
-        if (targetId !== 'GEN_MODULAR') this.finishChain(); 
-    }
-},
+        // [Critical Fix] 攔截特殊指令 GEN_MODULAR
+        if (targetId === 'GEN_MODULAR') {
+            console.log("🎲 偵測到隨機冒險指令，啟動生成器...");
+            this.startRandomChain();
+            return;
+        }
+
+        // 正常場景跳轉
+        let targetNode = this.findSceneById(targetId);
+        
+        // Fallback: 如果 ID 找不到，嘗試直接使用物件引用
+        if (!targetNode) {
+            targetNode = passed ? opt.nextScene : opt.failScene;
+        }
+        
+        if (targetNode) {
+            this.playSceneNode(targetNode);
+        } else {
+            console.error(`❌ Scene ID not found: ${targetId} (且無物件 fallback)`);
+            if (targetId !== 'GEN_MODULAR') this.finishChain(); 
+        }
+    },
 	
 	// ============================================================
     // 🔄 [SECTION 2.5] SESSION MANAGEMENT (補回這部分)
@@ -580,7 +585,24 @@ _handleNodeJump: function(opt, passed) {
     // ============================================================
     _processText: function(rawText) {
         let textArr = Array.isArray(rawText) ? rawText : [rawText || "(...)"];
-        return textArr.map(t => this._formatText(this._resolveDynamicText(t)));
+        
+        return textArr.map(t => {
+            // 1. 先解析你原本的靜態變數 (例如 {detective}, {sanity}, {gold})
+            let resolvedText = this._resolveDynamicText(t);
+
+            // 🌟 2. 終極攔截：呼叫引擎解析隨機詞庫 (例如 {atom_weather}, {atom_smell})
+            if (window.StoryGenerator && window.FragmentDB) {
+                 const gs = window.GlobalState;
+                 const memory = (gs && gs.story && gs.story.chain && gs.story.chain.memory) 
+                                ? gs.story.chain.memory 
+                                : {};
+                 // 強制經過翻譯引擎
+                 resolvedText = window.StoryGenerator._expandGrammar(resolvedText, window.FragmentDB, memory);
+            }
+
+            // 3. 最後套用 CSS 顏色與排版
+            return this._formatText(resolvedText);
+        });
     },
 
     // 5. [核心修改] resolveDynamicText - 支援顯示變數值

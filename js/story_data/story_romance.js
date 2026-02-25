@@ -18,12 +18,12 @@
             options: [
                 { 
                     label: "挺身而出保護 (加好感)", action: "node_next", 
-                    rewards: { tags: ['route_classic', 'tag_protector'], varOps: [{key:'love_meter', val:15, op:'set'}, {key:'trust', val:5, op:'set'}] }, 
+                    rewards: { tags: ['route_classic', 'tag_protector','theme_romance'], varOps: [{key:'love_meter', val:15, op:'set'}, {key:'trust', val:5, op:'set'}] }, 
                     nextScene: { text: "你冷靜地擋在{lover}身前，懾人的氣勢讓追兵猶豫了。{lover}抬頭看著你，眼中閃過一絲驚訝與感激。", options: [{label: "繼續", action: "advance_chain"}] } 
                 },
                 { 
                     label: "冷靜地協助解圍 (加信任)", action: "node_next", 
-                    rewards: { tags: ['route_classic', 'tag_strategist'], varOps: [{key:'love_meter', val:5, op:'set'}, {key:'trust', val:15, op:'set'}] }, 
+                    rewards: { tags: ['route_classic', 'tag_strategist','theme_romance'], varOps: [{key:'love_meter', val:5, op:'set'}, {key:'trust', val:15, op:'set'}] }, 
                     nextScene: { text: "你用幾句巧妙的謊言打發了追兵。{lover}鬆了一口氣，對你的機智印象深刻。", options: [{label: "繼續", action: "advance_chain"}] } 
                 }
             ]
@@ -115,12 +115,12 @@
             options: [
                 { 
                     label: "冷漠拒絕對方 (專一)", action: "node_next", 
-                    rewards: { tags: ['route_triangle'], varOps: [{key:'loyalty', val:20, op:'set'}, {key:'desire', val:0, op:'set'}] }, 
+                    rewards: { tags: ['route_triangle','theme_romance'], varOps: [{key:'loyalty', val:20, op:'set'}, {key:'desire', val:0, op:'set'}] }, 
                     nextScene: { text: "你冷冷地看著{rival}。「抱歉，我們想要獨處。」{rival}挑了挑眉，似笑非笑地離開了。", options: [{label: "繼續", action: "advance_chain"}] } 
                 },
                 { 
                     label: "默許對方坐下 (曖昧)", action: "node_next", 
-                    rewards: { tags: ['route_triangle'], varOps: [{key:'loyalty', val:0, op:'set'}, {key:'desire', val:20, op:'set'}, {key:'stress', val:10, op:'+'}] }, 
+                    rewards: { tags: ['route_triangle','theme_romance'], varOps: [{key:'loyalty', val:0, op:'set'}, {key:'desire', val:20, op:'set'}, {key:'stress', val:10, op:'+'}] }, 
                     nextScene: { text: "你沒有說話。{rival}順勢坐下，膝蓋在桌下似有若無地碰觸著你。空氣中瀰漫著危險的拉扯感。", options: [{label: "繼續", action: "advance_chain"}] } 
                 }
             ]
@@ -209,7 +209,17 @@
                     nextScene: { text: "【結局：孤獨的逃兵】\n這段糾纏讓你身心俱疲。你拒絕了所有人，獨自消失在茫茫人海中。", rewards: { exp: 300 } } 
                 }
             ]
-        }
+        },
+		{
+            type: 'love_confession', 
+            id: 'fallback_romance_end',
+            dialogue: [
+                { text: { zh: "夜風微涼，氣氛恰到好處。" } },
+                { speaker: "{lover}", text: { zh: "「其實，我一直想對你說... 我喜歡你。」" } },
+                { text: { zh: "你看著對方真摯的雙眼，知道這段關係將迎來新的篇章。" } }
+            ],
+            options: [{ label: "牽起對方的手", action: "finish_chain", rewards: { exp: 50, tags: ['in_relationship'] } }]
+        },
     );
 
     console.log("💖 戀愛劇本(雙路線)已載入");

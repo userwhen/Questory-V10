@@ -170,6 +170,24 @@
                 }
             ]
         },
+		{
+            type: 'encounter_climax', 
+            id: 'fallback_horror_climax',
+            dialogue: [
+                { text: { zh: "最糟糕的情況發生了。那個恐怖的存在擋住了你唯一的去路。" } },
+                { text: { zh: "周圍的空氣彷彿結冰，心臟在胸腔裡狂跳。" } }
+            ],
+            options: [{ label: "拼死一搏！", action: "advance_chain" }]
+        },
+        {
+            type: 'final_survival', 
+            id: 'fallback_horror_end',
+            dialogue: [
+                { text: { zh: "清晨的第一道曙光刺破了黑暗。" } },
+                { text: { zh: "你滿身是傷，但你活下來了。這才是最重要的。" } }
+            ],
+            options: [{ label: "逃出生天", action: "finish_chain", rewards: { exp: 120 } }]
+        },
 		
     );
 

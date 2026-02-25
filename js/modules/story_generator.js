@@ -96,7 +96,7 @@ window.StoryGenerator = {
         'horror': {
             seeds: {
                 weather: [ { val: "伸手不見五指的深夜", tag: "risk_high" }, { val: "雷雨交加的夜晚", tag: "env_storm" } ],
-                curse_type: ["古代詛咒", "怨靈附身", "生物變異"]
+                curse_type: [{ val: "古代詛咒", tag: "curse_ancient" }, "怨靈附身", "生物變異"]
             },
             actors: ['survivor', 'noun_monster', 'noun_location_building'], 
             baseTension: 30,
@@ -201,15 +201,19 @@ initChain: function(skeletonKey = null, themeTag = null) {
         // 這些變數決定了整篇故事的「背景設定」
         if (skel.seeds) {
             for (let [key, options] of Object.entries(skel.seeds)) {
-                // 隨機選一個設定 (例如 weather: 'storm')
+                // 隨機選一個設定 (例如 weather)
                 const pick = options[Math.floor(Math.random() * options.length)];
                 
-                // 如果選項是物件，可以包含 tag 和 val
-                if (typeof pick === 'object') {
-                    memory[key] = pick.val;
-                    if (pick.tag) initialTags.push(pick.tag);
+                // 🌟 判斷：如果抽出來的是一個物件 (例如 {val: "暴風雨", tag: "env_storm"})
+                if (pick && typeof pick === 'object' && pick.val) {
+                    memory[key] = pick.val; // 把 "暴風雨" 存入記憶，讓 {weather} 可以顯示文字
+                    
+                    if (pick.tag) {
+                        // 把 "env_storm" 存入初始標籤，系統稍後會自動把它加給玩家！
+                        initialTags.push(pick.tag); 
+                    }
                 } else {
-                    // 如果只是字串
+                    // 如果只是普通字串 ["詭異的", "悲傷的"]
                     memory[key] = pick;
                 }
             }
@@ -395,37 +399,64 @@ initChain: function(skeletonKey = null, themeTag = null) {
     fillTemplate: function(tmpl, lang, memory) {
         const db = window.FragmentDB;
         
-        // 1. 取得原始文本
-        let rawText = tmpl.text[lang] || tmpl.text['zh'];
-        if (Array.isArray(rawText)) rawText = rawText.join("\n");
+        // ==========================================
+        // 1. 處理主文本 (Text) - 加上防呆與多格式支援
+        // ==========================================
+        let finalTxT = "";
+        if (tmpl.text) {
+            let rawText = "";
+            if (typeof tmpl.text === 'string') {
+                rawText = tmpl.text; // 支援舊版純字串
+            } else if (Array.isArray(tmpl.text)) {
+                rawText = tmpl.text.join("\n"); // 支援舊版陣列
+            } else {
+                // 支援新版多語系物件 { zh: "..." } 或 { zh: ["...", "..."] }
+                let t = tmpl.text[lang] || tmpl.text['zh'] || "";
+                rawText = Array.isArray(t) ? t.join("\n") : t;
+            }
+            finalTxT = this._expandGrammar(rawText, db, memory);
+        }
 
-        // 2. 使用新的遞迴引擎展開主文本
-        // 注意：這裡移除了舊的 slots.forEach 迴圈，因為 _expandGrammar 會自動處理所有括號
-        const finalTxT = this._expandGrammar(rawText, db, memory);
-        
-        // 3. 處理對話 (如果有的話)
+        // ==========================================
+        // 2. 處理對話 (Dialogue) - 加上防呆機制
+        // ==========================================
         let dialogueArr = null;
         if (tmpl.dialogue) {
             dialogueArr = tmpl.dialogue.map(d => {
-                // 自動判斷是純字串還是物件格式
-                let rawDiagText = typeof d.text === 'string' ? d.text : (d.text[lang] || d.text['zh'] || '');
+                let rawDiagText = "";
+                // 確定 d.text 存在才去抓
+                if (d && d.text) {
+                    if (typeof d.text === 'string') {
+                        rawDiagText = d.text;
+                    } else {
+                        rawDiagText = d.text[lang] || d.text['zh'] || '';
+                    }
+                }
+                
+                // 如果沒有設定 speaker，預設給 "旁白"
+                let speakerName = (d && d.speaker) ? d.speaker : "旁白";
+                
                 return {
-                    speaker: this._expandGrammar(d.speaker, db, memory), 
-                    text: this._expandGrammar(rawDiagText, db, memory) // 這樣就能正確編譯了！
+                    speaker: this._expandGrammar(speakerName, db, memory), 
+                    text: this._expandGrammar(rawDiagText, db, memory) 
                 };
             });
         }
 
-        // 4. 處理獎勵中的變數
+        // ==========================================
+        // 3. 處理獎勵與變數
+        // ==========================================
         let newRewards = tmpl.rewards ? JSON.parse(JSON.stringify(tmpl.rewards)) : undefined;
         if (newRewards && newRewards.tags) {
             newRewards.tags = newRewards.tags.map(t => this._expandGrammar(t, db, memory));
         }
 
+        // 4. 回傳最終資料
         return { 
-            text: [finalTxT], // 統一回傳陣列格式
+            // 如果沒有 text 就回傳空陣列，防止畫面上印出多餘的空白行
+            text: finalTxT ? [finalTxT] : [], 
             dialogue: dialogueArr, 
-            fragments: {}, // 舊系統需要這個，新系統已內化，回傳空物件即可
+            fragments: {}, 
             rewards: newRewards
         };
     },
@@ -446,15 +477,29 @@ initChain: function(skeletonKey = null, themeTag = null) {
     // 步驟 2: 嚴格過濾 (Tags & Conditions)
     // ===========================
     let validCandidates = candidates.filter(t => {
-        // A. 基本 Tag 過濾
-        if (t.reqTag && !currentTags.includes(t.reqTag)) return false;
-        if (t.noTag && currentTags.includes(t.noTag)) return false;
+        
+        // 🌟 A. 終極陣列標籤過濾器 (Tags)
+        
+        // 1. 檢查「排除 (NOR)」：只要踩中任何一個地雷，直接淘汰
+        if (t.excludeTags && Array.isArray(t.excludeTags)) {
+            if (t.excludeTags.some(tag => currentTags.includes(tag))) return false;
+        } else if (t.excludeTag && currentTags.includes(t.excludeTag)) { // 相容舊寫法 excludeTag
+            return false;
+        } else if (t.noTag && currentTags.includes(t.noTag)) {         // 相容舊寫法 noTag
+            return false;
+        }
 
-        // B. 數值/狀態條件過濾
+        // 2. 檢查「需求 (OR)」：必須擁有陣列中至少一個標籤，否則淘汰
+        if (t.reqTags && Array.isArray(t.reqTags)) {
+            if (!t.reqTags.some(tag => currentTags.includes(tag))) return false;
+        } else if (t.reqTag && !currentTags.includes(t.reqTag)) {      // 相容舊寫法 reqTag
+            return false;
+        }
+
+        // B. 數值/狀態條件過濾 (保持你原本的寫法不動)
         if (t.conditions) {
             for (let [key, val] of Object.entries(t.conditions)) {
                 let userVal = currentStats[key] || 0;
-                // 處理字串運算符 (>50, <10) 或純數值
                 if (typeof val === 'string') {
                     if (val.startsWith('>')) {
                         if (userVal <= parseFloat(val.substring(1))) return false;
