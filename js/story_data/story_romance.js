@@ -14,6 +14,7 @@
         
         {
             type: 'love_meet', id: 'rom_meet_classic',
+			reqTag:['romance'],
             text: { zh: [ "在{noun_location_building}的{noun_location_room}，你正專注於手中的事務。", "突然，一位{lover}因躲避人群而撞到了你懷裡，帶著一股淡淡的香氣。", "就在這時，遠處傳來了{rival}尖銳的聲音：「在那裡！別讓那個『小偷』跑了！」", "這似乎是一場誤會，但卻將你捲入了風暴中心。" ]},
             options: [
                 { 
@@ -56,8 +57,10 @@
         },
         {
             type: 'love_scheme', id: 'rom_scheme_classic', reqTag: 'route_classic',
-            text: { zh: [ "平靜的日子被打破了。{noun_location_building}裡開始流傳關於你的惡毒謠言。", "謠言的源頭直指{rival}。更糟糕的是，{rival}拿著一份偽造的{noun_item_record}找到了{lover}，試圖證明你接近他是別有用心。" ]},
-            dialogue: [{ speaker: "{rival}", text: { zh: "看清楚了吧？這個人只是在利用你！只有我才是真正為你好。" } }],
+            dialogue: [
+			{text:{ zh:"平靜的日子被打破了。{noun_location_building}裡開始流傳關於你的惡毒謠言。"}}, 
+				{text:{zh:"更糟糕的是，{rival}拿著一份偽造的{noun_item_record}找到了{lover}，試圖證明你接近他是別有用心。"}},
+			{ speaker: "{rival}", text: { zh: "看清楚了吧？這個人只是在利用你！只有我才是真正為你好。" } }],
             options: [
                 { 
                     label: "暗中調查，尋找破綻", action: "node_next", rewards: { tags: ['counter_ready'] }, 
@@ -110,8 +113,12 @@
 
         {
             type: 'love_meet', id: 'rom_meet_triangle',
-            text: { zh: [ "在昏暗的{noun_location_room}，爵士樂慵懶地流淌。你正與{lover}低聲交談，氣氛微醺且曖昧。", "突然，一個帶著極強侵略性氣息的身影拉開了旁邊的椅子——是{rival}。", "「不介意我加入吧？」對方雖然笑著，眼神卻直勾勾地盯著你，讓{lover}的臉色瞬間沉了下來。" ]},
-            dialogue: [{ speaker: "{lover}", text: { zh: "你怎麼會來這裡？我以為我們說清楚了。" } }],
+			reqTags:['romance'],
+            dialogue: [
+		{text:{zh:"在昏暗的{noun_location_room}，你正與{lover}低聲交談，氣氛微醺且曖昧。"}},
+		{text:{zh:"突然，一個帶著極強侵略性氣息的身影拉開了旁邊的椅子——是{rival}。"}}, 
+		{text:{zh:"「不介意我加入吧？」對方雖然笑著，眼神卻直勾勾地盯著你，讓{lover}的臉色瞬間沉了下來。"}}, 
+		{ speaker: "{lover}", text: { zh: "你怎麼會來這裡？我以為我們說清楚了。" } }],
             options: [
                 { 
                     label: "冷漠拒絕對方 (專一)", action: "node_next", 
@@ -164,6 +171,18 @@
                 { 
                     label: "沉默以對 (關係破裂)", action: "node_next", rewards: { tags: ['relationship_broken'], varOps: [{key:'loyalty', val:50, op:'-'}] }, 
                     nextScene: { text: "你的沉默成了最鋒利的刀。{lover}眼眶泛紅，轉身衝出了會場。", options: [{label: "繼續", action: "advance_chain"}] } 
+                },
+				{ 
+                    label: "愣在原地不知所措", 
+                    // 沒有 condition，作為保底選項
+                    action: "node_next", 
+                    nextScene: { 
+                        dialogue: [
+                            { text: { zh: "你一句話也說不出來。{lover}看著你沉默的樣子，眼中的光芒徹底熄滅了。" } },
+                            { text: { zh: "而門外的{rival}發出了一聲輕笑。" } }
+                        ],
+                        options: [{label: "繼續", action: "advance_chain"}] 
+                    } 
                 }
             ]
         },

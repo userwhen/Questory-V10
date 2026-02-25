@@ -7,6 +7,9 @@
         return;
     }
 
+    // 🛡️ 防呆金牌
+    DB.templates = DB.templates || [];
+
     // 2. 追加劇本 (Templates)
     DB.templates.push(
         // ============================================================
@@ -14,38 +17,208 @@
         // ============================================================
         {
             type: 'setup_omen', id: 'hor_psych_setup',
-            // [修正] 改用 {sentence_env_vibe} 確保文法通順
-            text: { zh: [ "這裡本該是你熟悉的{noun_location_room}，但此刻看起來卻異常陌生。", "{sentence_env_vibe}，牆角的陰影似乎比平常更深、更濃。", "你{atom_manner}停下腳步，總覺得有某種視線正在從{noun_env_feature}的縫隙中窺視著你。" ]},
-            dialogue: [{ speaker: "旁白", text: { zh: "（耳邊傳來一陣若有似無的竊笑聲，聽起來既像老人，又像嬰兒...）" } }],
+            dialogue: [
+                { text: { zh: "這裡本該是你熟悉的{noun_location_room}，但此刻看起來卻異常陌生。" } },
+                { text: { zh: "{sentence_env_vibe}，牆角的陰影似乎比平常更深、更濃。" } },
+                { text: { zh: "你{atom_manner}停下腳步，總覺得有某種視線正在從{noun_env_feature}的縫隙中窺視著你。" } },
+                { speaker: "旁白", text: { zh: "（耳邊傳來一陣若有似無的竊笑聲，聽起來既像老人，又像嬰兒...）" } }
+            ],
             options: [
                 { label: "強裝鎮定，忽視對方", action: "advance_chain", rewards: { tags: ['horror_started'], varOps: [{ key: 'sanity', val: 90, op: 'set' }] } },
-                { label: "檢查聲音的來源", action: "advance_chain", rewards: { tags: ['horror_started', 'marked_by_curse'], varOps: [{ key: 'sanity', val: 80, op: 'set' }] }, nextScene: { text: "你湊近一看，那裡什麼都沒有，只有一團糾結的黑色髮絲，散發著腥臭味。" } }
+                { 
+                    label: "檢查聲音的來源", action: "node_next", 
+                    rewards: { tags: ['horror_started', 'marked_by_curse'], varOps: [{ key: 'sanity', val: 80, op: 'set' }] }, 
+                    nextScene: { 
+                        dialogue: [{ text: { zh: "你湊近一看，那裡什麼都沒有，只有一團糾結的黑色髮絲，散發著腥臭味。" } }],
+                        options: [{ label: "繼續前進", action: "advance_chain" }]
+                    } 
+                }
             ]
         },
         {
             type: 'encounter_stalk', id: 'hor_psych_stalk',
-            // [修正] 移除未定義的 verb_move_univ
-            text: { zh: [ "你試圖離開，但走廊彷彿沒有盡頭。身後傳來了「啪嗒、啪嗒」的濕黏腳步聲。", "那聲音極不規律，就像是某種肢體扭曲的東西，正手腳並用在地上{atom_manner}爬行。", "對方正在逼近，而且對方知道你在哪裡。" ]},
-            dialogue: [{ speaker: "？？？", text: { zh: "嘻嘻... 找到... 你了..." } }],
+            dialogue: [
+                { text: { zh: "你試圖離開，但走廊彷彿沒有盡頭。身後傳來了「啪嗒、啪嗒」的濕黏腳步聲。" } },
+                { text: { zh: "那聲音極不規律，就像是某種肢體扭曲的東西，正手腳並用在地上{atom_manner}爬行。" } },
+                { text: { zh: "對方正在逼近，而且對方知道你在哪裡。" } },
+                { speaker: "？？？", text: { zh: "嘻嘻... 找到... 你了..." } }
+            ],
             options: [
-                // [修正] 將 nextTags 改為標準的 rewards: { tags: [...] }
-                { label: "屏住呼吸，躲進死角", style: "primary", check: { stat: 'INT', val: 5 }, action: "advance_chain", nextScene: { text: "你摀住口鼻，心臟劇烈跳動。那東西停在你的藏身處外，發出了指甲刮擦地板的聲音... 然後慢慢離開了。" }, failScene: { text: "恐懼讓你發出了喘息聲。那腳步聲立刻停了下來，然後猛地轉向你！", rewards: { tags: ['danger_high'], varOps: [{key:'sanity', val:20, op:'-'}] } } },
-                { label: "不要回頭，狂奔！", action: "advance_chain", rewards: { tags: ['risk_high'] }, nextScene: { text: "你{atom_manner}向前衝刺，感覺冰冷的手指擦過了你的後頸..." } }
+                { 
+                    label: "屏住呼吸，躲進死角", style: "primary", check: { stat: 'INT', val: 5 }, action: "node_next", 
+                    nextScene: { 
+                        dialogue: [{ text: { zh: "你摀住口鼻，心臟劇烈跳動。那東西停在你的藏身處外，發出了指甲刮擦地板的聲音... 然後慢慢離開了。" } }],
+                        options: [{ label: "鬆了一口氣", action: "advance_chain" }]
+                    }, 
+                    failScene: { 
+                        dialogue: [{ text: { zh: "恐懼讓你發出了喘息聲。那腳步聲立刻停了下來，然後猛地轉向你！" } }],
+                        rewards: { tags: ['danger_high'], varOps: [{key:'sanity', val:20, op:'-'}] },
+                        options: [{ label: "快逃！", action: "advance_chain" }]
+                    } 
+                },
+                { 
+                    label: "不要回頭，狂奔！", action: "node_next", rewards: { tags: ['risk_high'] }, 
+                    nextScene: { 
+                        dialogue: [{ text: { zh: "你{atom_manner}向前衝刺，感覺冰冷的手指擦過了你的後頸..." } }],
+                        options: [{ label: "死命逃脫", action: "advance_chain" }]
+                    } 
+                }
             ]
         },
+		// ==========================================
+        // 遭遇追蹤 1：日式都市傳說 (聽覺恐懼)
+        // ==========================================
+        {
+            type: 'encounter_stalk', id: 'hor_stalk_weeping',
+            dialogue: [
+                { text: { zh: "走廊深處傳來了女人淒厲的啜泣聲。聲音原本很遠，但下一秒，突然拉近到了你身後的轉角處。" } },
+                { text: { zh: "「滴答、滴答...」那是某種濃稠液體滴落的聲音，伴隨著沉重的拖拽聲。" } },
+                { speaker: "女人的聲音", text: { zh: "「為什麼... 不看我... 回頭看看我啊...」" } },
+                { text: { zh: "一股刺骨的寒意爬上脊椎，你的直覺瘋狂警告你：絕對不能回頭！" } }
+            ],
+            options: [
+                { 
+                    label: "閉上眼睛，靠牆裝死 (LUK檢定)", style: "primary", check: { stat: 'LUK', val: 6 }, action: "node_next", 
+                    nextScene: { 
+                        dialogue: [{ text: { zh: "你屏住呼吸，感覺到一團冰冷且散發著腥味的空氣停在你面前。良久，那股氣息終於緩緩移開，朝著走廊另一頭遠去。" } }],
+                        options: [{ label: "虛脫地滑坐在地", action: "advance_chain" }]
+                    }, 
+                    failScene: { 
+                        dialogue: [{ text: { zh: "你試圖閉上眼，但恐懼讓你忍不住顫抖了一下。一雙冰冷滑膩的手瞬間捧住了你的臉！" } }],
+                        rewards: { tags: ['danger_high'], varOps: [{key:'sanity', val:25, op:'-'}] },
+                        options: [{ label: "發出慘叫！", action: "advance_chain" }]
+                    } 
+                },
+                { 
+                    label: "死命往前跑，絕不回頭！(消耗體力)", action: "node_next", rewards: { tags: ['risk_high'], varOps: [{key:'energy', val:10, op:'-'}] }, 
+                    nextScene: { 
+                        dialogue: [{ text: { zh: "你{atom_manner}向前狂奔，身後的啜泣聲瞬間變成了淒厲的尖叫！你用力撞開盡頭的門逃了出去。" } }],
+                        options: [{ label: "大口喘氣", action: "advance_chain" }]
+                    } 
+                }
+            ]
+        },
+
+        // ==========================================
+        // 遭遇追蹤 2：偽人/模仿怪 (心理恐懼)
+        // ==========================================
+        {
+            type: 'encounter_stalk', id: 'hor_stalk_mimic',
+            dialogue: [
+                { text: { zh: "你走在昏暗的通道裡，突然聽到前方傳來了熟悉的聲音。" } },
+                { speaker: "朋友的聲音", text: { zh: "「救命！我被困在這裡了... 拜託，幫幫我！」" } },
+                { text: { zh: "你正準備上前，卻突然發現那聲音的語調異常平淡，完全沒有求救者該有的恐慌。" } },
+                { text: { zh: "接著，那個聲音像卡帶一樣，重複了完全一模一樣的語氣和停頓：『救命。我被困在。這裡了。』" } }
+            ],
+            options: [
+                { 
+                    label: "撿起石頭往反方向丟 (INT檢定)", check: { stat: 'INT', val: 6 }, action: "node_next", 
+                    nextScene: { 
+                        dialogue: [
+                            { text: { zh: "「喀啦！」石頭砸在遠處的鐵桶上。黑暗中立刻傳來四肢並用的急速爬行聲，朝著聲音的方向衝去。" } },
+                            { text: { zh: "趁著這個空檔，你悄悄溜進了另一個房間。" } }
+                        ],
+                        options: [{ label: "安全脫身", action: "advance_chain" }]
+                    }, 
+                    failScene: { 
+                        dialogue: [{ text: { zh: "你不小心踢到了腳下的鋁罐！黑暗中的聲音瞬間停止了，接著，一個四肢極度扭曲的「人」從陰影中猛然探出頭，死死盯著你！" } }],
+                        rewards: { tags: ['danger_high'], varOps: [{key:'sanity', val:20, op:'-'}] },
+                        options: [{ label: "快逃！", action: "advance_chain" }]
+                    } 
+                },
+                { 
+                    label: "假裝沒聽到，緩步後退 (AGI檢定)", check: { stat: 'AGI', val: 5 }, action: "node_next", 
+                    nextScene: { 
+                        dialogue: [{ text: { zh: "你像貓一樣放輕腳步，一步步退回了上一個路口，完全沒有驚動那個正在學人說話的怪物。" } }],
+                        options: [{ label: "逃離該區", action: "advance_chain" }]
+                    },
+                    failScene: { 
+                        dialogue: [{ text: { zh: "後退時，你踩碎了一塊玻璃。黑暗中的聲音立刻變成了一陣狂喜的笑聲，朝你撲來！" } }],
+                        rewards: { tags: ['danger_high'], varOps: [{key:'sanity', val:15, op:'-'}, {key:'hp', val:10, op:'-'}] },
+                        options: [{ label: "奮力掙脫", action: "advance_chain" }]
+                    } 
+                }
+            ]
+        },
+
+        // ==========================================
+        // 遭遇追蹤 3：視角盲區 (視覺恐懼/現代科技)
+        // ==========================================
+        {
+            type: 'encounter_stalk', id: 'hor_stalk_camera',
+            dialogue: [
+                { text: { zh: "周圍的燈光突然全部熄滅，你陷入了伸手不見五指的黑暗。" } },
+                { text: { zh: "你{atom_manner}掏出手機，打開相機模式並開啟閃光燈，試圖照亮前方的路。" } },
+                { text: { zh: "螢幕上顯示著前方的空蕩走廊，但當你把鏡頭稍微偏轉時——" } },
+                { text: { zh: "手機螢幕裡，一個高瘦蒼白的人影，就筆直地站在你左肩的正後方！但你的肉眼明明什麼都沒看見！" } }
+            ],
+            options: [
+                { 
+                    label: "不回頭，直接轉身揮拳！(STR檢定)", style: "danger", check: { stat: 'STR', val: 6 }, action: "node_next", 
+                    nextScene: { 
+                        dialogue: [{ text: { zh: "你憑藉著螢幕上的位置，猛地轉身一拳揮出！你打中了某種冰冷堅硬的東西，它發出了一聲刺耳的尖嘯並退開了。" } }],
+                        rewards: { varOps: [{key:'sanity', val:10, op:'+'}] },
+                        options: [{ label: "趁機逃跑", action: "advance_chain" }]
+                    }, 
+                    failScene: { 
+                        dialogue: [{ text: { zh: "你轉身揮拳，卻只打中了空氣！下一秒，螢幕裡的人影突然貼到了鏡頭前，你的手機被一股力量拍飛砸碎！" } }],
+                        rewards: { tags: ['danger_high'], varOps: [{key:'sanity', val:30, op:'-'}] },
+                        options: [{ label: "陷入黑暗與恐慌", action: "advance_chain" }]
+                    } 
+                },
+                { 
+                    label: "死盯著螢幕，倒退著走", action: "node_next", rewards: { tags: ['risk_high'] }, 
+                    nextScene: { 
+                        dialogue: [
+                            { text: { zh: "只要你看著螢幕，它就不會動。你舉著手機，雙腿發軟地一步步倒退。" } },
+                            { text: { zh: "在退到樓梯口的瞬間，你立刻轉身狂奔，再也不敢看手機一眼。" } }
+                        ],
+                        options: [{ label: "逃到亮處", action: "advance_chain" }]
+                    } 
+                }
+            ]
+        },
+		
         {
             type: 'encounter_climax', id: 'hor_psych_look',
-            // [修正] 將 noun_role_monster 對齊核心庫的 noun_monster
-            text: { zh: [ "無路可退了。那個{noun_monster}（或者說是曾經是人的東西）就懸掛在天花板上。", "對方的頭顱以詭異的角度轉了180度，死白色的眼珠正死死盯著你。", "所有的本能都在尖叫：絕對不能和對方對視。" ]},
+            dialogue: [
+                { text: { zh: "無路可退了。那個{noun_monster}（或者說是曾經是人的東西）就懸掛在天花板上。" } },
+                { text: { zh: "對方的頭顱以詭異的角度轉了180度，死白色的眼珠正死死盯著你。" } },
+                { text: { zh: "所有的本能都在尖叫：絕對不能和對方對視。" } }
+            ],
             options: [
-                { label: "緊閉雙眼，唸誦祈禱", action: "advance_chain", check: { stat: 'LUK', val: 5 }, nextScene: { text: "你感到一股冰冷的氣息貼著臉頰滑過，耳邊是骨骼摩擦的脆響... 但最終，對方似乎對靜止的獵物失去了興趣。" }, failScene: { text: "你忍不住睜開了一條縫... 一張布滿血絲的臉正貼在你的鼻尖前，露出了裂到耳根的笑容。", rewards: { varOps: [{key:'sanity', val:50, op:'-'}] } } },
-                { label: "用手電筒強光照射對方！", style: "danger", action: "finish_chain", nextScene: { text: "光線照亮了對方的全貌——那景象超越了人類理智的極限。你的意識在尖叫中斷線了。\n【結局：精神崩潰】" } }
+                { 
+                    label: "緊閉雙眼，唸誦祈禱", action: "node_next", check: { stat: 'LUK', val: 5 }, 
+                    nextScene: { 
+                        dialogue: [{ text: { zh: "你感到一股冰冷的氣息貼著臉頰滑過，耳邊是骨骼摩擦的脆響... 但最終，對方似乎對靜止的獵物失去了興趣。" } }],
+                        options: [{ label: "撐過去了", action: "advance_chain" }]
+                    }, 
+                    failScene: { 
+                        dialogue: [{ text: { zh: "你忍不住睜開了一條縫... 一張布滿血絲的臉正貼在你的鼻尖前，露出了裂到耳根的笑容。" } }],
+                        rewards: { varOps: [{key:'sanity', val:50, op:'-'}] },
+                        options: [{ label: "慘叫", action: "advance_chain" }]
+                    } 
+                },
+                { 
+                    label: "用手電筒強光照射對方！", style: "danger", action: "node_next", // 🌟 修正閃退 Bug
+                    nextScene: { 
+                        dialogue: [
+                            { text: { zh: "光線照亮了對方的全貌——那景象超越了人類理智的極限。" } },
+                            { text: { zh: "你的意識在尖叫中斷線了。\n【結局：精神崩潰】" } }
+                        ],
+                        options: [{ label: "陷入瘋狂", action: "finish_chain" }] // 🌟 在這裡才結束
+                    } 
+                }
             ]
         },
         {
             type: 'final_survival', id: 'hor_psych_end',
-            text: { zh: [ "不知道過了多久，周圍終於恢復了死寂。你{atom_manner}推開門，衝進了外面的陽光中。", "人群的喧囂聲讓你感到一陣恍惚。你以為你逃掉了。", "但當你低頭看時，發現自己的腳踝上，多了一個青紫色的手印，而且...還在發燙。" ]},
-            options: [{ label: "這只是一個開始...", action: "finish_chain", rewards: { removeTags: ['horror_started', 'danger_high'], title: "倖存者(？)", exp: 300 } }]
+            dialogue: [
+                { text: { zh: "不知道過了多久，周圍終於恢復了死寂。你{atom_manner}推開門，衝進了外面的陽光中。" } },
+                { text: { zh: "人群的喧囂聲讓你感到一陣恍惚。你以為你逃掉了。" } },
+                { text: { zh: "但當你低頭看時，發現自己的腳踝上，多了一個青紫色的手印，而且...還在發燙。" } }
+            ],
+            options: [{ label: "這只是一個開始...", action: "finish_chain", rewards: { title: "倖存者(？)", exp: 300 } }]
         },
         
         // ============================================================
@@ -54,123 +227,123 @@
         {
             type: 'setup',
             id: 'mys_setup_letter',
-            text: { zh: [
-                "一切都始於那封奇怪的信。",
-                "信上說，關於真相，就藏在這座莊園裡。",
-                "外面的{atom_weather}讓這一切顯得更加詭異。"
-            ]},
-            options: [
-                { label: "推開莊園大門", action: "advance_chain" }
-            ]
+            dialogue: [
+                { text: { zh: "一切都始於那封奇怪的信。" } },
+                { text: { zh: "信上說，關於真相，就藏在這座莊園裡。" } },
+                { text: { zh: "外面的{atom_weather}讓這一切顯得更加詭異。" } }
+            ],
+            options: [{ label: "推開莊園大門", action: "advance_chain" }]
         },
         {
             type: 'setup_omen', 
             id: 'hor_setup_omen',
-            text: { zh: [
-                "你不該來這裡的。",
-                "{atom_weather}，你的車拋錨在了半路。",
-                "遠處那棟廢棄的{combo_building}似乎是你唯一的避難所。"
-            ]},
-            options: [
-                { label: "硬著頭皮進去", action: "advance_chain" }
-            ]
+            dialogue: [
+                { text: { zh: "你不該來這裡的。" } },
+                { text: { zh: "{atom_weather}，你的車拋錨在了半路。" } },
+                { text: { zh: "遠處那棟廢棄的{combo_building}似乎是你唯一的避難所。" } }
+            ],
+            options: [{ label: "硬著頭皮進去", action: "advance_chain" }]
         },
-		// ==========================================
-        // 第一階：開局 (隨機抽中，發放路線標籤)
+
+        // ==========================================
+        // 邪教村落三部曲 (Route: Cult)
         // ==========================================
         {
             type: 'setup_omen', 
             id: 'hor_cult_setup',
-            // 這裡不寫 reqTag，讓系統在開局時有機會隨機抽到它
-            text: { zh: [ 
-                "你迷路了。眼前出現了一個與世隔絕的村落，村口立著一尊面目猙獰的詭異神像。",
-                "村民們直勾勾地盯著你，嘴裡唸著你聽不懂的咒語。",
-                "你感覺到一陣強烈的惡寒..." 
-            ]},
+            dialogue: [ 
+                { text: { zh: "你迷路了。眼前出現了一個與世隔絕的村落，村口立著一尊面目猙獰的詭異神像。" } },
+                { text: { zh: "村民們直勾勾地盯著你，嘴裡唸著你聽不懂的咒語。" } },
+                { text: { zh: "你感覺到一陣強烈的惡寒..." } } 
+            ],
             options: [
                 { 
-                    label: "硬著頭皮進村", 
-                    action: "node_next", 
-                    // 【關鍵1】發放路線標籤 (route_cult)，並初始化理智值
+                    label: "硬著頭皮進村", action: "node_next", 
                     rewards: { tags: ['route_cult'], varOps: [{key:'sanity', val:100, op:'set'}] },
-                    nextScene: { text: "你踏入了村莊，身後的霧氣瞬間合攏，退路消失了。", options: [{label: "繼續", action: "advance_chain"}] }
+                    nextScene: { 
+                        dialogue: [{ text: { zh: "你踏入了村莊，身後的霧氣瞬間合攏，退路消失了。" } }],
+                        options: [{label: "繼續", action: "advance_chain"}] 
+                    }
                 }
             ]
         },
-
-        // ==========================================
-        // 第二階：探索 (使用 reqTag 鎖定路線)
-        // ==========================================
         {
             type: 'encounter_stalk', 
             id: 'hor_cult_explore',
-            // 【關鍵2】reqTag 確保只有身上有 'route_cult' 的玩家才會抽到這個場景
-            reqTag: 'route_cult',
-            text: { zh: [ 
-                "你在村長的空屋裡搜查。屋內貼滿了黃色的符紙，神桌上放著一個木盒。",
-                "突然，門外傳來了密集的腳步聲，村民們包圍了屋子！" 
-            ]},
+            reqTags: ['route_cult'], // 🌟 修正：改成陣列過濾器寫法
+            dialogue: [ 
+                { text: { zh: "你在村長的空屋裡搜查。屋內貼滿了黃色的符紙，神桌上放著一個木盒。" } },
+                { text: { zh: "突然，門外傳來了密集的腳步聲，村民們包圍了屋子！" } } 
+            ],
             options: [
                 { 
-                    label: "打開木盒看看", 
-                    action: "node_next", 
-                    // 玩家做對了選擇，獲得了隱藏道具 Tag：talisman (護身符)
+                    label: "打開木盒看看", action: "node_next", 
                     rewards: { tags: ['talisman'] },
-                    nextScene: { text: "盒子裡是一張畫著血色眼睛的護身符，你趕緊把它塞進口袋。", options: [{label: "準備突圍", action: "advance_chain"}] }
+                    nextScene: { 
+                        dialogue: [{ text: { zh: "盒子裡是一張畫著血色眼睛的護身符，你趕緊把它塞進口袋。" } }],
+                        options: [{label: "準備突圍", action: "advance_chain"}] 
+                    }
                 },
                 { 
-                    label: "躲進床底", 
-                    action: "node_next", 
-                    // 玩家錯過了道具，且因為恐懼扣除理智值
+                    label: "躲進床底", action: "node_next", 
                     rewards: { varOps: [{key:'sanity', val:40, op:'-'}] },
-                    nextScene: { text: "你躲在床底，看著無數雙赤腳在房間裡走動，恐懼讓你的理智開始崩潰。", options: [{label: "尋找機會逃跑", action: "advance_chain"}] }
+                    nextScene: { 
+                        dialogue: [{ text: { zh: "你躲在床底，看著無數雙赤腳在房間裡走動，恐懼讓你的理智開始崩潰。" } }],
+                        options: [{label: "尋找機會逃跑", action: "advance_chain"}] 
+                    }
                 }
             ]
         },
-
-        // ==========================================
-        // 第三階：高潮 (使用 condition 檢驗生死)
-        // ==========================================
         {
             type: 'encounter_climax', 
             id: 'hor_cult_boss',
-            reqTag: 'route_cult',
-            text: { zh: [ 
-                "你被村民逼到了祭壇前。那個面目猙獰的神像竟然活了過來，巨大的陰影將你籠罩。",
-                "「留下來... 成為我們的一部分...」",
-                "你的意識開始模糊，生死就在一線之間！" 
-            ]},
+            reqTags: ['route_cult'], // 🌟 修正：同上
+            dialogue: [ 
+                { text: { zh: "你被村民逼到了祭壇前。那個面目猙獰的神像竟然活了過來，巨大的陰影將你籠罩。" } },
+                { text: { zh: "「留下來... 成為我們的一部分...」" } },
+                { text: { zh: "你的意識開始模糊，生死就在一線之間！" } } 
+            ],
             options: [
-                // 【關鍵3 - 完美結局】
-                // condition: 同時要求「擁有護身符 (tags)」且「理智值大於等於 60 (vars)」
                 { 
                     label: "高舉護身符念出破除咒語！", 
                     condition: { tags: ['talisman'], vars: [{key:'sanity', val:60, op:'>='}] },
-                    style: "primary", 
-                    action: "finish_chain", 
-                    nextScene: { text: "護身符爆發出刺眼的光芒，神像發出淒厲的慘叫並崩解！你趁亂逃出了村莊。\n【True End: 破除邪祟】" }
+                    style: "primary", action: "node_next", // 🌟 修正閃退 Bug
+                    nextScene: { 
+                        dialogue: [
+                            { text: { zh: "護身符爆發出刺眼的光芒，神像發出淒厲的慘叫並崩解！你趁亂逃出了村莊。" } },
+                            { text: { zh: "【True End: 破除邪祟】" } }
+                        ],
+                        options: [{ label: "逃出生天", action: "finish_chain" }] 
+                    }
                 },
-
-                // 【關鍵4 - 慘勝結局】
-                // condition: 有護身符，但理智值已經太低 (<60)
                 { 
                     label: "胡亂揮舞護身符求生", 
                     condition: { tags: ['talisman'], vars: [{key:'sanity', val:60, op:'<'}] },
-                    action: "finish_chain", 
-                    nextScene: { text: "護身符雖然逼退了村民，但你的精神已經受到不可逆的重創。\n【Normal End: 瘋狂的倖存者】" }
+                    action: "node_next", // 🌟 修正閃退 Bug
+                    nextScene: { 
+                        dialogue: [
+                            { text: { zh: "護身符雖然逼退了村民，但你的精神已經受到不可逆的重創。" } },
+                            { text: { zh: "【Normal End: 瘋狂的倖存者】" } }
+                        ],
+                        options: [{ label: "崩潰地活下去", action: "finish_chain" }] 
+                    }
                 },
-
-                // 【關鍵5 - 保底壞結局 (防呆設計)】
-                // 注意這裡不寫 condition，代表只要前面兩個選項不符合，玩家就只能被迫按這個按鈕
                 { 
                     label: "無路可逃，絕望閉上眼睛", 
-                    style: "danger", 
-                    action: "finish_chain", 
-                    nextScene: { text: "你連抵抗的力氣都沒有了。黑暗徹底吞噬了你，你成為了村莊的新祭品。\n【Bad End: 永遠的村民】" }
+                    style: "danger", action: "node_next", // 🌟 修正閃退 Bug
+                    nextScene: { 
+                        dialogue: [
+                            { text: { zh: "你連抵抗的力氣都沒有了。黑暗徹底吞噬了你，你成為了村莊的新祭品。" } },
+                            { text: { zh: "【Bad End: 永遠的村民】" } }
+                        ],
+                        options: [{ label: "結束", action: "finish_chain" }] 
+                    }
                 }
             ]
         },
-		{
+
+        // --- 備案 (Safety Net) ---
+        {
             type: 'encounter_climax', 
             id: 'fallback_horror_climax',
             dialogue: [
@@ -188,7 +361,31 @@
             ],
             options: [{ label: "逃出生天", action: "finish_chain", rewards: { exp: 120 } }]
         },
-		
+		{
+        id: 'rand_event_horror_chase',
+        type: 'encounter_stalk', // 設定關卡類型
+        dialogue: [
+            { text: "{horror_chase_start}" },
+            { text: "{horror_chase_action}" },
+            { text: "{horror_chase_feel}" }
+        ],
+        options: [
+            { 
+                label: "拼命逃跑 (AGI檢定)", 
+                check: { stat: 'AGI', val: 5 }, 
+                action: "node_next", 
+                nextScene: {
+                    dialogue: [{ text: "你千鈞一髮之際撞開了旁邊的門，成功甩掉了它。" }],
+                    options: [{ label: "喘口氣", action: "advance_chain" }]
+                },
+                failScene: {
+                    dialogue: [{ text: "你被地上的雜物絆倒了！它瞬間追了上來..." }],
+                    rewards: { varOps: [{key:'hp', val:10, op:'-'}] },
+                    options: [{ label: "死命掙扎", action: "advance_chain" }]
+                }
+            }
+        ]
+    }
     );
 
     console.log("🕵️‍♂️ 恐怖劇本已載入");

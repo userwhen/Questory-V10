@@ -15,91 +15,224 @@ function register(scene) {
 // 1. 冒險者模式內容 (Adventurer Content)
 // ============================================================
 
-// --- A. 狼人殺 (Wolf) [已補完缺失部分] ---
-const WOLF_HUB = register({
-    id: 'wolf_hub',
-    text: "【狼人殺：迷霧村莊】\n昨晚村長被殺了。嫌疑人有 A、B、C。\n規則：狼人說謊，好人說實話。",
-    options: [
-        // 審問選項：有標籤後自動消失
-        { label: "審問 A", condition: { noTag: 'info_A' }, action: "node_next", nextSceneId: 'wolf_room_a' },
-        { label: "審問 B", condition: { noTag: 'info_B' }, action: "node_next", nextSceneId: 'wolf_room_b' },
-        { label: "審問 C", condition: { noTag: 'info_C' }, action: "node_next", nextSceneId: 'wolf_room_c' },
-        // 邏輯整合
-        {
-            label: "💡 整合所有線索",
-            condition: { hasTag: 'info_A' }, // 簡化檢查
-            action: "node_next",
-            nextScene: {
-                text: "筆記：\n若B是狼 -> B謊 -> C是狼 (雙狼矛盾)\n若C是狼 -> C謊 -> A非狼 -> A實話 -> B是狼 (雙狼矛盾)\n結論似乎只有一個...",
-                options: [{ label: "我明白了", action: "node_next", nextSceneId: 'wolf_hub' }]
+    // ============================================================
+    // 🚪 第一幕：檔案室 (底層邏輯：密室逃脫)
+    // ============================================================
+    register({
+        id: 'campus_archive_hub',
+        dialogue: [
+            { text: "【第一幕：重返地獄】" },
+            { text: "你收到了一封詭異的同學會邀請函，來到了廢棄已久的舊校舍。" },
+            { text: "但一踏入檔案室，身後的電子門就自動落鎖了。" },
+            { speaker: "校內廣播", text: "『歡迎回到地獄。十年前的那樁命案，今天該做個了結了。』" },
+            { text: "門上有個磁卡感應器。你必須找到出路。" }
+        ],
+        options: [
+            { label: "🚪 檢查電子門", action: "node_next", nextSceneId: 'campus_archive_door' },
+            { label: "🗄️ 翻找舊辦公桌", action: "node_next", nextSceneId: 'campus_archive_desk' },
+            { 
+                label: "💳 刷入【沾血的學生證】", 
+                condition: { tags: ['campus_has_id'] }, 
+                style: "primary",
+                action: "node_next", 
+                nextScene: {
+                    dialogue: [
+                        { text: "「逼——」綠燈亮起，厚重的電子門緩緩滑開。" },
+                        { text: "你走進了陰森的走廊，來到了當年案發的美術教室。" }
+                    ],
+                    rewards: { exp: 50 },
+                    options: [{ label: "進入美術教室", action: "node_next", nextSceneId: 'campus_art_hub' }]
+                }
             }
-        },
-        { label: "⚖️ 開始投票", action: "node_next", nextSceneId: 'wolf_vote' },
-        { label: "離開", action: "finish_chain" }
-    ]
-});
+        ]
+    });
 
-// 補回房間定義，否則 Hub 會報錯
-register({
-    id: 'wolf_room_a',
-    dialogue: [{ speaker: "A", text: "我不是狼人！B 才是狼人，我看見他半夜出門了！" }],
-    options: [{ label: "紀錄證詞", action: "node_next", rewards: { tags: ['info_A'] }, nextSceneId: 'wolf_hub' }]
-});
-register({
-    id: 'wolf_room_b',
-    dialogue: [{ speaker: "B", text: "A 在說謊！C 是好人，我們昨晚一直在一起喝酒。" }],
-    options: [{ label: "紀錄證詞", action: "node_next", rewards: { tags: ['info_B'] }, nextSceneId: 'wolf_hub' }]
-});
-register({
-    id: 'wolf_room_c',
-    dialogue: [{ speaker: "C", text: "我不知道誰是狼人... 但我敢發誓，A 是狼人！" }],
-    options: [{ label: "紀錄證詞", action: "node_next", rewards: { tags: ['info_C'] }, nextSceneId: 'wolf_hub' }]
-});
+    register({
+        id: 'campus_archive_door',
+        text: "強化玻璃製成的電子門，沒有把手。旁邊的感應器閃爍著紅燈。",
+        options: [
+            { 
+                label: "拿滅火器砸門 (STR 7 檢定)", 
+                check: { stat: 'STR', val: 7 }, 
+                action: "node_next",
+                nextScene: { 
+                    dialogue: [{ text: "你掄起滅火器猛砸，但防爆玻璃只留下了一點白痕，反而震得你虎口發麻。只能找磁卡了。" }], 
+                    options: [{label: "返回", action: "node_next", nextSceneId: 'campus_archive_hub'}] 
+                }, 
+                failScene: { 
+                    text: "滅火器太重了，你不小心砸到了自己的腳，痛得冷汗直流。", 
+                    rewards: { varOps: [{key:'energy', val:10, op:'-'}] },
+                    options: [{label: "咬牙忍痛返回", action: "node_next", nextSceneId: 'campus_archive_hub'}] 
+                } 
+            },
+            { label: "返回", action: "node_next", nextSceneId: 'campus_archive_hub' }
+        ]
+    });
 
-register({
-    id: 'wolf_vote',
-    text: "真相只有一個，請指認兇手：",
-    options: [
-        { 
-            label: "投票給 A", 
-            action: "node_next", 
-            nextScene: { 
-                text: "恭喜！A 是狼人 (全體邏輯閉環)。", 
-                rewards: { exp: 300 }, 
-                options: [{
-                    label: "破案離開", 
-                    action: "finish_chain",
-                    rewards: { removeTags: ['info_A', 'info_B', 'info_C'] } 
-                }] 
-            } 
-        },
-        { 
-            label: "投票給 B", 
-            action: "node_next", 
-            nextScene: { 
-                text: "B 被處決了... 但他是好人。", 
-                options: [{
-                    label: "失敗離開", 
-                    action: "finish_chain",
-                    rewards: { removeTags: ['info_A', 'info_B', 'info_C'] }
-                }] 
-            } 
-        },
-        { 
-            label: "投票給 C", 
-            action: "node_next", 
-            nextScene: { 
-                text: "C 被處決了... 但他是好人。", 
-                options: [{
-                    label: "失敗離開", 
-                    action: "finish_chain",
-                    rewards: { removeTags: ['info_A', 'info_B', 'info_C'] }
-                }] 
-            } 
-        },
-        { label: "再想想", action: "node_next", nextSceneId: 'wolf_hub' }
-    ]
-});
+    register({
+        id: 'campus_archive_desk',
+        text: "這是當年訓導主任的桌子。抽屜被上了鎖，但木頭已經腐朽，你用力一扯就拉開了。",
+        options: [
+            { 
+                label: "檢查抽屜內部", 
+                condition: { noTag: 'campus_has_id' }, 
+                action: "node_next", 
+                nextScene: {
+                    text: "在沒收物品區，你找到了一張【沾血的學生證】。照片上的女孩，正是十年前死去的那個學生。",
+                    rewards: { tags: ['campus_has_id'] },
+                    options: [{ label: "收起學生證", action: "node_next", nextSceneId: 'campus_archive_hub' }]
+                }
+            },
+            { label: "只剩一堆廢紙了", condition: { tags: ['campus_has_id'] }, action: "node_next", nextSceneId: 'campus_archive_hub' },
+            { label: "返回", action: "node_next", nextSceneId: 'campus_archive_hub' }
+        ]
+    });
+
+    // ============================================================
+    // 🍜 第二幕：美術教室 (底層邏輯：海龜湯 - 情境還原)
+    // ============================================================
+    register({
+        id: 'campus_art_hub',
+        dialogue: [
+            { text: "【第二幕：無聲的墜落】" },
+            { text: "美術教室的窗戶大開著，寒風呼嘯。" },
+            { speaker: "校內廣播", text: "『十年前，她就是從這裡掉下去的。警方判定是跳樓自殺。』" },
+            { speaker: "校內廣播", text: "『但她患有嚴重的懼高症，連靠近窗戶都不敢。現場也沒有掙扎推擠的痕跡。告訴我，她為什麼會掉下去？』" },
+            { text: "廣播室的門鎖上了，你需要對著監視器說出當年的真相。" }
+        ],
+        options: [
+            { 
+                label: "🔍 調查窗外的景象", action: "node_next", 
+                nextScene: { 
+                    text: "窗外是五樓高的懸崖。但在窗台斜下方大約一公尺處，有一根粗壯的老榕樹樹枝，上面似乎有被人用鋸子鋸過一半的痕跡。",
+                    rewards: { tags: ['campus_clue_branch'] },
+                    options: [{ label: "記下線索", action: "node_next", nextSceneId: 'campus_art_hub' }]
+                }
+            },
+            { 
+                label: "🔍 調查受害者的畫布", action: "node_next", 
+                nextScene: { 
+                    text: "畫布上用凌亂的筆觸寫著：『把日記還給我！那是我的命！求求你們！』。",
+                    rewards: { tags: ['campus_clue_diary'] },
+                    options: [{ label: "記下線索", action: "node_next", nextSceneId: 'campus_art_hub' }]
+                }
+            },
+            { 
+                label: "💡 還原真相 (需集齊線索)", 
+                condition: { tags: ['campus_clue_branch', 'campus_clue_diary'] },
+                style: "primary", action: "node_next", 
+                nextScene: {
+                    dialogue: [
+                        { text: "你將「被鋸過的樹枝」與「被搶走的日記」連結在一起，毛骨悚然的真相浮現。" },
+                        { speaker: "你", text: "「這根本不是自殺！霸凌者搶走了她的日記，故意掛在窗外那根樹枝上！」" },
+                        { speaker: "你", text: "「她為了拿回比命還重要的日記，克服了懼高症，踩上了那根樹枝。但霸凌者早就把樹枝鋸斷了一半... 樹枝斷裂，她就這樣摔了下去。」" },
+                        { speaker: "校內廣播", text: "『...沒錯。那是場殘忍的謀殺。進來廣播室吧，他們都在這裡。』" }
+                    ],
+                    rewards: { exp: 100 },
+                    options: [{ label: "推開廣播室的門", action: "node_next", nextSceneId: 'campus_broadcast_hub' }] 
+                }
+            }
+        ]
+    });
+
+    // ============================================================
+    // 🐺 第三幕：廣播室 (底層邏輯：狼人殺 - 霸凌者互咬)
+    // ============================================================
+    register({
+        id: 'campus_broadcast_hub',
+        dialogue: [
+            { text: "【最終幕：霸凌者的狂言】" },
+            { text: "廣播室裡，三個當年的校園風雲人物被綁在椅子上：班長、啦啦隊長、不良少年。他們的脖子上綁著定時炸彈。" },
+            { speaker: "校內廣播", text: "『當年把樹枝鋸斷的真兇，就在他們三個之中。』" },
+            { speaker: "校內廣播", text: "『規則很簡單：真兇為了活命，口中絕無半句實話；而另外兩個幫兇已經嚇破膽了，只敢說實話。』" },
+            { text: "找出那個滿嘴謊言的真兇，處決他，你就能走。" }
+        ],
+        options: [
+            { label: "審問 班長", condition: { noTag: 'campus_info_a' }, action: "node_next", nextSceneId: 'campus_wolf_a' },
+            { label: "審問 啦啦隊長", condition: { noTag: 'campus_info_b' }, action: "node_next", nextSceneId: 'campus_wolf_b' },
+            { label: "審問 不良少年", condition: { noTag: 'campus_info_c' }, action: "node_next", nextSceneId: 'campus_wolf_c' },
+            {
+                label: "💡 整合證詞與邏輯",
+                condition: { tags: ['campus_info_a', 'campus_info_b', 'campus_info_c'] },
+                action: "node_next",
+                nextScene: {
+                    text: [
+                        "你在腦海中快速推演：",
+                        "1. 若【啦啦隊長】是真兇 (說謊)：她說班長說謊(代表班長實話)、她說不良少年無辜(代表不良是真兇)。真兇只有一個，出現雙兇矛盾！啦啦隊長不可能是真兇。",
+                        "2. 若【不良少年】是真兇 (說謊)：他說班長是真兇。這代表同時有兩個真兇，矛盾！不良少年也不是真兇。",
+                        "結論非常清晰了... 唯一能在邏輯上自洽的騙子是..."
+                    ],
+                    options: [{ label: "我知道誰在說謊了", action: "node_next", nextSceneId: 'campus_broadcast_hub' }]
+                }
+            },
+            { label: "⚖️ 啟動炸彈引爆器 (投票)", action: "node_next", nextSceneId: 'campus_wolf_vote' }
+        ]
+    });
+
+    register({
+        id: 'campus_wolf_a',
+        dialogue: [{ speaker: "班長", text: "「我沒有鋸樹枝！是啦啦隊長幹的，她一直嫉妒死者！」" }],
+        options: [{ label: "紀錄證詞", action: "node_next", rewards: { tags: ['campus_info_a'] }, nextSceneId: 'campus_broadcast_hub' }]
+    });
+
+    register({
+        id: 'campus_wolf_b',
+        dialogue: [{ speaker: "啦啦隊長", text: "「班長在說謊！不良少年絕對是無辜的，案發時他在幫我買飲料！」" }],
+        options: [{ label: "紀錄證詞", action: "node_next", rewards: { tags: ['campus_info_b'] }, nextSceneId: 'campus_broadcast_hub' }]
+    });
+
+    register({
+        id: 'campus_wolf_c',
+        dialogue: [{ speaker: "不良少年", text: "「我頂多只負責搶日記...但我發誓，班長才是那個拿鋸子的人！」" }],
+        options: [{ label: "紀錄證詞", action: "node_next", rewards: { tags: ['campus_info_c'] }, nextSceneId: 'campus_broadcast_hub' }]
+    });
+
+    register({
+        id: 'campus_wolf_vote',
+        text: "炸彈的倒數計時剩下最後十秒。你必須按下其中一人的引爆鈕。",
+        options: [
+            { 
+                label: "引爆 班長 的炸彈", 
+                style: "danger", action: "node_next", 
+                nextScene: { 
+                    dialogue: [
+                        { text: "你按下了班長的按鈕。「轟——！」血肉橫飛中，另外兩人的炸彈隨之解除。" },
+                        { speaker: "校內廣播", text: "『恭喜你，完美的邏輯閉環。這就是遲來的正義。』" },
+                        { text: "廣播室的後門打開了，清晨的陽光照亮了這座罪惡的校園。\n【結局：遲來的審判者】" }
+                    ],
+                    rewards: { exp: 1000, title: "復仇之刃", removeTags: ['campus_has_id', 'campus_clue_branch', 'campus_clue_diary', 'campus_info_a', 'campus_info_b', 'campus_info_c'] }, 
+                    options: [{ label: "走出校園 (結束)", action: "finish_chain" }] 
+                } 
+            },
+            { 
+                label: "引爆 啦啦隊長 的炸彈", 
+                action: "node_next", 
+                nextScene: { 
+                    dialogue: [
+                        { text: "啦啦隊長被炸成了碎片... 但緊接著，你腳下的地板閃爍起紅光。" },
+                        { speaker: "校內廣播", text: "『太遺憾了，你成了幫凶的替死鬼。』" },
+                        { text: "巨大的爆炸吞噬了整個廣播室...\n【結局：邏輯死胡同】" }
+                    ],
+                    rewards: { removeTags: ['campus_has_id', 'campus_clue_branch', 'campus_clue_diary', 'campus_info_a', 'campus_info_b', 'campus_info_c'] },
+                    options: [{ label: "葬身火海", action: "finish_chain" }] 
+                } 
+            },
+            { 
+                label: "引爆 不良少年 的炸彈", 
+                action: "node_next", 
+                nextScene: { 
+                    dialogue: [
+                        { text: "不良少年被炸成了碎片... 但緊接著，你腳下的地板閃爍起紅光。" },
+                        { speaker: "校內廣播", text: "『太遺憾了，你成了幫凶的替死鬼。』" },
+                        { text: "巨大的爆炸吞噬了整個廣播室...\n【結局：錯誤的直覺】" }
+                    ],
+                    rewards: { removeTags: ['campus_has_id', 'campus_clue_branch', 'campus_clue_diary', 'campus_info_a', 'campus_info_b', 'campus_info_c'] },
+                    options: [{ label: "葬身火海", action: "finish_chain" }] 
+                } 
+            },
+            { label: "等等，我再想想", action: "node_next", nextSceneId: 'campus_broadcast_hub' }
+        ]
+    });
 
 // --- B. 快遞驚魂 (Delivery) ---
 register({
@@ -171,408 +304,6 @@ register({
     id: 'leave01', 
     text: "腎上腺素幫助你逃離了令人恐懼的老舊國宅...", 
     options: [{label:"離開這裡", action:"finish_chain"}] 
-});
-
-// --- C. 海龜湯 (Turtle Soup) ---
-const TURTLE_HUB = register({
-    id: 'turtle_hub',
-    text: "【海龜湯：半碗牛肉麵】\n題目：一個盲人去吃牛肉麵，吃到一半突然痛哭，然後自殺了。\n請調查線索還原真相。",
-    options: [
-        { label: "🔍 調查桌面", action: "investigate", result: "桌上除了半碗麵，還有灑落一地的**蔥花**。" },
-        { label: "🔍 詢問老闆", action: "investigate", result: "老闆：「那個人說不要蔥，但我太忙忘記了，還是加了滿滿的蔥。」" },
-        { 
-            label: "💡 我知道真相了 (揭曉)", 
-            action: "node_next", 
-            nextScene: {
-                text: "真相：\n盲人以前有個女友。女友曾騙他說「我也愛吃蔥」，把肉都夾給他，自己吃蔥。\n盲人吃到蔥花，驚覺當年女友其實是在受苦，或者驚覺這碗麵的味道和當年女友做的一樣（暗示女友已死或已離開），悲從中來。",
-                rewards: { exp: 50 },
-                options: [{ label: "真是個悲傷的故事...", action: "finish_chain" }]
-            }
-        },
-        { label: "離開", action: "finish_chain" }
-    ]
-});
-
-// --- D. 密室逃脫 (Escape Room) ---
-const ROOM_HUB = register({
-    id: 'room_hub',
-    text: "【密室逃脫：煉金術士的牢房】\n你被關在一個潮濕的石室裡。面前有一扇厚重的鐵門。",
-    options: [] 
-});
-
-const ROOM_DOOR = register({
-    id: 'room_door',
-    text: "這扇門鎖得很緊。鎖孔呈現奇特的六角形。",
-    options: [
-        { label: "嘗試撞開 (STR 8)", check: { stat: 'STR', val: 8 }, nextScene: { text: "門紋絲不動，你的肩膀倒是腫了。", options: [{label:"返回", action:"node_next", nextSceneId:'room_hub'}] }, failScene: { text: "根本撞不動。", options: [{label:"返回", action:"node_next", nextSceneId:'room_hub'}] } },
-        { label: "返回", action: "node_next", nextSceneId: 'room_hub' }
-    ]
-});
-
-const ROOM_BED = register({
-    id: 'room_bed',
-    text: "一張破舊的草蓆。掀開草蓆，你發現下面有一塊鬆動的石磚。",
-    options: [
-        { 
-            label: "撬開石磚", 
-            condition: { noTag: 'has_key' }, 
-            action: "node_next", 
-            nextScene: {
-                text: "你在石磚下發現了一把【生鏽的六角鑰匙】！",
-                options: [
-                    { label: "拿走鑰匙", action: "node_next", rewards: { tags: ['has_key'] }, nextSceneId: 'room_hub' }
-                ]
-            }
-        },
-        { label: "什麼都沒有了", condition: { hasTag: 'has_key' }, action: "node_next", nextSceneId: 'room_hub' },
-        { label: "返回", action: "node_next", nextSceneId: 'room_hub' }
-    ]
-});
-
-ROOM_HUB.options = [
-    { label: "🚪 查看鐵門", action: "node_next", nextSceneId: 'room_door' },
-    { label: "🛏️ 檢查床鋪", action: "node_next", nextSceneId: 'room_bed' },
-    { 
-        label: "🔑 使用鑰匙開門", 
-        condition: { hasTag: 'has_key' }, 
-        action: "node_next", 
-        nextScene: {
-            text: "咔嚓一聲，鐵門應聲而開！自由的空氣湧了進來。",
-            rewards: { exp: 100, removeTags: ['has_key'] },
-            options: [{ label: "逃離密室", action: "finish_chain" }]
-        }
-    },
-    { label: "放棄並呼救", action: "finish_chain" }
-];
-
-// ============================================================
-// 2. 后宮模式 2.0 - 好感度階段與養成
-// ============================================================
-
-// [A. 入口] 確保變數初始化
-register({
-    id: 'harem_root',
-    entry: true,
-    onEnter: {
-        // 如果變數不存在，設為 0；如果存在，保持原值 (Engine V78 的 varOps 若無特殊邏輯可能需注意)
-        // 簡單做法：這裡是 Hub，不要在這裡重置變數。
-        // 我們假設變數已經存在，或者在第一次互動時檢查。
-        // 若要初始化，建議建立一個只跑一次的 'harem_init' 場景，類似 machine_entry
-    },
-    text: "【皇宮寢殿】\n這裡是你的後宮，你可以選擇與誰共度時光。",
-    options: [
-        { label: "召喚女僕長", action: "node_next", nextSceneId: 'harem_maid_intro' },
-        
-        // [重點] 連結到養成循環
-        { 
-            label: "💕 與女僕長互動 (養成)", 
-            action: "node_next", 
-            nextSceneId: 'harem_interaction_loop' 
-        },
-        
-        { label: "前往花園", action: "node_next", nextSceneId: 'harem_garden' },
-        { label: "返回大廳", action: "node_next", nextSceneId: 'root_hub' }
-    ]
-});
-
-// [補回] 遺失的女僕介紹場景
-register({
-    id: 'harem_maid_intro',
-    dialogue: [
-        { speaker: "女僕長", text: "陛下，您醒了。今日要先更衣，還是先用膳？" },
-        { speaker: "你", text: "先更衣吧。" },
-        { speaker: "旁白", text: "女僕長輕手輕腳地為你披上皇袍，指尖若有似無地劃過你的胸膛。" }
-    ],
-    options: [
-        { label: "調戲她", action: "node_next", nextScene: { text: "她臉紅了，但沒有反抗。", options: [{label:"返回寢殿", action:"node_next", nextSceneId:'harem_root'}] } },
-        { label: "保持威嚴", action: "node_next", nextSceneId: 'harem_root' }
-    ]
-});
-
-// [補回] 遺失的花園場景
-register({
-    id: 'harem_garden',
-    text: "御花園中百花盛開。你似乎聽到了遠處傳來的琴聲。",
-    options: [
-        { label: "尋找琴聲來源", action: "node_next", nextScene: { text: "是新來的寵妃在練琴。", options: [{label:"打賞", action:"node_next", nextSceneId:'harem_root'}] } },
-        { label: "返回寢殿", action: "node_next", nextSceneId: 'harem_root' }
-    ]
-});
-
-// [B. 養成循環] 階段式互動
-register({
-    id: 'harem_interaction_loop',
-    // 這裡我們假設 maid_love 已經初始化 (若無則顯示 0)
-    // 為了安全，可以在這裡加一個 onEnter 檢查 (需引擎支援 "add 0" 來確保 key 存在)
-    onEnter: { varOps: [{ key: 'maid_love', val: 0, op: '+' }] }, 
-    
-    text: "女僕長正安靜地站在一旁。\n(💓 目前好感度: {maid_love})",
-    options: [
-        // --- 階段 1: 陌生 (好感 0-29) ---
-        {
-            label: "💬 閒聊 (+2 好感)",
-            // 沒有門檻，隨時可做
-            action: "node_next",
-            rewards: { varOps: [{ key: 'maid_love', val: 2, op: '+' }] },
-            nextScene: { 
-                text: "你和她聊了聊天氣。\n她禮貌地回應了你。", 
-                options: [{label:"繼續", action:"node_next", nextSceneId:'harem_interaction_loop'}] 
-            }
-        },
-
-        // --- 階段 2: 熟悉 (好感 >= 30) ---
-        {
-            label: "🎁 送小禮物 (金幣-10 / +10 好感)",
-            condition: { 
-                vars: [
-                    { key: 'maid_love', val: 30, op: '>=' },
-                    { key: 'gold', val: 10, op: '>=' } 
-                ]
-            },
-            action: "node_next",
-            rewards: { 
-                gold: -10,
-                varOps: [{ key: 'maid_love', val: 10, op: '+' }] 
-            },
-            nextScene: { 
-                text: "她收到禮物時，嘴角微微上揚。\n「謝謝您，陛下。」", 
-                options: [{label:"繼續", action:"node_next", nextSceneId:'harem_interaction_loop'}] 
-            }
-        },
-
-        // [情況 B: 沒錢] -> 顯示鎖定狀態 (改用 locked)
-        {
-            // 由於不能動 CSS，我們直接在文字上加鎖頭符號，並標註原因
-            label: "🎁 送小禮物 (🔒 金幣不足 10)", 
-            
-            // 使用 Engine 不認識的 style 名稱 (如 disabled)，
-            // 雖然 View 不會變色(因為不能改CSS)，但至少標記明確
-            style: "disabled", 
-
-            condition: { 
-                vars: [
-                    { key: 'maid_love', val: 30, op: '>=' }, // 好感度夠，才會看到這個鎖定的選項
-                    { key: 'gold', val: 10, op: '<' }    // 錢不夠
-                ]
-            },
-            
-            // [關鍵] 設定動作為 locked
-            action: "locked",
-            
-            // [關鍵] 設定點擊後的提示訊息
-            msg: "❌ 您的金幣不足，無法購買禮物！"
-        },
-
-        // --- 階段 3: 曖昧 (好感 >= 60) ---
-        {
-            label: "✋ 肢體接觸 (警報+? / +15 好感)",
-            condition: { var: { key: 'maid_love', val: 60, op: '>=' } },
-            action: "node_next",
-            rewards: { varOps: [{ key: 'maid_love', val: 15, op: '+' }] },
-            nextScene: { 
-                text: "你輕輕握住她的手，她臉紅了，但沒有抽開。\n氣氛變得有些微妙。", 
-                options: [{label:"繼續", action:"node_next", nextSceneId:'harem_interaction_loop'}] 
-            }
-        },
-
-        // --- 階段 4: 誓約 (好感 >= 100) ---
-        {
-            label: "💍 締結誓約 (解鎖結局)",
-            style: "primary", // 特殊顏色按鈕
-            condition: { var: { key: 'maid_love', val: 100, op: '>=' } },
-            action: "node_next",
-            nextSceneId: 'harem_true_love_event'
-        },
-
-        { label: "離開", action: "node_next", nextSceneId: 'harem_root' }
-    ]
-});
-
-// [C. 真愛劇情]
-register({
-    id: 'harem_true_love_event',
-    text: "【特殊劇情：誓約之吻】\n女僕長卸下了平日的防備，依偎在你懷裡。\n「陛下...不，親愛的。我願意永遠追隨您。」",
-    options: [
-        {
-            label: "接受她的心意 (Happy End)",
-            action: "finish_chain",
-            rewards: { 
-                exp: 1000, 
-                tags: ['maid_conquered'] // 獲得成就標籤
-            }
-        }
-    ]
-});
-
-// ============================================================
-// 3. 機械公元 2.0 (Machine Era) - 資源管理與風險博弈
-// ============================================================
-
-// [A. 初始化入口] 設定三個核心數值：時間、進度、警報值
-register({
-    id: 'machine_entry',
-    entry: true, 
-    onEnter: { 
-        varOps: [
-            { key: 'time_left', val: 5, op: 'set' }, 
-            { key: 'hack_progress', val: 0, op: 'set' },
-            { key: 'alert_level', val: 0, op: 'set' } // 新增：警報值
-        ]
-    },
-    text: "【系統初始化】\n正在建立安全通道...\n目標：獲取 100% 數據。\n警告：警報值過高將觸發防火牆反擊。",
-    options: [
-        { label: "接入神經網路", action: "node_next", nextSceneId: 'machine_root' }
-    ]
-});
-
-// [B. 主控台循環] 核心博弈邏輯
-register({
-    id: 'machine_root',
-    text: "【系統主控台】\n⏳ 剩餘時間：{time_left}\n💾 破解進度：{hack_progress}%\n⚠️ 警報等級：{alert_level}%",
-    options: [
-        // 優先級 1: 警報爆表 (強制登出)
-        {
-            label: "⚠️ 警報大作！強制登出！",
-            style: "danger",
-            condition: { var: { key: 'alert_level', val: 100, op: '>=' } },
-            action: "node_next",
-            nextSceneId: 'machine_bad_end'
-        },
-        // 優先級 2: 時間耗盡 (強制結算)
-        {
-            label: "⏳ 時間耗盡，斷開連接",
-            condition: { 
-                // [修正] 使用 vars 陣列來同時檢查兩個條件
-                vars: [
-                    { key: 'time_left', val: 1, op: '<' },
-                    { key: 'alert_level', val: 100, op: '<' }
-                ]
-            },
-            action: "node_next",
-            nextSceneId: 'machine_calculating'
-        },
-        // 優先級 3: 正常行動
-        { 
-            label: "🔨 暴力破解 (耗時1 / 警報+30)", 
-            condition: { 
-                vars: [
-                    { key: 'time_left', val: 1, op: '>=' },
-                    { key: 'alert_level', val: 100, op: '<' }
-                ]
-            }, 
-            action: "node_next", 
-            rewards: { 
-                varOps: [
-                    { key: 'time_left', val: 1, op: '-' },
-                    { key: 'hack_progress', val: 25, op: '+' },
-                    { key: 'alert_level', val: 30, op: '+' }
-                ] 
-            },
-            nextSceneId: 'machine_root' 
-        },
-        { 
-            label: "🦠 植入病毒 (耗時2 / 警報+0)", 
-            condition: { 
-                vars: [
-                    { key: 'time_left', val: 2, op: '>=' },
-                    { key: 'alert_level', val: 100, op: '<' }
-                ]
-            },
-            action: "node_next", 
-            rewards: { 
-                varOps: [
-                    { key: 'time_left', val: 2, op: '-' },
-                    { key: 'hack_progress', val: 40, op: '+' }
-                ] 
-            },
-            nextSceneId: 'machine_root'
-        },
-        { 
-            label: "🧹 清除日誌 (耗時1 / 警報-20)", 
-            condition: { 
-                vars: [
-                    { key: 'time_left', val: 1, op: '>=' },
-                    { key: 'alert_level', val: 100, op: '<' },
-                    { key: 'alert_level', val: 0, op: '>' }
-                ]
-            },
-            action: "node_next", 
-            rewards: { 
-                varOps: [
-                    { key: 'time_left', val: 1, op: '-' },
-                    { key: 'alert_level', val: 20, op: '-' }
-                ] 
-            },
-            nextSceneId: 'machine_root'
-        },
-        // 優先級 4: 主動撤退
-        {
-            label: "🚪 主動斷開連接 (結算)",
-            condition: { 
-                vars: [
-                    { key: 'time_left', val: 1, op: '>=' },
-                    { key: 'alert_level', val: 100, op: '<' }
-                ]
-            },
-            action: "node_next",
-            nextSceneId: 'machine_calculating'
-        }
-    ]
-});
-
-// [C. 過場計算] 這裡只負責顯示過場動畫，並提供唯一的結果按鈕
-register({
-    id: 'machine_calculating',
-    text: "正在上傳數據包...\n校驗完整性中...\n(進度: {hack_progress}%)",
-    options: [
-        // 只有一個結果會出現，玩家感覺像是自動判定的
-        {
-            label: "查看最終報告 (完美)",
-            condition: { var: { key: 'hack_progress', val: 100, op: '>=' } },
-            action: "node_next",
-            nextScene: { 
-                text: "【任務完成】\n你成功竊取了所有核心機密資料。\n企業股價大跌，你的帳戶多了一筆鉅款。", 
-                rewards: { gold: 200, exp: 50 }, 
-                options: [{label:"潛入陰影 (離開)", action:"finish_chain"}] 
-            }
-        },
-        {
-            label: "查看最終報告 (普通)",
-            condition: { 
-                var: { key: 'hack_progress', val: 100, op: '<' },
-                var: { key: 'hack_progress', val: 50, op: '>=' } // 需引擎支援多重condition或順序判定，若不支援可簡化
-            },
-            action: "node_next",
-            nextScene: { 
-                text: "【任務勉強完成】\n資料有些損毀，但還能賣點錢。", 
-                rewards: { gold: 50, exp: 20 }, 
-                options: [{label:"離開", action:"finish_chain"}] 
-            }
-        },
-        {
-            label: "查看最終報告 (失敗)",
-            condition: { var: { key: 'hack_progress', val: 50, op: '<' } },
-            action: "node_next",
-            nextScene: { 
-                text: "【任務失敗】\n你只抓到了一些垃圾緩存文件，白忙一場。", 
-                rewards: { energy: -5 }, // 扣點精力懲罰
-                options: [{label:"灰溜溜地離開", action:"finish_chain"}] 
-            }
-        }
-    ]
-});
-
-// [D. 壞結局] 警報過高
-register({
-    id: 'machine_bad_end',
-    text: "【致命錯誤】\n防火牆追蹤到了你的神經訊號！\n你的大腦受到強烈電擊...",
-    options: [
-        { 
-            label: "意識中斷... (精力 -20)", 
-            action: "finish_chain", 
-            rewards: { energy: -20 } // 大幅扣除精力
-        }
-    ]
 });
 
 // ============================================================
@@ -786,6 +517,294 @@ register({
         }
     ]
 });
+
+// ============================================================
+    // 🌃 序幕：潛入深淵財閥
+    // ============================================================
+    register({
+        id: 'spy_root_entry',
+        entry: true, // 劇情入口
+        onEnter: { 
+            varOps: [
+                { key: 'time_left', val: 7, op: 'set' },      // 任務剩餘時間
+                { key: 'hack_progress', val: 0, op: 'set' },  // 破解進度
+                { key: 'alert_level', val: 0, op: 'set' },    // 安保警報值
+                { key: 'lover_affection', val: 0, op: 'set' } // 戀人好感度
+            ]
+        },
+        dialogue: [
+            { text: "【任務代號：溫柔陷阱】" },
+            { text: "你潛入了深淵財閥的頂層辦公室。終端機閃爍著冷光，裡面藏著足以摧毀這個企業的機密。" },
+            { speaker: "伊芙", text: "「快點，我拖不了警衛太久。」" },
+            { text: "伊芙，財閥總裁的私人秘書，也是你在這裡唯一的內應。她正靠在門邊，眼神複雜地看著你。" }
+        ],
+        options: [
+            { label: "開始行動", action: "node_next", nextSceneId: 'spy_main_loop' }
+        ]
+    });
+
+    // ============================================================
+    // 💻 核心迴圈：駭客任務 vs 戀人互動
+    // ============================================================
+    register({
+        id: 'spy_main_loop',
+        dialogue: [
+            { text: "【系統狀態】" },
+            { text: "⏳ 剩餘時間：{time_left} 分鐘" },
+            { text: "💾 破解進度：{hack_progress}%" },
+            { text: "⚠️ 警報等級：{alert_level}%" },
+            { text: "💖 伊芙好感：{lover_affection}" },
+            { text: "你要怎麼利用這寶貴的一分鐘？" }
+        ],
+        options: [
+            // 🛑 優先級 1: 警報爆表 (強制登出)
+            {
+                label: "⚠️ 警報大作！",
+                style: "danger",
+                condition: { vars: [{ key: 'alert_level', val: 100, op: '>=' }] },
+                action: "node_next",
+                nextSceneId: 'spy_bad_end_alert'
+            },
+            // 🛑 優先級 2: 時間耗盡 (強制結算)
+            {
+                label: "⏳ 時間耗盡，準備撤退！",
+                condition: { 
+                    vars: [
+                        { key: 'time_left', val: 1, op: '<' },
+                        { key: 'alert_level', val: 100, op: '<' }
+                    ]
+                },
+                action: "node_next",
+                nextSceneId: 'spy_calculate_ending'
+            },
+
+            // ==================
+            // 🛠️ 行動 A：駭客入侵 (推進度，增警報)
+            // ==================
+            { 
+                label: "💻 植入木馬 (耗時1 / 進度+20 / 警報+25)", 
+                condition: { 
+                    vars: [
+                        { key: 'time_left', val: 1, op: '>=' },
+                        { key: 'alert_level', val: 100, op: '<' },
+                        { key: 'hack_progress', val: 100, op: '<' } // 進度滿了就隱藏
+                    ]
+                }, 
+                action: "node_next", 
+                rewards: { 
+                    varOps: [
+                        { key: 'time_left', val: 1, op: '-' },
+                        { key: 'hack_progress', val: 20, op: '+' },
+                        { key: 'alert_level', val: 25, op: '+' }
+                    ] 
+                },
+                nextScene: {
+                    dialogue: [{ text: "代碼如瀑布般刷過螢幕，你成功截取了一部分數據。但防火牆開始產生反應了。" }],
+                    options: [{label: "繼續", action: "node_next", nextSceneId: 'spy_main_loop'}]
+                } 
+            },
+            { 
+                label: "🔥 暴力破解 (耗時1 / 進度+40 / 警報+50)", 
+                style: "danger",
+                condition: { 
+                    vars: [
+                        { key: 'time_left', val: 1, op: '>=' },
+                        { key: 'alert_level', val: 100, op: '<' },
+                        { key: 'hack_progress', val: 100, op: '<' }
+                    ]
+                }, 
+                action: "node_next", 
+                rewards: { 
+                    varOps: [
+                        { key: 'time_left', val: 1, op: '-' },
+                        { key: 'hack_progress', val: 40, op: '+' },
+                        { key: 'alert_level', val: 50, op: '+' }
+                    ] 
+                },
+                nextScene: {
+                    dialogue: [{ text: "你強行突破了核心防火牆！警報燈瞬間閃爍，你聽到了遠處傳來警衛的腳步聲！" }],
+                    options: [{label: "繼續", action: "node_next", nextSceneId: 'spy_main_loop'}]
+                } 
+            },
+
+            // ==================
+            // 💖 行動 B：戀人互動 (降警報，增好感)
+            // ==================
+            { 
+                label: "💬 拜託伊芙掩護 (耗時1 / 警報-30 / 好感+10)", 
+                condition: { 
+                    vars: [
+                        { key: 'time_left', val: 1, op: '>=' },
+                        { key: 'alert_level', val: 100, op: '<' }
+                    ]
+                }, 
+                action: "node_next", 
+                rewards: { 
+                    varOps: [
+                        { key: 'time_left', val: 1, op: '-' },
+                        { key: 'alert_level', val: 30, op: '-' },
+                        { key: 'lover_affection', val: 10, op: '+' }
+                    ] 
+                },
+                nextScene: {
+                    dialogue: [{ speaker: "伊芙", text: "「真是拿你沒辦法...」她透過內部通訊器發布了假指令，成功引開了警衛。" }],
+                    options: [{label: "繼續", action: "node_next", nextSceneId: 'spy_main_loop'}]
+                } 
+            },
+            { 
+                label: "💋 將她拉入懷中 (耗時2 / 警報-50 / 好感+30)", 
+                condition: { 
+                    vars: [
+                        { key: 'time_left', val: 2, op: '>=' },
+                        { key: 'alert_level', val: 100, op: '<' }
+                    ]
+                }, 
+                action: "node_next", 
+                rewards: { 
+                    varOps: [
+                        { key: 'time_left', val: 2, op: '-' },
+                        { key: 'alert_level', val: 50, op: '-' },
+                        { key: 'lover_affection', val: 30, op: '+' }
+                    ] 
+                },
+                nextScene: {
+                    dialogue: [
+                        { text: "你停下手中的鍵盤，將伊芙拉過來深吻。" },
+                        { speaker: "伊芙", text: "「唔...你瘋了嗎？現在還在任務中...」" },
+                        { text: "她雖然嘴上抱怨，但身體卻誠實地靠在你懷裡，甚至順手幫你關閉了辦公室的紅外線掃描網。" }
+                    ],
+                    options: [{label: "繼續", action: "node_next", nextSceneId: 'spy_main_loop'}]
+                } 
+            },
+
+            // ==================
+            // 🚪 提前撤退
+            // ==================
+            {
+                label: "🚪 主動撤退 (進入結算)",
+                condition: { 
+                    vars: [
+                        { key: 'time_left', val: 1, op: '>=' },
+                        { key: 'alert_level', val: 100, op: '<' }
+                    ]
+                },
+                action: "node_next",
+                nextSceneId: 'spy_calculate_ending'
+            }
+        ]
+    });
+
+    // ============================================================
+    // 💥 壞結局：警報爆表
+    // ============================================================
+    register({
+        id: 'spy_bad_end_alert',
+        dialogue: [
+            { text: "【刺耳的警報聲響徹雲霄】" },
+            { text: "武裝無人機破窗而入，紅色的雷射瞄準器鎖定了你的眉心。" },
+            { speaker: "伊芙", text: "「太遲了...」她絕望地看著你，隨後被衝進來的特工按倒在地。" },
+            { text: "你什麼都沒得到，還連累了她。" }
+        ],
+        options: [
+            { label: "雙手抱頭投降", action: "finish_chain", rewards: { energy: -20 } }
+        ]
+    });
+
+    // ============================================================
+    // 🏆 最終結算：根據進度與好感度判定
+    // ============================================================
+    register({
+        id: 'spy_calculate_ending',
+        dialogue: [
+            { text: "「直升機到了，快走！」伊芙拉著你衝上頂樓停機坪。" },
+            { text: "任務結束了。現在，是檢視成果的時候..." }
+        ],
+        options: [
+            // 結局 S：資料拿滿 + 伊芙好感度滿 (完美特務)
+            {
+                label: "查看成果 (需要 進度100% + 好感40+)",
+                condition: { 
+                    vars: [
+                        { key: 'hack_progress', val: 100, op: '>=' },
+                        { key: 'lover_affection', val: 40, op: '>=' }
+                    ]
+                },
+                style: "primary", action: "node_next",
+                nextScene: { 
+                    dialogue: [
+                        { text: "【結局 S：名利雙收的夜奔】" },
+                        { text: "你不僅下載了摧毀財閥的所有數據，還緊緊握住了伊芙的手。" },
+                        { speaker: "伊芙", text: "「這下我真的成共犯了... 以後你要養我一輩子。」" },
+                        { text: "直升機消失在夜色中。你贏得了一切。" }
+                    ],
+                    rewards: { exp: 500, gold: 500, title: "夜城傳奇" }, 
+                    options: [{label: "結束", action: "finish_chain"}] 
+                }
+            },
+            // 結局 A：資料拿滿，但忽略了伊芙 (冷血間諜)
+            {
+                label: "查看成果 (需要 進度100%)",
+                condition: { 
+                    vars: [
+                        { key: 'hack_progress', val: 100, op: '>=' },
+                        { key: 'lover_affection', val: 40, op: '<' }
+                    ]
+                },
+                action: "node_next",
+                nextScene: { 
+                    dialogue: [
+                        { text: "【結局 A：冷血的勝利】" },
+                        { text: "你成功竊取了所有數據。但當你坐上直升機時，伊芙卻停在了門外。" },
+                        { speaker: "伊芙", text: "「你心裡只有任務，對吧？再見了。」" },
+                        { text: "你成為了富豪，但你永遠失去了她。" }
+                    ],
+                    rewards: { exp: 300, gold: 500, title: "無情特務" }, 
+                    options: [{label: "結束", action: "finish_chain"}] 
+                }
+            },
+            // 結局 B：資料沒拿滿，但贏得伊芙的心 (愛美人不愛江山)
+            {
+                label: "查看成果 (需要 好感40+)",
+                condition: { 
+                    vars: [
+                        { key: 'hack_progress', val: 100, op: '<' },
+                        { key: 'lover_affection', val: 40, op: '>=' }
+                    ]
+                },
+                action: "node_next",
+                nextScene: { 
+                    dialogue: [
+                        { text: "【結局 B：亡命鴛鴦】" },
+                        { text: "數據並不完整，這次任務算不上成功。但伊芙毫不猶豫地跟著你跳上了直升機。" },
+                        { speaker: "伊芙", text: "「沒有那些錢也沒關係... 只要我們在一起。」" }
+                    ],
+                    rewards: { exp: 200, gold: 100 }, 
+                    options: [{label: "結束", action: "finish_chain"}] 
+                }
+            },
+            // 結局 C：任務失敗，且好感度不足 (一事無成)
+            {
+                label: "查看成果 (一事無成)",
+                condition: { 
+                    vars: [
+                        { key: 'hack_progress', val: 100, op: '<' },
+                        { key: 'lover_affection', val: 40, op: '<' }
+                    ]
+                },
+                action: "node_next",
+                nextScene: { 
+                    dialogue: [
+                        { text: "【結局 C：狼狽的逃兵】" },
+                        { text: "資料沒下載完，伊芙也對你的無能感到失望，獨自留在了大樓裡收拾殘局。" },
+                        { text: "你兩手空空地逃回了貧民窟，準備迎接雇主的怒火。" }
+                    ],
+                    rewards: { energy: -10 }, 
+                    options: [{label: "結束", action: "finish_chain"}] 
+                }
+            }
+        ]
+    });
+	
 // ============================================================
 // 1. 全局初始化 (Initialization)
 // ============================================================
@@ -1444,6 +1463,241 @@ register({
         { label: "沒興趣", action: "node_next", nextSceneId: 'rose_hub' }
     ]
 });
+
+register({
+        id: 'drama_root_entry',
+        entry: true, 
+        onEnter: { 
+            varOps: [
+                { key: 'md_trust', val: 50, op: 'set' },     // 未婚夫信任度
+                { key: 'md_rep', val: 50, op: 'set' },       // 正宮氣場/名聲
+                { key: 'md_stress', val: 0, op: 'set' },     // 崩潰值
+                { key: 'md_evidence', val: 0, op: 'set' }    // 收集到的鐵證
+            ]
+        },
+        dialogue: [
+            { text: "【第一幕：微小的刺】" },
+            { text: "你坐進未婚夫明浩的車裡，敏銳地聞到了一股不屬於你的香水味。" },
+            { text: "更刺眼的是，副駕駛座的縫隙裡，夾著一根亞麻色的長髮。而你是俐落的黑色短髮。" },
+            { speaker: "明浩", text: "「怎麼了？今天公司剛來了個實習生若微，笨手笨腳的，我順路載她去辦手續，你別多想。」" },
+            { text: "明浩的語氣很自然，但你知道，戰爭已經開始了。" }
+        ],
+        options: [
+            { 
+                label: "當場發作，質問他 (信任-10 / 壓力-10)", 
+                action: "node_next", 
+                rewards: { varOps: [{ key: 'md_trust', val: 10, op: '-' }, { key: 'md_stress', val: 10, op: '-' }] },
+                nextScene: {
+                    dialogue: [
+                        { speaker: "你", text: "「順路載人需要讓她坐副駕？還噴這麼濃的香水？」" },
+                        { speaker: "明浩", text: "「你現在怎麼變得這麼神經質？她才二十歲，剛畢業的小妹妹而已！」" },
+                        { text: "明浩顯然覺得你在無理取鬧，氣氛降至冰點。但你發洩了情緒，心裡舒服了點。" }
+                    ],
+                    options: [{label: "抵達公司", action: "node_next", nextSceneId: 'drama_act2_pantry'}]
+                } 
+            },
+            { 
+                label: "溫柔微笑，偷偷記下 (氣場+10 / 壓力+20)", 
+                action: "node_next", 
+                rewards: { varOps: [{ key: 'md_rep', val: 10, op: '+' }, { key: 'md_stress', val: 20, op: '+' }] },
+                nextScene: {
+                    dialogue: [
+                        { speaker: "你", text: "「沒事，只是覺得這香水味挺廉價的。下次讓她坐後座吧，免得弄髒了你的真皮座椅。」" },
+                        { text: "明浩愣了一下，隨後笑著點頭。你隱忍著噁心，表面上維持著正宮的大度。" }
+                    ],
+                    options: [{label: "抵達公司", action: "node_next", nextSceneId: 'drama_act2_pantry'}]
+                } 
+            },
+            { 
+                label: "假裝沒事，暗中備份行車紀錄器 (鐵證+1 / 壓力+10)", 
+                style: "primary",
+                action: "node_next", 
+                rewards: { varOps: [{ key: 'md_evidence', val: 1, op: '+' }, { key: 'md_stress', val: 10, op: '+' }] },
+                nextScene: {
+                    dialogue: [
+                        { text: "你什麼也沒說，只是趁明浩下車買咖啡時，拔走了行車紀錄器的記憶卡。" },
+                        { text: "你不會打沒有把握的仗。" }
+                    ],
+                    options: [{label: "抵達公司", action: "node_next", nextSceneId: 'drama_act2_pantry'}]
+                } 
+            }
+        ]
+    });
+
+    // ============================================================
+    // ☕ 第二幕：茶水間的誣陷 (經典綠茶橋段)
+    // ============================================================
+    register({
+        id: 'drama_act2_pantry',
+        dialogue: [
+            { text: "【第二幕：茶水間的眼淚】" },
+            { text: "下午，你在公司茶水間碰到了那個叫「若微」的實習生。" },
+            { text: "她長著一張楚楚可憐的臉。看到你進來，她突然故意將手中的熱咖啡潑到自己裙子上，然後發出誇張的尖叫聲！" },
+            { text: "「啊！好燙！」" },
+            { text: "明浩和幾個高管立刻衝了進來。" },
+            { speaker: "若微", text: "「明浩哥... 姐姐可能是不小心的，你別怪她... 我知道姐姐不喜歡我...」她紅著眼眶，瑟瑟發抖地看著你。" }
+        ],
+        options: [
+            // 🛑 崩潰檢定：如果壓力太高，強制失控
+            {
+                label: "理智斷線！",
+                condition: { vars: [{ key: 'md_stress', val: 30, op: '>=' }] },
+                style: "danger", action: "node_next",
+                nextScene: {
+                    dialogue: [
+                        { text: "積壓的怒火瞬間爆發！你衝上前狠狠甩了若微一巴掌！" },
+                        { text: "「你這個滿嘴謊言的賤人！」" },
+                        { text: "全場嘩然。明浩鐵青著臉把你拉開。若微躲在明浩身後，嘴角勾起一抹得意的暗笑。" },
+                        { text: "你徹底落入了她的圈套，成了一個瘋婆子。" }
+                    ],
+                    rewards: { varOps: [{ key: 'md_trust', val: 40, op: '-' }, { key: 'md_rep', val: 50, op: '-' }] },
+                    options: [{ label: "被強行請出公司", action: "node_next", nextSceneId: 'drama_climax_gala' }]
+                }
+            },
+            // ✅ 正常應對
+            {
+                label: "冷笑一聲，反客為主 (氣場+20)",
+                condition: { vars: [{ key: 'md_stress', val: 30, op: '<' }] },
+                action: "node_next",
+                rewards: { varOps: [{ key: 'md_rep', val: 20, op: '+' }, { key: 'md_trust', val: 10, op: '+' }] },
+                nextScene: {
+                    dialogue: [
+                        { speaker: "你", text: "「若微妹妹，這杯咖啡是你自己泡的吧？水溫頂多40度，燙得著你嗎？」" },
+                        { text: "你上前抽了幾張紙巾，動作優雅地拍在她身上。「演技太差，回頭讓明總給你報個培訓班吧。」" },
+                        { text: "周圍的高管忍不住笑出聲。若微臉一陣紅一陣白，明浩也覺得她有些做作了。" }
+                    ],
+                    options: [{ label: "轉身離開", action: "node_next", nextSceneId: 'drama_climax_gala' }]
+                }
+            },
+            {
+                label: "調出茶水間監視器！(需鐵證+1)",
+                style: "primary",
+                condition: { 
+                    vars: [
+                        { key: 'md_stress', val: 30, op: '<' },
+                        { key: 'md_evidence', val: 1, op: '>=' } // 必須在上一關有拔行車紀錄器或懂得蒐證
+                    ]
+                },
+                action: "node_next",
+                rewards: { varOps: [{ key: 'md_evidence', val: 1, op: '+' }, { key: 'md_trust', val: 20, op: '+' }] },
+                nextScene: {
+                    dialogue: [
+                        { speaker: "你", text: "「既然你說是我推的，那我們看監視器吧。我剛剛進來時順手按了手機錄影。」" },
+                        { text: "你點開畫面，清清楚楚錄下了若微自己往身上潑咖啡的瞬間。" },
+                        { text: "明浩的臉色瞬間沉了下來。「若微，去財務部結算你的實習薪水，明天不用來了。」" }
+                    ],
+                    options: [{ label: "大獲全勝", action: "node_next", nextSceneId: 'drama_climax_gala' }]
+                }
+            }
+        ]
+    });
+
+    // ============================================================
+    // 🥂 第三幕：高潮 (董事會晚宴)
+    // ============================================================
+    register({
+        id: 'drama_climax_gala',
+        dialogue: [
+            { text: "【最終幕：逼宮的籌碼】" },
+            { text: "集團年度晚宴。你與明浩穿著禮服出席。" },
+            { text: "就在即將宣佈你們婚訊時，被開除的若微突然闖入會場！" },
+            { speaker: "若微", text: "她手裡舉著一張超音波單，哭得梨花帶雨：「明浩哥！我懷了你的孩子！你不能娶這個狠毒的女人！」" },
+            { text: "全場閃光燈狂閃，董事會的元老們議論紛紛。明浩面色慘白，震驚地看著若微，又看向你。" },
+            { text: "這是決定命運的時刻。" }
+        ],
+        options: [
+            { label: "進行最終反擊", action: "node_next", nextSceneId: 'drama_ending_calculate' }
+        ]
+    });
+
+    // ============================================================
+    // 🏆 結局判定
+    // ============================================================
+    register({
+        id: 'drama_ending_calculate',
+        dialogue: [{ text: "面對若微的逼宮，你的應對是..." }],
+        options: [
+            // 🌟 結局 S：鐵證如山 (完美反殺)
+            {
+                label: "甩出鐵證！(需 鐵證>=2 且 氣場>=60)",
+                condition: { 
+                    vars: [
+                        { key: 'md_evidence', val: 2, op: '>=' },
+                        { key: 'md_rep', val: 60, op: '>=' }
+                    ]
+                },
+                style: "primary", action: "node_next",
+                nextScene: { 
+                    dialogue: [
+                        { text: "【結局 S：女王的處刑】" },
+                        { text: "你冷笑著走向大螢幕，將手機連上投影。" },
+                        { speaker: "你", text: "「懷孕？你上個月才去酒吧跟別人開房，行車紀錄器裡還有你跟同伙炫耀要『仙人跳』明浩的錄音！」" },
+                        { text: "鐵證如山，若微癱軟在地。明浩對你心悅誠服，徹底將集團半數股份轉讓給你以表忠心。" }
+                    ],
+                    rewards: { exp: 1000, title: "豪門鐵腕正宮" }, 
+                    options: [{label: "欣賞她的慘狀", action: "finish_chain"}] 
+                }
+            },
+            // 🌟 結局 A：獨自美麗 (踢走渣男)
+            {
+                label: "冷靜提分手 (需 氣場>=70)",
+                condition: { 
+                    vars: [{ key: 'md_rep', val: 70, op: '>=' }]
+                },
+                action: "node_next",
+                nextScene: { 
+                    dialogue: [
+                        { text: "【結局 A：清醒的獵手】" },
+                        { speaker: "你", text: "「既然他這麼喜歡照顧小妹妹，那就讓給妳吧。不過，集團的客戶名單和核心技術，我都帶走了。」" },
+                        { text: "你懶得陷入這種低級的泥淖。憑藉著你在業界累積的名聲，你自立門戶。" },
+                        { text: "半年後，明浩的公司被你打得瀕臨破產，而他和若微每天為了錢爭吵不休。" }
+                    ],
+                    rewards: { exp: 800, title: "獨立大女主" }, 
+                    options: [{label: "踩著高跟鞋離開", action: "finish_chain"}] 
+                }
+            },
+            // 🌟 結局 B：隱忍保位 (傳統正宮)
+            {
+                label: "安撫董事會 (需 信任>=50)",
+                condition: { 
+                    vars: [{ key: 'md_trust', val: 50, op: '>=' }]
+                },
+                action: "node_next",
+                nextScene: { 
+                    dialogue: [
+                        { text: "【結局 B：黃金鳥籠】" },
+                        { text: "你大方地站出來，表示會給這個女孩一筆安家費，並平息了公關危機。" },
+                        { text: "明浩感激你的大度，如期與你完婚。若微被拿錢打發，永遠消失了。" },
+                        { text: "你保住了正宮的位置和無盡的財富，但每當深夜，你看著身邊的男人，心裡總覺得有一根拔不掉的刺。" }
+                    ],
+                    rewards: { exp: 300 }, 
+                    options: [{label: "維持豪門體面", action: "finish_chain"}] 
+                }
+            },
+            // 💀 結局 C：淨身出戶 (失敗)
+            {
+                label: "崩潰大哭 (信任不足 / 鐵證不足)",
+                condition: { 
+                    vars: [
+                        { key: 'md_evidence', val: 2, op: '<' },
+                        { key: 'md_rep', val: 70, op: '<' },
+                        { key: 'md_trust', val: 50, op: '<' }
+                    ]
+                },
+                style: "danger", action: "node_next",
+                nextScene: { 
+                    dialogue: [
+                        { text: "【結局 C：敗犬的退場】" },
+                        { text: "你沒有證據反駁，之前的歇斯底里已經讓明浩對你失去耐心。" },
+                        { speaker: "明浩", text: "「我們解除婚約吧。我不能讓我的骨肉流落在外。」" },
+                        { text: "你被趕出了公司。若微穿著你挑的禮服，挽著明浩的手臂，對著你露出了勝利的微笑。" }
+                    ],
+                    rewards: { energy: -20 }, 
+                    options: [{label: "狼狽離開", action: "finish_chain"}] 
+                }
+            }
+        ]
+    });
 // ============================================================
 // 4. 入口配置 (SCENE_DB)
 // ============================================================
@@ -1457,13 +1711,11 @@ window.SCENE_DB = {
 				{ label: "--- 模式切換測試 ---", action: "investigate", result: "請選擇要預覽的模式入口：" },
 				{ label: "🎲 無盡隨機冒險", action: "node_next", nextSceneId: 'GEN_MODULAR' },
                 { label: "📦 快遞驚魂 (懸疑)", action: "node_next", nextSceneId: 'delivery_start' },
-                { label: "🐺 狼人殺 (推理)", action: "node_next", nextSceneId: 'wolf_hub' },
-                { label: "🐢 海龜湯 (解謎)", action: "node_next", nextSceneId: 'turtle_hub' },
-                { label: "🔒 密室逃脫 (探索)", action: "node_next", nextSceneId: 'room_hub' },
+                { label: "🚪午夜的同學會", action: "node_next", nextSceneId: 'campus_archive_hub' },
                 { label: "🌹 豪門夜宴", action: "node_next", nextSceneId: ['rose_start1', 'rose_start2'] },
 				{ label: "⛪ 告解室 (懸疑)", action: "node_next", nextSceneId: 'confessional_start' },
-                { label: "🚀 機械公元", action: "node_next", nextSceneId: 'machine_entry', style: 'primary' },
-                { label: "💕 后宮帝國", action: "node_next", nextSceneId: 'harem_root', style: 'primary' },
+                { label: "🌃 諜報情迷", action: "node_next", nextSceneId: 'spy_root_entry', style: 'primary' },
+                { label: "💕 隱形硝煙", action: "node_next", nextSceneId: 'drama_root_entry', style: 'primary' },
 				
 			]
         }

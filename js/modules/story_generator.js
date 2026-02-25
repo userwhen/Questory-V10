@@ -24,9 +24,9 @@ window.StoryGenerator = {
         ],
         // 2. 世界氛圍 (World Atmosphere)
         world_vibe: [
-            { val: "戰亂", tag: "world_war" },
-            { val: "和平", tag: "world_peace" },
-            { val: "魔法復甦", tag: "world_magic" }
+            { val: "戰亂", tag: "war" },
+            { val: "和平", tag: "peace" },
+            { val: "魔法復甦", tag: "magic" }
         ]
     },
 	buildUnifiedFlow: function(skel) {
@@ -86,7 +86,7 @@ window.StoryGenerator = {
             // 🌟 新版宣告法：懸疑劇本
             flow: {
                 isSequential: false, // 隨機模式
-                start: ['setup'],
+                start: ['mystery_setup'],
                 middle: ['investigate'], // 中間只抽調查
                 end: ['twist', 'deduction'],
                 minMiddle: 2, maxMiddle: 4 // 中間會有 2~4 次調查或通用劇情
@@ -96,7 +96,7 @@ window.StoryGenerator = {
         'horror': {
             seeds: {
                 weather: [ { val: "伸手不見五指的深夜", tag: "risk_high" }, { val: "雷雨交加的夜晚", tag: "env_storm" } ],
-                curse_type: [{ val: "古代詛咒", tag: "curse_ancient" }, "怨靈附身", "生物變異"]
+                curse_type: [{ val: "古代詛咒", tag: "ancient" }, "怨靈附身", "生物變異"]
             },
             actors: ['survivor', 'noun_monster', 'noun_location_building'], 
             baseTension: 30,
@@ -120,7 +120,7 @@ window.StoryGenerator = {
             // 🌟 新版宣告法：冒險劇本
             flow: {
                 isSequential: false,
-                start: ['setup'],
+                start: ['adventure_setup'],
                 middle: ['event_battle', 'event_explore'], // 中間隨機抽打怪或探索
                 end: ['boss'],
                 minMiddle: 3, maxMiddle: 5
@@ -184,6 +184,7 @@ initChain: function(skeletonKey = null, themeTag = null) {
             const pick = options[Math.floor(Math.random() * options.length)];
             if (typeof pick === 'object') {
                 if (pick.tag) initialTags.push(pick.tag); // 把 trait_rich 加進去
+				if (pick.tags) initialTags.push(...pick.tags);
                 memory[key] = pick.val; // 把 "富有的" 存進記憶
             }
         }
@@ -267,10 +268,17 @@ initChain: function(skeletonKey = null, themeTag = null) {
     generate: function(contextTags = [], isStart = false) {
         const gs = window.GlobalState;
         
-        // 1. 初始化檢查
-        if (!gs.story.chain || !gs.story.chain.stages || isStart) {
-            console.log("🔄 Generator: 初始化新鏈結...");
+        // 1. 初始化檢查(修復「劇本失憶」Bug)
+        // 只有在「真的沒有劇本鏈結」的時候，才自動補生成。
+        // 如果外部 (story.js) 已經幫我們建好 chain 了，就絕對不可以覆蓋它！
+        if (!gs.story.chain || !gs.story.chain.stages) {
+            console.log("🔄 Generator: 偵測到無鏈結，自動隨機初始化...");
             gs.story.chain = this.initChain(); 
+        } else if (isStart) {
+            // 如果是新開局，我們只把進度歸零，確保從頭開始，但不改變已經決定的劇本骨架！
+            gs.story.chain.currentStageIdx = 0;
+            gs.story.chain.depth = 0;
+            console.log(`▶️ Generator: 確認開始執行 [${gs.story.chain.skeleton}] 劇本...`);
         }
 
         const chain = gs.story.chain;
@@ -528,13 +536,25 @@ initChain: function(skeletonKey = null, themeTag = null) {
     let finalPool = [];
 
     if (historyFiltered.length > 0) {
-        // 優先使用：符合條件 且 沒出現過的
+        // 首選：符合條件 且 沒出現過的新劇本
         finalPool = historyFiltered;
-    } else if (validCandidates.length > 0) {
-        // 次要選擇：符合條件 但 出現過的 (因為沒新劇本了，只好重複)
-        // 只有在非一次性劇情才允許重複，但在這裡我們先寬容處理
-        finalPool = validCandidates;
-    } 
+    } else {
+        // 🚨 牌庫被抽乾了！(所有符合條件的牌都在歷史紀錄裡)
+        
+        // 判斷是否為「絕對不能被替換」的關鍵劇情
+        const isCritical = type.includes('setup') || type.includes('boss') || type.includes('ending') || type.includes('climax');
+        
+        if (isCritical && validCandidates.length > 0) {
+            // 只有關鍵劇情 (例如魔王只有一隻)，才允許重複上演
+            console.warn(`⚠️ [${type}] 牌庫耗盡，但因屬於關鍵劇情，允許重複抽取。`);
+            finalPool = validCandidates;
+        } else {
+            // 一般劇情 (像調查、追蹤) 絕對不允許重複！
+            // 我們故意讓 finalPool 保持為空 []
+            // 這樣系統就會自動掉進下一步驟的「救命機制」，去抽一張 univ_filler (通用事件) 來完美頂替！
+            finalPool = [];
+        }
+    }
     // 此時 finalPool 可能仍為空 (如果連 validCandidates 都是空的)
 
     // ===========================

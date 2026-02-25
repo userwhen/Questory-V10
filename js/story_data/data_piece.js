@@ -171,7 +171,7 @@
         {
             type: 'love_bond', 
             id: 'rom_bond_normal',
-			reqTag: ['theme_romance',],
+			reqTags: ['romance',],
             dialogue: [
                 { text: { zh: "雖然你們還稱不上是親密夥伴，但{lover}似乎有話想對你說。" } },
                 { text: { zh: "對方約你在{noun_location_room}見面，表情顯得有些嚴肅。" } },
@@ -306,10 +306,10 @@
         {
             type: 'univ_filler',
             id: 'uni_gen_merchant',
-			excludeTag: ['theme_romance',],
+			excludeTag: ['romance',],
             dialogue: [
                 { text: { zh: "在路邊，你遇到了一位背著大包小包的神秘行商。" } },
-                { speaker: "商人", text: { zh: "「嘿，朋友！不管你是{combo_person_titled}還是冒險者，總需要點補給吧？」" } },
+                { speaker: "商人", text: { zh: "嘿，朋友！不管你是{combo_person_titled}還是冒險者，總需要點補給吧？" } },
                 { text: { zh: "他展示了一些看起來很實用的物資。" } }
             ],
             options: [
@@ -339,8 +339,8 @@
         {
             type: 'univ_filler',
             id: 'uni_gen_ruins',
-			reqTag: ['curse_ancient',],
-			excludeTag: ['theme_romance',],
+			reqTags: ['ancient',],
+			excludeTag: ['romance',],
             dialogue: [
                 { text: { zh: "你發現了一塊殘破的石碑，上面刻著古老的文字。" } },
                 { text: { zh: "雖然大部分已經風化，但隱約能辨認出關於「{combo_item}」的記載。" } },
@@ -389,8 +389,8 @@
         {
             type: 'univ_filler',
             id: 'uni_gen_trap',
-			reqTag: ['theme_adventure',],
-			excludeTag: ['theme_romance',],
+			reqTags: ['adventure',],
+			excludeTag: ['romance',],
             dialogue: [
                 { text: { zh: "小心！你感覺腳下一空！" } },
                 { text: { zh: "這是一個隱蔽的{noun_env_feature}陷阱！" } },
@@ -417,7 +417,7 @@
         {
             type: 'univ_filler',
             id: 'uni_gen_check_pocket',
-			excludeTag: ['theme_romance',],
+			excludeTag: ['romance',],
             dialogue: [
                 { text: { zh: "你摸了摸口袋..." } }
             ],
@@ -433,7 +433,43 @@
                 },
                 { label: "好像什麼都沒有", action: "advance_chain" }
             ]
-        }
+        },
+		{type: 'univ_filler',
+        id: 'random_tavern_brawl',
+        dialogue: [
+            { text: "{phrase_brawl_start}{phrase_brawl_mid}" },
+            { text: "{phrase_brawl_enemy}{phrase_brawl_end}" }
+        ],
+        options: [
+            { label: "開打！", action: "advance_chain" }
+        ]
+		},
+		{
+        id: 'rand_event_horror_chase',
+        type: 'encounter_stalk', // 設定關卡類型
+        dialogue: [
+            // 🌟 這裡就是魔法所在！引擎會自動遞迴拆解它們！
+            { text: "{horror_chase_start}" },
+            { text: "{horror_chase_action}" },
+            { text: "{horror_chase_feel}" }
+        ],
+        options: [
+            { 
+                label: "拼命逃跑 (AGI檢定)", 
+                check: { stat: 'AGI', val: 5 }, 
+                action: "node_next", 
+                nextScene: {
+                    dialogue: [{ text: "你千鈞一髮之際撞開了旁邊的門，成功甩掉了它。" }],
+                    options: [{ label: "喘口氣", action: "advance_chain" }]
+                },
+                failScene: {
+                    dialogue: [{ text: "你被地上的雜物絆倒了！它瞬間追了上來..." }],
+                    rewards: { varOps: [{key:'hp', val:10, op:'-'}] },
+                    options: [{ label: "死命掙扎", action: "advance_chain" }]
+                }
+            }
+        ]
+    }
     );
 
     console.log("✅ 通用劇本(data_piece)已載入");

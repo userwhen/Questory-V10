@@ -17,9 +17,9 @@ atom_monster: [ { val: "野狼" }, { val: "機械人偶" }, { val: "蝙蝠" }, {
     
     // 🏷️ 人物/生物修飾 (脫水版)
 
-atom_age: [ {val:""}, { val: "年輕" }, { val: "年邁" }, { val: "稚嫩" }, { val: "幼小" }, { val: "成熟" }, { val: "中年" }, { val: "蒼老" }, { val: "古老" }, { val: "不朽" }, { val: "永恆" }, { val: "新生" } ],
+atom_age: [ {val:""}, { val: "年輕" }, { val: "年邁" }, { val: "稚嫩" }, { val: "幼小" }, { val: "成熟" }, { val: "中年" }, { val: "蒼老" }, { val: "古老",tag:"ancient" }, { val: "不朽" }, { val: "永恆" }, { val: "新生" } ],
 
-atom_status: [ {val:""}, { val: "制服" }, { val: "失控" }, { val: "神祕" }, { val: "古代" }, { val: "重傷" }, { val: "落魄" }, { val: "受傷" }, { val: "虛弱" }, { val: "疲憊" }, { val: "染血" }, { val: "破碎" }, { val: "腐敗" }, { val: "墮落" }, { val: "覺醒" }, { val: "沉睡" }, { val: "甦醒" }, { val: "隱藏" }, { val: "被遺忘" }, { val: "被詛咒" }, { val: "狂暴" }, { val: "異化" }, { val: "變異" }, { val: "侵蝕" }, { val: "封印" } ],
+atom_status: [ {val:""}, { val: "制服" }, { val: "失控" }, { val: "神祕" }, { val: "古代" ,tag:"ancient"}, { val: "重傷" }, { val: "落魄" }, { val: "受傷" }, { val: "虛弱" }, { val: "疲憊" }, { val: "染血" }, { val: "破碎" }, { val: "腐敗" }, { val: "墮落" }, { val: "覺醒" }, { val: "沉睡" }, { val: "甦醒" }, { val: "隱藏" }, { val: "被遺忘" }, { val: "被詛咒" }, { val: "狂暴" }, { val: "異化" }, { val: "變異" }, { val: "侵蝕" }, { val: "封印" } ],
 
 atom_domain: [ {val:""}, { val: "珠寶" }, { val: "石油" }, { val: "科技" }, { val: "魔法" }, { val: "地下" }, { val: "金融" }, { val: "軍事" }, { val: "醫療" }, { val: "學術" }, { val: "宗教" }, { val: "王室" }, { val: "黑市" }, { val: "犯罪" }, { val: "影子" }, { val: "深海" }, { val: "森林" }, { val: "沙漠" }, { val: "虛空" }, { val: "異界" }, { val: "夢境" }, { val: "機械" }, { val: "血族" }, { val: "亡靈" }, { val: "禁忌" } ],
 
@@ -447,8 +447,56 @@ sentence_full_scene: [
     lover: [ { val: "{noun_npc}" } ], 
     rival: [ { val: "{noun_npc}" } ],
     trainee: [ { val: "{noun_npc}" } ],
-    
-    }); 
+	
+	// ==========================================
+// 🎲 句型產生器 (Phrase Generator)
+// ==========================================
+
+    // 1. 開場動作句
+    phrase_brawl_start: [
+        "你一腳踢開了{noun_location_room}的木門，",
+        "在昏暗的燈光下，你緩緩拔出了{noun_item_weapon}，",
+        "沒有任何廢話，你直接掀翻了面前的桌子，"
+    ],
+
+    // 2. 環境/群眾反應句
+    phrase_brawl_mid: [
+        "周圍的{noun_npc_generic}嚇得四處逃竄，",
+        "酒杯砸碎在地上的聲音顯得格外刺耳，",
+        "空氣中瀰漫著濃烈的{atom_smell}，"
+    ],
+
+    // 3. 對手反應句 (這裡面嵌套了其他標籤！)
+    phrase_brawl_enemy: [
+        "那個滿臉橫肉的{noun_monster}發出了震耳欲聾的怒吼！",
+        "坐在角落的{rival}冷笑了一聲，站起身來。",
+        "幾名守衛立刻拔出武器將你團團包圍！"
+    ],
+
+    // 4. 結尾氣氛句
+    phrase_brawl_end: [
+        "今天注定要見血了。",
+        "戰鬥一觸即發！",
+        "你{atom_manner}舔了舔嘴唇，準備迎接衝擊。"
+    ],
+	horror_chase_start: [
+        { val: "你轉過身，看到{noun_monster}正站在走廊盡頭。" },
+        { val: "燈光閃爍了一下，{noun_monster}突然出現在你面前！" },
+        { val: "伴隨著{atom_smell}的氣味，{noun_monster}從陰影中緩緩爬出。" }
+    ],
+    // 隨機的怪物反應
+    horror_chase_action: [
+        { val: "對方發出了刺耳的尖叫，然後{atom_manner}撲向了你！" },
+        { val: "它沒有發出任何聲音，只是死死盯著你，手中還拿著一把{noun_item_weapon}。" },
+        { val: "它扭曲著四肢，以違反人體工學的姿態朝你逼近。" }
+    ],
+    // 隨機的主角心理狀態
+    horror_chase_feel: [
+        { val: "恐懼讓你幾乎無法呼吸。" },
+        { val: "你的直覺瘋狂警告你：如果被抓到，絕對會死得很慘。" },
+        { val: "心臟在胸腔裡狂跳，你只能本能地尋找逃生路線。" }
+    ]
+});
 
     console.log("✅ 核心資料庫與基礎詞彙已啟動 (V4 極致脫水與環境補完版)");
 })();

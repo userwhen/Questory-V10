@@ -646,7 +646,7 @@ _handleNodeJump: function(opt, passed) {
         let textQueue = dialogues.map(d => {
              const txt = d.text[lang] || d.text['zh'] || d.text;
              const speaker = d.speaker;
-             return (speaker === '旁白' || !speaker) ? `${txt}` : `<b>${speaker}</b>：「${txt}」`;
+             return (speaker === '旁白' || !speaker) ? `${txt}` : `<b>${speaker}</b>：${txt}`;
         });
         
         // 將對話轉為單一節點播放，結束後保留原有的 options
