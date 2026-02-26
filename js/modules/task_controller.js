@@ -54,6 +54,7 @@ window.TaskController = {
             },
 
             resolveTask: (id) => { TaskEngine.resolveTask(id); },
+			incrementTask: (id) => { TaskEngine.incrementTask(id); },
             toggleSubtask: (taskId, subIdx) => TaskEngine.toggleSubtask(taskId, subIdx),
 
             copyTask: (id) => {

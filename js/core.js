@@ -21,10 +21,12 @@ window.Core = {
 
     // --- 讀檔邏輯 ---
     load: function() {
-        const savedData = localStorage.getItem('Levelife_Save_V1');
+        // 💎 動態讀取 SaveKey，如果沒讀到則 fallback 為預設值
+        const saveKey = (window.GameConfig && window.GameConfig.System && window.GameConfig.System.SaveKey) ? window.GameConfig.System.SaveKey : 'Levelife_Save_V1';
+        const savedData = localStorage.getItem(saveKey);
+        
         if (savedData) {
             try {
-                // 嘗試解碼
                 const jsonStr = decodeURIComponent(escape(atob(savedData)));
                 const parsedData = JSON.parse(jsonStr);
 
@@ -50,7 +52,9 @@ window.Core = {
         try {
             const json = JSON.stringify(window.GlobalState);
             const encoded = btoa(unescape(encodeURIComponent(json)));
-            localStorage.setItem('Levelife_Save_V1', encoded);
+            // 💎 同步動態讀取 SaveKey
+            const saveKey = (window.GameConfig && window.GameConfig.System && window.GameConfig.System.SaveKey) ? window.GameConfig.System.SaveKey : 'Levelife_Save_V1';
+            localStorage.setItem(saveKey, encoded);
         } catch (e) {
             console.error("Save failed:", e);
         }
@@ -62,14 +66,60 @@ window.Core = {
     },
 
     initDefaultMemory: function() {
-        window.GlobalState = {
-            lv: 1, gold: 0, freeGem: 0, paidGem: 0,
-            tasks: [], history: [], achievements: [], milestones: [],
-            settings: { mode: 'adventurer', calMax: 2000, theme: 'light' },
-            unlocks: { 'basic': true },
-            lastLoginDate: new Date().toDateString(),
-            installDate: Date.now()
-        };
+        if (window.DefaultData) {
+            window.GlobalState = JSON.parse(JSON.stringify(window.DefaultData));
+            window.GlobalState.lastLoginDate = new Date().toDateString();
+            window.GlobalState.installDate = Date.now();
+        } else {
+            // Fallback (萬一 data.js 沒載入時的最小安全結構)
+            window.GlobalState = {
+                name: 'Commander', lv: 1, exp: 0,
+                gold: 0, freeGem: 0, paidGem: 0,
+                tasks: [], history: [], achievements: [], milestones: [],
+                taskCats: ['每日', '運動', '工作', '待辦', '願望'],
+                attrs: {}, skills: [], cal: { today: 0, logs: [] },
+                story: { energy: 30, tags: [], vars: {}, flags: {}, chain: null, currentNode: null },
+                avatar: { gender: 'm', unlocked: [], wearing: {} },
+                shop: { user: [] }, 
+                settings: { mode: 'adventurer', calMax: 2000, theme: 'light' },
+                unlocks: { 'basic': true, 'feature_cal': false },
+                lastLoginDate: new Date().toDateString(), 
+                installDate: Date.now()
+            };
+        }
+    },
+
+    migrateData: function() {
+        const gs = window.GlobalState;
+        if(!gs) return;
+        
+        // 確保所有關鍵陣列與屬性存在 (補丁機制)
+        if(!gs.unlocks) gs.unlocks = {'basic':true, 'feature_cal': false};
+        if(gs.unlocks.feature_cal === undefined) gs.unlocks.feature_cal = false;
+        
+        if(!gs.history) gs.history = [];
+        if(!gs.tasks) gs.tasks = [];
+        if(!gs.milestones) gs.milestones = []; 
+        if(!gs.achievements) gs.achievements = [];
+        if(!gs.settings) gs.settings = { mode: 'basic' };
+        if(!gs.avatar) gs.avatar = { gender: 'm', unlocked: [], wearing: {} };
+        
+        // [新增防呆] 補齊 story 物件內部的缺失
+        if(!gs.story) gs.story = { energy: 30, tags: [], vars: {}, flags: {}, chain: null, currentNode: null };
+        if(gs.story.chain === undefined) gs.story.chain = null;
+        if(gs.story.currentNode === undefined) gs.story.currentNode = null;
+        if(gs.story.vars === undefined) gs.story.vars = {};
+        if(gs.story.flags === undefined) gs.story.flags = {};
+        if (!gs.cal) gs.cal = { today: 0, logs: [] };
+		if (!gs.cal.logs) gs.cal.logs = [];
+        // [關鍵修復] 舊玩家若無此欄位，給予初始值，避免觸發無限換日
+        if(!gs.lastLoginDate) gs.lastLoginDate = new Date().toDateString(); 
+        
+        // 轉移並銷毀舊版熱量旗標
+        if (gs.unlocks.calorie_tracker !== undefined) {
+            gs.unlocks.feature_cal = gs.unlocks.calorie_tracker;
+            delete gs.unlocks.calorie_tracker; 
+        }
     },
 
     // --- [修復 CORE-3] 換日檢測邏輯重構 ---
@@ -98,29 +148,6 @@ window.Core = {
             if (window.act.toast) window.act.toast("☀️ 早安！每日狀態已刷新");
         }
     },
-
-    // --- [修復 CORE-1] 補丁邏輯 ---
-	migrateData: function() {
-			const gs = window.GlobalState;
-			if(!gs) return;
-			
-			// 確保所有關鍵陣列與屬性存在
-			if(!gs.unlocks) gs.unlocks = {'basic':true};
-			if(!gs.history) gs.history = [];
-			if(!gs.tasks) gs.tasks = [];
-			if(!gs.milestones) gs.milestones = [];
-			if(!gs.achievements) gs.achievements = [];
-			if(!gs.settings) gs.settings = { mode: 'basic' };
-			
-			// [關鍵修復] 舊玩家若無此欄位，給予初始值，避免觸發無限換日
-			if(!gs.lastLoginDate) gs.lastLoginDate = new Date().toDateString(); 
-			
-			// 轉移並銷毀舊版熱量旗標
-			if (gs.unlocks.calorie_tracker !== undefined) {
-				gs.unlocks.feature_cal = gs.unlocks.calorie_tracker;
-				delete gs.unlocks.calorie_tracker; 
-			}
-		}
 	}; // 🚨 這裡非常關鍵！必須是 }; 來關閉整個 window.Core 物件！// --- B. 視窗管理 (Modal Router) ---
 window.act.openModal = function(id) {
     if (id === 'settings' && window.SettingsController) {

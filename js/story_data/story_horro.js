@@ -12,9 +12,7 @@
 
     // 2. 追加劇本 (Templates)
     DB.templates.push(
-        // ============================================================
-        // [BLOCK B] 👻 現代心理恐怖流 (Asian Psychological Horror)
-        // ============================================================
+        //setup_omen//
         {
             type: 'setup_omen', id: 'hor_psych_setup',
             dialogue: [
@@ -35,6 +33,27 @@
                 }
             ]
         },
+		{
+            type: 'setup_omen',
+            id: 'mys_setup_letter',
+            dialogue: [
+                { text: { zh: "一切都始於那封奇怪的信。" } },
+                { text: { zh: "信上說，關於真相，就藏在這座莊園裡。" } },
+                { text: { zh: "外面的{atom_weather}讓這一切顯得更加詭異。" } }
+            ],
+            options: [{ label: "推開莊園大門", action: "advance_chain" }]
+        },
+        {
+            type: 'setup_omen', 
+            id: 'hor_setup_omen',
+            dialogue: [
+                { text: { zh: "你不該來這裡的。" } },
+                { text: { zh: "{atom_weather}，你的車拋錨在了半路。" } },
+                { text: { zh: "遠處那棟廢棄的{combo_building}似乎是你唯一的避難所。" } }
+            ],
+            options: [{ label: "硬著頭皮進去", action: "advance_chain" }]
+        },
+		//encounter_stalk//
         {
             type: 'encounter_stalk', id: 'hor_psych_stalk',
             dialogue: [
@@ -65,9 +84,6 @@
                 }
             ]
         },
-		// ==========================================
-        // 遭遇追蹤 1：日式都市傳說 (聽覺恐懼)
-        // ==========================================
         {
             type: 'encounter_stalk', id: 'hor_stalk_weeping',
             dialogue: [
@@ -98,10 +114,6 @@
                 }
             ]
         },
-
-        // ==========================================
-        // 遭遇追蹤 2：偽人/模仿怪 (心理恐懼)
-        // ==========================================
         {
             type: 'encounter_stalk', id: 'hor_stalk_mimic',
             dialogue: [
@@ -140,10 +152,6 @@
                 }
             ]
         },
-
-        // ==========================================
-        // 遭遇追蹤 3：視角盲區 (視覺恐懼/現代科技)
-        // ==========================================
         {
             type: 'encounter_stalk', id: 'hor_stalk_camera',
             dialogue: [
@@ -178,17 +186,42 @@
                 }
             ]
         },
-		
+		{
+        id: 'rand_event_horror_chase',
+        type: 'encounter_stalk',
+        dialogue: [
+            { text: "{horror_chase_start}" },
+            { text: "{horror_chase_action}" },
+            { text: "{horror_chase_feel}" }
+        ],
+        options: [
+            { 
+                label: "拼命逃跑 (AGI檢定)", 
+                check: { stat: 'AGI', val: 5 }, 
+                action: "node_next", 
+                nextScene: {
+                    dialogue: [{ text: "你千鈞一髮之際撞開了旁邊的門，成功甩掉了它。" }],
+                    options: [{ label: "喘口氣", action: "advance_chain" }]
+                },
+                failScene: {
+                    dialogue: [{ text: "你被地上的雜物絆倒了！它瞬間追了上來..." }],
+                    rewards: { varOps: [{key:'hp', val:10, op:'-'}] },
+                    options: [{ label: "死命掙扎", action: "advance_chain" }]
+                }
+            }
+        ]
+    },
+		//encounter_climax//
         {
             type: 'encounter_climax', id: 'hor_psych_look',
             dialogue: [
-                { text: { zh: "無路可退了。那個{noun_monster}（或者說是曾經是人的東西）就懸掛在天花板上。" } },
+                { text: { zh: "無路可退了。那個{noun_monster}就懸掛在天花板上。" } },
                 { text: { zh: "對方的頭顱以詭異的角度轉了180度，死白色的眼珠正死死盯著你。" } },
                 { text: { zh: "所有的本能都在尖叫：絕對不能和對方對視。" } }
             ],
             options: [
                 { 
-                    label: "緊閉雙眼，唸誦祈禱", action: "node_next", check: { stat: 'LUK', val: 5 }, 
+                    label: "緊閉雙眼，不停祈禱", action: "node_next", check: { stat: 'LUK', val: 5 }, 
                     nextScene: { 
                         dialogue: [{ text: { zh: "你感到一股冰冷的氣息貼著臉頰滑過，耳邊是骨骼摩擦的脆響... 但最終，對方似乎對靜止的獵物失去了興趣。" } }],
                         options: [{ label: "撐過去了", action: "advance_chain" }]
@@ -211,6 +244,25 @@
                 }
             ]
         },
+		{
+            type: 'encounter_climax', 
+            id: 'fallback_horror_climax',
+            dialogue: [
+                { text: { zh: "最糟糕的情況發生了。那個恐怖的存在擋住了你唯一的去路。" } },
+                { text: { zh: "周圍的空氣彷彿結冰，心臟在胸腔裡狂跳。" } }
+            ],
+            options: [{ label: "拼死一搏！", action: "advance_chain" }]
+        },
+        {
+            type: 'final_survival', 
+            id: 'fallback_horror_end',
+            dialogue: [
+                { text: { zh: "清晨的第一道曙光刺破了黑暗。" } },
+                { text: { zh: "你滿身是傷，但你活下來了。這才是最重要的。" } }
+            ],
+            options: [{ label: "逃出生天", action: "finish_chain", rewards: { gold: 10 } }]
+        },
+		//final_surviva//
         {
             type: 'final_survival', id: 'hor_psych_end',
             dialogue: [
@@ -220,31 +272,6 @@
             ],
             options: [{ label: "這只是一個開始...", action: "finish_chain", rewards: { title: "倖存者(？)", gold: 30 } }]
         },
-        
-        // ============================================================
-        // [通用擴充] 其他懸疑/恐怖開場
-        // ============================================================
-        {
-            type: 'setup',
-            id: 'mys_setup_letter',
-            dialogue: [
-                { text: { zh: "一切都始於那封奇怪的信。" } },
-                { text: { zh: "信上說，關於真相，就藏在這座莊園裡。" } },
-                { text: { zh: "外面的{atom_weather}讓這一切顯得更加詭異。" } }
-            ],
-            options: [{ label: "推開莊園大門", action: "advance_chain" }]
-        },
-        {
-            type: 'setup_omen', 
-            id: 'hor_setup_omen',
-            dialogue: [
-                { text: { zh: "你不該來這裡的。" } },
-                { text: { zh: "{atom_weather}，你的車拋錨在了半路。" } },
-                { text: { zh: "遠處那棟廢棄的{combo_building}似乎是你唯一的避難所。" } }
-            ],
-            options: [{ label: "硬著頭皮進去", action: "advance_chain" }]
-        },
-
         // ==========================================
         // 邪教村落三部曲 (Route: Cult)
         // ==========================================
@@ -341,51 +368,8 @@
                 }
             ]
         },
-
-        // --- 備案 (Safety Net) ---
-        {
-            type: 'encounter_climax', 
-            id: 'fallback_horror_climax',
-            dialogue: [
-                { text: { zh: "最糟糕的情況發生了。那個恐怖的存在擋住了你唯一的去路。" } },
-                { text: { zh: "周圍的空氣彷彿結冰，心臟在胸腔裡狂跳。" } }
-            ],
-            options: [{ label: "拼死一搏！", action: "advance_chain" }]
-        },
-        {
-            type: 'final_survival', 
-            id: 'fallback_horror_end',
-            dialogue: [
-                { text: { zh: "清晨的第一道曙光刺破了黑暗。" } },
-                { text: { zh: "你滿身是傷，但你活下來了。這才是最重要的。" } }
-            ],
-            options: [{ label: "逃出生天", action: "finish_chain", rewards: { gold: 10 } }]
-        },
-		{
-        id: 'rand_event_horror_chase',
-        type: 'encounter_stalk', // 設定關卡類型
-        dialogue: [
-            { text: "{horror_chase_start}" },
-            { text: "{horror_chase_action}" },
-            { text: "{horror_chase_feel}" }
-        ],
-        options: [
-            { 
-                label: "拼命逃跑 (AGI檢定)", 
-                check: { stat: 'AGI', val: 5 }, 
-                action: "node_next", 
-                nextScene: {
-                    dialogue: [{ text: "你千鈞一髮之際撞開了旁邊的門，成功甩掉了它。" }],
-                    options: [{ label: "喘口氣", action: "advance_chain" }]
-                },
-                failScene: {
-                    dialogue: [{ text: "你被地上的雜物絆倒了！它瞬間追了上來..." }],
-                    rewards: { varOps: [{key:'hp', val:10, op:'-'}] },
-                    options: [{ label: "死命掙扎", action: "advance_chain" }]
-                }
-            }
-        ]
-    }
+        
+		
     );
 
     console.log("🕵️‍♂️ 恐怖劇本已載入");

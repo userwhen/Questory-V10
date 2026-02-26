@@ -39,7 +39,7 @@
             window.AvatarController, 
             window.StoryController, 
             window.SettingsController,
-            window.quickController
+            window.QuickController
         ];
         
         controllers.forEach(ctrl => { 
@@ -236,6 +236,23 @@ Object.assign(window.act, {
         }
     }
 });
+
+window.act.checkInAch = function(id) {
+    if (window.AchEngine && window.AchEngine.claimReward) {
+        const res = window.AchEngine.claimReward(id);
+        if (res && res.success) {
+            if (window.act.toast) window.act.toast("✅ 簽到成功！");
+            if (window.view && window.view.updateHUD) window.view.updateHUD();
+            if (window.achView && window.achView.renderList) {
+                if (window.TempState.taskTab === 'ach' && window.taskView) {
+                    window.taskView.render();
+                }
+            }
+        } else {
+            if (window.act.toast) window.act.toast(res.msg || "簽到失敗");
+        }
+    }
+};
 
 // =============================================================================
 // 5. 啟動入口

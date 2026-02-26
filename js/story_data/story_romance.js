@@ -45,6 +45,25 @@
                 }
             ]
         },
+		{
+            type: 'love_bond', 
+            id: 'rom_bond_normal',
+			reqTags: ['romance',],
+            dialogue: [
+                { text: { zh: "雖然你們還稱不上是親密夥伴，但{lover}似乎有話想對你說。" } },
+                { text: { zh: "對方約你在{noun_location_room}見面，表情顯得有些嚴肅。" } },
+                { speaker: "{lover}", text: { zh: "關於{rival}的事情... 我覺得你需要知道真相。" } }
+            ],
+            options: [{ 
+                label: "洗耳恭聽", 
+                action: "node_next", 
+                rewards: { varOps: [{key:'trust', val:5, op:'+'}] }, 
+                nextScene: { 
+                    dialogue: [{ text: { zh: "你們交換了情報。雖然氣氛有些公事公辦，但這也是一種進展。" } }],
+                    options: [{ label: "記在心裡", action: "advance_chain" }]
+                } 
+            }]
+        },
         {
             type: 'love_date', id: 'rom_date_classic', reqTag: 'route_classic',
             text: { zh: [ "結盟後的日子裡，你們有了更多獨處的機會。", "今天，{lover}帶著你來到了一處秘密的{noun_location_room}，那是對方放鬆心情的避風港。", "陽光灑在兩人身上，氣氛變得有些曖昧..." ]},

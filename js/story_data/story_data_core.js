@@ -448,10 +448,79 @@ sentence_full_scene: [
     rival: [ { val: "{noun_npc}" } ],
     trainee: [ { val: "{noun_npc}" } ],
 	
-	// ==========================================
-// 🎲 句型產生器 (Phrase Generator)
-// ==========================================
+	// ============================================================
+    // 🎭 [Layer 5] 動態句型庫 (Dynamic Phrase Library) - 支援無限嵌套
+    // ============================================================
 
+    // 🚶‍♂️ 1. 場景過場與探索 (用於進入新房間、通用探索)
+    phrase_explore_start: [
+        { val: "{atom_time}，你輕步走進了{noun_location_building}的{noun_location_room}。" },
+        { val: "推開沉重的房門，映入眼簾的是一片{atom_env_adj}的景象。" },
+        { val: "穿過漫長的{atom_room}，你終於來到了一處開闊地。" },
+        { val: "在{atom_weather}的籠罩下，這座{combo_building}顯得格外壓抑。" }
+    ],
+    phrase_explore_vibe: [
+        { val: "這裡{sentence_env_vibe}，讓人感到十分不適。" },
+        { val: "{atom_light}勉強照亮了周圍，地上的影子隨著光線{atom_manner}扭動。" },
+        { val: "四周死一般的寂靜，只有遠處偶爾傳來微弱的{atom_sound}。" },
+        { val: "空氣十分混濁，你忍不住摀住口鼻，試圖阻擋那股{atom_smell}。" }
+    ],
+
+    // ⚠️ 2. 突發危機與遭遇 (用於遇敵、驚嚇、懸疑轉折)
+    phrase_danger_warn: [
+        { val: "突然！一陣突兀的{atom_sound}打破了平靜！" },
+        { val: "毫無預兆地，{atom_light}猛然熄滅，周圍陷入一片黑暗。" },
+        { val: "你的直覺瘋狂示警，背後傳來了某種東西靠近的{atom_sound}。" },
+        { val: "就在這時，{noun_env_feature}傳來了不尋常的動靜。" }
+    ],
+    phrase_danger_appear: [
+        { val: "一個{noun_monster}從陰影中竄了出來，死死擋住了你的去路！" },
+        { val: "你猛然回頭，赫然發現{noun_npc_generic}正{atom_manner}盯著你！" },
+        { val: "伴隨著一聲咆哮，巨大的{noun_monster}展現出了它猙獰的全貌。" },
+        { val: "那是一個{combo_person_with_item}，對方的眼神充滿了敵意。" }
+    ],
+
+    // 🔍 3. 物品發現與線索 (用於調查、解謎)
+    phrase_find_action: [
+        { val: "你蹲下身，仔細檢查著{noun_env_feature}的周圍。" },
+        { val: "憑藉著敏銳的觀察力，你注意到了一個被刻意隱藏的細節。" },
+        { val: "在{atom_light}的映照下，某個反光的東西吸引了你的目光。" },
+        { val: "你翻開了散落一地的雜物，在最底層有了意外的發現。" }
+    ],
+    phrase_find_result: [
+        { val: "那裡居然藏著一個{noun_item_common}！" },
+        { val: "你找到了一把沾著灰塵的{noun_item_weapon}，上面還殘留著{atom_smell}。" },
+        { val: "是一個{combo_item}。這東西為什麼會出現在這裡？" },
+        { val: "這顯然是某人匆忙間遺落的{noun_item_common}。" }
+    ],
+
+    // 💓 4. 心理描寫與生理反應 (用於增加張力、戀愛或恐懼心境)
+    phrase_tension_body: [
+        { val: "你的心臟在胸腔裡狂跳，冷汗順著額頭滑落。" },
+        { val: "你{atom_manner}嚥了一口唾沫，試圖讓自己冷靜下來。" },
+        { val: "手心裡全是汗水，你下意識地握緊了拳頭。" },
+        { val: "呼吸變得急促，一種難以言喻的壓迫感攫住了你。" }
+    ],
+    phrase_tension_mind: [
+        { val: "氣氛瞬間降至冰點，戰鬥一觸即發。" },
+        { val: "大腦一片空白，你必須立刻做出決定。" },
+        { val: "理智告訴你應該逃跑，但雙腿卻像灌了鉛一樣沉重。" },
+        { val: "空氣中瀰漫著危險又極具張力的氣息。" }
+    ],
+
+    // 🎭 5. 人際互動與宮鬥/戀愛特化 (用於NPC反應)
+    phrase_social_react: [
+        { val: "{lover}深深地看了你一眼，眼神中充滿了複雜的情緒。" },
+        { val: "{rival}在不遠處發出一聲冷笑，似乎早有預謀。" },
+        { val: "周圍的{noun_npc_generic}紛紛轉過頭來，開始竊竊私語。" },
+        { val: "{suspect_A}的神情閃過一絲慌亂，但很快又被掩飾過去。" }
+    ],
+    phrase_social_action: [
+        { val: "對方{atom_manner}向前逼近了一步，帶來極大的壓迫感。" },
+        { val: "這句話就像一顆炸彈，瞬間引爆了全場的情緒。" },
+        { val: "對方輕輕嘆了口氣，語氣裡帶著不加掩飾的嘲諷。" },
+        { val: "場面一度十分尷尬，沒有人敢率先打破沉默。" }
+    ],
     // 1. 開場動作句
     phrase_brawl_start: [
         "你一腳踢開了{noun_location_room}的木門，",

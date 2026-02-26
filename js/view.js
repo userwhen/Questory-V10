@@ -316,7 +316,7 @@ window.ui = {
         subtaskHtml = `
         <div style="margin-top:8px; border-top:1px dashed #eee; padding-top:8px; display:flex; justify-content:space-between; align-items:center; cursor:default;" onclick="event.stopPropagation();">
             <span style="font-weight:bold; color:#f57f17;">目前進度: ${t.curr} / ${t.target}</span>
-            <button class="u-btn u-btn-sm u-btn-correct" onclick="event.stopPropagation(); act.toggleTask('${t.id}')">
+            <button class="u-btn u-btn-sm u-btn-correct" onclick="event.stopPropagation(); act.incrementTask('${t.id}')">
                 +1 次數
             </button>
         </div>`;
@@ -391,9 +391,9 @@ window.ui = {
 
         achievement: (ach, isHistory) => {
     // 1. 基礎數據計算
-    const current = ach.current || 0;
-    const target = ach.target || 1;
-    const isDone = current >= target;
+			const current = ach.curr || 0;
+            const target = ach.target || 1;
+            const isDone = current >= target;
 
     // 2. 左側獎盃圖示
     const leftIcon = `<div style="width:40px; height:40px; background:#fff8e1; color:gold; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; margin-right:12px; border:1px solid #ffe082;">🏆</div>`;
@@ -447,13 +447,20 @@ window.ui = {
 },
 
         vertical: (opts) => {
-            const imgHtml = opts.imgPath ? `<div class="card-img-area"><img src="${opts.imgPath}" style="height:80px; object-fit:contain;"></div>` : '';
-            const stockHtml = opts.stock !== undefined ? `<div style="font-size:0.75rem; color:#888; margin-top:2px;">庫存: ${opts.stock}</div>` : '';
+            // 支援圖片與 Icon 互斥顯示：有 imgPath 優先，否則顯示 iconHtml
+            const mediaHtml = opts.imgPath 
+                ? `<div class="card-img-area"><img src="${opts.imgPath}" style="height:80px; object-fit:contain;"></div>` 
+                : (opts.iconHtml ? `<div class="card-img-area" style="height:80px; display:flex; align-items:center; justify-content:center; font-size:3rem;">${opts.iconHtml}</div>` : '');
+            
+            const subTitleHtml = opts.subTitle !== undefined ? `<div style="font-size:0.8rem; color:#888; margin-top:4px; font-weight:bold;">${opts.subTitle}</div>` : '';
+            const stockHtml = opts.stock !== undefined ? `<div style="font-size:0.75rem; color:#888; margin-top:4px;">庫存: ${opts.stock}</div>` : '';
+            
             return `
             <div class="card-vertical" style="${opts.style||''}" onclick="${opts.onClick||''}">
-                ${imgHtml}
+                ${mediaHtml}
                 <div class="card-info-area">
                     <div style="font-weight:bold;">${opts.title}</div>
+                    ${subTitleHtml}
                     ${stockHtml}
                 </div>
                 <div style="width:100%;">
@@ -552,7 +559,8 @@ view.showToast = (msg) => {
     toast.className = 'u-toast show';
     // 確保 toast 層級最高
     toast.style.zIndex = '10000';
-    toast.innerHTML = ui.component.pill(msg, 'rgba(f3f6f4)', '', true);
+    // 使用深灰色 #333 搭配 solid 模式，讓文字清晰可見
+    toast.innerHTML = ui.component.pill(msg, '#333', '', 'solid');
     document.body.appendChild(toast);
     setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 2000);
 };
@@ -606,7 +614,7 @@ view.initHUD = (data) => {
         <div class="hud-left">
             ${ui.component.avatar('hud-avatar', "act.navigate('stats')", '⏳')}
             <div class="hud-info">
-                <div class="hud-name">---</div>
+                <div id="hud-name" style="font-weight:bold; font-size:0.9rem;">---</div>
                 <div class="hud-lv-row">
                     <div class="hud-lv-txt">Lv.<span id="hud-lv">1</span></div>
                     <div id="hud-exp-container" style="flex:1"></div>

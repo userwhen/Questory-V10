@@ -10,9 +10,7 @@
     DB.templates = DB.templates || [];
 
     DB.templates.push(
-        // ============================================================
-        // [BLOCK C] ⚔️ 異世界戰記 (Adventure Chronicles)
-        // ============================================================
+        //adventure_setup//
         {
             type: 'adventure_setup', id: 'adventure_start_class',
             reqTags: ['struct_adventure'], // 🌟 確保只有冒險劇本會抽到
@@ -48,6 +46,7 @@
                 }
             ]
         },
+		//event_battle//
         {
             type: 'event_battle', id: 'adventure_battle_ambush',
             dialogue: [
@@ -116,6 +115,41 @@
                 }
             ]
         },
+		{
+            type: 'event_battle',
+            id: 'fallback_battle',
+			excludeTag: ['theme_romance',],
+            dialogue: [
+                { text: { zh: "路邊突然衝出了一隻{noun_monster}！" } },
+                { text: { zh: "對方似乎飢餓難耐，直接向你發動了攻擊。" } },
+                { text: { zh: "避無可避，唯有戰鬥。" } }
+            ],
+            options: [
+                { 
+                    label: "正面迎擊", 
+                    check: { stat: 'STR', val: 5 }, 
+                    action: "node_next", 
+                    nextScene: { dialogue: [{ text: { zh: "你費盡九牛二虎之力擊退了對方。" } }], options: [{ label: "繼續前進", action: "advance_chain" }] }, 
+                    failScene: { 
+                        dialogue: [{ text: { zh: "你受了點傷才勉強趕跑對方。" } }], 
+                        onEnter: { varOps: [{key:'energy', val:10, op:'-'}] },
+                        options: [{ label: "拖著傷軀前進", action: "advance_chain" }] 
+                    } 
+                },
+                { 
+                    label: "嘗試逃跑", 
+                    check: { stat: 'AGI', val: 5 }, 
+                    action: "node_next", 
+                    nextScene: { dialogue: [{ text: { zh: "你像風一樣消失在牠的視野中。" } }], options: [{ label: "繼續前進", action: "advance_chain" }] }, 
+                    failScene: { 
+                        dialogue: [{ text: { zh: "你沒能跑掉，被迫捲入苦戰！" } }], 
+                        onEnter: { varOps: [{key:'energy', val:15, op:'-'}] },
+                        options: [{ label: "死裡逃生", action: "advance_chain" }]
+                    } 
+                }
+            ]
+        },
+		//event_explore//
         {
             type: 'event_explore', id: 'adventure_explore_ruin',
             dialogue: [
@@ -164,6 +198,7 @@
                 }
             ]
         },
+		//boss//
         {
             type: 'boss', id: 'adventure_boss_dragon',
             reqTags: ['struct_adventure'], // 🌟 確保只在冒險劇本觸發
@@ -269,7 +304,20 @@
                     }
                 }
             ]
-        }
+        },
+		{
+            type: 'boss', 
+            id: 'fallback_climax',
+			excludeTag: ['theme_romance',],
+            dialogue: [
+                { text: { zh: "終於來到了旅途的終點。" } },
+                { text: { zh: "強大的氣息從前方傳來，你知道，最後的試煉就在眼前。" } },
+                { text: { zh: "無論勝敗，這都將是決定性的一戰。" } }
+            ],
+            options: [
+                { label: "放手一搏！", style: "danger", action: "finish_chain", nextScene: { dialogue: [{ text: { zh: "戰鬥結束了... 你的命運就此定格。" } }] } }
+            ]
+        },
     );
 
     console.log("⚔️ 冒險劇本已載入");

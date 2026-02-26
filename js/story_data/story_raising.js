@@ -43,8 +43,6 @@
                 }
             ]
         },
-        
-        // 1. 相遇 (raise_meet) - 分支 B
         {
             type: 'raise_meet', id: 'raise_meet_normal',
             dialogue: [
@@ -112,8 +110,6 @@
                 }
             ]
         },
-
-        // 2. 訓練日常 (raise_train) - 訓練 B
         {
             type: 'raise_train', id: 'raise_train_hard',
             dialogue: [
@@ -192,8 +188,6 @@
                 }
             ]
         },
-
-        // 3. 初次登台/出道 (raise_debut) - 事件 B
         {
             type: 'raise_debut', id: 'raise_debut_show',
             dialogue: [
@@ -280,6 +274,25 @@
                     } 
                 }
             ]
+        },
+		{
+            type: 'raise_climax', 
+            id: 'raise_final_battle_low_fame',
+			excludeTag: ['theme_romance',],
+            dialogue: [
+                { text: { zh: "決戰之日來臨，雖然{trainee}的名氣還不足以撼動全場，但這是一次證明自己的機會。" } },
+                { text: { zh: "對手{rival}甚至沒有正眼看過來，這份輕視或許能成為反擊的動力。" } },
+                { text: { zh: "在此刻，你想向對方說最後一句話是..." } }
+            ],
+            options: [{ 
+                label: "「輸贏不重要，只要發揮出你的全力！」", 
+                action: "node_next", 
+                rewards: { varOps: [{key:'stress', val:10, op:'-'}] }, 
+                nextScene: { 
+                    dialogue: [{ text: { zh: "{trainee}深吸了一口氣，點點頭。雖然沒有觀眾的歡呼，但他的眼神依然堅定。" } }],
+                    options: [{ label: "迎戰", action: "advance_chain" }]
+                } 
+            }]
         },
 
         // 5. 結局 (raise_ending)
@@ -374,8 +387,6 @@
                 }
             ]
         },
-        
-        // 5. 結局 - 保底
         {
             type: 'raise_ending', id: 'fallback_raising_end',
             dialogue: [

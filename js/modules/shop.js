@@ -17,8 +17,14 @@ window.ShopEngine = {
             { id: 'sys_clock', name: '懷錶', price: 200, currency: 'gold', maxQty: 5, category: '時間', icon: '⏱️', desc: '掌控時間的道具', type: 'daily' }
         ];
 
-        this.checkDailyReset();
-        console.log("🏪 ShopEngine V36.0 Initialized");
+        // 🚨 [修復 C-7] 拔除手動檢查，改為監聽 Core 發出的換日廣播
+        if (window.EventBus && window.EVENTS && window.EVENTS.System.DAILY_RESET) {
+            window.EventBus.on(window.EVENTS.System.DAILY_RESET, () => {
+                this.performDailyReset();
+            });
+        }
+        
+        console.log("🏪 ShopEngine V36.1 Initialized (Listening for Daily Reset)");
     },
 	
 	// 恢復精力邏輯 (防止溢出)
@@ -63,47 +69,31 @@ window.ShopEngine = {
     },
 
     // [核心] 跨日重置邏輯
-    checkDailyReset: function() {
+    performDailyReset: function() {
         const gs = window.GlobalState;
         
-        // [新增] 安全檢查：如果 Core 還沒讀完檔 (tasks 不存在)，絕對不准執行重置邏輯
-        if (!gs || !gs.tasks) {
-            console.warn("🛡️ [Shop] GlobalState 未就緒，跳過每日重置檢查");
-            return;
-        }
-        const today = new Date().toDateString(); // 例如 "Mon Jan 26 2026"
+        // 安全檢查
+        if (!gs || !gs.tasks) return;
         
-        if (gs.lastLoginDate !== today) {
-            console.log("🌅 New Day Detected! Resetting Shop...");
+        console.log("🌅 [Shop] Received Daily Reset! Restocking...");
+        
+        // 遍歷目前的 sysShop 狀態進行重置
+        for (let id in gs.sysShop) {
+            const itemState = gs.sysShop[id];
+            const proto = this.systemPrototypes.find(p => p.id === id);
             
-            // 1. 重置/清理系統商品
-            // 這裡我們直接清空 sysShop 紀錄，讓 getShopItems 重新生成預設值
-            // 但對於 'once' 商品，如果已經買過(庫存變0)，應該要標記永久移除
-            
-            // 簡化邏輯：
-            // daily -> 自動補滿 (因為我們只紀錄扣除量，或者直接重置狀態)
-            // once -> 如果 sold out，則移除
-            
-            // 實作：遍歷目前的 sysShop 狀態
-            for (let id in gs.sysShop) {
-                const itemState = gs.sysShop[id];
-                const proto = this.systemPrototypes.find(p => p.id === id);
-                
-                if (proto && proto.type === 'daily') {
-                    // 常駐商品：重置庫存 (刪除紀錄等於恢復預設滿庫存)
-                    delete gs.sysShop[id];
-                } else if (proto && proto.type === 'once') {
-                    // 單次商品：如果已售完 (qty 0)，保留狀態 (或根據需求移除)
-                    // 你的需求：單次商品庫存清空後，跨日清除
-                    if (itemState.qty <= 0) {
-                        itemState.removed = true; // 標記為永久移除
-                    }
+            if (proto && proto.type === 'daily') {
+                // 常駐商品：重置庫存
+                delete gs.sysShop[id];
+            } else if (proto && proto.type === 'once') {
+                // 單次商品：如果已售完，標記為永久移除
+                if (itemState.qty <= 0) {
+                    itemState.removed = true; 
                 }
             }
-            
-            gs.lastLoginDate = today;
-            App.saveData();
         }
+        
+        if (window.App && window.App.saveData) App.saveData();
     },
 
     getShopItems: function(cat) {

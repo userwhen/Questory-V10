@@ -187,7 +187,7 @@ window.TaskEngine = {
             }
 
             // 熱量扣除
-            const isCalActive = (gs.unlocks && gs.unlocks.calorie_tracker) || (gs.settings && gs.settings.calMode);
+			const isCalActive = (gs.unlocks && gs.unlocks.feature_cal) || (gs.settings && gs.settings.calMode);
             if (isCalActive && task.calories > 0) {
                 gs.cal.today -= task.calories; 
                 const timeStr = new Date().toTimeString().substring(0, 5);

@@ -1,67 +1,74 @@
-/* js/data300.js - V5.9.Final.Config.Complete */
-window.DefaultData = {
-    name: 'Commander', 
-    gold: 100, freeGem: 0, paidGem: 0, lv: 1, exp: 0,
-    loginStreak: 0, lastLoginDate: "", 
-    attrs: { str: {name:'體能', v:1, exp:0, icon:'💪'}, int: {name:'智慧', v:1, exp:0, icon:'🧠'}, vit: {name:'毅力', v:1, exp:0, icon:'🔥'}, chr: {name:'魅力', v:1, exp:0, icon:'✨'}, agi: {name:'靈巧', v:1, exp:0, icon:'👐'}, luk: {name:'幸運', v:1, exp:0, icon:'🍀'} },
-    skills: [], archivedSkills: [], 
-    tasks: [], achievements: [], history: [], bag: [],
-    story: { hp: 100, maxHp: 100, san: 100, exploreCount: 0, hasDied: false, permEvents: [], clearedEvents: [], inventory: [], relationships: {}, progress: 0 },
-    avatar: { unlocked: ['h1', 't1', 'b1', 'a1'], wearing: { hair:'🧑', top:'👕', bottom:'👖', acc:'👓' } }, 
-    wardrobe: [], 
-    shop: { npc: [ 
-        { id: 'def_1', name: '🥤 手搖飲', price: 60, category: '熱量', desc: '快樂泉源', val: 500, qty: 99, maxQty: 99, perm: 'daily' }, 
-        { id: 'def_2', name: '🎮 耍廢一小時', price: 150, category: '時間', desc: '休息', val: '01:00', qty: 99, maxQty: 99, perm: 'daily' }, 
-        { id: 'sp_rename', name: '📜 易名契約', price: 100, currency:'gem', category: '其他', desc: '修改暱稱', qty: 1, maxQty: 1, perm: 'daily' },
-        { id: 'sp_gender', name: '🎭 幻形面具', price: 100, currency:'gem', category: '其他', desc: '重置外觀形象', qty: 1, maxQty: 1, perm: 'daily' }
-    ], user: [] },
-    settings: { mode: 'adventurer', calMode: false, calMax: 2000, strictMode: false },
-    cal: { today: 0, logs: [], date: "" },
-    cats: ['每日', '工作', '待辦', '願望'],
-    stats: { clickCount: 0, taskCount: 0 } 
-};
-
-window.DIFFICULTY_DEFS = { 1: { label: '簡單', baseGold: 15, baseExp: 10, color: '#81c784' }, 2: { label: '中等', baseGold: 35, baseExp: 25, color: '#4db6ac' }, 3: { label: '困難', baseGold: 80, baseExp: 60, color: '#ffb74d' }, 4: { label: '史詩', baseGold: 200, baseExp: 150, color: '#e57373' } };
-
-// 初始化 GlobalState
-window.GlobalState = JSON.parse(JSON.stringify(window.DefaultData));
-window.TempState = { filterCategory: '全部', shopCategory: '全部', taskTab: 'task', wardrobeTab: 'hair', achSort: 'time', editTaskId: null, editAchId: null, editSkillId: null, settings: {}, statsTab: 'attr' };
+/* js/data.js - V6.0 Unified Config & Default State */
 
 // ==========================================
-// [New] 遊戲靜態配置中心 (Game Configuration)
+// 1. 玩家初始預設存檔 (Default State)
+// 供 core.js 在建立新玩家時複製使用
+// ==========================================
+window.DefaultData = {
+    name: 'Commander', 
+    gold: 0, freeGem: 0, paidGem: 0, lv: 1, exp: 0,
+    loginStreak: 0, lastLoginDate: new Date().toDateString(),
+    
+    // [與 stats.js 對齊] 統一使用大寫 KEY 與最新中文名稱
+    attrs: { 
+        STR: {name:'體能', v:1, exp:0, icon:'💪'}, 
+        INT: {name:'思考', v:1, exp:0, icon:'🧠'}, 
+        AGI: {name:'技術', v:1, exp:0, icon:'🛠️'}, 
+        CHR: {name:'魅力', v:1, exp:0, icon:'✨'}, 
+        VIT: {name:'創造', v:1, exp:0, icon:'🎨'}, 
+        LUK: {name:'經營', v:1, exp:0, icon:'💼'} 
+    },
+    
+    skills: [], archivedSkills: [], 
+    tasks: [], achievements: [], milestones: [], history: [], bag: [],
+    
+    // [與 story.js 對齊] 劇情系統基礎狀態
+    story: { energy: 30, tags: [], vars: {}, flags: {}, learning: {}, chain: null, currentNode: null },
+    
+    // [與 avatar.js 對齊] 紙娃娃系統基礎狀態
+    avatar: { gender: 'm', unlocked: ['suit_novice'], wearing: { suit: 'suit_novice' } }, 
+    
+    // 商店自訂商品
+    shop: { user: [] }, 
+    
+    settings: { mode: 'adventurer', calMode: false, calMax: 2000, strictMode: false },
+    unlocks: { basic: true, feature_cal: false }, 
+    cal: { today: 0, logs: [] },
+    taskCats: ['每日', '運動', '工作', '待辦', '願望']
+};
+
+// ==========================================
+// 2. 遊戲靜態配置中心 (Game Configuration)
+// 供各個模組讀取的唯讀設定 (不存入存檔)
 // ==========================================
 window.GameConfig = window.GameConfig || {};
 
-// 0. 系統設定
+// 系統常數
 window.GameConfig.System = {
-    SaveKey: 'SQ_V103', // 統一管理存檔名稱
-    SaveInterval: 5000  // 自動存檔間隔 (ms)
+    SaveKey: 'Levelife_Save_V1', // [與 main.js 對齊] 統一管理存檔名稱
+    SaveInterval: 5000 
 };
 
-// 1. 紙娃娃商店列表 (原 avatar300.js)
+// 難度與獎勵定義
+window.DIFFICULTY_DEFS = { 
+    1: { label: '簡單', baseGold: 15, baseExp: 10, color: '#81c784' }, 
+    2: { label: '中等', baseGold: 35, baseExp: 25, color: '#4db6ac' }, 
+    3: { label: '困難', baseGold: 80, baseExp: 60, color: '#ffb74d' }, 
+    4: { label: '史詩', baseGold: 200, baseExp: 150, color: '#e57373' } 
+};
+
+// 紙娃娃商店列表 [與 avatar.js 的 ID 對齊]
 window.GameConfig.AvatarShop = [
-	// 1. [新增] 預設造型卡片
-    // id 設定為 'adventurer'，這樣程式會去讀取 img/adventurer_m.png (剛好就是你的預設圖)
-    // price 設定為 0，代表免費
-    { id: 'adventurer', name: '冒險者(預設)', price: 0, type: 'suit' },
-    // 這一筆會去讀取： img/knight_m.png (男) 或 img/knight_f.png (女)
-    { id: 'knight', name: '皇家騎士', price: 100, type: 'suit' }, 
-    
-    // 這一筆會去讀取： img/school_m.png (男) 或 img/school_f.png (女)
-    { id: 'school', name: '高中制服', price: 50, type: 'suit' },
-    // { id: 'wizard', name: '大法師', price: 300, type: 'suit' },
+    { id: 'suit_novice', name: '新手套裝', price: 0, type: 'suit' },
+    { id: 'suit_knight', name: '騎士鎧甲', price: 100, type: 'suit' }, 
+    { id: 'suit_mage', name: '法師長袍', price: 150, type: 'suit' },
+    { id: 'suit_king', name: '國王新衣', price: 999, type: 'suit' }
 ];
 
-/* 注意：
-  1. 請確保你的專案資料夾 img/ 底下有這些圖片。
-  2. 圖片命名必須嚴格遵守：{id}_m.png 和 {id}_f.png
-*/
-
-// 2. 劇情模式文本 (原 view300.js & story300.js)
+// 劇情模式文本 (Story)
 window.GameConfig.StoryIdleTexts = [ "準備好迎接新的冒險了嗎？", "風平浪靜...", "整裝待發。", "四周很安靜。", "遠方傳來未知的聲音...", "今天天氣真不錯。" ];
-window.GameConfig.StoryFlavorTexts = [ "四周很安靜...", "似乎沒有什麼特別的...", "繼續前行...", "微風吹過...", "什麼也沒發現。", "走了一段路，風景依舊。" ];
 
-// 3. 資源路徑配置 (原 assets.js)
+// 資源路徑配置 (Assets)
 window.GameConfig.Assets = {
     basePath: 'img/',
     defExt: '.png',
@@ -70,17 +77,16 @@ window.GameConfig.Assets = {
         adventurer: { m: 'adventurer_m', f: 'adventurer_f' }, 
         harem: { m: 'harem_m', f: 'harem_f' }, 
         basic: { m: 'adventurer_m', f: 'adventurer_f' } 
-    },
-    npcs: { guide: 'npc_guide', shop: 'npc_shop', bear: 'npc_bear' }
+    }
 };
 
-// 4. 技能與屬性配置 (原 stats300.js)
+// 技能與屬性配置 (Stats)
 window.GameConfig.Stats = {
     skillLimit: 10,
     newSkillReward: { freeGem: 50, exp: 500 }
 };
 
-// 5. 新手教學文案 (原 tutorial300.js)
+// 新手教學文案 (Tutorial)
 window.GameConfig.Tutorial = {
     guideNpc: '🧚',
     step0_intro: { title: '✨ 歡迎來到 LevLife', desc: '我是你的引導小精靈。\n首先，請告訴我你的名字？', placeholder: '輸入暱稱...', btn: '確認' },
@@ -98,3 +104,7 @@ window.GameConfig.Tutorial = {
     step6_end: { dialog: '🎉 新手教學完成！\n\n你可以自由探索了。\n記得每天回來完成任務喔！', btn: '開始冒險' },
     restartConfirm: "重看教學？(不會重置角色進度)"
 };
+
+// 確保其他模組不會因為找不到 GlobalState 報錯的初始化安全鎖
+if(!window.GlobalState) window.GlobalState = {};
+if(!window.TempState) window.TempState = {};

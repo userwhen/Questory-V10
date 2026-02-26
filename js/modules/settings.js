@@ -135,7 +135,8 @@ downloadSaveFile: function() {
 	// 4. [補回] 重置資料 (這是原本缺失的部分)
     performReset: function() {
         console.warn("⚠️ 執行系統重置...");
-        localStorage.removeItem('Levelife_Save_V1'); // 清除存檔
+        localStorage.removeItem('Levelife_Save_V1');
+		localStorage.removeItem('SQ_QUICK_DRAFT');		// 清除存檔
         location.reload(); // 重新整理頁面
     },
 };
