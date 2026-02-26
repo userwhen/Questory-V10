@@ -105,129 +105,50 @@ window.ui = {
             return `<div style="display:flex; overflow-x:auto; padding-bottom:5px; -webkit-overflow-scrolling:touch; gap:5px;">${buttons}</div>`;
         },
 
-    // [V35.31] 萬用抽屜 (固定把手 + 獨立滑動層)
-    drawer: (isOpen, contentHtml, onToggle, opts = {}) => {
-        const bgColor = opts.color || '#222';
-        const dir = opts.dir || 'bottom';
-        // 新增參數：預設為 false (跟著動)，Story 模式請傳入 true
-        const isFixedHandle = opts.fixedHandle || false; 
+        // [V35.31] 萬用抽屜 (固定把手 + 獨立滑動層)
+        drawer: (isOpen, contentHtml, onToggle, opts = {}) => {
+            const bgColor = opts.color || '#222';
+            const dir = opts.dir || 'bottom';
+            const isFixedHandle = opts.fixedHandle || false; 
 
-        // 1. Wrapper: 滿版容器
-        const wrapperStyle = `
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 200; pointer-events: none; overflow: hidden;
-        `;
+            const wrapperStyle = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 200; pointer-events: none; overflow: hidden;`;
 
-        // 2. Handle (把手) 通用樣式
-        let handleBaseStyle = `
-            background: ${bgColor}; 
-            color: #fff; 
-            cursor: pointer; 
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; font-weight: bold;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
-            user-select: none;
-            width: 60px; height: 40px;
-            border-radius: 8px 8px 0 0;
-            border: 1px solid rgba(255,255,255,0.1); border-bottom: none;
-            pointer-events: auto; /* 確保可點擊 */
-            z-index: 202; /* 把手層級必須比抽屜高 */
-        `;
-
-        // 3. Body (抽屜本體) 通用樣式
-        let drawerBaseStyle = `
-            position: absolute; 
-            background: ${bgColor}; 
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
-            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            pointer-events: auto;
-            display: flex; flex-direction: column;
-            z-index: 201; 
-            overflow: visible; /* 讓內部把手可以凸出去 */
-        `;
-
-        // --- 根據模式決定位置邏輯 ---
-        
-        let finalHandleStyle = handleBaseStyle + 'position: absolute; right: 0; ';
-        let finalDrawerStyle = drawerBaseStyle;
-
-        if (dir === 'right') {
-            // [STORY 模式] (通常使用 fixedHandle: true)
-            // 抽屜：由右側滑入，高度固定 220px
-            finalDrawerStyle += `
-                bottom: 0; right: 0; 
-                width: 100%; height: 220px; 
-                transform: translateX(${isOpen ? '0%' : '100%'}); 
-                border-top: 2px solid #555;
+            let handleBaseStyle = `
+                background: ${bgColor}; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+                font-size: 1.2rem; font-weight: bold; box-shadow: 0 -2px 5px rgba(0,0,0,0.2); user-select: none;
+                width: 60px; height: 40px; border-radius: 8px 8px 0 0; border: 1px solid rgba(255,255,255,0.1); border-bottom: none;
+                pointer-events: auto; z-index: 202; 
             `;
 
-            if (isFixedHandle) {
-                // 【固定模式】：按鈕定死在距離底部 220px 的位置
-                finalHandleStyle += `bottom: 220px;`;
-            } else {
-                // 【跟隨模式】：雖然你是右側抽屜，但也可以設定按鈕跟著跑(看需求)
-                finalHandleStyle += `bottom: 100%;`; 
-            }
-
-        } else {
-            // [SHOP 模式] (通常使用 fixedHandle: false)
-            // 抽屜：由底部滑入
-            const h = opts.height || '35%';
-            finalDrawerStyle += `
-                bottom: 0; left: 0; width: 100%; height: ${h};
-                transform: translateY(${isOpen ? '0%' : '100%'});
-                border-top: 1px solid rgba(255,255,255,0.1);
+            let drawerBaseStyle = `
+                position: absolute; background: ${bgColor}; box-shadow: 0 0 15px rgba(0,0,0,0.5);
+                transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: auto;
+                display: flex; flex-direction: column; z-index: 201; overflow: visible; 
             `;
             
-            if (isFixedHandle) {
-                // 【固定模式】：按鈕定死在螢幕某個高度 (例如 35%)
-                finalHandleStyle += `bottom: ${h};`;
+            let finalHandleStyle = handleBaseStyle + 'position: absolute; right: 0; ';
+            let finalDrawerStyle = drawerBaseStyle;
+
+            if (dir === 'right') {
+                finalDrawerStyle += `bottom: 0; right: 0; width: 100%; height: 220px; transform: translateX(${isOpen ? '0%' : '100%'}); border-top: 2px solid #555;`;
+                if (isFixedHandle) finalHandleStyle += `bottom: 220px;`; else finalHandleStyle += `bottom: 100%;`; 
             } else {
-                // 【跟隨模式】：按鈕黏在抽屜頭頂
-                finalHandleStyle += `bottom: 100%;`;
+                const h = opts.height || '35%';
+                finalDrawerStyle += `bottom: 0; left: 0; width: 100%; height: ${h}; transform: translateY(${isOpen ? '0%' : '100%'}); border-top: 1px solid rgba(255,255,255,0.1);`;
+                if (isFixedHandle) finalHandleStyle += `bottom: ${h};`; else finalHandleStyle += `bottom: 100%;`;
             }
-        }
 
-        const icon = isOpen ? (opts.iconOpen || '▼') : (opts.iconClose || '▲');
+            const icon = isOpen ? (opts.iconOpen || '▼') : (opts.iconClose || '▲');
+            const handleHtml = `<div onclick="event.preventDefault(); event.stopPropagation(); ${onToggle}" style="${finalHandleStyle}">${icon}</div>`;
+            const bodyContent = `<div style="width:100%; height:100%; overflow-y:auto; padding:15px; box-sizing:border-box;">${contentHtml}</div>`;
+            
+            if (isFixedHandle) {
+                return `<div class="u-drawer-wrapper" style="${wrapperStyle}">${handleHtml}<div class="u-drawer-body" style="${finalDrawerStyle}">${bodyContent}</div></div>`;
+            } else {
+                return `<div class="u-drawer-wrapper" style="${wrapperStyle}"><div class="u-drawer-body" style="${finalDrawerStyle}">${handleHtml}${bodyContent}</div></div>`;
+            }
+        },
         
-        // 建立 Handle HTML 片段
-        const handleHtml = `
-            <div onclick="event.preventDefault(); event.stopPropagation(); ${onToggle}" style="${finalHandleStyle}">
-                ${icon}
-            </div>
-        `;
-
-        // 建立 Body HTML 片段
-        const bodyContent = `
-            <div style="width:100%; height:100%; overflow-y:auto; padding:15px; box-sizing:border-box;">
-                ${contentHtml}
-            </div>
-        `;
-
-        // --- 最終組裝 (關鍵分流) ---
-        
-        if (isFixedHandle) {
-            // A. 固定模式 (Sibling 結構)
-            // Handle 和 Body 是兄弟，互不干涉
-            return `
-                <div class="u-drawer-wrapper" style="${wrapperStyle}">
-                    ${handleHtml}
-                    <div class="u-drawer-body" style="${finalDrawerStyle}">
-                        ${bodyContent}
-                    </div>
-                </div>`;
-        } else {
-            // B. 跟隨模式 (Parent-Child 結構)
-            // Handle 被塞進 Body 裡面，這樣 Body 動，Handle 就自動跟著動
-            return `
-                <div class="u-drawer-wrapper" style="${wrapperStyle}">
-                    <div class="u-drawer-body" style="${finalDrawerStyle}">
-                        ${handleHtml}
-                        ${bodyContent}
-                    </div>
-                </div>`;
-        }
-    },
         // 舊版容器 (保留相容性)
         scroller: (header, body, id='') => `
             <div style="display:flex; flex-direction:column; height:100%; width:100%; overflow:hidden; position:relative;">
@@ -274,208 +195,36 @@ window.ui = {
     },
 
     // =============================================================================
-    // 4. 進度元件 (修正版)
+    // 5. 進度元件 (修正版)
     // =============================================================================
     progress: {
-        // [修正 1] 計次任務進度條 (內含文字，高度增加)
-        bar: (curr, max) => {
+        // [修復 VIEW-4] 擴充參數簽名，支援文字與自訂樣式，移除參數列的等號預設值，改在內部處理
+        bar: (curr, max, label, customStyle) => {
+            const safeLabel = label || '';
+            const safeStyle = customStyle || '';
             const pct = Math.min(100, Math.max(0, (curr / max) * 100));
+            const displayText = safeLabel || `${curr} / ${max}`;
             return `
-            <div class="u-progress" style="height:18px; background:#e0e0e0; border-radius:10px; position:relative; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,0.1);">
+            <div class="u-progress" style="height:18px; background:#e0e0e0; border-radius:10px; position:relative; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,0.1); ${safeStyle}">
                 <div style="width:${pct}%; height:100%; background:var(--color-correct, #4caf50); transition:width 0.3s ease;"></div>
                 <div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:11px; color:#333; font-weight:bold; letter-spacing:0.5px; text-shadow: 0 0 2px rgba(255,255,255,0.8);">
-                    ${curr} / ${max}
+                    ${displayText}
                 </div>
             </div>`;
         },
-        // [修正 3] 子任務進度條 (分段式，高度增加至 5px)
-stepWizard: (currStep, totalSteps) => {
-    let html = '<div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px;">';
-
-    for (let i = 1; i <= totalSteps; i++) {
-        // --- 1. 繪製圓球 (Ball) ---
-        // 判定：只要是當前步驟或之前的步驟，球就是綠色
-        let ballColor = i <= currStep ? 'var(--color-correct, #4caf50)' : '#e0e0e0';
         
-        // 樣式：12px 大小的球，z-index 設為 2 確保球浮在線上面
-        html += `<div style="width:12px; height:12px; background:${ballColor}; border-radius:50%; flex-shrink:0; z-index:2; transition:background 0.3s;"></div>`;
-
-        // --- 2. 繪製連接線 (Line) ---
-        // 只有在「不是最後一個步驟」時，才在球後面加一條線
-        if (i < totalSteps) {
-            // 判定：線條代表「從第 i 步走到第 i+1 步」
-            // 如果目前進度大於 i (代表 i 已完成，正在前往或已到達 i+1)，線就是綠色
-            let lineColor = i < currStep ? 'var(--color-correct, #4caf50)' : '#e0e0e0';
-            
-            // 樣式：flex:1 自動填滿球之間的空間，左右負邊距(-2px)確保無縫連接
-            html += `<div style="flex:1; height:4px; background:${lineColor}; margin:0 -2px; z-index:1; transition:background 0.3s;"></div>`;
-        }
-    }
-
-    return html + '</div>';
-},
-	},
-	layout: {
-        // [V35核心] 萬用頁面模板
-        page: (opts) => {
-            let backBtnHtml = '';
-            if (opts.back) {
-                const action = typeof opts.back === 'string' ? opts.back : "act.navigate('main')";
-                backBtnHtml = ui.component.btn({ label: '返回', icon: '↵', theme: 'normal', action: action, style: 'padding: 6px 12px; font-size:0.9rem; border-radius:8px;' });
+        stepWizard: (currStep, totalSteps) => {
+            let html = '<div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px;">';
+            for (let i = 1; i <= totalSteps; i++) {
+                let ballColor = i <= currStep ? 'var(--color-correct, #4caf50)' : '#e0e0e0';
+                html += `<div style="width:12px; height:12px; background:${ballColor}; border-radius:50%; flex-shrink:0; z-index:2; transition:background 0.3s;"></div>`;
+                if (i < totalSteps) {
+                    let lineColor = i < currStep ? 'var(--color-correct, #4caf50)' : '#e0e0e0';
+                    html += `<div style="flex:1; height:4px; background:${lineColor}; margin:0 -2px; z-index:1; transition:background 0.3s;"></div>`;
+                }
             }
-            const topBarHtml = `<div style="flex-shrink:0; height:60px; display:flex; align-items:center; justify-content:space-between; padding:0 15px; background:transparent;"><div style="font-size:1.2rem; font-weight:bold; color:#3e2723;">${opts.title || ''}</div>${backBtnHtml}</div>`;
-
-            return `<div style="display:flex; flex-direction:column; height:100%; overflow:hidden;">
-                ${topBarHtml}
-                ${opts.fixedTop ? `<div style="flex-shrink:0;">${opts.fixedTop}</div>` : ''}
-                <div style="flex:1; overflow-y:auto; overflow-x:hidden; position:relative; z-index:10; padding-bottom: 20px;">${opts.body || ''}</div>
-                ${opts.footer ? `<div style="flex-shrink:0; padding:10px;">${opts.footer}</div>` : ''}
-            </div>`;
-        },
-
-        // Flex 橫向佈局 (工具類)
-        flexRow: (content, gap='10px', justify='space-between') => 
-            `<div style="display:flex; align-items:center; justify-content:${justify}; gap:${gap}; width:100%;">${content}</div>`,
-        
-        // Grid 網格佈局 (工具類)
-        grid: (content, cols='2', gap='10px') => 
-            `<div style="display:grid; grid-template-columns:repeat(${cols}, 1fr); gap:${gap}; width:100%;">${content}</div>`,
-
-        // 橫向捲動區 (ScrollX)
-        scrollX: (options, currentVal, actionName) => {
-            const buttons = options.map(opt => ui.component.pillBtn({ label: opt, theme: opt === currentVal ? 'normal' : 'ghost', style: 'flex-shrink:0; margin-right:5px;', action: `${actionName}('${opt}')` })).join('');
-            return `<div style="display:flex; overflow-x:auto; padding-bottom:5px; -webkit-overflow-scrolling:touch; gap:5px;">${buttons}</div>`;
-        },
-
-    // [V35.31] 萬用抽屜 (固定把手 + 獨立滑動層)
-    drawer: (isOpen, contentHtml, onToggle, opts = {}) => {
-        const bgColor = opts.color || '#222';
-        const dir = opts.dir || 'bottom';
-        // 新增參數：預設為 false (跟著動)，Story 模式請傳入 true
-        const isFixedHandle = opts.fixedHandle || false; 
-
-        // 1. Wrapper: 滿版容器
-        const wrapperStyle = `
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 200; pointer-events: none; overflow: hidden;
-        `;
-
-        // 2. Handle (把手) 通用樣式
-        let handleBaseStyle = `
-            background: ${bgColor}; 
-            color: #fff; 
-            cursor: pointer; 
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; font-weight: bold;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
-            user-select: none;
-            width: 60px; height: 40px;
-            border-radius: 8px 8px 0 0;
-            border: 1px solid rgba(255,255,255,0.1); border-bottom: none;
-            pointer-events: auto; /* 確保可點擊 */
-            z-index: 202; /* 把手層級必須比抽屜高 */
-        `;
-
-        // 3. Body (抽屜本體) 通用樣式
-        let drawerBaseStyle = `
-            position: absolute; 
-            background: ${bgColor}; 
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
-            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            pointer-events: auto;
-            display: flex; flex-direction: column;
-            z-index: 201; 
-            overflow: visible; /* 讓內部把手可以凸出去 */
-        `;
-
-        // --- 根據模式決定位置邏輯 ---
-        
-        let finalHandleStyle = handleBaseStyle + 'position: absolute; right: 0; ';
-        let finalDrawerStyle = drawerBaseStyle;
-
-        if (dir === 'right') {
-            // [STORY 模式] (通常使用 fixedHandle: true)
-            // 抽屜：由右側滑入，高度固定 220px
-            finalDrawerStyle += `
-                bottom: 0; right: 0; 
-                width: 100%; height: 220px; 
-                transform: translateX(${isOpen ? '0%' : '100%'}); 
-                border-top: 2px solid #555;
-            `;
-
-            if (isFixedHandle) {
-                // 【固定模式】：按鈕定死在距離底部 220px 的位置
-                finalHandleStyle += `bottom: 220px;`;
-            } else {
-                // 【跟隨模式】：雖然你是右側抽屜，但也可以設定按鈕跟著跑(看需求)
-                finalHandleStyle += `bottom: 100%;`; 
-            }
-
-        } else {
-            // [SHOP 模式] (通常使用 fixedHandle: false)
-            // 抽屜：由底部滑入
-            const h = opts.height || '35%';
-            finalDrawerStyle += `
-                bottom: 0; left: 0; width: 100%; height: ${h};
-                transform: translateY(${isOpen ? '0%' : '100%'});
-                border-top: 1px solid rgba(255,255,255,0.1);
-            `;
-            
-            if (isFixedHandle) {
-                // 【固定模式】：按鈕定死在螢幕某個高度 (例如 35%)
-                finalHandleStyle += `bottom: ${h};`;
-            } else {
-                // 【跟隨模式】：按鈕黏在抽屜頭頂
-                finalHandleStyle += `bottom: 100%;`;
-            }
+            return html + '</div>';
         }
-
-        const icon = isOpen ? (opts.iconOpen || '▼') : (opts.iconClose || '▲');
-        
-        // 建立 Handle HTML 片段
-        const handleHtml = `
-            <div onclick="event.preventDefault(); event.stopPropagation(); ${onToggle}" style="${finalHandleStyle}">
-                ${icon}
-            </div>
-        `;
-
-        // 建立 Body HTML 片段
-        const bodyContent = `
-            <div style="width:100%; height:100%; overflow-y:auto; padding:15px; box-sizing:border-box;">
-                ${contentHtml}
-            </div>
-        `;
-
-        // --- 最終組裝 (關鍵分流) ---
-        
-        if (isFixedHandle) {
-            // A. 固定模式 (Sibling 結構)
-            // Handle 和 Body 是兄弟，互不干涉
-            return `
-                <div class="u-drawer-wrapper" style="${wrapperStyle}">
-                    ${handleHtml}
-                    <div class="u-drawer-body" style="${finalDrawerStyle}">
-                        ${bodyContent}
-                    </div>
-                </div>`;
-        } else {
-            // B. 跟隨模式 (Parent-Child 結構)
-            // Handle 被塞進 Body 裡面，這樣 Body 動，Handle 就自動跟著動
-            return `
-                <div class="u-drawer-wrapper" style="${wrapperStyle}">
-                    <div class="u-drawer-body" style="${finalDrawerStyle}">
-                        ${handleHtml}
-                        ${bodyContent}
-                    </div>
-                </div>`;
-        }
-    },
-        // 舊版容器 (保留相容性)
-        scroller: (header, body, id='') => `
-            <div style="display:flex; flex-direction:column; height:100%; width:100%; overflow:hidden; position:relative;">
-                <div style="flex-shrink:0; z-index:2;">${header}</div>
-                <div id="${id}" style="flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; padding-bottom:80px;">${body}</div>
-            </div>`
     },
 
     // =============================================================================
@@ -718,9 +467,12 @@ stepWizard: (currStep, totalSteps) => {
     // 6. 視窗工廠 (Modals)
     // =============================================================================
     modal: {
+        // [修復 QUICK-V1] 註冊開放圖層字典，包含 quick 並映射到 panel
+        layers: { 'panel': 'm-panel', 'overlay': 'm-overlay', 'system': 'm-system', 'quick': 'm-panel' },
+        
         render: (title, bodyHtml, footHtml, layer = 'overlay') => {
-            const layers = { 'panel': 'm-panel', 'overlay': 'm-overlay', 'system': 'm-system' };
-            const targetId = layers[layer] || layers['overlay'];
+            // 使用註冊字典讀取目標
+            const targetId = ui.modal.layers[layer] || ui.modal.layers['overlay'];
             let modal = document.getElementById(targetId);
             if (!modal) {
                 modal = document.createElement('div'); modal.id = targetId; modal.className = 'mask';

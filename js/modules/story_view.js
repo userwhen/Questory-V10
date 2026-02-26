@@ -1,4 +1,4 @@
-/* js/modules/story_view.js - V84.1 (Fixed: Init & CSS) */
+/* js/modules/story_view.js - V84.2 (Fixed: Double Init & Constants) */
 
 window.storyView = {
     render: function() {
@@ -6,7 +6,6 @@ window.storyView = {
         const container = document.getElementById('page-story');
         if (!container) return;
 
-        // 如果介面已經存在，只更新局部
         if (document.getElementById('story-text-wrapper')) {
             this.updateTopBar();
             this.updateDrawer();
@@ -15,7 +14,6 @@ window.storyView = {
             return;
         }
 
-        // 初始化容器樣式
         Object.assign(container.style, {
             backgroundColor: '#111', padding: '0', height: '100%', width: '100%',
             overflow: 'hidden', display: 'flex', flexDirection: 'column',
@@ -56,16 +54,14 @@ window.storyView = {
                 ${tagDrawerHtml}
                 
                 <style>
-                    /* [UI Modify] 調整 Toast 位置 */
                     .toast-box, .toast-container, div[id^="toast"] {
-                        top: auto !important;           /* 取消頂部定位 */
-                        bottom: 220px !important;       /* 設為 210px (略高於 180px 的按鈕區) */
+                        top: auto !important;           
+                        bottom: 220px !important;       
                         left: 50% !important;
                         transform: translateX(-50%) !important;
                         z-index: 9999 !important;
                     }
 
-                    /* Tag 抽屜把手位置 */
                     #tag-drawer-container .drawer-handle,
                     #tag-drawer-container [class*="handle"] {
                         top: auto !important;
@@ -85,7 +81,6 @@ window.storyView = {
         if (!el) return;
         
         const gs = window.GlobalState;
-        // 防呆：確保 ui 物件存在
         const ui = window.ui || { 
             progress: { bar: () => '' }, 
             component: { btn: (o) => `<button>${o.label}</button>` },
@@ -239,7 +234,6 @@ window.storyView = {
         element.innerHTML = '';
 
         window.TempState.typingTimer = setInterval(() => {
-            // 跳過渲染
             if (window.TempState.skipRendering) {
                 element.innerHTML = text;
                 clearInterval(window.TempState.typingTimer);
@@ -249,7 +243,6 @@ window.storyView = {
                 return;
             }
 
-            // HTML 標籤偵測
             if (text.charAt(i) === '<') {
                 const closeIdx = text.indexOf('>', i);
                 if (closeIdx !== -1) {
@@ -264,7 +257,6 @@ window.storyView = {
                 i++;
             }
             
-            // 自動捲動
             if (!justCleared) {
                 const wrap = document.getElementById('story-text-wrapper');
                 if(wrap && i % 3 === 0) {
@@ -277,7 +269,6 @@ window.storyView = {
                 if (wrap && wrap.scrollTop !== 0) wrap.scrollTop = 0;
             }
 
-            // 結束檢查
             if (i >= text.length) {
                 clearInterval(window.TempState.typingTimer);
                 window.TempState.typingTimer = null;
@@ -290,9 +281,7 @@ window.storyView = {
         const color = isSuccess ? '#4caf50' : '#ff5252';
         const icon = isSuccess ? '✅' : '❌';
         const resultText = isSuccess ? '成功' : '失敗';
-        
         const html = `<span style="color: #aaa; font-family: monospace, sans-serif; font-size: 0.95rem;">🎲 檢定 ${attrKey} (擲出 ${total})........ </span><span style="font-weight:bold; color:${color};">${resultText} ${icon}</span><br><br>`;
-
         window.TempState.deferredHtml = (window.TempState.deferredHtml || "") + html;
     },
 
@@ -342,7 +331,6 @@ window.storyView = {
     disableOptions: function(clickedIdx) {
         const container = document.getElementById('story-actions');
         if (!container) return;
-        
         const btns = container.querySelectorAll('button');
         btns.forEach((btn) => {
             btn.disabled = true; 
@@ -350,47 +338,28 @@ window.storyView = {
         });
     },
 
-    // 【核心修正】這就是您之前缺少的 init 函數！
-    // 必須放在 window.storyView 物件內部
     init: function() {
         if (!window.EventBus) return;
         console.log("📺 StoryView Listening...");
 
-        // 綁定事件：當 Controller 發出請求時，執行對應動作
-        EventBus.on('STORY_RENDER_IDLE', () => {
+        // 🚨 [關鍵修復] 補回導航監聽器！
+        // 當系統切換到 story 頁面時，必須觸發 render 來建構黑底背景、文字框與按鈕區的 DOM 結構
+        EventBus.on(window.EVENTS.System.NAVIGATE, (pageId) => {
+            if (pageId === 'story' && window.storyView) {
+                storyView.render();
+            }
+        });
+
+        // 監聽閒置與刷新
+        EventBus.on(window.EVENTS.Story.RENDER_IDLE, () => {
             if (window.storyView) storyView.renderIdle();
         });
 
-        EventBus.on('STORY_REFRESH_VIEW', () => {
+        EventBus.on(window.EVENTS.Story.REFRESH_VIEW, () => {
             if (window.storyView) storyView.render();
         });
     }
 };
 
-// 【自動啟動邏輯】保持不變，但現在 init 函數存在了，所以不會報錯
-(function autoInit() {
-    const tryInit = () => {
-        if (window.storyView && window.storyView.init) {
-            window.storyView.init();
-            
-            // 額外保險：如果畫面是空的且當前在 story 頁面，嘗試補畫一次
-            const container = document.getElementById('page-story');
-            if (container && container.innerHTML.trim() === "") {
-                console.log("📺 StoryView init found empty container, forcing render...");
-                window.storyView.render();
-            }
-        }
-    };
-
-    if (!window.EventBus) {
-        console.warn("⏳ StoryView waiting for EventBus...");
-        setTimeout(autoInit, 100); 
-        return;
-    }
-
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        tryInit();
-    } else {
-        document.addEventListener('DOMContentLoaded', tryInit);
-    }
-})();
+// [修復 STORY-V1] 徹底移除底部的 autoInit() 暴走自執行函式！
+// 現在由 main.js -> StoryController.init() -> storyView.init() 順序接管

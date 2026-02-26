@@ -218,7 +218,7 @@
                 { text: { zh: "人群的喧囂聲讓你感到一陣恍惚。你以為你逃掉了。" } },
                 { text: { zh: "但當你低頭看時，發現自己的腳踝上，多了一個青紫色的手印，而且...還在發燙。" } }
             ],
-            options: [{ label: "這只是一個開始...", action: "finish_chain", rewards: { title: "倖存者(？)", exp: 300 } }]
+            options: [{ label: "這只是一個開始...", action: "finish_chain", rewards: { title: "倖存者(？)", gold: 30 } }]
         },
         
         // ============================================================
@@ -359,7 +359,7 @@
                 { text: { zh: "清晨的第一道曙光刺破了黑暗。" } },
                 { text: { zh: "你滿身是傷，但你活下來了。這才是最重要的。" } }
             ],
-            options: [{ label: "逃出生天", action: "finish_chain", rewards: { exp: 120 } }]
+            options: [{ label: "逃出生天", action: "finish_chain", rewards: { gold: 10 } }]
         },
 		{
         id: 'rand_event_horror_chase',

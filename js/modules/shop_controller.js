@@ -144,20 +144,6 @@ window.ShopController = {
                 shopView.render();
             },
 
-            openItemDetail: (id) => shopView.renderItemDetail(id),
-            useItem: (isDiscard) => {
-                const id = window.TempState.useTargetId;
-                if (isDiscard) {
-                    ShopEngine.discardItem(id, 1);
-                    act.toast('🗑️ 已丟棄 1 個');
-                } else {
-                    const res = ShopEngine.useItem(id);
-                    act.toast(res.success ? '✅ 使用成功' : '❌ 無法使用');
-                }
-                ui.modal.close('m-panel');
-                shopView.render(); 
-                if (window.view && view.updateHUD) view.updateHUD(window.GlobalState);
-            },
 			// [Update] 購買精力 (顯示正確上限)
             buyStamina: (amount, cost) => {
                 const res = ShopEngine.recoverStamina(amount, cost);

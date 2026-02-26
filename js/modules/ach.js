@@ -11,32 +11,30 @@ window.AchEngine = {
 
     // 2. 監聽任務完成 (自動化積累)
     onTaskCompleted: function(task, impact) {
+        // [修復 ACH-1] 補上防呆，確保 impact 必為數字，避免 NaN 壞檔
+        const val = (typeof impact === 'number') ? impact : 1;
+        
         const gs = window.GlobalState;
-        // 我們主要監聽「玩家自訂的里程碑」(通常存放在 milestones 或 type='progress' 的 achievements)
-        // 這裡假設我們統一操作 milestones 陣列作為「進行中」的目標
         const targets = gs.milestones || []; 
         let anyUpdate = false;
 
         targets.forEach(ms => {
-            if (ms.done) return; // 已達成的就不再累積
+            if (ms.done) return; 
 
             let isMatch = false;
-            // A. 判定邏輯
             if (ms.targetType === 'tag' && task.cat === ms.targetValue) isMatch = true;
             else if (ms.targetType === 'attr' && task.attrs && task.attrs.includes(ms.targetValue)) isMatch = true;
             else if (ms.targetType === 'challenge') {
                 const imp = parseInt(task.importance || 1);
                 const urg = parseInt(task.urgency || 1);
-                // 挑戰：高重要且高緊急 (3以上)
                 if (imp >= 3 && urg >= 3) isMatch = true;
             }
 
-            // B. 積累邏輯
             if (isMatch) {
-                ms.curr = (ms.curr || 0) + impact; // 累積 Impact 值
+                // 使用安全過濾後的 val
+                ms.curr = (ms.curr || 0) + val; 
                 anyUpdate = true;
                 
-                // C. 達成判定
                 if (ms.curr >= ms.target) {
                     this._unlockMilestone(ms);
                 }

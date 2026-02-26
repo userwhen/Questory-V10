@@ -351,7 +351,7 @@
                     label: "解讀文字 (INT檢定)", 
                     check: { stat: 'INT', val: 5 }, 
                     action: "node_next", 
-                    rewards: { exp: 50, tags: ['knowledge_ancient'] },
+                    rewards: { gold: 50, tags: ['knowledge_ancient'] },
                     nextScene: { 
                         dialogue: [{ text: { zh: "你成功解讀了碑文，獲得了關於古代文明的知識。" } }],
                         options: [{ label: "心滿意足地離開", action: "advance_chain" }]

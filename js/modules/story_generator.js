@@ -304,8 +304,11 @@ initChain: function(skeletonKey = null, themeTag = null) {
         console.log(`🎬 Director: Stage [${targetType}], Tension ${chain.tension}%`);
 
         // 5. 選擇劇本 (Pick Template) - 改為傳入 mergedTags
-        const currentStats = gs.stats || {}; 
-        const template = this.pickTemplate(targetType, mergedTags, chain.history, chain.tension, currentStats);
+        // [修復 STORY-3] 合併確保力量/敏捷等屬性檢定能生效
+    const currentStats = { ...(gs['stats'] || {}), ...(gs.attrs || {}) };
+    
+    // 將 currentStats 傳遞給 pickTemplate
+    const template = this.pickTemplate(targetType, mergedTags, chain.history, chain.tension, currentStats);
         
         const lang = gs.settings?.targetLang || 'zh';
 
@@ -408,21 +411,24 @@ initChain: function(skeletonKey = null, themeTag = null) {
         const db = window.FragmentDB;
         
         // ==========================================
-        // 1. 處理主文本 (Text) - 加上防呆與多格式支援
+        // 1. 處理主文本 (Text) - [修復 STORY-9] 支援陣列合併
         // ==========================================
         let finalTxT = "";
+        let rawTextArr = []; // 用來收集所有的文本段落
+
         if (tmpl.text) {
-            let rawText = "";
             if (typeof tmpl.text === 'string') {
-                rawText = tmpl.text; // 支援舊版純字串
+                rawTextArr.push(tmpl.text);
             } else if (Array.isArray(tmpl.text)) {
-                rawText = tmpl.text.join("\n"); // 支援舊版陣列
+                rawTextArr = tmpl.text;
             } else {
-                // 支援新版多語系物件 { zh: "..." } 或 { zh: ["...", "..."] }
                 let t = tmpl.text[lang] || tmpl.text['zh'] || "";
-                rawText = Array.isArray(t) ? t.join("\n") : t;
+                if (typeof t === 'string') rawTextArr.push(t);
+                else if (Array.isArray(t)) rawTextArr = t;
             }
-            finalTxT = this._expandGrammar(rawText, db, memory);
+            
+            // 將所有段落展開並合併，確保多段對話不會被截斷只剩第一句
+            finalTxT = rawTextArr.map(t => this._expandGrammar(t, db, memory)).join('<br><br>');
         }
 
         // ==========================================

@@ -40,18 +40,12 @@ window.StatsEngine = {
     // =========================================
 	// [A] 任務完成
     onTaskCompleted: function(task, impact = 1) {
-        // 1. 檢查人物升級 (經驗值由 TaskEngine 增加，這裡只檢查門檻)
-        this.checkLevelUp(); 
-
-        // 2. 增加技能熟練度 + 同步增加主屬性經驗
+        // 玩家經驗已經由 addPlayerExp 處理，這裡專注於技能與屬性即可
         if (task.attrs && task.attrs.length > 0) {
             task.attrs.forEach(attrName => {
-                // 如果是技能名稱 (例如 "跑酷")，這裡會去加技能經驗
-                // 如果是屬性名稱 (例如 "STR")，這裡也會處理
                 this.addSkillProficiency(attrName, impact);
             });
         }
-
         this._saveAndNotify();
     },
 
@@ -71,18 +65,35 @@ window.StatsEngine = {
     // =========================================
     // 3. 數值計算 Helper
     // =========================================
-
+	addPlayerExp: function(amount) {
+        const gs = window.GlobalState;
+        if (!gs) return;
+        
+        gs.exp = (gs.exp || 0) + amount;
+        this.checkLevelUp(); // 增加經驗後立刻強制檢查
+        this._saveAndNotify();
+    },
+	
     checkLevelUp: function() {
         const gs = window.GlobalState;
-        const max = gs.lv * 100;
-        if (gs.exp >= max) {
+        if (!gs) return;
+
+        let leveledUp = false;
+        
+        // 使用 while 處理單次獲得大量經驗值導致的「連續升級」
+        while (gs.exp >= (gs.lv * 100)) {
+            let max = gs.lv * 100;
             gs.exp -= max;
             gs.lv++;
+            leveledUp = true;
+            
             if(window.EventBus) {
                 window.EventBus.emit(window.EVENTS.System.TOAST, `🆙 玩家等級提升！Lv.${gs.lv}`);
-                window.EventBus.emit(window.EVENTS.Stats.LEVEL_UP);
             }
-            this.checkLevelUp(); 
+        }
+
+        if (leveledUp && window.EventBus) {
+            window.EventBus.emit(window.EVENTS.Stats.LEVEL_UP);
         }
     },
 
@@ -112,8 +123,6 @@ window.StatsEngine = {
             // 如果扣到負數，直接歸零，不降級
             if (gs.exp < 0) {
                 gs.exp = 0;
-                // 可以選擇性跳提示，安撫玩家
-                // if(window.EventBus) window.EventBus.emit(window.EVENTS.System.TOAST, "🛡️ 等級保護生效：經驗值已歸零");
             }
         }
         

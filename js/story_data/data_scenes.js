@@ -40,7 +40,7 @@ function register(scene) {
                         { text: "「逼——」綠燈亮起，厚重的電子門緩緩滑開。" },
                         { text: "你走進了陰森的走廊，來到了當年案發的美術教室。" }
                     ],
-                    rewards: { exp: 50 },
+                    rewards: { gold: 5 },
                     options: [{ label: "進入美術教室", action: "node_next", nextSceneId: 'campus_art_hub' }]
                 }
             }
@@ -128,7 +128,7 @@ function register(scene) {
                         { speaker: "你", text: "「她為了拿回比命還重要的日記，克服了懼高症，踩上了那根樹枝。但霸凌者早就把樹枝鋸斷了一半... 樹枝斷裂，她就這樣摔了下去。」" },
                         { speaker: "校內廣播", text: "『...沒錯。那是場殘忍的謀殺。進來廣播室吧，他們都在這裡。』" }
                     ],
-                    rewards: { exp: 100 },
+                    rewards: { gold: 10 },
                     options: [{ label: "推開廣播室的門", action: "node_next", nextSceneId: 'campus_broadcast_hub' }] 
                 }
             }
@@ -200,7 +200,7 @@ function register(scene) {
                         { speaker: "校內廣播", text: "『恭喜你，完美的邏輯閉環。這就是遲來的正義。』" },
                         { text: "廣播室的後門打開了，清晨的陽光照亮了這座罪惡的校園。\n【結局：遲來的審判者】" }
                     ],
-                    rewards: { exp: 1000, title: "復仇之刃", removeTags: ['campus_has_id', 'campus_clue_branch', 'campus_clue_diary', 'campus_info_a', 'campus_info_b', 'campus_info_c'] }, 
+                    rewards: { gold: 100, title: "復仇之刃", removeTags: ['campus_has_id', 'campus_clue_branch', 'campus_clue_diary', 'campus_info_a', 'campus_info_b', 'campus_info_c'] }, 
                     options: [{ label: "走出校園 (結束)", action: "finish_chain" }] 
                 } 
             },
@@ -480,7 +480,7 @@ register({
                 options: [{ 
                     label: "逃出生天 (True End)", 
                     action: "finish_chain", 
-                    rewards: { exp: 500, gold: 100, removeTags: ['poisoned'] } 
+                    rewards: { gold: 50,removeTags: ['poisoned'] } 
                 }]
             }
         }
@@ -737,7 +737,7 @@ register({
                         { speaker: "伊芙", text: "「這下我真的成共犯了... 以後你要養我一輩子。」" },
                         { text: "直升機消失在夜色中。你贏得了一切。" }
                     ],
-                    rewards: { exp: 500, gold: 500, title: "夜城傳奇" }, 
+                    rewards: { gold: 50, title: "夜城傳奇" }, 
                     options: [{label: "結束", action: "finish_chain"}] 
                 }
             },
@@ -758,7 +758,7 @@ register({
                         { speaker: "伊芙", text: "「你心裡只有任務，對吧？再見了。」" },
                         { text: "你成為了富豪，但你永遠失去了她。" }
                     ],
-                    rewards: { exp: 300, gold: 500, title: "無情特務" }, 
+                    rewards: { gold: 30,  title: "無情特務" }, 
                     options: [{label: "結束", action: "finish_chain"}] 
                 }
             },
@@ -778,7 +778,7 @@ register({
                         { text: "數據並不完整，這次任務算不上成功。但伊芙毫不猶豫地跟著你跳上了直升機。" },
                         { speaker: "伊芙", text: "「沒有那些錢也沒關係... 只要我們在一起。」" }
                     ],
-                    rewards: { exp: 200, gold: 100 }, 
+                    rewards: { gold: 20, }, 
                     options: [{label: "結束", action: "finish_chain"}] 
                 }
             },
@@ -1297,7 +1297,7 @@ register({
             action: "finish_chain",
             nextScene: { 
                 text: "面對指控，你沒有慌張。你緩緩舉起右手，那枚翡翠扳指在燈光下散發著寒光。\n\n「家主信物在此！誰敢造次？」你厲聲喝道，氣勢壓倒了全場。\n隨即，你甩出了大少爺購買砒霜的證據。\n\n局勢瞬間逆轉。衛兵們遲疑片刻，將劍鋒轉向了臉色慘白的大少爺。\n你坐在了那張沾血的椅子上，俯瞰著被拖走的大哥。你贏了，但你的心也和這扳指一樣冰冷了。\n\n【結局：血色權杖】\n(達成條件：獲得家主認可)",
-                rewards: { exp: 2000, gold: 1000, title: "豪門家主" }
+                rewards: { gold: 200,  title: "豪門家主" }
             }
         },
         
@@ -1309,7 +1309,7 @@ register({
             action: "finish_chain",
             nextScene: { 
                 text: "「動手！」你大喊一聲。\n\n燈光突然熄滅——是塞巴斯切斷了電源。黑暗中，槍聲響起，精準地擊倒了靠近你的衛兵。\n一隻溫暖的手抓住了你：「少爺，這邊！」\n\n火光與混亂中，你們跳上了停在後門的汽車。你回頭看了一眼燃燒的莊園，那裡埋葬了你的過去，但身邊的人，是你的未來。\n\n【結局：亂世鴛鴦】\n(達成條件：管家好感 > 50)",
-                rewards: { exp: 1200, gold: 100, title: "私奔貴族" }
+                rewards: { gold: 120,  title: "私奔貴族" }
             }
         },
 
@@ -1320,7 +1320,7 @@ register({
             action: "finish_chain",
             nextScene: {
                 text: "你深知大勢已去，趁著眾人混亂之際，滾進了壁爐後的暗門。\n\n你在潮濕的密道中狂奔，身後是衛兵的追殺聲。當你爬出下水道，看著黎明升起，你發現自己雖然一無所有，但至少還活著。\n復仇的火種，還未熄滅。\n\n【結局：流亡者】\n(達成條件：發現密道)",
-                rewards: { exp: 500 }
+                rewards: { gold: 50 }
             }
         },
 
@@ -1634,7 +1634,7 @@ register({
                         { speaker: "你", text: "「懷孕？你上個月才去酒吧跟別人開房，行車紀錄器裡還有你跟同伙炫耀要『仙人跳』明浩的錄音！」" },
                         { text: "鐵證如山，若微癱軟在地。明浩對你心悅誠服，徹底將集團半數股份轉讓給你以表忠心。" }
                     ],
-                    rewards: { exp: 1000, title: "豪門鐵腕正宮" }, 
+                    rewards: { gold: 100, title: "豪門鐵腕正宮" }, 
                     options: [{label: "欣賞她的慘狀", action: "finish_chain"}] 
                 }
             },
@@ -1652,7 +1652,7 @@ register({
                         { text: "你懶得陷入這種低級的泥淖。憑藉著你在業界累積的名聲，你自立門戶。" },
                         { text: "半年後，明浩的公司被你打得瀕臨破產，而他和若微每天為了錢爭吵不休。" }
                     ],
-                    rewards: { exp: 800, title: "獨立大女主" }, 
+                    rewards: { gold: 80, title: "獨立大女主" }, 
                     options: [{label: "踩著高跟鞋離開", action: "finish_chain"}] 
                 }
             },
@@ -1670,7 +1670,7 @@ register({
                         { text: "明浩感激你的大度，如期與你完婚。若微被拿錢打發，永遠消失了。" },
                         { text: "你保住了正宮的位置和無盡的財富，但每當深夜，你看著身邊的男人，心裡總覺得有一根拔不掉的刺。" }
                     ],
-                    rewards: { exp: 300 }, 
+                    rewards: { gold: 30 }, 
                     options: [{label: "維持豪門體面", action: "finish_chain"}] 
                 }
             },

@@ -166,32 +166,36 @@ window.TaskEngine = {
         const rewards = { gold: Math.floor(base * w), exp: Math.floor(base * w) };
         const impact = Math.floor(w);
 		
-		// 檢查是否為嚴格模式 (DLC + Switch)
-		const isStrict = gs.unlocks && gs.unlocks.feature_strict && gs.settings.strictMode;
+        // 檢查是否為嚴格模式 (安全讀取設定)
+        const isStrict = gs.unlocks && gs.unlocks.feature_strict && gs.settings && gs.settings.strictMode;
 
         if (task.done) {
-            // --- 完成 ---
+            // ==========================================
+            // --- 完成任務 ---
+            // ==========================================
             task.doneTime = Date.now();
             task.status = 'completed';
             task.lastReward = rewards;
 
             gs.gold = (gs.gold || 0) + rewards.gold;
-            gs.exp = (gs.exp || 0) + rewards.exp;
-
-            // [關鍵修復] 熱量扣除 (檢查多個旗標以確保容錯)
-            // 只要 unlocks.calorie_tracker 為真 OR settings.calMode 為真，就執行
-            const isCalActive = (gs.unlocks && gs.unlocks.calorie_tracker) || (gs.settings && gs.settings.calMode);
             
+            // [關鍵修復] 直接呼叫 StatsEngine 增加經驗值並確保觸發升級
+            if (window.StatsEngine && StatsEngine.addPlayerExp) {
+                StatsEngine.addPlayerExp(rewards.exp);
+            } else {
+                gs.exp = (gs.exp || 0) + rewards.exp; // 備用方案
+            }
+
+            // 熱量扣除
+            const isCalActive = (gs.unlocks && gs.unlocks.calorie_tracker) || (gs.settings && gs.settings.calMode);
             if (isCalActive && task.calories > 0) {
-                // 運動是「減少」攝取量 (燃燒)，所以是用減法
                 gs.cal.today -= task.calories; 
-                
                 const timeStr = new Date().toTimeString().substring(0, 5);
                 gs.cal.logs.unshift(`${timeStr} ${task.title} -${task.calories}`);
                 if (gs.cal.logs.length > 30) gs.cal.logs.pop();
             }
 
-            // [寫入歷史]
+            // 寫入歷史
             const historyEntry = JSON.parse(JSON.stringify(task));
             historyEntry.doneImpact = impact; 
             gs.history.push(historyEntry);
@@ -200,7 +204,9 @@ window.TaskEngine = {
             window.EventBus.emit(window.EVENTS.System.TOAST, `完成！+${rewards.gold}💰 +${rewards.exp}✨`);
 
         } else {
-            // --- 取消 (回收獎勵) ---
+            // ==========================================
+            // --- 取消任務 (回收獎勵) ---
+            // ==========================================
             const oldDoneTime = task.doneTime;
             task.doneTime = null;
             task.status = 'active';
@@ -208,24 +214,22 @@ window.TaskEngine = {
             if (task.lastReward) {
                 const r = task.lastReward;
 
-                // [金幣回收]
+                // 金幣回收
                 if (isStrict) {
-                    gs.gold -= r.gold; // 嚴格：允許負債
+                    gs.gold -= r.gold; 
                 } else {
-                    gs.gold = Math.max(0, gs.gold - r.gold); // 一般：不負債
+                    gs.gold = Math.max(0, gs.gold - r.gold); 
                 }
 
-                // [經驗回收]
-                if(window.StatsEngine) {
-                    // 呼叫新版接口，傳入 isStrict 旗標
+                // 經驗回收
+                if(window.StatsEngine && StatsEngine.reducePlayerExp) {
                     StatsEngine.reducePlayerExp(r.exp, isStrict);
                 } else {
-                    // Fallback
                     gs.exp = Math.max(0, gs.exp - r.exp);
                 }
 
-                // [熱量回滾]
-                const isCalActive = (gs.unlocks && gs.unlocks.feature_cal) && gs.settings.calMode;
+                // 熱量回滾 (修復：取消任務應該是加回熱量 +=)
+                const isCalActive = (gs.unlocks && gs.unlocks.feature_cal) || (gs.settings && gs.settings.calMode);
                 if (isCalActive && task.calories > 0) {
                     gs.cal.today += task.calories; 
                     const targetLog = `-${task.calories}`;
@@ -233,7 +237,7 @@ window.TaskEngine = {
                     if (idx !== -1) gs.cal.logs.splice(idx, 1);
                 }
 
-                // [移除歷史]
+                // 從歷史紀錄移除
                 if (gs.history && gs.history.length > 0) {
                     const hIdx = gs.history.findIndex(h => h.id === task.id && h.doneTime === oldDoneTime);
                     if (hIdx !== -1) gs.history.splice(hIdx, 1);
@@ -243,13 +247,17 @@ window.TaskEngine = {
                 task.lastReward = null;
             }
             
-            // 技能經驗也只是 "倒扣" 而非額外懲罰
+            // [關鍵修復] 正確發送 UNCOMPLETED 事件，不再發錯成 COMPLETED
             window.EventBus.emit(window.EVENTS.Task.UNCOMPLETED, { task: task, impact: impact });
         }
 
-        if (window.App) App.saveData();
-        window.EventBus.emit(window.EVENTS.Stats.UPDATED);
-        window.EventBus.emit(window.EVENTS.Task.UPDATED);
+        // 統一存檔與 UI 更新
+        if (window.App && window.App.saveData) App.saveData(); 
+        
+        if (window.EventBus) {
+            window.EventBus.emit(window.EVENTS.Stats.UPDATED);
+            window.EventBus.emit(window.EVENTS.Task.UPDATED);
+        }
     },
 
     incrementTask: function(id) {

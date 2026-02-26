@@ -1,9 +1,6 @@
 /* js/modules/quick_view.js */
-// 確保 view 物件存在
 window.view = window.view || {};
 
-// [修正] 必須使用 "賦值" (=) 的寫法，不能用冒號 (:)
-// [修正] 依照您的要求，這裡改為小寫 q (renderquickNoteModal)
 window.view.renderquickNoteModal = function(defaultText = '') {
     
     const helpText = `
@@ -19,25 +16,24 @@ window.view.renderquickNoteModal = function(defaultText = '') {
             style="width:100%; height:200px; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:1rem; resize:none; font-family:inherit; box-sizing:border-box;">${defaultText}</textarea>
     `;
 
-    // [修正] 按鈕位置對調：生成在左，儲存在右
     const footHtml = `
         <div style="display:flex; gap:10px; width:100%;">
             ${ui.component.btn({
                 label: '🚀 生成任務', 
-                theme: 'normal', // 次要動作
+                theme: 'normal', 
                 style: 'flex:1;', 
                 action: "act.transferToTask(document.getElementById('quick-input').value)"
             })}
             ${ui.component.btn({
                 label: '💾 儲存', 
-                theme: 'correct', // 主要/預設動作 (綠色)
+                theme: 'correct', 
                 style: 'flex:1;', 
                 action: "act.saveQuickDraft(document.getElementById('quick-input').value)"
             })}
         </div>
     `;
 
-    // 呼叫底層 modal 渲染
-    ui.modal.render('📝 隨手記', bodyHtml, footHtml, 'quick');
+    // [修復 QUICK-V1] 修改為標準的 'panel' 圖層，避免被覆蓋
+    ui.modal.render('📝 隨手記', bodyHtml, footHtml, 'panel');
 
-}; // <--- 這裡原本可能少了分號或大括號
+};

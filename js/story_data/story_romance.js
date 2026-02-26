@@ -98,7 +98,7 @@
             options: [
                 { 
                     label: "「我們是最佳拍檔，也是戀人。」", condition: { vars: [{key:'love_meter', val:40, op:'>='}] }, style: "primary", action: "finish_chain", 
-                    nextScene: { text: "【True End: 權力與愛情】\n{lover}笑著吻了你。「沒錯，只要我們聯手，沒有人能將我們分開。」", rewards: { exp: 1200, title: "社交界霸主" } } 
+                    nextScene: { text: "【True End: 權力與愛情】\n{lover}笑著吻了你。「沒錯，只要我們聯手，沒有人能將我們分開。」", rewards: { gold: 1200, title: "社交界霸主" } } 
                 },
                 { 
                     label: "默然離去", action: "finish_chain", 
@@ -213,19 +213,19 @@
             options: [
                 { 
                     label: "走向 {lover} (選擇正緣)", condition: { vars: [{key:'loyalty', val:40, op:'>='}] }, style: "primary", action: "finish_chain", 
-                    nextScene: { text: "【結局：破鏡重圓】\n你最終斬斷了誘惑，選擇了最初的那個人。雖然有過裂痕，但你們決定重新開始。", rewards: { exp: 1000 } } 
+                    nextScene: { text: "【結局：破鏡重圓】\n你最終斬斷了誘惑，選擇了最初的那個人。雖然有過裂痕，但你們決定重新開始。", rewards: { gold: 1000 } } 
                 },
                 { 
                     label: "走向 {rival} (選擇危險)", condition: { vars: [{key:'desire', val:40, op:'>='}] }, style: "danger", action: "finish_chain", 
-                    nextScene: { text: "【結局：致命誘惑】\n你牽起了{rival}的手，將理智拋諸腦後。這是一段危險的關係，但你甘之如飴。", rewards: { exp: 1000, title: "背德者" } } 
+                    nextScene: { text: "【結局：致命誘惑】\n你牽起了{rival}的手，將理智拋諸腦後。這是一段危險的關係，但你甘之如飴。", rewards: { gold: 1000, title: "背德者" } } 
                 },
                 { 
                     label: "「我全都要。」(修羅場)", condition: { vars: [{key:'desire', val:40, op:'>='}, {key:'guilt', val:20, op:'>='}] }, style: "danger", action: "finish_chain", 
-                    nextScene: { text: "【結局：深淵之主】\n你笑著對兩人伸出手。令人驚訝的是，他們竟然都妥協了。你成為了這場瘋狂遊戲的最終贏家。", rewards: { exp: 2000, title: "修羅場之主" } } 
+                    nextScene: { text: "【結局：深淵之主】\n你笑著對兩人伸出手。令人驚訝的是，他們竟然都妥協了。你成為了這場瘋狂遊戲的最終贏家。", rewards: { gold: 2000, title: "修羅場之主" } } 
                 },
                 { 
                     label: "轉身離開 (一無所有)", action: "finish_chain", 
-                    nextScene: { text: "【結局：孤獨的逃兵】\n這段糾纏讓你身心俱疲。你拒絕了所有人，獨自消失在茫茫人海中。", rewards: { exp: 300 } } 
+                    nextScene: { text: "【結局：孤獨的逃兵】\n這段糾纏讓你身心俱疲。你拒絕了所有人，獨自消失在茫茫人海中。", rewards: { gold: 300 } } 
                 }
             ]
         },
@@ -237,7 +237,7 @@
                 { speaker: "{lover}", text: { zh: "「其實，我一直想對你說... 我喜歡你。」" } },
                 { text: { zh: "你看著對方真摯的雙眼，知道這段關係將迎來新的篇章。" } }
             ],
-            options: [{ label: "牽起對方的手", action: "finish_chain", rewards: { exp: 50, tags: ['in_relationship'] } }]
+            options: [{ label: "牽起對方的手", action: "finish_chain", rewards: { gold: 50, tags: ['in_relationship'] } }]
         },
     );
 

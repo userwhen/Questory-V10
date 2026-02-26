@@ -83,7 +83,8 @@
                 try {
                     const json = JSON.stringify(window.GlobalState);
                     const encoded = btoa(unescape(encodeURIComponent(json)));
-                    localStorage.setItem(SAVE_KEY, encoded);
+                    // [修復 CORE-2] 將原本未定義的 SAVE_KEY 改為具體字串，避免 Crash
+                    localStorage.setItem('Levelife_Save_V1', encoded);
                 } catch(e) {
                     // ignore
                 }

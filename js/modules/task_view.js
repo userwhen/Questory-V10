@@ -1,10 +1,9 @@
-/* js/modules/task_view.js - V38.5 Separated (Full Form Logic) */
+/* js/modules/task_view.js - V38.6 Separated (Fixed: V3, V1, V2, V4) */
 window.taskView = {
     // =========================================
     // 1. 主列表渲染 (Render Main List)
     // =========================================
     render: function(resetTab = false) {
-        // [微調] 確保 TempState 存在
         window.TempState = window.TempState || {};
 
         if (resetTab) window.TempState.taskTab = 'list';
@@ -14,7 +13,6 @@ window.taskView = {
         const page = document.getElementById('page-task');
         if (!page) return;
         
-        // [關鍵優化 1] 獲取當前捲軸位置 (如果捲動容器存在)
         const scrollBox = document.getElementById('task-scroll-area');
         let currentScrollY = 0;
         if (scrollBox && !resetTab) {
@@ -30,7 +28,6 @@ window.taskView = {
         let contentHtml = '';
 
         if (isList) {
-            // [A] 任務列表
             const userCats = (window.GlobalState.taskCats && window.GlobalState.taskCats.length > 0) ? window.GlobalState.taskCats.filter(c => c !== '全部') : ['每日', '運動', '工作'];
             const currentCat = window.TempState.filterCategory || '全部';
             const allCats = ['全部', ...userCats];
@@ -46,34 +43,26 @@ window.taskView = {
             contentHtml = filterArea + `<div style="padding-bottom:100px;">${listItems}</div>`;
 
         } else {
-            // [B] 成就列表
             if (window.achView && achView.renderList) {
-                // [修改] 這裡的 hallBtn 根據你的需求，如果是空字串就保留空字串
                 const hallBtn = ``; 
-                // [修改] 移除 class="u-fade-in"
                 contentHtml = hallBtn + `<div>${achView.renderList()}</div>`;
             } else {
                 contentHtml = "<div>AchView module not loaded</div>";
             }
         }
 
-        // FAB 按鈕
         const fabBg = !isList ? 'background:gold; border:none; color:#333;' : '';
         const fabAction = isList ? "act.editTask(null)" : "act.openCreateCustomAch()"; 
         const fabHtml = ui.component.btn({ label: '＋', theme: isList ? 'correct' : 'normal', style: `position:absolute; bottom:25px; right:25px; width:60px; height:60px; border-radius:50%; font-size:2rem; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:10; ${fabBg}`, action: fabAction });
         
-        // 寫入 DOM
         page.innerHTML = `<div style="display:flex; flex-direction:column; height:100%; position:relative; overflow:hidden;"><div style="flex-shrink:0; padding:10px 0;">${headerHtml}</div><div id="task-scroll-area" style="flex:1; overflow-y:auto; padding:0 10px; width:100%; box-sizing:border-box; scroll-behavior: auto;">${contentHtml}</div>${fabHtml}</div>`;
         
-        // [關鍵優化 3] 同步瞬間恢復捲軸 (移除 setTimeout)
-        // 使用 requestAnimationFrame 確保在瀏覽器繪製下一幀前設定好捲軸
         const newScrollBox = document.getElementById('task-scroll-area');
         if (newScrollBox) {
             newScrollBox.scrollTop = currentScrollY;
         }
     },
 
-    // 歷史頁面 (保留)
     renderHistoryPage: function() { 
         const container = document.getElementById('page-history'); if(!container) return;
         const headerHtml = ui.container.bar(`<div style="display:flex; justify-content:space-between; align-items:center; width:100%;"><h2 style="margin:0; font-size:1.2rem; color:#5d4037;">📜 歷史紀錄</h2>${ui.component.btn({label:'↩ 返回', theme:'normal', size:'sm', action:"act.navigate('task')"})}</div>`, 'padding:15px; background:#f5f5f5; border-bottom:1px solid #e0e0e0; width:100%; box-sizing:border-box;');
@@ -83,12 +72,11 @@ window.taskView = {
     },
 
     // =========================================================================
-    // 2. [補全] 編輯表單 (Edit Form) - 這是上次缺失的重要部分
+    // 2. 編輯表單 (Edit Form)
     // =========================================================================
     renderCreateTaskForm: function(taskId) {
         const gs = window.GlobalState;
         
-        // 外部導入數據處理
         if (window.TempState.importedTaskData) {
             window.TempState.editingTask = {
                 ...window.TempState.importedTaskData,
@@ -99,21 +87,16 @@ window.taskView = {
             taskId = null;
         }
 
-        // 記憶分類捲動位置
         const oldScrollBox = document.getElementById('cat-scroll-container');
         if (oldScrollBox) window.TempState.editScrollX = oldScrollBox.scrollLeft;
 
         const currentTemp = window.TempState.editingTask;
-        
-        // 判斷是否需要初始化數據
         const needInit = !currentTemp || (taskId && currentTemp.id !== taskId) || (taskId === null && currentTemp.id !== null);
         
         if (needInit) {
             if (taskId === null) {
-                // [修正] 新增模式：預設值改為 1 (雜務)
                 window.TempState.editingTask = { id: null, title: '', desc: '', importance: 1, urgency: 1, type: 'normal', attrs: [], cat: '每日', target: 10, subs: [], pinned: false, calories: 0, deadline: '', subRule: 'all', recurrence: '' };
             } else {
-                // 編輯模式：複製現有任務
                 const task = gs.tasks.find(t => t.id === taskId);
                 if (task) window.TempState.editingTask = JSON.parse(JSON.stringify(task));
             }
@@ -121,14 +104,12 @@ window.taskView = {
         
         const data = window.TempState.editingTask;
         
-        // [修正] 防呆邏輯：如果數據缺失或為 0，強制設為 1
         data.importance = (data.importance === undefined || data.importance === null) ? 1 : (parseInt(data.importance) || 1);
         data.urgency = (data.urgency === undefined || data.urgency === null) ? 1 : (parseInt(data.urgency) || 1);
         
         if (!data.attrs) data.attrs = [];
         const isCount = data.type === 'count';
 
-        // --- 表單 HTML 建構 ---
         let bodyHtml = `
         <div style="margin-bottom:15px;">
             <div style="display:flex; align-items:center; gap:10px;">
@@ -143,7 +124,6 @@ window.taskView = {
         </div>
         <div style="margin-bottom:15px;"><label style="font-size:0.8rem; color:#888;">詳細說明</label>${ui.input.textarea(data.desc, "備註...", "taskView.updateField('desc', this.value)")}</div>`;
 
-        // 分類
         const defaultCats = ['每日', '運動', '工作'];
         const catButtons = (gs.taskCats && gs.taskCats.length > 0 ? gs.taskCats : defaultCats).map(c => {
             const isActive = data.cat === c;
@@ -153,7 +133,9 @@ window.taskView = {
         }).join('');
 
         let caloriesInput = '';
-        if (data.cat === '運動') {
+        // [修復 TASK-V4] 熱量輸入框判斷解鎖狀態
+        const isCalActive = (gs.unlocks && gs.unlocks.feature_cal) || (gs.settings && gs.settings.calMode);
+        if (data.cat === '運動' && isCalActive) {
             caloriesInput = `<div style="display:flex; align-items:center; gap:5px; background:#fff3e0; padding:2px 8px; border-radius:15px; border:1px solid #ffe0b2; margin-left:10px; flex-shrink:0;"><span style="font-size:0.9rem;">🔥</span>${ui.input.number(data.calories, "taskView.updateField('calories', parseInt(this.value)||0)", 4)}<span style="font-size:0.8rem; color:#f57c00;">Kcal</span></div>`;
         }
 
@@ -198,7 +180,6 @@ window.taskView = {
             </div>` : ''}
         </div>`;
 
-        // 技能
         const skillHtml = (gs.skills || []).map(s => {
             const active = data.attrs.includes(s.name);
             const style = active ? 'border:1px solid #4caf50; background:#e8f5e9; color:#2e7d32; font-weight:bold;' : 'border:1px solid #ccc; opacity:0.7;';
@@ -206,10 +187,7 @@ window.taskView = {
         }).join('');
         bodyHtml += `<div style="margin-bottom:15px;"><label style="font-size:0.8rem; color:#888;">📚 綁定技能</label><div class="u-box" style="padding:10px; background:#fff; border:1px solid #e0e0e0; border-radius:8px; display:flex; flex-wrap:wrap; min-height:50px;">${skillHtml || '<span style="color:#888;font-size:0.8rem; width:100%; text-align:center;">無可用技能，請至屬性頁新增</span>'}</div></div>`;
 
-        // 矩陣 & 日期
-        // [修正] 顏色邏輯：>=3 變色，否則維持灰色
         const getLabelColor = (val) => val >= 3 ? (val===4?'#d32f2f':'#ef6c00') : (val===2?'#1976d2':'#555');
-        
         let borderSideColor = '#757575'; 
         if(data.importance>=3 && data.urgency>=3) borderSideColor="#d32f2f"; 
         else if(data.importance>=3) borderSideColor="#0288d1"; 
@@ -229,10 +207,8 @@ window.taskView = {
 
         ui.modal.render(taskId ? '編輯任務' : '新增任務', bodyHtml, footHtml, 'overlay');
         
-        // 渲染完後立刻更新預覽
         this.updateMatrixPreview();
 
-        // 自動捲動到分類
         setTimeout(() => {
             const newScrollContainer = document.getElementById('cat-scroll-container');
             if (newScrollContainer) {
@@ -286,10 +262,12 @@ window.taskView = {
         if(btn) btn.style.opacity = newState ? '1' : '0.3';
     },
 
+    // [修復 TASK-V2] 移除不必要的硬等待
     handleAddCategory: function() {
         if (window.act && window.act.addNewCategory) {
             act.addNewCategory(); 
-            setTimeout(() => { if(window.TempState.editingTask) this.renderCreateTaskForm(window.TempState.editingTask.id); }, 500);
+            // 等待新增完成後，通常系統會自動發送事件重繪，若無則用 setTimeout 0 推遲到下一個事件循環
+            setTimeout(() => { if(window.TempState.editingTask) this.renderCreateTaskForm(window.TempState.editingTask.id); }, 0);
         }
     },
 
@@ -297,6 +275,7 @@ window.taskView = {
         if (!window.TempState.editingTask) return;
         const oldCat = window.TempState.editingTask.cat;
         window.TempState.editingTask.cat = cat;
+        // [修復 TASK-V2] 縮短等待時間，避免 UI 卡頓
         if (oldCat === '運動' || cat === '運動') setTimeout(() => this.renderCreateTaskForm(window.TempState.editingTask.id), 0);
         else {
             document.querySelectorAll('.modal .u-scroll-x button').forEach(btn => {
@@ -363,6 +342,4 @@ window.taskView = {
     }
 };
 
-// 安全橋接 (保留舊版行為)
-window.view = window.view || {};
-Object.assign(window.view, window.taskView);
+// [修復 TASK-V3] ⚠️ 已刪除 Object.assign(window.view, window.taskView) 致命覆蓋

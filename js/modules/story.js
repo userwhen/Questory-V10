@@ -436,7 +436,12 @@ _handleNodeJump: function(opt, passed) {
     
     // 經驗 (Exp)
     if (rewards.exp) { 
-        gs.exp = (gs.exp || 0) + rewards.exp; 
+        // [關鍵修復] 改用 StatsEngine 統一接口，確保必定觸發升級檢查與 UI 更新
+        if (window.StatsEngine && StatsEngine.addPlayerExp) {
+            StatsEngine.addPlayerExp(rewards.exp);
+        } else {
+            gs.exp = (gs.exp || 0) + rewards.exp; // 備用方案
+        }
         // ✅ [Check] 確保顯示 Toast
         msgs.push(`✨ ${rewards.exp > 0 ? '+' : ''}${rewards.exp}`); 
     }
@@ -527,58 +532,54 @@ _handleNodeJump: function(opt, passed) {
     
     // [Check] 這裡使用 act.toast 發送訊息
     if (msgs.length > 0) {
-        // 優先使用 EventBus (解耦)，如果沒有則嘗試 act.toast
-        if (window.EventBus) {
-            window.EventBus.emit('SYSTEM_TOAST', msgs.join("  "));
+        if (window.EventBus && window.EVENTS) {
+            // [修復 STORY-2] 錯用字串，改為標準系統常數
+            window.EventBus.emit(window.EVENTS.System.TOAST, msgs.join("  "));
         } else if (window.act && window.act.toast) {
             act.toast(msgs.join("  "));
         }
     }
     
     if (window.view && window.view.updateStoryHUD) window.view.updateStoryHUD();
-    // 如果有 storyView，也更新它的頂部欄 (精力條)
     if (window.storyView && storyView.updateTopBar) storyView.updateTopBar();
 },
 
     // 探索入口
     explore: function() { 
-    const gs = window.GlobalState; 
-    if (!gs.story) this.init(); 
-    
-    if (gs.story.energy < this.CONSTANTS.ENERGY_COST) { 
-        if(window.act) act.toast("❌ 精力不足"); 
-        return { success: false, msg: "精力不足" }; 
-    }
-    
-    gs.story.energy -= this.CONSTANTS.ENERGY_COST;
-    if (window.storyView) storyView.updateTopBar();
+        const gs = window.GlobalState; 
+        if (!gs.story) this.init(); 
+        
+        if (gs.story.energy < this.CONSTANTS.ENERGY_COST) { 
+            if(window.act) act.toast("❌ 精力不足"); 
+            return { success: false, msg: "精力不足" }; 
+        }
+        
+        gs.story.energy -= this.CONSTANTS.ENERGY_COST;
+        if (window.storyView) storyView.updateTopBar();
 
-    // 定義過場文字庫
-    const transitionTexts = [
-        "探索中...",
-        "正在前往未知的區域...",
-        "腳步聲在迴廊中迴盪...",
-        "四周變得越來越暗...",
-        "似乎發現了什麼..."
-    ];
-    const randomText = transitionTexts[Math.floor(Math.random() * transitionTexts.length)];
+        const transitionTexts = [
+            "探索中...", "正在前往未知的區域...", "腳步聲在迴廊中迴盪...",
+            "四周變得越來越暗...", "似乎發現了什麼..."
+        ];
+        const randomText = transitionTexts[Math.floor(Math.random() * transitionTexts.length)];
 
-    // 1. 播放過場文字 (這會重置 isProcessing 為 false)
-    this.playSceneNode({ text: randomText, options: [],noDefaultExit: true }); 
-    
-    // 2. [修正] 在播放後「再次強制鎖定」，確保過場期間不可互動
-    window.TempState.isProcessing = true; 
-    window.TempState.lockInput = true;    // 額外防止點擊文字換頁
-    
-    setTimeout(() => { 
-        window.TempState.lockInput = false; 
-        window.TempState.isProcessing = false; 
-        this.drawAndPlay(); 
-        if(window.App) App.saveData(); 
-    }, this.CONSTANTS.TRANSITION_DELAY);
-    
-    return { success: true }; 
-},
+        // [修復 STORY-8] 播放過場文字
+        this.playSceneNode({ text: randomText, options: [],noDefaultExit: true }); 
+        
+        // 【重要】確保安全鎖定，如果 timeout 失敗也能解鎖
+        window.TempState.isProcessing = true; 
+        window.TempState.lockInput = true;    
+        
+        setTimeout(() => { 
+            // 在 callback 內才解除鎖定，確保狀態機一致
+            window.TempState.lockInput = false; 
+            window.TempState.isProcessing = false; 
+            this.drawAndPlay(); 
+            if(window.App) App.saveData(); 
+        }, this.CONSTANTS.TRANSITION_DELAY);
+        
+        return { success: true }; 
+    },
 
     // ============================================================
     // 📝 [SECTION 4] TEXT & DIALOGUE (文字處理區)
@@ -607,45 +608,68 @@ _handleNodeJump: function(opt, passed) {
 
     // 5. [核心修改] resolveDynamicText - 支援顯示變數值
     _resolveDynamicText: function(text) {
-    if (!text || typeof text !== 'string') return text;
-    const gs = window.GlobalState;
-    const memory = (gs.story.chain && gs.story.chain.memory) ? gs.story.chain.memory : {};
-    const vars = gs.story.vars || {};
-    // [新增] 讀取全域變數 (flags)
-    const flags = gs.story.flags || {}; 
+        if (!text || typeof text !== 'string') return text;
+        const gs = window.GlobalState;
+        const memory = (gs.story.chain && gs.story.chain.memory) ? gs.story.chain.memory : {};
+        const vars = gs.story.vars || {};
+        const flags = gs.story.flags || {}; 
 
-    return text.replace(/{(\w+)}/g, (match, key) => {
-        // 1. 優先找 Chain 記憶 (劇本角色名, e.g. "detective")
-        if (memory[key]) return memory[key];
-        
-        // 2. 其次找 區域變數 (當前劇本數值, e.g. "sanity")
-        if (typeof vars[key] !== 'undefined') return vars[key];
-        
-        // 3. 再找 全域標記 (跨劇本數值, e.g. "total_wins")
-        if (typeof flags[key] !== 'undefined') return flags[key];
+        return text.replace(/{(\w+)}/g, (match, key) => {
+            if (memory[key]) return memory[key];
+            if (typeof vars[key] !== 'undefined') return vars[key];
+            if (typeof flags[key] !== 'undefined') return flags[key];
 
-        // 4. 【核心修復】最後找 全域狀態 (金幣, 經驗, 等級)
-        // 這樣 {gold} 就能正確顯示 gs.gold 的值了
-        if (typeof gs[key] !== 'undefined') return gs[key];
+            // [修復 STORY-7] 增加 typeof 檢查，過濾掉 gs.settings 等物件，避免印出 [object Object]
+            if (typeof gs[key] !== 'undefined' && typeof gs[key] !== 'object') return gs[key];
 
-        return match;
-    });
-},
+            return match;
+        });
+    },
 
     _formatText: function(text) {
-        // [Opt] 簡單的正則樣式替換
-        if (/^[\(（].*[\)）]$/.test(text)) return `<div class="story-narrative" style="color:#aaa;">${text}</div>`;
-        if (text.includes("：") || text.includes("「")) return `<div class="story-dialogue" style="color:#ffd700;">${text}</div>`;
+        // 1. 旁白/內心戲 (灰色)
+        if (/^[\(（].*[\)）]$/.test(text)) {
+            return `<div class="story-narrative" style="color:#aaa;">${text}</div>`;
+        }
+
+        // 2. 主角說話時 (金色)
+        if (text.includes("<b>你</b>：") || text.startsWith("你：")) {
+            return `<div class="story-dialogue" style="color:#ffd700;">${text}</div>`;
+        }
+
+        // 3. 「其他人」說話時 (淺藍色) 
+        // 你的 "<b>朋友的聲音</b>：「救命！...」" 會在這裡被捕捉到！
+        if (text.includes("：")) {
+            return `<div class="story-dialogue" style="color:#87ceeb;">${text}</div>`; 
+        }
+
+        // 4. 一般動作/描述 (白色預設)
         return `<div class="story-action" style="color:#fff;">${text}</div>`;
     },
 
     playDialogueChain: function(node) {
         const dialogues = node.dialogue;
+        if (!dialogues || !Array.isArray(dialogues)) return; // 防呆：確保 dialogues 是陣列
+
         const lang = (window.GlobalState.settings && window.GlobalState.settings.targetLang) ? window.GlobalState.settings.targetLang : 'zh';
         
         let textQueue = dialogues.map(d => {
-             const txt = d.text[lang] || d.text['zh'] || d.text;
+             // 【防呆 1】如果這行資料完全是空的
+             if (!d) return "";
+             
+             // 【防呆 2】如果不小心只寫了字串 (例如 "救命啊")，沒有包裝成物件
+             if (typeof d === 'string') return d; 
+             
+             // 【防呆 3】如果物件裡漏寫了 text 屬性
+             if (!d.text) {
+                 return `<b>${d.speaker || '未知'}</b>：(對話資料遺失)`;
+             }
+
+             // 安全讀取文字
+             const txt = d.text[lang] || d.text['zh'] || (typeof d.text === 'string' ? d.text : '');
              const speaker = d.speaker;
+             
+             // 組合名字與台詞 (確保這裡使用的是全形冒號「：」)
              return (speaker === '旁白' || !speaker) ? `${txt}` : `<b>${speaker}</b>：${txt}`;
         });
         
@@ -892,46 +916,35 @@ _handleNodeJump: function(opt, passed) {
     
     // 循環：精力恢復
     checkEnergyLoop: function() {
-        // 定義更新邏輯函式
         const updateEnergy = () => {
             const gs = window.GlobalState;
-            
-            // ✅ 加上防呆：如果故事系統還沒初始化完畢，直接跳過不計算
             if (!gs || !gs.story) return; 
 
             const now = Date.now();
             const timeDiff = now - (gs.story.lastEnergyUpdate || now);
             const REGEN_MS = this.CONSTANTS.ENERGY_REGEN_MS;
 
-        // 如果經過時間大於 1 個週期
-        if (timeDiff >= REGEN_MS) {
-            const recoverAmount = Math.floor(timeDiff / REGEN_MS);
-            const max = this.calculateMaxEnergy();
-            
-            // 只有未滿時才計算
-            if (gs.story.energy < max) {
-                // 計算回復後的數值，但不超過上限
-                // 注意：這裡不應該用 += recoverAmount 直接加，因為可能溢出
-                // 邏輯：(當前 + 回復量) 與 Max 取小
-                const potentialEnergy = gs.story.energy + recoverAmount;
-                gs.story.energy = Math.min(max, potentialEnergy);
+            if (timeDiff >= REGEN_MS) {
+                const recoverAmount = Math.floor(timeDiff / REGEN_MS);
+                const max = this.calculateMaxEnergy();
                 
-                // 更新 UI
-                if (window.storyView && storyView.updateTopBar) storyView.updateTopBar();
+                if (gs.story.energy < max) {
+                    const potentialEnergy = gs.story.energy + recoverAmount;
+                    gs.story.energy = Math.min(max, potentialEnergy);
+                    if (window.storyView && storyView.updateTopBar) storyView.updateTopBar();
+                }
+
+                gs.story.lastEnergyUpdate = now - (timeDiff % REGEN_MS);
+                if(window.App) App.saveData();
             }
+        };
 
-            // 更新時間戳 (扣除餘數，保留未滿一分鐘的時間累計)
-            gs.story.lastEnergyUpdate = now - (timeDiff % REGEN_MS);
-            
-            // 存檔 (重要，避免刷新後時間重置)
-            if(window.App) App.saveData();
+        updateEnergy();
+
+        // [修復 STORY-4] 儲存 interval ID 並在重複呼叫時清除舊的，防止速度疊加！
+        if (window.TempState.energyLoopId) {
+            clearInterval(window.TempState.energyLoopId);
         }
-    };
-
-    // 1. 啟動時先算一次 (處理離線回復)
-    updateEnergy();
-
-    // 2. 之後每 10 秒檢查一次即可 (不用精準對齊 60秒，因為是靠時間戳算)
-    setInterval(updateEnergy, 10000); 
-},
+        window.TempState.energyLoopId = setInterval(updateEnergy, 10000); 
+    },
 };

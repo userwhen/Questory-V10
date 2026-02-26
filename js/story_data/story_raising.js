@@ -127,7 +127,7 @@
                     rewards: { tags: ['tag_strength'], varOps: [{key:'stress', val:25, op:'+'}] }, 
                     nextScene: { 
                         dialogue: [{ text: { zh: "{trainee}咬著牙站了起來，突破了極限！(獲得實力)" } }], 
-                        rewards: { exp: 50 },
+                        rewards: { gold: 50 },
                         options: [{ label: "完成訓練", action: "advance_chain" }]
                     } 
                 },
@@ -298,7 +298,7 @@
                             { text: { zh: "{trainee}成為了被世人傳頌的偶像。而你，是造就這奇蹟的傳奇導師。" } },
                             { text: { zh: "【結局：世界的寵兒】" } }
                         ],
-                        rewards: { exp: 2000, title: "金牌製作人" },
+                        rewards: { gold: 200, title: "金牌製作人" },
                         options: [{ label: "領取獎勵", action: "finish_chain" }]
                     } 
                 },
@@ -310,7 +310,7 @@
                             { text: { zh: "以絕對的力量君臨天下！這份榮耀，有一半屬於在背後默默支持的你。" } },
                             { text: { zh: "【結局：頂點的霸者】" } }
                         ],
-                        rewards: { exp: 2000, title: "王者之師" },
+                        rewards: { gold: 200, title: "王者之師" },
                         options: [{ label: "領取獎勵", action: "finish_chain" }]
                     } 
                 },
@@ -321,7 +321,7 @@
                             { text: { zh: "雖然沒有成為傳說，但你們收穫了彼此的信任。你們決定離開聚光燈，去尋找屬於自己的平靜生活。" } },
                             { text: { zh: "【結局：相伴的旅途】" } }
                         ],
-                        rewards: { exp: 800 },
+                        rewards: { gold: 80 },
                         options: [{ label: "領取獎勵", action: "finish_chain" }]
                     } 
                 }
@@ -344,7 +344,7 @@
                             { text: { zh: "憑藉著紮實的基礎與成功的出道秀，{trainee}迅速竄紅。" } },
                             { text: { zh: "【養成結局：星光大道】" } }
                         ],
-                        rewards: { title: "金牌教練", exp: 1000 },
+                        rewards: { title: "金牌教練", gold: 100 },
                         options: [{ label: "結算", action: "finish_chain" }]
                     } 
                 },
@@ -357,7 +357,7 @@
                             { text: { zh: "你們的搭檔關係還會繼續下去，挑戰更高的巔峰！" } },
                             { text: { zh: "【養成結局：最佳拍檔】" } }
                         ],
-                        rewards: { gold: 500, exp: 800 },
+                        rewards: { gold: 80 },
                         options: [{ label: "結算", action: "finish_chain" }]
                     } 
                 },
@@ -368,7 +368,7 @@
                             { text: { zh: "雖然沒有成為大紅大紫的明星，但這段共同奮鬥的日子，成為了你們彼此珍貴的回憶。" } },
                             { text: { zh: "【養成結局：平淡的幸福】" } }
                         ],
-                        rewards: { exp: 300 },
+                        rewards: { gold: 30 },
                         options: [{ label: "結算", action: "finish_chain" }]
                     } 
                 }
@@ -383,7 +383,7 @@
                 { text: { zh: "看著{trainee}如今自信的模樣，你露出了欣慰的笑容。" } },
                 { text: { zh: "無論未來的路有多長，這段時光都將成為最寶貴的財富。" } }
             ],
-            options: [{ label: "迎接結局", action: "finish_chain", rewards: { exp: 100 } }]
+            options: [{ label: "迎接結局", action: "finish_chain", rewards: { gold: 100 } }]
         }
     );
 

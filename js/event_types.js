@@ -6,15 +6,18 @@ window.EVENTS = {
         INIT: 'sys:init',
         NAVIGATE: 'sys:navigate',       // 頁面切換
         TOAST: 'sys:toast',             // 顯示提示
+        MODAL_OPEN: 'sys:modal_open',   // [修復 EVENT-2] 開啟視窗
         MODAL_CLOSE: 'sys:modal_close', // 關閉視窗
         CONFIRM: 'sys:confirm',         // 確認對話框
-        SAVE: 'sys:save'                // 觸發存檔
+        SAVE: 'sys:save',               // 觸發存檔
+        DAILY_RESET: 'sys:daily_reset'  // [架構優化] 統一換日廣播，解決 CORE-3 干擾
     },
     Task: {
         CREATED: 'task:created',
         UPDATED: 'task:updated',        // 列表刷新
         DELETED: 'task:deleted',
         COMPLETED: 'task:completed',    // Payload: { task, impact }
+        UNCOMPLETED: 'task:uncompleted',// [修復 EVENT-1] 取消完成 Payload: { task }
         FAILED: 'task:failed',          // Payload: { task }
         EDIT_MODE: 'task:edit_mode',    // 打開編輯窗
         FORM_UPDATE: 'task:form_update' // 表單內容變更
@@ -29,13 +32,16 @@ window.EVENTS = {
         UPDATED: 'stats:updated',       // 屬性/金幣/等級變更
         SKILL_EDIT_MODE: 'stats:skill_edit',
         LEVEL_UP: 'stats:level_up',      // [建議新增] 升級特效用
-		SKILL_MAXED: 'stats:skill_maxed'
+        SKILL_MAXED: 'stats:skill_maxed'
     },
     Story: {
         UPDATED: 'story:updated',       // 精力變更
         SCENE_START: 'story:scene_start',
         SCENE_PLAYED: 'story:scene_played', // 播放卡片
-        SCENE_END: 'story:scene_end'
+        SCENE_END: 'story:scene_end',
+        ENTERED: 'story:entered',        // [修復 EVENT-3] 進入故事模式
+        RENDER_IDLE: 'story:render_idle',// [修復 EVENT-3] 渲染閒置狀態
+        REFRESH_VIEW: 'story:refresh_view'// [修復 EVENT-3] 刷新畫面
     },
     Ach: {
         UPDATED: 'ach:updated',         // 成就列表變更 (進度更新)

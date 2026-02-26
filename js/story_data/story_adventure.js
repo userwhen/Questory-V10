@@ -181,7 +181,7 @@
                             { text: { zh: "你燃燒了最後的生命力，將劍送入了怪物的心臟。你的名字將被吟遊詩人永遠傳唱。" } },
                             { text: { zh: "【結局：屠龍英雄】" } }
                         ],
-                        rewards: { exp: 2000, title: "傳說勇者" },
+                        rewards: { gold: 200, title: "傳說勇者" },
                         options: [{ label: "結算", action: "finish_chain" }]
                     }, 
                     failScene: { 
@@ -189,7 +189,7 @@
                             { text: { zh: "實力的差距是絕望的。你的武器折斷了，視野逐漸被黑暗吞沒..." } },
                             { text: { zh: "【結局：無名的屍骸】" } }
                         ],
-                        rewards: { exp: 500 },
+                        rewards: { gold: 50 },
                         options: [{ label: "結算", action: "finish_chain" }]
                     } 
                 },
@@ -200,7 +200,7 @@
                             { text: { zh: "毀滅的雷霆貫穿了怪物的身軀！焦黑的巨獸倒下，而你成為了魔法史上的傳奇。" } },
                             { text: { zh: "【結局：大魔導師】" } }
                         ],
-                        rewards: { exp: 2000, title: "傳奇魔導" },
+                        rewards: { gold: 200, title: "傳奇魔導" },
                         options: [{ label: "結算", action: "finish_chain" }]
                     }, 
                     failScene: { 
@@ -208,7 +208,7 @@
                             { text: { zh: "咒語在最後一刻被打斷，狂暴的魔力將你與怪物一同吞噬..." } },
                             { text: { zh: "【結局：魔力反噬】" } }
                         ],
-                        rewards: { exp: 500 },
+                        rewards: { gold: 50 },
                         options: [{ label: "結算", action: "finish_chain" }]
                     } 
                 },
@@ -219,7 +219,7 @@
                             { text: { zh: "你化作一道殘影，在怪物咆哮的瞬間，精準地切斷了它的咽喉。" } },
                             { text: { zh: "【結局：暗影之王】" } }
                         ],
-                        rewards: { exp: 2000, title: "暗影刺客" },
+                        rewards: { gold: 200, title: "暗影刺客" },
                         options: [{ label: "結算", action: "finish_chain" }]
                     }, 
                     failScene: { 
@@ -227,7 +227,7 @@
                             { text: { zh: "你的速度稍微慢了一拍，怪物的尾巴將你狠狠掃飛，劇痛奪走了你的意識..." } },
                             { text: { zh: "【結局：喋血陰影】" } }
                         ],
-                        rewards: { exp: 500 },
+                        rewards: { gold: 50 },
                         options: [{ label: "結算", action: "finish_chain" }]
                     } 
                 },
@@ -241,7 +241,7 @@
                             { text: { zh: "沒有職業與力量的你，在龍威之下連站立都做不到，瞬間化為灰燼..." } },
                             { text: { zh: "【結局：螻蟻的悲歌】" } }
                         ],
-                        rewards: { exp: 10 },
+                        rewards: { gold: 10 },
                         options: [{ label: "結束", action: "finish_chain" }]
                     } 
                 }
@@ -261,11 +261,11 @@
                     action: "node_next",
                     nextScene: { 
                         dialogue: [{ text: { zh: "你發出怒吼，武器精準地擊中了牠的要害！你贏得了輝煌的勝利！" } }],
-                        options: [{ label: "領取戰利品", action: "finish_chain", rewards: { exp: 200, varOps: [{key:'gold', val:150, op:'+'}] } }]
+                        options: [{ label: "領取戰利品", action: "finish_chain", rewards: { gold: 20, varOps: [{key:'gold', val:150, op:'+'}] } }]
                     },
                     failScene: {
                         dialogue: [{ text: { zh: "你拼盡全力，但對方實在太強大了... 你只能狼狽撤退。" } }],
-                        options: [{ label: "逃跑保命", action: "finish_chain", rewards: { exp: 20 } }]
+                        options: [{ label: "逃跑保命", action: "finish_chain", rewards: { gold: 20 } }]
                     }
                 }
             ]
