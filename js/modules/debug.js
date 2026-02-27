@@ -1,4 +1,4 @@
-/* js/modules/debug.js - V58.0 Full (View & Logic Included) */
+/* js/modules/debug.js - V42.0 UI System Upgrade */
 window.Debug = window.Debug || {};
 window.act = window.act || {};
 
@@ -14,70 +14,65 @@ const DebugEngine = {
     clickTimer: null,
 
     // ============================================================
-    // [UI] 顯示 DEBUG 面板 (這就是 View)
+    // [UI] 顯示 DEBUG 面板 
     // ============================================================
     showMenu: () => {
+        const btn = ui.component.btn;
+        
+        // 統一的區塊與網格樣式
+        const sectionStyle = "margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px dashed var(--border);";
+        const labelStyle = "display: block; font-size: 0.9rem; color: var(--text); margin-bottom: 8px; font-weight: bold;";
+        const gridStyle = "display: grid; grid-template-columns: 1fr 1fr; gap: 8px;";
+
         const body = `
-            <div class="debug-panel">
-                <div class="debug-section">
-                    <label>🩺 系統診斷</label>
-                    <p style="font-size:0.8rem; color:#666; margin-bottom:8px;">執行自動化測試，檢查 DLC、商店、任務邏輯。<b>(測試數據將會保留)</b></p>
-                    <button class="u-btn u-btn-primary u-btn-block" onclick="Debug.runFullDiagnosis()">🚀 執行全系統診斷</button>
+            <div style="padding: 5px;">
+                <div style="${sectionStyle}">
+                    <label style="${labelStyle}">🩺 系統診斷</label>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:8px;">執行自動化測試，檢查 DLC、商店、任務邏輯。<b>(測試數據將會保留)</b></p>
+                    ${btn({label: '🚀 執行全系統診斷', theme: 'normal', style: 'width: 100%; border-color:var(--color-info); color:var(--color-info);', action: 'Debug.runFullDiagnosis()'})}
                 </div>
 
-                <div class="debug-section">
-                    <label>⏳ 時光機 (跨日模擬)</label>
-                    <div class="btn-grid">
-                        <button class="u-btn u-btn-ghost u-btn-sm" onclick="Debug.timeMachine('yesterday')">📅 模擬昨日</button>
-                        <button class="u-btn u-btn-ghost u-btn-sm" onclick="Debug.timeMachine('week_ago')">⏪ 回到 7 天前</button>
+                <div style="${sectionStyle}">
+                    <label style="${labelStyle}">⏳ 時光機 (跨日模擬)</label>
+                    <div style="${gridStyle}">
+                        ${btn({label: '📅 模擬昨日', theme: 'ghost', action: "Debug.timeMachine('yesterday')"}) }
+                        ${btn({label: '⏪ 回到 7 天前', theme: 'ghost', action: "Debug.timeMachine('week_ago')"}) }
                     </div>
                 </div>
 
-                <div class="debug-section">
-                    <label>💎 資源作弊</label>
-                    <div class="btn-grid">
-                        <button class="u-btn u-btn-ghost u-btn-sm" onclick="Debug.cheat('gold', 1000)">💰 +1000 金幣</button>
-                        <button class="u-btn u-btn-ghost u-btn-sm" onclick="Debug.cheat('exp', 500)">✨ +500 經驗</button>
-                        <button class="u-btn u-btn-ghost u-btn-sm" onclick="Debug.cheat('energy', 100)">⚡ 精力補滿</button>
-                        <button class="u-btn u-btn-ghost u-btn-sm" onclick="Debug.setMaxEnergy100()">🔥 設定 Lv.36 (上限100)</button>
+                <div style="${sectionStyle}">
+                    <label style="${labelStyle}">💎 資源作弊</label>
+                    <div style="${gridStyle}">
+                        ${btn({label: '💰 +1000 金幣', theme: 'ghost', style:'color:var(--color-gold-dark);', action: "Debug.cheat('gold', 1000)"}) }
+                        ${btn({label: '✨ +500 經驗', theme: 'ghost', style:'color:var(--color-info);', action: "Debug.cheat('exp', 500)"}) }
+                        ${btn({label: '⚡ 精力補滿', theme: 'correct', action: "Debug.cheat('energy', 100)"}) }
+                        ${btn({label: '🔥 設為 Lv.36', theme: 'danger', action: "Debug.setMaxEnergy100()"}) }
                     </div>
                 </div>
                 
-                <div class="debug-section">
-                    <label>🔓 權限解鎖</label>
-                    <div class="btn-grid">
-                        <button class="u-btn u-btn-ghost u-btn-sm" onclick="Debug.unlockDLC()">🔓 解鎖所有功能</button>
-                        <button class="u-btn u-btn-ghost u-btn-sm" onclick="Debug.resetDLC()">🔒 重置鎖定狀態</button>
+                <div style="${sectionStyle}">
+                    <label style="${labelStyle}">🔓 權限解鎖</label>
+                    <div style="${gridStyle}">
+                        ${btn({label: '🔓 解鎖 DLC', theme: 'ghost', action: "Debug.unlockDLC()"}) }
+                        ${btn({label: '🔒 重置鎖定', theme: 'ghost', action: "Debug.resetDLC()"}) }
                     </div>
                 </div>
 
-                <div class="debug-section" style="border:none;">
-                    <div class="btn-grid">
-                         <button class="u-btn ${window.isDebugActive ? 'u-btn-primary' : 'u-btn-ghost'} u-btn-sm" onclick="Debug.toggleDevMode()">
-                            DevMode: ${window.isDebugActive ? 'ON' : 'OFF'}
-                        </button>
-                        <button class="u-btn u-btn-secondary u-btn-sm" onclick="location.reload()">🔄 重載網頁</button>
+                <div style="border:none; padding-top:10px;">
+                    <div style="${gridStyle}">
+                         ${btn({label: `DevMode: ${window.isDebugActive ? 'ON' : 'OFF'}`, theme: window.isDebugActive ? 'correct' : 'ghost', action: "Debug.toggleDevMode()"}) }
+                         ${btn({label: '🔄 重載網頁', theme: 'normal', action: "location.reload()"}) }
                     </div>
                 </div>
             </div>
-            <style>
-                .debug-panel { padding: 5px; }
-                .debug-section { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #ddd; }
-                .debug-section label { display: block; font-size: 0.9rem; color: #333; margin-bottom: 8px; font-weight: bold; }
-                .u-btn-block { width: 100%; }
-                .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-            </style>
         `;
         
-        const foot = `<button class="u-btn u-btn-block u-btn-secondary" onclick="act.closeModal('m-overlay')">關閉</button>`;
+        const foot = btn({label: '關閉', theme: 'normal', style: 'width: 100%;', action: "ui.modal.close('m-panel')"});
 
         if (window.ui && window.ui.modal && window.ui.modal.render) {
-            ui.modal.render('DEBUG 控制台', body, foot, 'overlay');
-        } else if (window.view && view.renderModal) {
-            view.renderModal('DEBUG 控制台', body, foot, 'overlay');
+            ui.modal.render('🛠️ DEBUG 控制台', body, foot, 'panel');
         } else {
             console.error("❌ 無法開啟 Debug 視窗：找不到 ui.modal.render");
-            alert("Debug 視窗無法開啟 (UI 模組缺失)");
         }
     },
 
@@ -129,22 +124,91 @@ const DebugEngine = {
         act.save();
         if (window.view && view.updateHUD) view.updateHUD(gs);
     },
+	
+	// Logic: 劇本即時編輯器 (Live Script Editor)
+    openLiveStoryEditor: () => {
+        // 1. 取得當前節點資料
+        const nodeObj = window.TempState.currentSceneNode;
+        if (!nodeObj) return act.toast("⚠️ 找不到當前劇情節點資料");
 
-    // [New] 設定等級為 36 (使精力上限達到 100)
+        // 2. 將物件轉成格式化的 JSON 字串
+        const jsonStr = JSON.stringify(nodeObj, null, 4);
+
+        // 3. 建立 UI
+        const body = `
+            <div style="padding:10px;">
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px; background:var(--bg-box); padding:8px; border-radius:var(--radius-sm);">
+                    正在編輯節點：<b style="color:var(--text);">${nodeObj.id || '未知'}</b><br>
+                    <span style="color:var(--color-danger);">⚠️ 儲存後僅在目前遊戲生效。若要永久保存，請複製代碼貼回 VS Code。</span>
+                </div>
+                <textarea id="live-story-editor" class="inp" spellcheck="false"
+				style="width:100%; height:350px; font-family:monospace; font-size:0.85rem; resize:vertical; white-space: pre-wrap; word-wrap: break-word; text-align: left;"
+				>${jsonStr}</textarea>
+            </div>
+        `;
+
+        const foot = `
+            ${ui.component.btn({label:'📋 複製代碼', theme:'normal', style:'flex:1;', action:`Debug.copyStoryJson()`})}
+            ${ui.component.btn({label:'💾 即時應用', theme:'correct', style:'flex:1;', action:`Debug.saveLiveStory()`})}
+        `;
+
+        ui.modal.render('📝 劇本即時編輯', body, foot, 'system'); // 用 system 層級確保不會被蓋住
+    },
+
+    saveLiveStory: () => {
+        try {
+            const str = document.getElementById('live-story-editor').value;
+            const parsed = JSON.parse(str); // 測試 JSON 格式是否正確
+            
+            // 1. 更新當前記憶體中的節點
+            window.TempState.currentSceneNode = parsed;
+            
+            // 2. 如果你有一個全域劇本庫 (例如 window.GameConfig.Story 或 window.StoryData)，也一併更新
+            if (window.GameConfig && window.GameConfig.Story && parsed.id) {
+                window.GameConfig.Story[parsed.id] = parsed;
+            } else if (window.StoryData && parsed.id) {
+                window.StoryData[parsed.id] = parsed;
+            }
+
+            ui.modal.close('m-system');
+            act.toast("✅ 劇本已即時更新！");
+            
+            // 3. 強制重繪當前劇情畫面
+            if (window.storyView && window.storyView.render) {
+                // 清空文字與打字機計時器
+                window.TempState.deferredHtml = "";
+                const box = document.getElementById('story-content');
+                if(box) box.innerHTML = "";
+                
+                // 呼叫 StoryEngine 重新渲染該節點 (依照你的引擎名稱而定，若是 renderNode 就呼叫它)
+                if (window.StoryEngine && typeof window.StoryEngine.renderCurrentNode === 'function') {
+                    window.StoryEngine.renderCurrentNode();
+                } else if (window.StoryEngine && typeof window.StoryEngine.renderNode === 'function') {
+                    window.StoryEngine.renderNode(parsed);
+                } else {
+                    window.storyView.render();
+                }
+            }
+        } catch (e) {
+            act.toast("⚠️ JSON 格式錯誤，請檢查逗號或引號！");
+            console.error(e);
+        }
+    },
+
+    copyStoryJson: () => {
+        const str = document.getElementById('live-story-editor').value;
+        navigator.clipboard.writeText(str).then(() => act.toast("📋 已複製！請貼回 VS Code"));
+    },
+
     setMaxEnergy100: () => {
         const gs = window.GlobalState;
         if (!gs) return;
-        
-        gs.lv = 36; // 公式 30 + (36-1)*2 = 100
+        gs.lv = 36; 
         gs.exp = 0;
-        
-        // 順便補滿精力
         if (!gs.story) gs.story = {};
         gs.story.energy = 100;
-        
         act.save();
         act.toast("🔥 已設定為 Lv.36 (精力上限 100)");
-        
         if (window.view && view.updateHUD) view.updateHUD(gs);
     },
 
@@ -169,11 +233,7 @@ const DebugEngine = {
         if(window.act.renderSettings) act.renderSettings();
     },
 
-    // ============================================================
-    // Logic: 全系統診斷
-    // ============================================================
     runFullDiagnosis: async () => {
-        // ... (這裡將呼叫外部的詳細診斷腳本，或可直接整合下方代碼) ...
         alert("請使用 Console 執行更詳細的 [完整功能測試診斷代碼] 以獲得最佳報告。");
     },
 

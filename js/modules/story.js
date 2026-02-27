@@ -627,24 +627,23 @@ _handleNodeJump: function(opt, passed) {
     },
 
     _formatText: function(text) {
-        // 1. 旁白/內心戲 (灰色)
+        // 1. 旁白/內心戲 (使用設計系統的幽靈色，完美融入深色背景)
         if (/^[\(（].*[\)）]$/.test(text)) {
-            return `<div class="story-narrative" style="color:#aaa;">${text}</div>`;
+            return `<div class="story-narrative" style="color: var(--text-ghost);">${text}</div>`;
         }
 
-        // 2. 主角說話時 (金色)
+        // 2. 主角說話時 (使用設計系統的金色)
         if (text.includes("<b>你</b>：") || text.startsWith("你：")) {
-            return `<div class="story-dialogue" style="color:#ffd700;">${text}</div>`;
+            return `<div class="story-dialogue" style="color: var(--color-gold);">${text}</div>`;
         }
 
-        // 3. 「其他人」說話時 (淺藍色) 
-        // 你的 "<b>朋友的聲音</b>：「救命！...」" 會在這裡被捕捉到！
-        if (text.includes("：")) {
-            return `<div class="story-dialogue" style="color:#87ceeb;">${text}</div>`; 
+        // 3. 「其他人」說話時 (使用設計系統的資訊藍/柔和藍) 
+        if (text.includes("：")&&text.includes("「")) {
+            return `<div class="story-dialogue" style="color: var(--color-info-soft);">${text}</div>`; 
         }
 
-        // 4. 一般動作/描述 (白色預設)
-        return `<div class="story-action" style="color:#fff;">${text}</div>`;
+        // 4. 一般動作/描述 (★ 關鍵：不寫死 color，讓它自然使用你現在喜歡的預設米白色！)
+        return `<div class="story-action">${text}</div>`;
     },
 
     playDialogueChain: function(node) {
@@ -658,19 +657,23 @@ _handleNodeJump: function(opt, passed) {
              if (!d) return "";
              
              // 【防呆 2】如果不小心只寫了字串 (例如 "救命啊")，沒有包裝成物件
-             if (typeof d === 'string') return d; 
+             if (typeof d === 'string') return this._formatText(d); // ★ 記得這裡也要上色
              
              // 【防呆 3】如果物件裡漏寫了 text 屬性
              if (!d.text) {
-                 return `<b>${d.speaker || '未知'}</b>：(對話資料遺失)`;
+                 return this._formatText(`<b>${d.speaker || '未知'}</b>：(對話資料遺失)`);
              }
 
              // 安全讀取文字
              const txt = d.text[lang] || d.text['zh'] || (typeof d.text === 'string' ? d.text : '');
              const speaker = d.speaker;
              
-             // 組合名字與台詞 (確保這裡使用的是全形冒號「：」)
-             return (speaker === '旁白' || !speaker) ? `${txt}` : `<b>${speaker}</b>：${txt}`;
+             // 先組合出原本的文字 (包含名字與台詞)
+             const rawText = (speaker === '旁白' || !speaker) ? `${txt}` : `<b>${speaker}</b>：「${txt}」`;
+             
+             // ★ 【關鍵修復】：在存入 Queue 之前，直接呼叫 _formatText 進行上色！
+             // 這樣打字機拿到這段字的時候，就已經帶有 <div style="color:..."> 了
+             return this._formatText(rawText);
         });
         
         // 將對話轉為單一節點播放，結束後保留原有的 options
@@ -830,13 +833,31 @@ _handleNodeJump: function(opt, passed) {
     // 隨機鏈生成
     startRandomChain: function() {
         const gs = window.GlobalState;
-        // 這裡呼叫生成器
+        
+        // 🌟 [新增] 1. 初始化全域劇本歷史紀錄 (跨劇本記憶)
+        if (!gs.story.skeletonHistory) gs.story.skeletonHistory = [];
+
         if (window.StoryGenerator && window.StoryGenerator.initChain) {
-            // [Fix] 改回隨機，不再強制 mystery
-            const modes = ['mystery', 'horror', 'random'];
-            const randomMode = modes[Math.floor(Math.random() * modes.length)];
+            // 🌟 [修改] 2. 抓取所有可用的劇本骨架 (mystery, horror, adventure...)
+            const availableModes = Object.keys(window.StoryGenerator.skeletons);
+
+            // 🌟 [新增] 3. 過濾掉最近兩次抽過的骨架
+            let safeModes = availableModes.filter(m => !gs.story.skeletonHistory.includes(m));
+
+            // 防呆：如果你的總劇本數量很少(例如只有3個)，扣掉2個剩1個。如果少於等於2個會被扣光，這時退回全名單
+            if (safeModes.length === 0) safeModes = availableModes;
+
+            // 4. 從安全名單中隨機抽一個
+            const randomMode = safeModes[Math.floor(Math.random() * safeModes.length)];
+
+            // 🌟 [新增] 5. 更新歷史紀錄，將這次抽到的推進去，並保持最多記錄 2 筆
+            gs.story.skeletonHistory.push(randomMode);
+            if (gs.story.skeletonHistory.length > 2) {
+                gs.story.skeletonHistory.shift();
+            }
+
             gs.story.chain = window.StoryGenerator.initChain(randomMode);
-            console.log("🎲 隨機劇本啟動，模式:", randomMode);
+            console.log(`🎲 隨機劇本啟動，模式: [${randomMode}] | 歷史紀錄:`, gs.story.skeletonHistory);
         } else {
             gs.story.chain = { depth: 0, maxDepth: 5, history: [] };
         }

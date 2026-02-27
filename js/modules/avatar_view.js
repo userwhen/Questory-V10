@@ -1,25 +1,21 @@
-/* js/modules/avatar_view.js - V34.Final (Assets Linked & No Purple) */
+/* js/modules/avatar_view.js - V42.1 (Fix Overflow) */
 window.avatarView = {
-    // 1. 主頁面佈局
     render: function() {
         window.TempState.currentView = 'avatar';
         const container = document.getElementById('page-avatar');
         if (!container) return;
 
-        // [修改點 1] 移除紫色漸層，改為簡潔的淺灰或白色背景
-        container.innerHTML = `
-            <div style="position:relative; height:100%; display:flex; flex-direction:column;">
-                <div style="position:absolute; top:10px; right:10px; z-index:10;">
-                    ${ui.component.btn({ label:'↩ 返回', theme:'ghost', action:"act.navigate('main')" })}
-                </div>
-                
-                <div id="avatar-stage" style="flex:1; background:#f0f0f0; display:flex; align-items:center; justify-content:center; overflow:hidden;">
-                    </div>
+        const headerHtml = ui.layout.pageHeader('👗 更衣室', ui.component.btn({ label:'↩ 返回', theme:'ghost', size:'sm', action:"act.navigate('main')" }));
 
-                <div style="height:220px; background:#fff; border-top:1px solid #ddd; display:flex; flex-direction:column;">
-                    <div style="padding:10px 15px; font-weight:bold; color:#666; border-bottom:1px solid #eee;">衣櫃</div>
-                    <div id="wardrobe-list" style="flex:1; overflow-x:auto; display:flex; align-items:center; gap:15px; padding:0 15px;">
-                        </div>
+        // [修復] 加入 width:100%; overflow:hidden; 以及衣櫃的彈性高度
+        container.innerHTML = `
+            <div style="position:relative; width:100%; height:100%; display:flex; flex-direction:column; background:var(--bg-panel); overflow:hidden;">
+                ${headerHtml}
+                <div id="avatar-stage" style="flex:1; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative;"></div>
+                
+                <div style="height:35%; min-height:200px; flex-shrink:0; background:var(--bg-card); border-top:1px solid var(--border); display:flex; flex-direction:column; box-shadow:0 -4px 15px rgba(0,0,0,0.05); z-index:10;">
+                    <div style="flex-shrink:0; padding:12px 15px; font-weight:bold; color:var(--text-muted); border-bottom:1px solid var(--border-card);">我的衣櫃</div>
+                    <div id="wardrobe-list" style="flex:1; overflow-x:auto; display:flex; align-items:center; gap:12px; padding:0 15px;"></div>
                 </div>
             </div>
         `;
@@ -28,7 +24,6 @@ window.avatarView = {
         this.renderWardrobe();
     },
 
-    // 2. 渲染舞台立繪 (嫁接 Assets)
     renderStage: function() {
         const stage = document.getElementById('avatar-stage');
         if (!stage) return;
@@ -37,27 +32,24 @@ window.avatarView = {
         const gender = window.GlobalState.avatar?.gender || 'm';
         let imgHtml = '';
 
-        // [修改點 2] 判斷邏輯
         if (preview.suit) {
-            // A. 如果有穿「套裝 (Shop Item)」，讀取 img/ 資料夾
             const path = `img/${preview.suit}_${gender}.png`;
-            imgHtml = `<img src="${path}" style="height:90%; object-fit:contain; filter:drop-shadow(0 5px 10px rgba(0,0,0,0.1)); transition:transform 0.3s;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            imgHtml = `<img src="${path}" style="height:90%; object-fit:contain; filter:drop-shadow(0 8px 20px rgba(0,0,0,0.25)); transition:transform var(--t-base);" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                        <div style="display:none; font-size:5rem;">🦸</div>`;
         } else {
-            // B. 如果沒穿套裝（裸裝/預設），呼叫 Assets 模組取得基礎立繪
             if (window.Assets && window.Assets.getCharImgTag) {
-                // 這裡呼叫 assets.js 的方法
-                imgHtml = window.Assets.getCharImgTag('avatar-char-img', 'height:90%; object-fit:contain; filter:drop-shadow(0 5px 10px rgba(0,0,0,0.1));');
+                imgHtml = window.Assets.getCharImgTag('avatar-char-img', 'height:90%; object-fit:contain; filter:drop-shadow(0 8px 20px rgba(0,0,0,0.25));');
             } else {
-                // Fallback: 如果 Assets 模組沒載入
                 imgHtml = '<div style="font-size:6rem;">🧍</div>';
             }
         }
         
-        stage.innerHTML = imgHtml;
+        stage.innerHTML = `
+            <div style="position:absolute; width:70%; height:70%; background:radial-gradient(circle, rgba(255,255,255,0.7) 0%, transparent 60%); top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none;"></div>
+            ${imgHtml}
+        `;
     },
 
-    // 3. 渲染衣櫃列表 (修復版)
     renderWardrobe: function() {
         const list = document.getElementById('wardrobe-list');
         if (!list) return;
@@ -83,24 +75,22 @@ window.avatarView = {
             }
 
             const borderStyle = isPreviewing 
-                ? 'border: 2px solid #666; background: #e0e0e0;' 
-                : 'border: 1px solid #eee; background: #fff;';
+                ? 'border-color: var(--color-gold); background: var(--color-gold-soft); box-shadow: inset 0 0 0 1px var(--color-gold);' 
+                : 'border-color: var(--border); background: var(--bg-card);';
 
-            // 🟢 [關鍵修復] 補回這一行定義！沒有它就會報 ReferenceError
             const imgPath = `img/${item.id}_${gender}.png`;
 
             return `
-                <div class="avatar-card" style="min-width:110px; height:150px; border-radius:12px; display:flex; flex-direction:column; padding:10px; transition:0.2s; ${borderStyle}">
+                <div class="avatar-card" style="min-width:110px; height:165px; flex-shrink:0; border-radius:var(--radius-md); display:flex; flex-direction:column; padding:10px; transition:all var(--t-base); border: 1.5px solid transparent; ${borderStyle}">
                     <div onclick="act.previewAvatarItem('${item.id}')" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;">
-                        <img src="${imgPath}" style="height:60px; object-fit:contain;" onerror="this.style.display='none'; this.parentNode.innerHTML='<span style=\\'font-size:2rem\\'>👕</span>'">
-                        <div style="font-size:0.8rem; margin-top:5px; font-weight:bold; color:#555;">${item.name}</div>
+                        <img src="${imgPath}" style="height:65px; object-fit:contain; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.1));" onerror="this.style.display='none'; this.parentNode.innerHTML='<span style=\\'font-size:2.5rem\\'>👕</span>'">
+                        <div style="font-size:0.8rem; margin-top:8px; font-weight:bold; color:var(--text-2); text-align:center;">${item.name}</div>
                     </div>
-                    ${ui.component.btn({ 
-                        label: btn.label, theme: btn.theme, size: 'sm', 
-                        action: btn.action, disabled: btn.disabled, style: 'width:100%;' 
-                    })}
+                    <div style="margin-top:5px; width:100%;">
+                        ${ui.component.btn({ label: btn.label, theme: btn.theme, size: 'sm', action: btn.action, disabled: btn.disabled, style: 'width:100%;' })}
+                    </div>
                 </div>
             `;
-        }).join('');
+        }).join('') || ui.layout.empty('衣櫃空空如也', '👕');
     }
 };

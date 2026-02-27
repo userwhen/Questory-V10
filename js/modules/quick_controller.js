@@ -1,5 +1,5 @@
 /* js/modules/quick_controller.js - V39.1 Clears Draft & Fixes Race Condition */
-window.quickController = {
+window.QuickController = {
     init: function() {
         // 註冊到 act
         Object.assign(window.act, {
@@ -25,7 +25,7 @@ window.quickController = {
 
                 // 1. 解析內容
                 // [注意] 這裡要呼叫自己 (window.quickController)
-                const parsedData = window.quickController.parseText(text);
+                const parsedData = window.QuickController.parseText(text);
 
                 if (!parsedData.title) {
                     // 如果解析失敗，保留內容讓使用者修改

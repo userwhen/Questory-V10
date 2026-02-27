@@ -83,7 +83,6 @@ window.StoryGenerator = {
             },
             actors: ['detective', 'victim', 'suspect_A', 'suspect_B', 'noun_npc_generic'], 
             baseTension: 10,
-            // 🌟 新版宣告法：懸疑劇本
             flow: {
                 isSequential: false, // 隨機模式
                 start: ['mystery_setup'],
@@ -100,7 +99,6 @@ window.StoryGenerator = {
             },
             actors: ['survivor', 'noun_monster', 'noun_location_building'], 
             baseTension: 30,
-            // 🌟 新版宣告法：恐怖劇本
             flow: {
                 isSequential: false, 
                 start: ['setup_omen'],
@@ -130,7 +128,6 @@ window.StoryGenerator = {
         'romance': {
              actors: ['lover', 'rival', 'noun_npc_generic'], 
              baseTension: 5,
-             // 🌟 新版宣告法：戀愛劇本 (注意是循序模式！)
              flow: {
                  isSequential: true, // 循序漸進模式
                  start: ['love_meet'],
@@ -325,9 +322,9 @@ initChain: function(skeletonKey = null, themeTag = null) {
         // 7. 記錄歷史 (避免重複)
         if (template.id) {
             chain.history.push(template.id);
-            if (chain.history.length > 5) chain.history.shift();
+            // 🌟 [修改] 確保只記錄最近的 2 次 (原本是 5 次，依你需求精準改為 2 次)
+            if (chain.history.length > 2) chain.history.shift();
         }
-
         // 8. 填充內容 (Fill Content)
         const filledData = this.fillTemplate(template, lang, chain.memory);
 
@@ -569,8 +566,6 @@ initChain: function(skeletonKey = null, themeTag = null) {
     if (finalPool.length === 0) {
         console.warn(`⚠️ [${type}] 無可用劇本 (Tags不符或耗盡)。啟動備案機制...`);
 
-        // 情境 A: 關鍵劇情 (Boss, Ending, Setup) -> 不能隨便略過
-        // 強制放寬條件：回頭去拿原始 candidates 的第一張，無視 Tag/History
         const isCritical = type.includes('setup') || type.includes('boss') || type.includes('ending') || type.includes('climax');
         
         if (isCritical) {
@@ -578,31 +573,29 @@ initChain: function(skeletonKey = null, themeTag = null) {
                 console.warn(`🚨 強制執行關鍵劇情: ${candidates[0].id}`);
                 return candidates[0];
             } else {
-                // 連原始候選都沒有，這通常是打錯字，或者該類型還沒寫
-                console.error(`❌ 致命錯誤: 資料庫完全沒有類型為 [${type}] 的劇本！`);
-                // 死馬當活馬醫，回傳通用填充，避免 crash
                 return db.templates.find(t => t.type === 'univ_filler') || null;
             }
         }
 
-        // 情境 B: 非關鍵劇情 (Investigate, Event) -> 轉為通用填充 (Filler)
-        // 這是您提到的「從通用劇本拿一個來用」
         console.log(`🔄 切換至通用填充 (Universal Filler)`);
-        
-        // 嘗試找 univ_filler
         let fillers = db.templates.filter(t => t.type === 'univ_filler');
         
-        // 如果是「高張力/危險」狀態，優先找危險 filler
+        // 🌟 [關鍵修復] 讓通用 Filler 也遵守歷史紀錄，避免連續抽到同一個 uni_env_danger！
+        let safeFillers = fillers.filter(t => !history.includes(t.id));
+
         if (tension > 50 || currentTags.includes('risk_high')) {
-            let dangerFillers = fillers.filter(t => t.conditions && t.conditions.risk_high);
-            if (dangerFillers.length > 0) fillers = dangerFillers;
+            let dangerFillers = safeFillers.filter(t => t.conditions && t.conditions.risk_high);
+            if (dangerFillers.length > 0) safeFillers = dangerFillers;
         }
 
-        if (fillers.length > 0) {
+        // 優先從過濾過歷史的「安全牌庫」抽
+        if (safeFillers.length > 0) {
+            return safeFillers[Math.floor(Math.random() * safeFillers.length)];
+        } else if (fillers.length > 0) {
+            // 防呆：如果牌真的太少，安全牌庫空了，只好無視歷史硬抽一張 (總比系統 crash 好)
             return fillers[Math.floor(Math.random() * fillers.length)];
         }
         
-        // 真的什麼都沒有了，回傳 null 讓 generate 處理
         return null;
     }
 
