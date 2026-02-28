@@ -104,31 +104,6 @@ window.MainController = {
     init: function() {
         if (!window.EventBus) return;
 
-        // ============================================================
-        // [新增] 導航攔截器 (Navigation Guard)
-        // 解決 Basic 模式按返回鍵誤入大廳的問題
-        // ============================================================
-        if (window.act && window.act.navigate) {
-            const originalNavigate = window.act.navigate;
-            
-            // 覆寫導航行為
-            window.act.navigate = function(targetPage) {
-                const gs = window.GlobalState;
-                
-                // 邏輯：如果是基礎模式，且目標是 'main' (大廳)，強制導向 'stats'
-                if (gs && gs.settings && gs.settings.mode === 'basic') {
-                    if (targetPage === 'main') {
-                        console.log("🛡️ [Basic Mode] 攔截大廳導航，停留在 Stats");
-                        targetPage = 'stats'; // 強制重導向
-                    }
-                }
-                
-                // 執行原本的導航
-                originalNavigate(targetPage);
-            };
-        }
-        // ============================================================
-
         // 監聽導航：負責全域 UI 的持續渲染
         window.EventBus.on(window.EVENTS.System.NAVIGATE, (pageId) => {
             

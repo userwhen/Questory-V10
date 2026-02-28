@@ -4,567 +4,382 @@
     const DB = window.FragmentDB;
 
     Object.assign(DB.fragments, {
-    // ============================================================
-    // 🧱 [Layer 0] 原子詞彙 (Atomic Words) - 完全脫水，不帶「的」
-    // ============================================================
-    
-    // 👤 人物/生物基礎
-    atom_person: [ { val: "男子" }, { val: "女子" }, { val: "老人" }, { val: "小孩" }, { val: "人影" }, { val: "青年" }, { val: "少女" }, { val: "壯漢" }, { val: "婦人" }, { val: "旅人" }, { val: "路人" }, { val: "陌生人" }, { val: "流浪者" }, { val: "乞丐" }, { val: "村民" }, { val: "信使" }, { val: "僕從" }, { val: "傷者" }, { val: "倖存者" }, { val: "目擊者" }, { val: "訪客" }, { val: "囚犯" }, { val: "逃亡者" }, { val: "生還者" }, { val: "無名者" }, { val: "黑影" }, { val: "身影" } ],
-
-atom_title: [ { val: "大亨" }, { val: "守衛" }, { val: "管家" }, { val: "寡婦" }, { val: "偵探" }, { val: "會長" }, { val: "貴族" }, { val: "騎士" }, { val: "王子" }, { val: "公主" }, { val: "領主" }, { val: "城主" }, { val: "祭司" }, { val: "主教" }, { val: "修女" }, { val: "刺客" }, { val: "傭兵" }, { val: "獵人" }, { val: "法師" }, { val: "術士" }, { val: "學者" }, { val: "教授" }, { val: "醫生" }, { val: "藥師" }, { val: "船長" }, { val: "提督" }, { val: "將軍" }, { val: "軍官" }, { val: "密探" }, { val: "間諜" }, { val: "叛徒" }, { val: "繼承人" }, { val: "監護人" }, { val: "代理人" }, { val: "審判官" }, { val: "典獄長" }, { val: "賢者" }, { val: "先知" }, { val: "占卜師" } ],
-
-atom_monster: [ { val: "野狼" }, { val: "機械人偶" }, { val: "蝙蝠" }, { val: "史萊姆" }, { val: "怨靈" }, { val: "巨狼" }, { val: "魔狼" }, { val: "殭屍" }, { val: "骷髏" }, { val: "食屍鬼" }, { val: "幽靈" }, { val: "惡靈" }, { val: "鬼魂" }, { val: "妖怪" }, { val: "魔物" }, { val: "怪物" }, { val: "異形" }, { val: "變異體" }, { val: "寄生獸" }, { val: "觸手怪" }, { val: "巨蛛" }, { val: "魔像" }, { val: "石像鬼" }, { val: "人偶" }, { val: "詛咒人偶" }, { val: "傀儡" }, { val: "機械守衛" }, { val: "自動機兵" }, { val: "龍" }, { val: "幼龍" }, { val: "魔龍" }, { val: "飛龍" }, { val: "吸血鬼" }, { val: "狼人" }, { val: "夢魘" }, { val: "影魔" } ],
-    
-    // 🏷️ 人物/生物修飾 (脫水版)
-
-atom_age: [ {val:""}, { val: "年輕" }, { val: "年邁" }, { val: "稚嫩" }, { val: "幼小" }, { val: "成熟" }, { val: "中年" }, { val: "蒼老" }, { val: "古老",tag:"ancient" }, { val: "不朽" }, { val: "永恆" }, { val: "新生" } ],
-
-atom_status: [ {val:""}, { val: "制服" }, { val: "失控" }, { val: "神祕" }, { val: "古代" ,tag:"ancient"}, { val: "重傷" }, { val: "落魄" }, { val: "受傷" }, { val: "虛弱" }, { val: "疲憊" }, { val: "染血" }, { val: "破碎" }, { val: "腐敗" }, { val: "墮落" }, { val: "覺醒" }, { val: "沉睡" }, { val: "甦醒" }, { val: "隱藏" }, { val: "被遺忘" }, { val: "被詛咒" }, { val: "狂暴" }, { val: "異化" }, { val: "變異" }, { val: "侵蝕" }, { val: "封印" } ],
-
-atom_domain: [ {val:""}, { val: "珠寶" }, { val: "石油" }, { val: "科技" }, { val: "魔法" }, { val: "地下" }, { val: "金融" }, { val: "軍事" }, { val: "醫療" }, { val: "學術" }, { val: "宗教" }, { val: "王室" }, { val: "黑市" }, { val: "犯罪" }, { val: "影子" }, { val: "深海" }, { val: "森林" }, { val: "沙漠" }, { val: "虛空" }, { val: "異界" }, { val: "夢境" }, { val: "機械" }, { val: "血族" }, { val: "亡靈" }, { val: "禁忌" } ],
-
-atom_manner: [ {val:""}, { val: "驚恐" }, { val: "奮不顧身" }, { val: "張牙舞爪" }, { val: "冷靜" }, { val: "興奮" }, { val: "顫抖" }, { val: "絕望" }, { val: "麻木" }, { val: "狂笑" }, { val: "低語" }, { val: "咆哮" }, { val: "潛伏" }, { val: "徘徊" }, { val: "凝視" }, { val: "追逐" }, { val: "逃竄" }, { val: "掙扎" }, { val: "守望" }, { val: "盤踞" }, { val: "俯視" }, { val: "飢餓" }, { val: "渴望" }, { val: "敵視" }, { val: "警戒" } ],
-
-    // ⚔️ 物品基礎 (脫水版)
-
-atom_mat: [ {val:""}, { val: "黃銅" }, { val: "純銀" }, { val: "生鏽" }, { val: "皮革" }, { val: "骨製" }, { val: "鐵製" }, { val: "鋼製" }, { val: "木製" }, { val: "青銅" }, { val: "黑鐵" }, { val: "水晶" }, { val: "玻璃" }, { val: "玉石" }, { val: "黑曜石" }, { val: "象牙" }, { val: "石製" }, { val: "鍍金" }, { val: "秘銀" }, { val: "隕鐵" }, { val: "機械" }, { val: "齒輪" }, { val: "異界" }, { val: "不明材質" }, { val: "血肉" }, { val: "骸骨" } ],
-
-atom_item_state: [ {val:""}, { val: "破碎" }, { val: "染血" }, { val: "精緻" }, { val: "發光" }, { val: "陳舊" }, { val: "完整" }, { val: "磨損" }, { val: "斑駁" }, { val: "腐蝕" }, { val: "裂開" }, { val: "扭曲" }, { val: "變形" }, { val: "燒焦" }, { val: "冰冷" }, { val: "溫熱" }, { val: "顫動" }, { val: "脈動" }, { val: "低鳴" }, { val: "封印" }, { val: "破封" }, { val: "被遺棄" }, { val: "遺失" }, { val: "詛咒" }, { val: "異化" }, { val: "不穩定" } ],
-
-atom_item_name: [ { val: "懷錶" }, { val: "提燈" }, { val: "鑰匙" }, { val: "日記本" }, { val: "匕首" }, { val: "手斧" }, { val: "戒指" }, { val: "項鍊" }, { val: "護符" }, { val: "徽章" }, { val: "面具" }, { val: "斗篷" }, { val: "帽子" }, { val: "手套" }, { val: "靴子" }, { val: "卷軸" }, { val: "書籍" }, { val: "筆記" }, { val: "信件" }, { val: "地圖" }, { val: "羅盤" }, { val: "懷錶" }, { val: "懷鏡" }, { val: "鏡子" }, { val: "瓶子" }, { val: "藥瓶" }, { val: "寶石" }, { val: "箱子" }, { val: "盒子" }, { val: "鎖鏈" }, { val: "鈴鐺" }, { val: "人偶" }, { val: "雕像" }, { val: "頭骨" }, { val: "骨片" }, { val: "羽毛" }, { val: "硬幣" }, { val: "王冠" }, { val: "權杖" }, { val: "短劍" }, { val: "長劍" } ],
-	
-	// ⚔️ 物品進階分類 (脫水版)
-
-atom_item_type: [ {val:""}, { val: "武器" }, { val: "工具" }, { val: "文件" }, { val: "書籍" }, { val: "飾品" }, { val: "容器" }, { val: "裝置" }, { val: "儀器" }, { val: "機械" }, { val: "零件" }, { val: "遺物" }, { val: "古物" }, { val: "信物" }, { val: "護符" }, { val: "媒介" }, { val: "祭品" }, { val: "收藏品" }, { val: "鑰物" }, { val: "證物" } ],
-
-atom_item_origin: [ {val:""}, { val: "王室" }, { val: "貴族" }, { val: "教會" }, { val: "軍方" }, { val: "古代" }, { val: "遠古" }, { val: "失落文明" }, { val: "地下" }, { val: "黑市" }, { val: "異界" }, { val: "深海" }, { val: "森林" }, { val: "沙漠" }, { val: "遺跡" }, { val: "實驗室" }, { val: "工坊" }, { val: "戰場" }, { val: "墓地" }, { val: "禁忌儀式" }, { val: "不明來源" }, { val: "夢境" }, { val: "虛空" } ],
-
-atom_item_power: [ {val:""}, { val: "封印靈魂" }, { val: "吸收生命" }, { val: "釋放能量" }, { val: "引導魔力" }, { val: "強化持有者" }, { val: "治癒傷口" }, { val: "帶來詛咒" }, { val: "引發幻覺" }, { val: "操控心智" }, { val: "召喚存在" }, { val: "驅散亡靈" }, { val: "開啟通道" }, { val: "預示未來" }, { val: "隱藏自身" }, { val: "改變形態" }, { val: "吞噬能量" }, { val: "連結意識" }, { val: "記錄記憶" }, { val: "回應呼喚" }, { val: "選擇持有者" } ],
-	
-    // ✋ 互動動詞
-
-verb_equip: [ { val: "把玩著" }, { val: "緊握著" }, { val: "攜帶著" }, { val: "凝視著" }, { val: "隱藏著" }, { val: "握著" }, { val: "抓著" }, { val: "持有著" }, { val: "佩戴著" }, { val: "收藏著" }, { val: "守護著" }, { val: "檢查著" }, { val: "撫摸著" }, { val: "摩挲著" }, { val: "舉起" }, { val: "放下" }, { val: "收起" }, { val: "遺落" }, { val: "發現" }, { val: "拾起" } ],
-
-
-// 🏰 地點與建築
-
-atom_building: [ { val: "別墅" }, { val: "醫院" }, { val: "郵輪" }, { val: "教堂" }, { val: "學院" }, { val: "莊園" }, { val: "宅邸" }, { val: "公寓" }, { val: "孤兒院" }, { val: "療養院" }, { val: "監獄" }, { val: "燈塔" }, { val: "車站" }, { val: "旅館" }, { val: "酒吧" }, { val: "劇院" }, { val: "博物館" }, { val: "研究所" }, { val: "工廠" }, { val: "倉庫" }, { val: "神殿" }, { val: "堡壘" }, { val: "塔樓" } ],
-
-atom_room: [ { val: "大廳" }, { val: "地下室" }, { val: "圖書館" }, { val: "手術室" }, { val: "宴會廳" }, { val: "走廊" }, { val: "房間" }, { val: "臥室" }, { val: "書房" }, { val: "辦公室" }, { val: "密室" }, { val: "儲藏室" }, { val: "牢房" }, { val: "閣樓" }, { val: "浴室" }, { val: "控制室" }, { val: "觀察室" }, { val: "祭壇室" }, { val: "實驗室" }, { val: "通道" } ],
-
-atom_env_adj: [ {val:""}, { val: "廢棄" }, { val: "豪華" }, { val: "古老" }, { val: "陰暗" }, { val: "血跡斑斑" }, { val: "破敗" }, { val: "荒涼" }, { val: "寂靜" }, { val: "陰森" }, { val: "封閉" }, { val: "隱密" }, { val: "潮濕" }, { val: "腐朽" }, { val: "華麗" }, { val: "神祕" }, { val: "詭異" } ],
-
-
-// 🌬️ 環境與感官
-
-atom_light: [ { val: "燭光" }, { val: "閃電" }, { val: "月光" }, { val: "霓虹燈" }, { val: "火光" }, { val: "微光" }, { val: "昏暗燈光" }, { val: "冷光" }, { val: "白光" }, { val: "紅光" }, { val: "閃爍燈光" }, { val: "搖曳火光" }, { val: "殘光" }, { val: "陰影" } ],
-
-atom_sound: [ { val: "水滴聲" }, { val: "急促的腳步聲" }, { val: "老鼠的吱吱聲" }, { val: "詭異的低語" }, { val: "敲擊聲" }, { val: "摩擦聲" }, { val: "金屬聲" }, { val: "喘息聲" }, { val: "哭聲" }, { val: "笑聲" }, { val: "尖叫聲" }, { val: "低沉聲音" }, { val: "風聲" }, { val: "心跳聲" }, { val: "鎖鏈聲" } ],
-
-atom_smell: [ { val: "霉味" }, { val: "鐵鏽味" }, { val: "濃烈的血腥味" }, { val: "廉價香水味" }, { val: "腐臭味" }, { val: "焦味" }, { val: "煙味" }, { val: "藥味" }, { val: "潮濕氣味" }, { val: "腐爛氣味" }, { val: "灰塵味" }, { val: "燒焦氣味" }, { val: "油味" } ],
-
-atom_feature: [ { val: "角落" }, { val: "天花板" }, { val: "地板縫隙" }, { val: "破碎的窗戶" }, { val: "帷幕後方" }, { val: "陰影中" }, { val: "牆壁上" }, { val: "門後" }, { val: "樓梯下方" }, { val: "桌面上" }, { val: "鏡子裡" }, { val: "黑暗中" }, { val: "深處" }, { val: "入口處" } ],
-
-
-// ⏳ 時間感
-
-atom_time: [ { val: "瞬間" }, { val: "緩慢" }, { val: "一時" }, { val: "片刻" }, { val: "漸漸" }, { val: "突然" }, { val: "不久" }, { val: "很快" }, { val: "隨後" }, { val: "當下" }, { val: "此刻" }, { val: "那一刻" }, { val: "同時" }, { val: "最終" } ],
-
-
-// 🌧️ 天氣
-
-atom_weather: [ { val: "狂風" }, { val: "暖風" }, { val: "豔陽" }, { val: "風雪" }, { val: "悶熱" }, { val: "暴雨" }, { val: "細雨" }, { val: "雷雨" }, { val: "濃霧" }, { val: "寒風" }, { val: "陰雨" }, { val: "暴風" }, { val: "霧氣" }, { val: "雷電" } ],
-    // ============================================================
-    // 🧬 [Layer 1] 分子組合層 (Composite Words) - 拼裝脫水詞彙
-    // ============================================================
-
-    // 🏰 組合地點
-
-combo_building: [
-{ val: "{atom_env_adj}{atom_building}" },
-{ val: "{atom_weather}{atom_building}" },          // 暴雨教堂
-{ val: "{atom_env_adj}{atom_weather}{atom_building}" }, // 廢棄暴雨醫院
-{ val: "{atom_light}{atom_building}" },            // 月光莊園
-{ val: "{atom_env_adj}{atom_light}{atom_building}" } // 陰森燭光教堂
-],
-
-combo_room: [
-{ val: "{atom_env_adj}{atom_room}" },
-{ val: "{atom_light}{atom_room}" },                // 燭光地下室
-{ val: "{atom_env_adj}{atom_light}{atom_room}" },  // 陰暗月光走廊
-{ val: "{atom_sound}{atom_room}" },                // 低語走廊
-{ val: "{atom_env_adj}{atom_sound}{atom_room}" }   // 廢棄低語地下室
-],
-
-combo_feature: [
-{ val: "{atom_env_adj}{atom_feature}" },
-{ val: "{atom_light}{atom_feature}" },             // 月光窗戶
-{ val: "{atom_env_adj}{atom_light}{atom_feature}" },
-{ val: "{atom_sound}{atom_feature}" },             // 低語角落
-{ val: "{atom_env_adj}{atom_sound}{atom_feature}" }
-],
-
-
-// 🌬️ 完整場景節點
-
-combo_location: [
-
-{ val: "{combo_building}" },
-
-{ val: "{combo_building}{combo_room}" },
-
-{ val: "{combo_building}{combo_room}{combo_feature}" },
-
-{ val: "{combo_room}" },
-
-{ val: "{combo_room}{combo_feature}" }
-
-],
-
-
-// 🌫️ 環境氣氛
-
-combo_atmosphere: [
-
-{ val: "{atom_smell}" },
-
-{ val: "{atom_sound}" },
-
-{ val: "{atom_light}" },
-
-{ val: "{atom_weather}" },
-
-{ val: "{atom_weather}{atom_building}" }
-
-],
-
-// ⚔️ 組合物品 (無「的」直連)
-
-combo_item: [
-    { val: "{atom_mat}{atom_item_name}" },
-    { val: "{atom_item_state}{atom_item_name}" },
-
-    { val: "{atom_item_origin}{atom_item_name}" },     // 王室戒指
-    { val: "{atom_item_power}{atom_item_name}" },      // 封印靈魂戒指
-
-    { val: "{atom_mat}{atom_item_state}{atom_item_name}" }, // 黃銅染血匕首
-    { val: "{atom_item_state}{atom_mat}{atom_item_name}" }, // 染血純銀戒指
-
-    { val: "{atom_item_origin}{atom_mat}{atom_item_name}" }, // 王室純銀項鍊
-    { val: "{atom_item_power}{atom_mat}{atom_item_name}" },  // 吸收生命骨製匕首
-
-    { val: "{atom_item_state}{atom_item_origin}{atom_item_name}" }, // 破碎古代雕像
-
-    { val: "{atom_item_origin}{atom_item_power}{atom_item_name}" } // 異界封印靈魂護符
-],
-
-
-// 👤 基礎人物 / 怪物
-
-combo_person_basic: [
-    { val: "{atom_age}{atom_person}" },
-    { val: "{atom_status}{atom_person}" },
-    { val: "{atom_status}{atom_monster}" },
-
-    { val: "{atom_age}{atom_status}{atom_person}" },       // 年輕重傷男子
-    { val: "{atom_status}{atom_age}{atom_person}" },       // 重傷年輕男子
-
-    { val: "{atom_domain}{atom_person}" },                 // 地下男子
-    { val: "{atom_domain}{atom_monster}" },                // 深海狼人
-
-    { val: "{atom_status}{atom_domain}{atom_person}" },    // 落魄地下男子
-    { val: "{atom_status}{atom_domain}{atom_monster}" }    // 異化深海怪物
-],
-
-
-// 👑 有頭銜人物
-
-combo_person_titled: [
-    { val: "{atom_domain}{atom_title}" },
-    { val: "{atom_status}{atom_title}" },
-
-    { val: "{atom_age}{atom_title}" },                    // 年邁騎士
-    { val: "{atom_status}{atom_domain}{atom_title}" },    // 墮落教會祭司
-
-    { val: "{atom_domain}{atom_age}{atom_title}" },       // 王室年邁領主
-
-    { val: "{atom_status}{atom_age}{atom_title}" },       // 重傷年邁騎士
-
-    { val: "{atom_status}{atom_domain}{atom_age}{atom_title}" } // 墮落王室年邁祭司
-],
-
-
-// 👁️ 完整角色（最高敘事密度）
-
-combo_person_full: [
-
-    { val: "{atom_manner}{combo_person_basic}" },   // 驚恐制服男子
-
-    { val: "{atom_manner}{combo_person_titled}" },  // 冷靜王室騎士
-
-    { val: "{atom_status}{atom_manner}{atom_person}" }, // 重傷逃竄男子
-
-    { val: "{atom_status}{atom_manner}{atom_monster}" }, // 狂暴咆哮狼人
-
-    { val: "{atom_manner}{atom_domain}{atom_title}" }, // 潛伏地下刺客
-
-    { val: "{atom_manner}{atom_status}{atom_title}" } // 低語墮落祭司
-],
-
-
-// 🐉 怪物強化專用
-
-combo_monster_elite: [
-
-    { val: "{atom_age}{atom_monster}" },           // 古老狼人
-
-    { val: "{atom_domain}{atom_monster}" },        // 深海怪物
-
-    { val: "{atom_status}{atom_monster}" },        // 異化怪物
-
-    { val: "{atom_status}{atom_domain}{atom_monster}" }, // 墮落深海狼人
-
-    { val: "{atom_manner}{atom_monster}" },        // 咆哮狼人
-
-    { val: "{atom_manner}{atom_status}{atom_monster}" } // 狂笑異化怪物
-],
-
-    // ============================================================
-// 🌟 [Layer 2] 複雜句型層 強化擴充版
-// ============================================================
-
-
-// 👤 持有物品的人物（核心角色模板）
-
-combo_person_with_item: [
-
-{ val: "{verb_equip}{combo_item}的{combo_person_basic}" },
-{ val: "{verb_equip}{combo_item}的{combo_person_titled}" },
-
-{ val: "{combo_person_basic}{verb_equip}{combo_item}" },
-{ val: "{combo_person_titled}{verb_equip}{combo_item}" },
-
-{ val: "{combo_person_basic}手中{verb_equip}{combo_item}" },
-{ val: "{combo_person_titled}手中{verb_equip}{combo_item}" },
-
-{ val: "{combo_person_basic}悄悄{verb_equip}{combo_item}" },
-
-{ val: "{combo_person_basic}始終{verb_equip}{combo_item}" }
-
-],
-
-
-// 👑 具有身份的人物
-
-combo_person_with_title: [
-
-{ val: "身為{combo_person_titled}的{combo_person_basic}" },
-{ val: "{combo_person_basic}" },
-
-],
-
-
-// 🏰 位於地點的人物
-
-combo_person_in_location: [
-
-{ val: "{combo_person_basic}站在{combo_location}" },
-
-{ val: "{combo_person_basic}徘徊於{combo_location}" },
-
-{ val: "{combo_person_basic}潛伏在{combo_location}" },
-
-{ val: "{combo_person_basic}出現在{combo_location}" },
-
-{ val: "{combo_person_basic}被困在{combo_location}" },
-
-{ val: "{combo_person_with_item}站在{combo_location}" },
-
-{ val: "{combo_person_with_item}潛伏於{combo_location}" }
-
-],
-
-
-// ⚔️ 人物 + 地點 + 物品（完整核心句）
-
-combo_person_item_location: [
-
-{ val: "{combo_person_with_item}站在{combo_location}" },
-
-{ val: "{combo_person_with_item}徘徊於{combo_location}" },
-
-{ val: "{combo_person_with_item}潛伏於{combo_location}" },
-
-{ val: "{combo_person_basic}在{combo_location}{verb_equip}{combo_item}" },
-
-{ val: "{combo_person_titled}在{combo_location}{verb_equip}{combo_item}" }
-
-],
-
-
-// 🌫️ 環境氣氛（強化版）
-
-sentence_env_vibe: [
-
-{ val: "空氣中瀰漫著{atom_smell}" },
-
-{ val: "遠處不時傳來{atom_sound}" },
-
-{ val: "{atom_light}照耀著四周" },
-
-{ val: "{atom_light}下的影子不停晃動" },
-
-{ val: "{atom_weather}拍打著建築外牆" },
-
-{ val: "黑暗中傳來{atom_sound}" },
-
-{ val: "{atom_feature}散發出{atom_smell}" },
-
-{ val: "{atom_light}讓一切顯得格外詭異" },
-
-{ val: "四周充滿{atom_smell}" },
-
-{ val: "{atom_sound}在空間裡迴盪" }
-
-],
-
-
-// 🧠 感知句型（讓角色「活起來」）
-
-sentence_perception: [
-
-{ val: "{combo_person_basic}聽見{atom_sound}" },
-
-{ val: "{combo_person_basic}聞到{atom_smell}" },
-
-{ val: "{combo_person_basic}看見{combo_feature}" },
-
-{ val: "{combo_person_basic}注意到{combo_item}" },
-
-{ val: "{combo_person_with_item}察覺異樣" },
-
-{ val: "{combo_person_basic}感受到不安" }
-
-],
-
-
-// ⚡ 事件觸發句型
-
-sentence_event: [
-
-{ val: "{atom_time}，{combo_person_basic}停止動作" },
-
-{ val: "{atom_time}，{combo_person_basic}轉過頭" },
-
-{ val: "{atom_time}，{atom_sound}突然響起" },
-
-{ val: "{atom_time}，{combo_item}開始顫動" },
-
-{ val: "{atom_time}，{atom_light}閃爍" },
-
-{ val: "{atom_time}，一切陷入寂靜" }
-
-],
-
-
-// 🎬 完整場景句（電影級）
-
-sentence_full_scene: [
-
-{ val: "{combo_person_item_location}" },
-
-{ val: "{combo_person_item_location}，{sentence_env_vibe}" },
-
-{ val: "{combo_person_item_location}，{sentence_perception}" },
-
-{ val: "{sentence_env_vibe}，{combo_person_item_location}" },
-
-{ val: "{sentence_env_vibe}，{sentence_perception}" },
-
-{ val: "{combo_person_item_location}，{sentence_event}" }
-
-],
-
-    // ============================================================
-    // 📦 [Layer 3] 統整匯出池 (Global Pools)
-    // ============================================================
-    
-    noun_npc: [
-        { val: "{combo_person_basic}" },       // 年輕女子
-        { val: "{combo_person_titled}" },      // 石油大亨
-        { val: "{combo_person_with_item}" },   // 緊握著染血匕首的管家
-        { val: "{combo_person_with_title}" }   // 身為古代貴族的失控男子
-    ],
-
-    noun_monster: [
-        { val: "{combo_person_basic}" } 
-    ],
-
-    // ============================================================
-    // 🔗 [Layer 4] 舊版劇本相容性轉接層 (Backward Compatibility)
-    // ============================================================
-    
-    // 【人物轉接】
-    base_npc_id: [ { val: "{noun_npc}" } ], 
-    noun_npc_generic: [ { val: "{noun_npc}" } ],
-    adj_npc_trait: [ { val: "看起來" }, { val: "神情緊張的" }, { val: "" } ],
-
-    // 【場景與環境轉接】
-    noun_location_building: [ { val: "{combo_building}" } ],
-    noun_location_room: [ { val: "{combo_room}" } ],
-    noun_env_feature: [ { val: "{combo_feature}" }, { val: "{atom_feature}" } ],
-    
-    // 【環境氛圍轉接】
-    adj_env_vibe: [ 
-        { val: "瀰漫著{atom_smell}的" }, 
-        { val: "被{atom_light}籠罩的" },
-        { val: "死寂得令人發毛的" }
-    ],
-
-    // 【物品轉接】
-    noun_item_common: [ { val: "{combo_item}" } ],
-    noun_item_weapon: [ { val: "{combo_item}" } ],
-    noun_item_record: [ { val: "神秘日記本" }, { val: "染血合約" } ],
-    adj_item_look: [ { val: "破舊的" }, { val: "詭異的" } ], // 舊版修飾語
-
-    // 【感官轉接】
-    base_env_sound: [ { val: "{atom_sound}" } ],
-    base_env_light: [ { val: "{atom_light}" } ],
-    pattern_look_around: [
-        { val: "你環顧四周，這裡{sentence_env_vibe}。" },
-        { val: "四周一片死寂，只有{atom_sound}迴盪著。" }
-    ],
-    pattern_enemy_appear: [
-        { val: "突然，一隻{noun_monster}從{atom_feature}竄了出來！" }
-    ],
-
-    // 【演員記憶專用】
-    detective: [ { val: "{noun_npc}" } ],
-    victim: [ { val: "{noun_npc}" } ],
-    suspect_A: [ { val: "{noun_npc}" } ], 
-    suspect_B: [ { val: "{noun_npc}" } ],
-    survivor: [ { val: "{noun_npc}" } ],
-    lover: [ { val: "{noun_npc}" } ], 
-    rival: [ { val: "{noun_npc}" } ],
-    trainee: [ { val: "{noun_npc}" } ],
-	
 	// ============================================================
-    // 🎭 [Layer 5] 動態句型庫 (Dynamic Phrase Library) - 支援無限嵌套
+    // 🧱 [Layer 0] 語法化原子詞彙與動態種子庫 (V5 終極整合版)
+    // ============================================================
+        // 🌟【1. 動態種子庫 (Dynamic Seeds)】- 供 story_generator.js 引擎開局抽取
+        // ------------------------------------------------------------
+        global_player_trait: [
+            { val: "幸運的", tag: "trait_lucky" }, { val: "倒楣的", tag: "trait_unlucky" },
+            { val: "富有的", tag: "trait_rich" }, { val: "貧窮的", tag: "trait_poor" },
+            { val: "直覺敏銳的", tag: "trait_sharp" }
+        ],
+        global_world_vibe: [
+            { val: "戰亂", tag: "war" }, { val: "和平", tag: "peace" },
+            { val: "魔法復甦", tag: "magic" }, { val: "古老文明", tag: "ancient" }
+        ],
+        env_weather: [ 
+            { val: "暴風雨", tag: "env_storm" }, { val: "濃霧瀰漫", tag: "env_fog" }, 
+            { val: "狂風大作", tag: "env_wind" }, { val: "伸手不見五指的深夜", tag: "env_dark" },
+            { val: "雷雨交加", tag: "env_storm" }, { val: "細雨綿綿", tag: "env_rain" },
+            { val: "風雪交加", tag: "env_snow" }, { val: "悶熱的午後", tag: "env_hot" }
+        ],
+        env_atmosphere: [ 
+            { val: "詭異的", tag: "vibe_creepy" }, { val: "悲傷的", tag: "vibe_sad" }, 
+            { val: "充滿敵意的", tag: "vibe_hostile" }, { val: "死寂的", tag: "vibe_silent" }
+        ],
+        mystery_motive: [ 
+            { val: "遺產爭奪", tag: "motive_money" }, { val: "情殺", tag: "motive_love" }, 
+            { val: "復仇", tag: "motive_revenge" }, { val: "掩蓋秘密", tag: "motive_secret" }
+        ],
+        horror_curse_type: [ 
+            { val: "古代詛咒", tag: "curse_ancient" }, { val: "怨靈附身", tag: "curse_ghost" }, 
+            { val: "未知生物變異", tag: "curse_mutant" }, { val: "邪神低語", tag: "curse_god" }
+        ],
+        adventure_world_state: [ 
+            { val: "戰亂", tag: "world_war" }, { val: "魔物肆虐", tag: "world_monster" }, 
+            { val: "和平但腐敗", tag: "world_corrupt" } 
+        ],
+        adventure_start_bonus: [ 
+            { val: "神聖的", tag: "bonus_holy" }, { val: "被詛咒的", tag: "bonus_cursed" }, 
+            { val: "生鏽的", tag: "bonus_rusty" } 
+        ],
+        romance_meet_location: [
+            { val: "轉角處", tag: "meet_corner" }, { val: "圖書館", tag: "meet_library" },
+            { val: "雨中的屋簷下", tag: "meet_rain" }
+        ],
+
+        // 👤【2. 核心身份 (Core Identity)】- 句子的絕對主體，絕不疊加
+        // ------------------------------------------------------------
+        core_identity: [ 
+            // 基礎人類 (civilian)
+            { val: "男子", tag: ["human", "civilian"] }, { val: "女子", tag: ["human", "civilian"] }, 
+            { val: "老人", tag: ["human", "civilian"] }, { val: "小孩", tag: ["human", "civilian"] }, 
+            { val: "青年", tag: ["human", "civilian"] }, { val: "少女", tag: ["human", "civilian"] },
+            { val: "壯漢", tag: ["human", "civilian"] }, { val: "婦人", tag: ["human", "civilian"] },
+            { val: "村民", tag: ["human", "civilian"] }, { val: "僕從", tag: ["human", "civilian"] },
+            { val: "路人", tag: ["human", "civilian"] }, { val: "陌生人", tag: ["human", "civilian"] },
+            
+            // 邊緣/特殊人類 (outcast / survivor)
+            { val: "流浪者", tag: ["human", "outcast"] }, { val: "乞丐", tag: ["human", "outcast"] },
+            { val: "囚犯", tag: ["human", "outcast"] }, { val: "逃亡者", tag: ["human", "outcast"] },
+            { val: "傷者", tag: ["human", "survivor"] }, { val: "倖存者", tag: ["human", "survivor"] },
+            { val: "生還者", tag: ["human", "survivor"] }, { val: "目擊者", tag: ["human", "mystery"] },
+            { val: "無名者", tag: ["human", "mystery"] }, { val: "訪客", tag: ["human", "mystery"] },
+            { val: "黑影", tag: ["human", "mystery", "horror"] }, { val: "身影", tag: ["human", "mystery"] },
+
+            // 頭銜人類 (titled)
+            { val: "大亨", tag: ["human", "mystery"] }, { val: "守衛", tag: ["human", "combat"] },
+            { val: "管家", tag: ["human", "mystery", "romance"] }, { val: "寡婦", tag: ["human", "mystery"] },
+            { val: "偵探", tag: ["human", "mystery"] }, { val: "會長", tag: ["human", "civilian"] },
+            { val: "貴族", tag: ["human", "romance", "midage"] }, { val: "騎士", tag: ["human", "combat", "midage"] },
+            { val: "王子", tag: ["human", "romance", "midage"] }, { val: "公主", tag: ["human", "romance", "midage"] },
+            { val: "領主", tag: ["human", "midage"] }, { val: "祭司", tag: ["human", "magic"] },
+            { val: "刺客", tag: ["human", "combat", "mystery"] }, { val: "傭兵", tag: ["human", "combat", "war"] },
+            { val: "獵人", tag: ["human", "combat", "adventure"] }, { val: "法師", tag: ["human", "magic"] },
+            { val: "術士", tag: ["human", "magic", "horror"] }, { val: "學者", tag: ["human", "mystery"] },
+            { val: "醫生", tag: ["human", "mystery"] }, { val: "將軍", tag: ["human", "war"] },
+            { val: "間諜", tag: ["human", "mystery", "war"] }, { val: "叛徒", tag: ["human", "mystery"] },
+            { val: "賢者", tag: ["human", "magic"] }, { val: "占卜師", tag: ["human", "magic", "mystery"] },
+
+            // 怪物與異變體 (monster)
+            { val: "野狼", tag: ["monster", "beast"] }, { val: "蝙蝠", tag: ["monster", "beast"] },
+            { val: "巨狼", tag: ["monster", "beast"] }, { val: "魔狼", tag: ["monster", "beast", "magic"] },
+            { val: "史萊姆", tag: ["monster", "adventure"] }, { val: "殭屍", tag: ["monster", "undead", "horror"] },
+            { val: "骷髏", tag: ["monster", "undead"] }, { val: "食屍鬼", tag: ["monster", "undead", "horror"] },
+            { val: "幽靈", tag: ["monster", "spirit", "horror"] }, { val: "怨靈", tag: ["monster", "spirit", "horror"] },
+            { val: "惡靈", tag: ["monster", "spirit", "horror"] }, { val: "魔物", tag: ["monster", "adventure"] },
+            { val: "異形", tag: ["monster", "horror", "sci-fi"] }, { val: "變異體", tag: ["monster", "horror"] },
+            { val: "寄生獸", tag: ["monster", "horror"] }, { val: "觸手怪", tag: ["monster", "horror"] },
+            { val: "石像鬼", tag: ["monster", "construct", "magic"] }, { val: "魔像", tag: ["monster", "construct", "magic"] },
+            { val: "機械人偶", tag: ["monster", "construct"] }, { val: "傀儡", tag: ["monster", "construct"] },
+            { val: "自動機兵", tag: ["monster", "construct", "war"] }, { val: "飛龍", tag: ["monster", "dragon", "adventure"] },
+            { val: "魔龍", tag: ["monster", "dragon", "adventure"] }, { val: "吸血鬼", tag: ["monster", "undead", "horror"] },
+            { val: "狼人", tag: ["monster", "beast", "horror"] }, { val: "夢魘", tag: ["monster", "spirit", "magic"] }
+        ],
+
+        // 🏷️【3. 實體前綴修飾 (Identity Modifier)】- 帶「的」，只能加在名詞前
+        // ------------------------------------------------------------
+        identity_modifier: [ 
+            { val: "" }, { val: "年輕的" }, { val: "年邁的" }, { val: "稚嫩的" }, { val: "幼小的" }, 
+            { val: "成熟的" }, { val: "蒼老的" }, { val: "古老的", tag: ["ancient"] }, 
+            { val: "不朽的", tag: ["ancient"] }, { val: "新生的" },
+            { val: "神祕的" }, { val: "落魄的" }, { val: "身穿制服的" }, { val: "腐敗的" },
+            { val: "被遺忘的" }, { val: "異化的" }, { val: "來自王室的" }, { val: "來自地下的" },
+            { val: "深海的" }, { val: "黑市的" }, { val: "禁忌的" }
+        ],
+
+        // 🎭【4. 實體狀態與特質副句 (State & Trait Clauses)】- 獨立句子，描述當下動作與氣息
+        // ------------------------------------------------------------
+        state_modifier: [ 
+            { val: "身受重傷" }, { val: "陷入了沉睡" }, { val: "看起來十分虛弱" }, 
+            { val: "顯得疲憊不堪" }, { val: "正處於失控的邊緣" }, { val: "神情充滿驚恐" }, 
+            { val: "正冷靜地觀察著四周" }, { val: "渾身都在顫抖" }, { val: "眼神中充滿絕望" }, 
+            { val: "正發出詭異的狂笑" }, { val: "處於高度警戒狀態" }, { val: "似乎受了驚嚇" },
+            { val: "正張牙舞爪地示威" }, { val: "正發出低沉的咆哮" }, { val: "似乎正在徘徊尋找獵物" },
+            { val: "正痛苦地掙扎著" }, { val: "眼中充滿著飢餓與渴望" }
+        ],
+        trait_clause: [ 
+            { val: "渾身散發著墮落的氣息" }, { val: "似乎被某種古老的詛咒纏身" }, 
+            { val: "身上帶著濃烈的血腥味" }, { val: "給人一種極度危險的壓迫感" }, 
+            { val: "眼神空洞，彷彿失去了靈魂" }, { val: "身上佈滿了不明原因的變異痕跡" }, 
+            { val: "嘴裡不斷唸叨著聽不懂的低語" }, { val: "似乎正在被某種力量侵蝕" }
+        ],
+        verb_equip: [ 
+            { val: "把玩著" }, { val: "緊緊握著" }, { val: "隨身攜帶著" }, { val: "死死盯著" }, 
+            { val: "小心隱藏著" }, { val: "正在檢查" }, { val: "輕輕撫摸著" }, { val: "高高舉起" },
+            { val: "佩戴著" }, { val: "小心翼翼地收起" }
+        ],
+
+        // ⚔️【5. 物品組件 (Item Parts)】- 核心、物理狀態、能力副句
+        // ------------------------------------------------------------
+        item_core: [ 
+            { val: "懷錶", tag: ["item"] }, { val: "提燈", tag: ["item"] }, { val: "鑰匙", tag: ["item"] }, 
+            { val: "日記本", tag: ["item"] }, { val: "匕首", tag: ["item", "weapon"] }, { val: "手斧", tag: ["item", "weapon"] }, 
+            { val: "戒指", tag: ["item"] }, { val: "項鍊", tag: ["item"] }, { val: "護符", tag: ["item"] }, 
+            { val: "徽章", tag: ["item"] }, { val: "面具", tag: ["item"] }, { val: "卷軸", tag: ["item", "magic"] }, 
+            { val: "書籍", tag: ["item"] }, { val: "信件", tag: ["item"] }, { val: "地圖", tag: ["item"] }, 
+            { val: "羅盤", tag: ["item"] }, { val: "鏡子", tag: ["item"] }, { val: "藥瓶", tag: ["item"] }, 
+            { val: "寶石", tag: ["item", "valuable"] }, { val: "箱子", tag: ["item"] }, { val: "鎖鏈", tag: ["item"] }, 
+            { val: "鈴鐺", tag: ["item"] }, { val: "人偶", tag: ["item"] }, { val: "雕像", tag: ["item"] }, 
+            { val: "頭骨", tag: ["item"] }, { val: "硬幣", tag: ["item", "valuable"] }, { val: "王冠", tag: ["item", "valuable"] }, 
+            { val: "短劍", tag: ["item", "weapon"] }, { val: "長劍", tag: ["item", "weapon"] },
+            { val: "機械零件", tag: ["item", "sci-fi"] }, { val: "不明祭品", tag: ["item", "horror"] }
+        ],
+        item_physical_state: [
+            { val: "" }, { val: "黃銅製的" }, { val: "純銀的" }, { val: "生鏽的" }, 
+            { val: "皮革製的" }, { val: "骨製的" }, { val: "黑鐵打造成的" }, { val: "水晶製的" },
+            { val: "黑曜石的" }, { val: "破碎的" }, { val: "染血的" }, { val: "精緻的" }, 
+            { val: "陳舊的" }, { val: "斑駁的" }, { val: "被嚴重腐蝕的" }, { val: "扭曲變形的" }, 
+            { val: "燒焦的" }, { val: "冰冷的" }, { val: "溫熱的" }
+        ],
+        item_power_clause: [
+            { val: "它似乎能封印靈魂" }, { val: "它似乎在吸收周圍的生命力" }, 
+            { val: "表面散發著微弱的光芒" }, { val: "拿在手上會帶來一股刺骨的寒意" }, 
+            { val: "它似乎在微微顫動，彷彿有生命一般" }, { val: "上面沾染著無法洗去的暗沉血跡" },
+            { val: "它似乎隱藏著某個失落文明的秘密" }, { val: "它散發著不穩定的能量" },
+            { val: "只要靠近，腦海中就會引發詭異的幻覺" }, { val: "它似乎在低鳴，回應著未知的呼喚" }
+        ],
+
+        // 🏰【6. 場景與環境 (Location & Environment)】
+        // ------------------------------------------------------------
+        env_building: [
+            { val: "別墅", tag: ["location"] }, { val: "醫院", tag: ["location", "horror"] }, 
+            { val: "郵輪", tag: ["location"] }, { val: "教堂", tag: ["location", "magic"] }, 
+            { val: "學院", tag: ["location"] }, { val: "莊園", tag: ["location", "mystery"] }, 
+            { val: "孤兒院", tag: ["location", "horror"] }, { val: "療養院", tag: ["location", "horror"] }, 
+            { val: "監獄", tag: ["location"] }, { val: "燈塔", tag: ["location"] }, 
+            { val: "旅館", tag: ["location"] }, { val: "酒吧", tag: ["location"] }, 
+            { val: "劇院", tag: ["location"] }, { val: "博物館", tag: ["location"] }, 
+            { val: "研究所", tag: ["location", "sci-fi"] }, { val: "工廠", tag: ["location"] }, 
+            { val: "神殿", tag: ["location", "magic"] }, { val: "堡壘", tag: ["location", "war"] }, 
+            { val: "塔樓", tag: ["location"] }
+        ],
+        env_room: [
+            { val: "大廳", tag: ["room"] }, { val: "地下室", tag: ["room", "horror"] }, 
+            { val: "圖書館", tag: ["room", "mystery"] }, { val: "手術室", tag: ["room", "horror"] }, 
+            { val: "宴會廳", tag: ["room"] }, { val: "走廊", tag: ["room"] }, 
+            { val: "臥室", tag: ["room"] }, { val: "書房", tag: ["room", "mystery"] }, 
+            { val: "密室", tag: ["room", "mystery"] }, { val: "儲藏室", tag: ["room"] }, 
+            { val: "牢房", tag: ["room"] }, { val: "閣樓", tag: ["room"] }, 
+            { val: "浴室", tag: ["room"] }, { val: "控制室", tag: ["room"] }, 
+            { val: "祭壇室", tag: ["room", "magic", "horror"] }, { val: "實驗室", tag: ["room", "sci-fi"] }
+        ],
+        env_adj: [ 
+            { val: "" }, { val: "廢棄的" }, { val: "豪華的" }, { val: "古老的" }, 
+            { val: "陰暗的" }, { val: "血跡斑斑的" }, { val: "破敗的" }, { val: "荒涼的" }, 
+            { val: "死一般寂靜的" }, { val: "陰森的" }, { val: "封閉的" }, { val: "潮濕的" }, 
+            { val: "腐朽的" }, { val: "神祕的" }, { val: "詭異的" } 
+        ],
+        env_feature: [ 
+            { val: "陰暗的角落" }, { val: "發霉的天花板" }, { val: "地板的縫隙間" }, 
+            { val: "破碎的窗戶旁" }, { val: "厚重的帷幕後方" }, { val: "濃密的陰影中" }, 
+            { val: "斑駁的牆壁上" }, { val: "半掩的門後" }, { val: "昏暗的樓梯下方" }, 
+            { val: "凌亂的桌面上" }, { val: "佈滿灰塵的鏡子裡" }, { val: "黑暗深處" } 
+        ],
+
+        // 🌬️【7. 感官與時間 (Senses & Time)】
+        // ------------------------------------------------------------
+        env_light: [ 
+            { val: "微弱的燭光" }, { val: "刺眼的閃電" }, { val: "慘白的月光" }, 
+            { val: "閃爍的霓虹燈" }, { val: "搖曳的火光" }, { val: "昏暗的燈光" }, 
+            { val: "冰冷的白光" }, { val: "詭異的紅光" }, { val: "殘存的微光" } 
+        ],
+        env_sound: [ 
+            { val: "滴答的水滴聲" }, { val: "急促的腳步聲" }, { val: "老鼠的吱吱聲" }, 
+            { val: "詭異的低語" }, { val: "沉悶的敲擊聲" }, { val: "刺耳的摩擦聲" }, 
+            { val: "沉重的金屬碰撞聲" }, { val: "痛苦的喘息聲" }, { val: "若有似無的哭聲" }, 
+            { val: "令人發毛的笑聲" }, { val: "淒厲的尖叫聲" }, { val: "呼嘯的風聲" }, 
+            { val: "拖拽鎖鏈的聲音" } 
+        ],
+        env_smell: [ 
+            { val: "潮濕的霉味" }, { val: "刺鼻的鐵鏽味" }, { val: "濃烈的血腥味" }, 
+            { val: "令人作嘔的腐臭味" }, { val: "刺鼻的焦味" }, { val: "淡淡的煙味" }, 
+            { val: "濃郁的藥水味" }, { val: "肉體腐爛的氣味" }, { val: "厚重的灰塵味" } 
+        ],
+        atom_time: [ 
+            { val: "瞬間" }, { val: "緩慢地" }, { val: "片刻後" }, { val: "漸漸地" }, 
+            { val: "突然" }, { val: "不久後" }, { val: "隨後" }, { val: "此時此刻" }, 
+            { val: "就在那一刻" }, { val: "與此同時" }, { val: "最終" } 
+        ],
+
+// ============================================================
+    // 🧬 [Layer 1] 分子組合層 (Composite Words) - V5 語法化短句
     // ============================================================
 
-    // 🚶‍♂️ 1. 場景過場與探索 (用於進入新房間、通用探索)
-    phrase_explore_start: [
-        { val: "{atom_time}，你輕步走進了{noun_location_building}的{noun_location_room}。" },
-        { val: "推開沉重的房門，映入眼簾的是一片{atom_env_adj}的景象。" },
-        { val: "穿過漫長的{atom_room}，你終於來到了一處開闊地。" },
-        { val: "在{atom_weather}的籠罩下，這座{combo_building}顯得格外壓抑。" }
+    // 🏰 1. 組合地點與環境包 (Environment Packs)
+    combo_location: [
+        { val: "{env_adj}{env_building}的{env_room}" }, // 例：廢棄莊園的地下室
+        { val: "{env_adj}{env_room}" }                  // 例：陰暗的走廊
     ],
-    phrase_explore_vibe: [
-        { val: "這裡{sentence_env_vibe}，讓人感到十分不適。" },
-        { val: "{atom_light}勉強照亮了周圍，地上的影子隨著光線{atom_manner}扭動。" },
-        { val: "四周死一般的寂靜，只有遠處偶爾傳來微弱的{atom_sound}。" },
-        { val: "空氣十分混濁，你忍不住摀住口鼻，試圖阻擋那股{atom_smell}。" }
+    
+    // 將氣氛拆解為「視覺包」與「聽/嗅覺包」，每次只抽一種，避免句子太長
+    env_pack_visual: [
+        { val: "在{env_light}的映照下，{env_feature}顯得格外詭異。" },
+        { val: "{env_light}勉強照亮了四周，地上的影子隨著光線扭動。" },
+        { val: "{env_feature}隱沒在黑暗中，讓人看不清虛實。" }
     ],
-
-    // ⚠️ 2. 突發危機與遭遇 (用於遇敵、驚嚇、懸疑轉折)
-    phrase_danger_warn: [
-        { val: "突然！一陣突兀的{atom_sound}打破了平靜！" },
-        { val: "毫無預兆地，{atom_light}猛然熄滅，周圍陷入一片黑暗。" },
-        { val: "你的直覺瘋狂示警，背後傳來了某種東西靠近的{atom_sound}。" },
-        { val: "就在這時，{noun_env_feature}傳來了不尋常的動靜。" }
-    ],
-    phrase_danger_appear: [
-        { val: "一個{noun_monster}從陰影中竄了出來，死死擋住了你的去路！" },
-        { val: "你猛然回頭，赫然發現{noun_npc_generic}正{atom_manner}盯著你！" },
-        { val: "伴隨著一聲咆哮，巨大的{noun_monster}展現出了它猙獰的全貌。" },
-        { val: "那是一個{combo_person_with_item}，對方的眼神充滿了敵意。" }
+    env_pack_sensory: [
+        { val: "空氣中瀰漫著{env_smell}，令人作嘔。" },
+        { val: "四周死一般寂靜，只有{env_sound}在空間裡迴盪。" },
+        { val: "遠處不時傳來{env_sound}，讓人毛骨悚然。" }
     ],
 
-    // 🔍 3. 物品發現與線索 (用於調查、解謎)
-    phrase_find_action: [
-        { val: "你蹲下身，仔細檢查著{noun_env_feature}的周圍。" },
-        { val: "憑藉著敏銳的觀察力，你注意到了一個被刻意隱藏的細節。" },
-        { val: "在{atom_light}的映照下，某個反光的東西吸引了你的目光。" },
-        { val: "你翻開了散落一地的雜物，在最底層有了意外的發現。" }
+    // ⚔️ 2. 組合物品 (Item Combos) - 主幹 + 從句
+    combo_item_simple: [
+        { val: "{item_physical_state}{item_core}" } // 例：生鏽的匕首 (純名詞，用於撿起動作)
     ],
-    phrase_find_result: [
-        { val: "那裡居然藏著一個{noun_item_common}！" },
-        { val: "你找到了一把沾著灰塵的{noun_item_weapon}，上面還殘留著{atom_smell}。" },
-        { val: "是一個{combo_item}。這東西為什麼會出現在這裡？" },
-        { val: "這顯然是某人匆忙間遺落的{noun_item_common}。" }
+    combo_item_desc: [
+        { val: "一個{item_physical_state}{item_core}，{item_power_clause}。" }, // 例：一個染血的戒指，它似乎能封印靈魂。
+        { val: "一把{item_physical_state}{item_core}，拿在手上傳來異常的觸感。" }
     ],
 
-    // 💓 4. 心理描寫與生理反應 (用於增加張力、戀愛或恐懼心境)
-    phrase_tension_body: [
+    // 👤 3. 人物與怪物登場骨架 (Character Appearance) - 徹底解決堆疊災難
+    combo_person_appearance: [
+        // 骨架 A：簡單明瞭型 (前綴 + 主體)
+        { val: "一名{identity_modifier}{core_identity}" },
+        // 骨架 B：帶狀態型 (前綴 + 主體 + 狀態副句)
+        { val: "一名{identity_modifier}{core_identity}，對方{state_modifier}。" },
+        // 骨架 C：帶特質型 (主體 + 特質從句)
+        { val: "一名{core_identity}，對方{trait_clause}。" },
+        // 骨架 D：帶物品型
+        { val: "一名{identity_modifier}{core_identity}，手中{verb_equip}一個{combo_item_simple}。" }
+    ],
+
+    // ============================================================
+    // 🌟 [Layer 2] 複雜句型層 (Complex Sentences) - 用於事件觸發
+    // ============================================================
+
+    // ⚡ 事件突發句 (Sudden Events)
+    sentence_event_sudden: [
+        { val: "{atom_time}，{env_sound}突然響起，打破了平靜！" },
+        { val: "毫無預兆地，{env_light}猛然熄滅，周圍陷入一片黑暗。" },
+        { val: "你的直覺瘋狂示警，{env_feature}傳來了不尋常的動靜。" }
+    ],
+
+    // 👁️ 遭遇實體句 (Encounter)
+    sentence_encounter: [
+        { val: "一個黑影從{env_feature}竄了出來！仔細一看，是{combo_person_appearance}" },
+        { val: "你猛然回頭，赫然發現{combo_person_appearance}" },
+        { val: "伴隨著一聲咆哮，{combo_person_appearance}擋住了你的去路！" }
+    ],
+
+    // 🧠 主角心理反應 (Psychological Tension)
+    sentence_tension: [
         { val: "你的心臟在胸腔裡狂跳，冷汗順著額頭滑落。" },
-        { val: "你{atom_manner}嚥了一口唾沫，試圖讓自己冷靜下來。" },
-        { val: "手心裡全是汗水，你下意識地握緊了拳頭。" },
-        { val: "呼吸變得急促，一種難以言喻的壓迫感攫住了你。" }
-    ],
-    phrase_tension_mind: [
-        { val: "氣氛瞬間降至冰點，戰鬥一觸即發。" },
         { val: "大腦一片空白，你必須立刻做出決定。" },
         { val: "理智告訴你應該逃跑，但雙腿卻像灌了鉛一樣沉重。" },
         { val: "空氣中瀰漫著危險又極具張力的氣息。" }
     ],
+    // ============================================================
+    // 🎭 [Layer 3] 劇本演員庫 (Actors Pool) - 供開局種子抽取
+    // ============================================================
+    // 這些名字只有「核心身份」，形容詞與狀態會由 Layer 1 的骨架在劇情中動態生成！
+    
+    // 🕵️ 懸疑劇本演員
+    actor_detective: [ { val: "偵探", tag: "human" }, { val: "私家偵探", tag: "human" }, { val: "警探", tag: "human" } ],
+    actor_victim: [ { val: "富商", tag: "human" }, { val: "寡婦", tag: "human" }, { val: "貴族", tag: "human" }, { val: "流浪漢", tag: "human" } ],
+    actor_suspect_A: [ { val: "管家", tag: "human" }, { val: "繼承人", tag: "human" }, { val: "醫生", tag: "human" } ],
+    actor_suspect_B: [ { val: "傭人", tag: "human" }, { val: "流氓", tag: "human" }, { val: "神秘客", tag: "human" } ],
+    
+    // 👻 恐怖劇本演員
+    actor_survivor: [ { val: "生還者", tag: "human" }, { val: "學生", tag: "human" }, { val: "旅客", tag: "human" } ],
+    actor_monster: [ { val: "狼人", tag: "monster" }, { val: "吸血鬼", tag: "monster" }, { val: "怨靈", tag: "monster" }, { val: "食屍鬼", tag: "monster" }, { val: "變異體", tag: "monster" } ],
+    
+    // ⚔️ 冒險劇本演員
+    actor_hero: [ { val: "騎士", tag: "human" }, { val: "傭兵", tag: "human" }, { val: "法師", tag: "human" } ],
+    actor_boss: [ { val: "魔龍", tag: "monster" }, { val: "巫妖", tag: "monster" }, { val: "深淵領主", tag: "monster" } ],
+    
+    // 💕 戀愛與養成演員
+    actor_lover: [ { val: "青梅竹馬", tag: "human" }, { val: "貴族千金", tag: "human" }, { val: "神秘轉學生", tag: "human" } ],
+    actor_rival: [ { val: "競爭對手", tag: "human" }, { val: "傲慢的貴族", tag: "human" }, { val: "天才法師", tag: "human" } ],
+    actor_trainee: [ { val: "學徒", tag: "human" }, { val: "見習生", tag: "human" }, { val: "新兵", tag: "human" } ],
+    actor_mentor: [ { val: "導師", tag: "human" }, { val: "老兵", tag: "human" }, { val: "賢者", tag: "human" } ],
 
-    // 🎭 5. 人際互動與宮鬥/戀愛特化 (用於NPC反應)
-    phrase_social_react: [
-        { val: "{lover}深深地看了你一眼，眼神中充滿了複雜的情緒。" },
-        { val: "{rival}在不遠處發出一聲冷笑，似乎早有預謀。" },
-        { val: "周圍的{noun_npc_generic}紛紛轉過頭來，開始竊竊私語。" },
-        { val: "{suspect_A}的神情閃過一絲慌亂，但很快又被掩飾過去。" }
+
+    // ============================================================
+    // 🎬 [Layer 4] 動態句型庫 (Dynamic Phrase Library) - V5 電影級過場
+    // ============================================================
+
+    // 🚶‍♂️ 1. 場景過場與探索 (Explore)
+    phrase_explore_start: [
+        { val: "{atom_time}，你輕步走進了{combo_location}。" },
+        { val: "推開沉重的門，映入眼簾的是{combo_location}。" },
+        { val: "穿過漫長的通道，你終於來到了{combo_location}。" }
     ],
-    phrase_social_action: [
-        { val: "對方{atom_manner}向前逼近了一步，帶來極大的壓迫感。" },
-        { val: "這句話就像一顆炸彈，瞬間引爆了全場的情緒。" },
-        { val: "對方輕輕嘆了口氣，語氣裡帶著不加掩飾的嘲諷。" },
-        { val: "場面一度十分尷尬，沒有人敢率先打破沉默。" }
-    ],
-    // 1. 開場動作句
-    phrase_brawl_start: [
-        "你一腳踢開了{noun_location_room}的木門，",
-        "在昏暗的燈光下，你緩緩拔出了{noun_item_weapon}，",
-        "沒有任何廢話，你直接掀翻了面前的桌子，"
+    phrase_explore_vibe: [
+        { val: "{env_pack_visual}" },
+        { val: "{env_pack_sensory}" },
+        { val: "{env_pack_visual}{env_pack_sensory}" } // 機率性雙重描寫，但因為已經模組化，所以不會饒口！
     ],
 
-    // 2. 環境/群眾反應句
-    phrase_brawl_mid: [
-        "周圍的{noun_npc_generic}嚇得四處逃竄，",
-        "酒杯砸碎在地上的聲音顯得格外刺耳，",
-        "空氣中瀰漫著濃烈的{atom_smell}，"
+    // ⚠️ 2. 突發危機與遭遇 (Danger & Encounter)
+    phrase_danger_warn: [
+        { val: "{sentence_event_sudden}" },
+        { val: "{sentence_tension}{sentence_event_sudden}" }
+    ],
+    phrase_danger_appear: [
+        { val: "{sentence_encounter}" }
     ],
 
-    // 3. 對手反應句 (這裡面嵌套了其他標籤！)
-    phrase_brawl_enemy: [
-        "那個滿臉橫肉的{noun_monster}發出了震耳欲聾的怒吼！",
-        "坐在角落的{rival}冷笑了一聲，站起身來。",
-        "幾名守衛立刻拔出武器將你團團包圍！"
+    // 🔍 3. 物品發現與線索 (Discovery)
+    phrase_find_action: [
+        { val: "你蹲下身，仔細檢查著{env_feature}。" },
+        { val: "在{env_light}的映照下，某個反光的東西吸引了你的目光。" }
+    ],
+    phrase_find_result: [
+        { val: "竟然是{combo_item_desc}" }, // 例：竟然是一個染血的戒指，它似乎能封印靈魂。
+        { val: "你找到了一個{combo_item_simple}。這東西為什麼會出現在這裡？" }
     ],
 
-    // 4. 結尾氣氛句
-    phrase_brawl_end: [
-        "今天注定要見血了。",
-        "戰鬥一觸即發！",
-        "你{atom_manner}舔了舔嘴唇，準備迎接衝擊。"
+    // 💥 4. 戰鬥與追逐 (Combat & Chase) - 結合動態 Actors！
+    phrase_combat_start: [
+        { val: "你拔出武器，死死盯著眼前的{actor_monster}。" },
+        { val: "{actor_monster}發出震耳欲聾的怒吼，朝你猛撲過來！" }
     ],
-	horror_chase_start: [
-        { val: "你轉過身，看到{noun_monster}正站在走廊盡頭。" },
-        { val: "燈光閃爍了一下，{noun_monster}突然出現在你面前！" },
-        { val: "伴隨著{atom_smell}的氣味，{noun_monster}從陰影中緩緩爬出。" }
+    horror_chase_start: [
+        { val: "你轉過身，看到那名{actor_monster}正站在走廊盡頭。" },
+        { val: "燈光閃爍了一下，{actor_monster}突然出現在你面前！" }
     ],
-    // 隨機的怪物反應
-    horror_chase_action: [
-        { val: "對方發出了刺耳的尖叫，然後{atom_manner}撲向了你！" },
-        { val: "它沒有發出任何聲音，只是死死盯著你，手中還拿著一把{noun_item_weapon}。" },
-        { val: "它扭曲著四肢，以違反人體工學的姿態朝你逼近。" }
-    ],
-    // 隨機的主角心理狀態
-    horror_chase_feel: [
-        { val: "恐懼讓你幾乎無法呼吸。" },
-        { val: "你的直覺瘋狂警告你：如果被抓到，絕對會死得很慘。" },
-        { val: "心臟在胸腔裡狂跳，你只能本能地尋找逃生路線。" }
-    ]
+
+
+    // ============================================================
+    // 🔗 [Layer 5] 舊版劇本相容轉接層 (將於下一步徹底刪除！)
+    // ============================================================
+    // 為了保證目前的 data_piece.js 點擊不會崩潰，我們將舊變數強制轉接給 V5 骨架
+    
+    noun_npc_generic: [ { val: "{combo_person_appearance}" } ],
+    noun_monster: [ { val: "{combo_person_appearance}" } ], // 讓舊劇本抽出來的怪物也是完美句型
+    noun_location_building: [ { val: "{env_building}" } ],
+    noun_location_room: [ { val: "{env_room}" } ],
+    noun_env_feature: [ { val: "{env_feature}" } ],
+    noun_item_common: [ { val: "{combo_item_simple}" } ],
+    noun_item_weapon: [ { val: "{combo_item_simple}" } ],
+    adj_env_vibe: [ { val: "瀰漫著{env_smell}的" } ],
+    base_env_sound: [ { val: "{env_sound}" } ],
+    base_env_light: [ { val: "{env_light}" } ],
+    pattern_look_around: [ { val: "你環顧四周。{env_pack_visual}" } ],
+    pattern_enemy_appear: [ { val: "{sentence_encounter}" } ]
 });
 
     console.log("✅ 核心資料庫與基礎詞彙已啟動 (V4 極致脫水與環境補完版)");

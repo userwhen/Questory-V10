@@ -18,7 +18,7 @@
         
         // --- 路線 A 開場 ---
         {
-            type: 'mystery_setup', 
+            type: 'mystery_start', 
             id: 'mys_start_route_A',
             dialogue: [
                 { text: { zh: "在一個{atom_weather}，這座{noun_location_building}被封鎖了。{victim}倒在{noun_location_room}中央。" } },
@@ -30,7 +30,7 @@
         
         // --- 路線 B 開場 ---
         {
-            type: 'mystery_setup', 
+            type: 'mystery_start', 
             id: 'mys_start_route_B',
             dialogue: [
                 { text: { zh: "在一個{atom_weather}，這座{noun_location_building}被封鎖了。{victim}倒在{noun_location_room}中央。" } },
@@ -42,7 +42,7 @@
 
         // --- 路線 A 關鍵線索 ---
         {
-            type: 'investigate', 
+            type: 'mystery_mid', 
             id: 'mys_clue_for_A', 
             reqTags: ['truth_A'], // 🌟 更新：陣列標籤過濾器
             dialogue: [
@@ -55,7 +55,7 @@
 
         // --- 路線 B 關鍵線索 ---
         {
-            type: 'investigate', 
+            type: 'mystery_mid', 
             id: 'mys_clue_for_B', 
             reqTags: ['truth_B'],
             dialogue: [
@@ -68,7 +68,7 @@
 
         // --- 轉折事件 (Twist) ---
         {
-            type: 'twist', 
+            type: 'mystery_climax', 
             id: 'mys_twist_event',
             dialogue: [
                 { text: { zh: "就在調查進行到一半時，{noun_location_building}的燈光{atom_time}熄滅了！" } },
@@ -82,7 +82,7 @@
         // [Noir 困難解謎分支]
         // ==========================================
         {
-            type: 'mystery_setup', 
+            type: 'mystery_start', 
             id: 'mys_start_noir',
             reqTags: ['theme_noir'], 
             dialogue: [ 
@@ -99,7 +99,7 @@
             ]
         },
         {
-            type: 'investigate', 
+            type: 'mystery_mid', 
             id: 'mys_clue_locked',
             reqTags: ['truth_A'],
             excludeTags: ['has_safe_key'], // 🌟 更新：取代舊版的 noTag
@@ -111,7 +111,7 @@
             options: [{ label: "去別的地方找找鑰匙", action: "advance_chain" }]
         },
         {
-            type: 'investigate', 
+            type: 'mystery_mid', 
             id: 'mys_clue_unlocked',
             reqTags: ['truth_A'],
             conditions: { "has_safe_key": true }, 
@@ -129,7 +129,7 @@
             ]
         },
         {
-            type: 'univ_filler',
+            type: 'mystery_adv',
             id: 'uni_find_key',
             conditions: { "exp_puzzle": true, "has_safe_key": false },
             weight: 100,
@@ -147,7 +147,7 @@
             ]
         },
         {
-            type: 'deduction', 
+            type: 'mystery_end', 
             id: 'mys_final_noir',
             reqTags: ['theme_noir'],
             dialogue: [{ text: { zh: "真相大白。你指著犯人說..." } }],
@@ -184,7 +184,7 @@
         // [Generic] 通用調查
         // ==========================================
         {
-            type: 'investigate', 
+            type: 'mystery_mid', 
             id: 'mys_inv_generic_1',
             dialogue: [ 
                 { text: { zh: "你繼續在{noun_location_room}搜索。" } },
@@ -194,7 +194,7 @@
             options: [{ label: "記錄下來，繼續搜查", action: "advance_chain" }]
         },
         {
-            type: 'investigate', 
+            type: 'mystery_mid', 
             id: 'mys_inv_generic_2',
             dialogue: [ 
                 { text: { zh: "調查陷入了膠著。" } },
@@ -204,7 +204,7 @@
             options: [{ label: "換個角度思考", action: "advance_chain", rewards: { varOps: [{key:'energy', val:5, op:'-'}] } }] 
         },
         {
-            type: 'investigate', 
+            type: 'mystery_mid', 
             id: 'mys_inv_generic_witness',
             dialogue: [ 
                 { text: { zh: "一位{noun_npc_generic}怯生生地走了過來。" } },
@@ -216,7 +216,7 @@
         
         // --- 備案 (Safety Net) ---
         {
-            type: 'twist', 
+            type: 'mystery_climax', 
             id: 'fallback_mystery_twist',
             dialogue: [
                 { text: { zh: "隨著調查深入，你發現了一個驚人的事實！" } },
@@ -225,7 +225,7 @@
             options: [{ label: "進入最終推理！", action: "advance_chain" }]
         },
         {
-            type: 'deduction', 
+            type: 'mystery_end', 
             id: 'fallback_mystery_end',
             dialogue: [
                 { text: { zh: "你指著名單上的那個名字，一切真相大白。" } },
@@ -238,7 +238,7 @@
         // [Deduction] 最終推理 (含保底機制)
         // ==========================================
         {
-            type: 'deduction', 
+            type: 'mystery_end', 
             id: 'mys_final_logic',
             dialogue: [ 
                 { text: { zh: "所有的碎片都已經拼湊完成。面對在場的眾人，你{atom_manner}走到了大廳中央。" } },
@@ -284,7 +284,42 @@
                     } 
                 }
             ]
-        }
+        },
+		{
+            type: 'mystery_adv',
+            id: 'uni_item_key_safe',
+			excludeTag: ['theme_romance',],
+            weight: 100, 
+            conditions: { "exp_puzzle": true, "has_safe_key": false },
+            dialogue: [
+                { text: { zh: "你在走廊的{noun_env_feature}下面發現了一個閃閃發光的東西。" } },
+                { text: { zh: "撿起來一看，是一把造型古老的鑰匙，上面刻著奇怪的花紋。" } },
+                { text: { zh: "這該不會就是那個保險箱的鑰匙吧？" } }
+            ],
+            options: [{ 
+                label: "收下鑰匙", 
+                action: "node_next", 
+                rewards: { tags: ['has_safe_key', 'found_something'] },
+                nextScene: { 
+                    dialogue: [{ text: { zh: "你把鑰匙放進口袋。現在你可以回去試試看那個保險箱了。" } }],
+                    options: [{ label: "繼續探索", action: "advance_chain" }]
+                }
+            }]
+        },
+        {
+            type: 'mystery_adv',
+            id: 'uni_item_magnifier',
+			excludeTag: ['theme_romance',],
+            weight: 80,
+            conditions: { "exp_puzzle": true, "has_magnifier": false },
+            dialogue: [
+                { text: { zh: "經過書房時，你被桌上的一個物件絆倒了。" } },
+                { text: { zh: "那是一個做工精良的放大鏡，雖然鏡片有點裂痕，但還能用。" } },
+                { text: { zh: "有了這個，或許能看清一些原本忽略的細節。" } }
+            ],
+            options: [{ label: "裝備放大鏡", action: "advance_chain", rewards: { tags: ['has_magnifier'] } }]
+        },
+		
     );
 
     console.log("🕵️‍♂️ 偵探劇本已載入");

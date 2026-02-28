@@ -16,20 +16,20 @@ window.achView = {
             return true;
         });
 
-        // [優化] 使用共用 Filter 列
         const achFilterArea = ui.layout.filterBar(
             achCats, currentAchCat, "act.setAchFilter",
             ui.component.btn({ label:'🏆 殿堂', theme:'normal', size:'sm', action:"act.navigate('milestone')" })
         );
 
-        // [優化] 列表項目渲染，使用新版 empty 和 std-card 結構
-        const achListItems = displayAchs.length === 0 
-            ? ui.layout.empty('暫無成就', '🏅')
-            : displayAchs.map(a => {
+        let achListItems = '';
+        if (displayAchs.length === 0) {
+            achListItems = ui.layout.empty('暫無成就', '🏅');
+        } else {
+            // [優化] 全面改用 ui.card.row 來生成標準卡片
+            achListItems = displayAchs.map(a => {
                 const isCheckIn = a.type === 'check_in';
                 const isReady = isCheckIn ? !a.done : (a.curr >= a.target); 
                 
-                // 1. 右側按鈕邏輯
                 let btnHtml = '';
                 if (isCheckIn) {
                     btnHtml = a.done 
@@ -37,11 +37,11 @@ window.achView = {
                         : ui.component.btn({ label:'簽到', theme:'correct', size:'sm', action:`event.stopPropagation(); act.checkInAch('${a.id}')` });
                 } else {
                     btnHtml = isReady 
-                        ? ui.component.btn({ label:'🎁 領取', theme:'gold', size:'sm', action:`event.stopPropagation(); act.claimReward('${a.id}')` })
+                        // 修復：theme 改為 paper，對應系統的金色按鈕
+                        ? ui.component.btn({ label:'🎁 領取', theme:'paper', size:'sm', action:`event.stopPropagation(); act.claimReward('${a.id}')` })
                         : ui.component.btn({ label:'未完成', disabled:true, size:'sm' });
                 }
                 
-                // 2. 圖示與層級
                 let icon = isCheckIn ? '📅' : '🏅';
                 let tierBadge = '';
                 if (a.tier) {
@@ -50,25 +50,27 @@ window.achView = {
                     else { tierBadge = ui.component.badge(a.tier); }
                 }
 
-                // 3. 組合 HTML (使用通用的 std-card 結構)
-                return `
-                <div class="std-card" style="border-left-color:${isReady?'var(--color-correct)':'var(--border)'};" onclick="act.editAch('${a.id}')">
-                    <div style="display:flex; align-items:center;">
-                        <div style="width:40px; height:40px; background:var(--bg-box); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; margin-right:12px;">${icon}</div>
-                        <div style="flex:1; min-width:0; margin-right: 10px;">
-                            <div style="display:flex; align-items:baseline; gap:6px; width:100%; margin-bottom:4px;">
-                                <span style="font-weight:bold; color:var(--text); font-size:1rem; white-space:nowrap;">${a.title}</span>
-                                ${tierBadge}
-                                <span style="font-size:0.85rem; color:var(--text-ghost); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">- ${a.desc || ''}</span>
-                            </div>
-                            <div style="margin-top:6px;">
-                                ${ui.progress.bar(a.curr, a.target)}
-                            </div>
-                        </div>
-                        <div onclick="event.stopPropagation();">${btnHtml}</div>
+                // 將進度條與描述包裝進 subTitle
+                const subTitleHtml = `
+                    <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:4px;">
+                        ${tierBadge}
+                        <span style="font-size:0.85rem; color:var(--text-ghost); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">- ${a.desc || ''}</span>
                     </div>
-                </div>`;
+                    <div style="margin-top:6px;">
+                        ${ui.progress.bar(a.curr, a.target)}
+                    </div>`;
+
+                return ui.card.row({
+                    iconHtml: icon,
+                    title: a.title,
+                    subTitle: subTitleHtml,
+                    rightHtml: `<div onclick="event.stopPropagation();">${btnHtml}</div>`,
+                    themeColor: isReady ? 'var(--color-correct)' : 'var(--border)',
+                    onClick: `act.editAch('${a.id}')`,
+                    style: 'margin-bottom: 10px;'
+                });
             }).join('');
+        }
 
         return achFilterArea + `<div style="padding-bottom:100px;">${achListItems}</div>`;
     },
@@ -88,7 +90,6 @@ window.achView = {
         }
         const data = window.TempState.editingAch;
 
-        // [優化] 使用共用 field 包裝
         let bodyHtml = ui.input.field('目標標題', ui.input.text(data.title, "例如: 健身達人", "achView.updateField('title', this.value)"));
 
         const typeOpts = [ {value:'tag', label:'🏷️ 任務分類'}, {value:'attr', label:'💪 屬性鍛鍊'}, {value:'challenge', label:'🔥 極限挑戰'} ];
@@ -109,14 +110,22 @@ window.achView = {
         };
         const currentTier = tierInfo[data.tier] || tierInfo['C'];
 
+        // 修復：按鈕改用 ui.component.btn 以確保樣式與動畫一致
+        const tierButtons = Object.keys(tierInfo).map(t => {
+            const theme = data.tier === t ? 'correct' : 'normal';
+            return ui.component.btn({
+                label: t,
+                theme: theme,
+                action: `achView.updateField('tier', '${t}')`,
+                style: `flex:1; padding:6px; border-radius:var(--radius-sm);`
+            });
+        }).join('');
+
         bodyHtml += `
             <div class="u-box" style="margin-top:10px; border-color:var(--color-gold); background:var(--color-gold-soft);">
                 <label class="section-title">難度層級</label>
                 <div style="display:flex; gap:5px; margin-bottom:10px;">
-                    ${Object.keys(tierInfo).map(t => {
-                        const active = data.tier === t ? 'background:var(--color-gold); color:var(--text-on-dark); font-weight:bold; box-shadow:var(--shadow-sm);' : 'background:var(--bg-card); color:var(--text-muted); border:1px solid var(--border);';
-                        return `<button type="button" onclick="achView.updateField('tier', '${t}')" style="flex:1; border:none; padding:8px; border-radius:var(--radius-sm); cursor:pointer; transition:all var(--t-fast); ${active}">${t}</button>`;
-                    }).join('')}
+                    ${tierButtons}
                 </div>
                 <div style="font-size:0.9rem; color:var(--text-2); background:rgba(255,255,255,0.5); padding:8px; border-radius:var(--radius-sm);">
                     <div>🎯 目標：累積 <b>${currentTier.target}</b> 點 Impact</div>
@@ -124,7 +133,6 @@ window.achView = {
                 </div>
             </div>`;
 
-        // [優化] 使用共用 footRow
         const footHtml = isEdit 
             ? `${ui.component.btn({label:'刪除', theme:'danger', action:`act.deleteAchievement('${achId}')`})} ${ui.component.btn({label:'儲存', theme:'correct', style:'flex:1;', action:'act.submitMilestone()'})}`
             : ui.component.btn({label:'建立目標', theme:'correct', style:'width:100%;', action:'act.submitMilestone()'});
@@ -160,12 +168,6 @@ window.achView = {
         if(!container) return;
 
         const achs = AchEngine.getSortedAchievements().filter(a => a.claimed);
-        
-        // [優化] 使用共用 pageHeader
-        const headerHtml = ui.layout.pageHeader(
-            '🏆 榮譽殿堂', 
-            ui.component.btn({label:'↩ 返回', theme:'normal', size:'sm', action:"act.navigate('task')"})
-        );
 
         const listHtml = achs.length === 0 
             ? ui.layout.empty('尚無榮譽紀錄', '🏅')
@@ -173,22 +175,23 @@ window.achView = {
                 const d = new Date(a.finishDate || Date.now());
                 const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
                 
-                // [優化] 使用通用的 ui.card.row
                 return ui.card.row({
                     iconHtml: '🏅',
                     title: a.title,
                     subTitle: a.desc,
                     rightHtml: `<div style="font-size:0.8rem; color:var(--text-ghost);">${dateStr}</div>`,
-                    themeColor: 'var(--color-gold)'
+                    themeColor: 'var(--color-gold)',
+                    style: 'margin-bottom: 10px;'
                 });
             }).join('') + `</div>`;
 
-        // 將 Header 與 Body 放入全螢幕容器中 (取代舊的 scroller)
-        container.innerHTML = `
-            <div style="display:flex; flex-direction:column; height:100%; background:var(--bg-panel);">
-                ${headerHtml}
-                <div style="flex:1; overflow-y:auto;">${listHtml}</div>
-            </div>`;
+        // [優化] 使用升級版的 ui.layout.page 取代手寫容器
+        container.innerHTML = ui.layout.page({
+            title: '🏆 榮譽殿堂',
+            back: "act.navigate('task')",
+            headerBg: 'var(--bg-card)',
+            body: listHtml
+        });
     },
 
     updateField: function(field, val) { 

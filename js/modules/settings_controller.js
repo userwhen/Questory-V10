@@ -11,6 +11,7 @@ window.SettingsController = {
                 if(window.settingsView) window.settingsView.render();
             },
             openSettingsShop: () => {
+                window.TempState.activeModal = 'settingsShop'; 
                 if(window.settingsView) window.settingsView.renderSettingsShop();
             },
             
@@ -124,8 +125,7 @@ window.SettingsController = {
         
         // 監聽更新
         EventBus.on(E.Settings.UPDATED, () => {
-            const overlay = document.getElementById('m-overlay');
-            if (overlay && overlay.classList.contains('active') && overlay.innerText.includes('模式商店')) {
+            if (window.TempState.activeModal === 'settingsShop') {
                 if(window.settingsView) settingsView.renderSettingsShop(); 
             }
             if(E.Stats) EventBus.emit(E.Stats.UPDATED);

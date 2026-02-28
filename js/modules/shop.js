@@ -2,6 +2,8 @@
 
 window.ShopEngine = {
     init: function() {
+		if (this._initialized) return;
+        this._initialized = true;
         const gs = window.GlobalState;
         if (!gs) return;
         
@@ -188,9 +190,9 @@ window.ShopEngine = {
         } else {
             gs.shop.user.push({ ...data, id: 'usr_' + Date.now(), currency: 'gold', icon: '📦' });
         }
-        App.saveData(); return true;
+        if (window.App) App.saveData(); return true;
     },
-    deleteItem: function(id) { const gs = window.GlobalState; gs.shop.user = gs.shop.user.filter(i => i.id !== id); App.saveData(); },
+    deleteItem: function(id) { const gs = window.GlobalState; gs.shop.user = gs.shop.user.filter(i => i.id !== id); if (window.App) App.saveData(); },
     useItem: function(id) {
         const gs = window.GlobalState;
         const item = gs.bag.find(i => i.id === id);

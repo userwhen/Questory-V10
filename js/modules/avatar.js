@@ -24,14 +24,14 @@ window.AvatarEngine = {
             gs.avatar.unlocked.push('suit_novice');
         }
 
-        EventBus.emit(EVENTS.Avatar.UPDATED);
+        window.EventBus.emit(window.EVENTS.Avatar.UPDATED);
     },
 
     // 2. 預覽邏輯 (只改暫存，不存檔)
     previewItem: function(suitId) {
         if (!window.TempState.preview) window.TempState.preview = {};
         window.TempState.preview.suit = suitId;
-        EventBus.emit(EVENTS.Avatar.UPDATED);
+        window.EventBus.emit(window.EVENTS.Avatar.UPDATED);
     },
 
     // 3. 穿上邏輯 (確認變更)
@@ -44,11 +44,11 @@ window.AvatarEngine = {
 
         if (window.App) App.saveData();
         
-        EventBus.emit(EVENTS.Avatar.UPDATED);
-        EventBus.emit(EVENTS.System.TOAST, "✨ 已更換裝備");
+        window.EventBus.emit(window.EVENTS.Avatar.UPDATED);
+        window.EventBus.emit(window.EVENTS.System.TOAST, "✨ 已更換裝備");
         
         // 通知 HUD 更新立繪
-        EventBus.emit(EVENTS.Stats.UPDATED);
+        window.EventBus.emit(window.EVENTS.Stats.UPDATED);
     },
 
     // 4. 購買邏輯
@@ -63,7 +63,7 @@ window.AvatarEngine = {
         
         // 簡單判斷：如果價格是 0 就直接送
         if (item.price > 0 && currentGem < item.price) {
-            EventBus.emit(EVENTS.System.TOAST, `💎 鑽石不足 (需 ${item.price})`);
+            window.EventBus.emit(window.EVENTS.System.TOAST, `💎 鑽石不足 (需 ${item.price})`);
             return;
         }
 
@@ -76,8 +76,8 @@ window.AvatarEngine = {
 
         if (window.App) App.saveData();
         
-        EventBus.emit(EVENTS.Avatar.UPDATED);
-        EventBus.emit(EVENTS.System.TOAST, `🎉 購買成功！`);
-        EventBus.emit(EVENTS.Stats.UPDATED);
+        window.EventBus.emit(window.EVENTS.Avatar.UPDATED);
+        window.EventBus.emit(window.EVENTS.System.TOAST, `🎉 購買成功！`);
+        window.EventBus.emit(window.EVENTS.Stats.UPDATED);
     }
 };

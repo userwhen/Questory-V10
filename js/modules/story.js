@@ -324,7 +324,7 @@ _handleNodeJump: function(opt, passed) {
     if (window.storyView) storyView.renderIdle();
     if(window.App) App.saveData();
     // 更新介面，確保金幣/精力顯示正確
-    if (window.view && window.view.updateStoryHUD) window.view.updateStoryHUD();
+    if (window.storyView && window.storyView.updateTopBar) window.storyView.updateTopBar();
 },
 
     // ============================================================
@@ -540,7 +540,7 @@ _handleNodeJump: function(opt, passed) {
         }
     }
     
-    if (window.view && window.view.updateStoryHUD) window.view.updateStoryHUD();
+    if (window.storyView && window.storyView.updateTopBar) window.storyView.updateTopBar();
     if (window.storyView && storyView.updateTopBar) storyView.updateTopBar();
 },
 
@@ -775,15 +775,7 @@ _handleNodeJump: function(opt, passed) {
             window.StoryData.sceneMap[subNode.id] = subNode;
         }
     },
-    
-    // 輔助：註冊子場景
-    _registerSubScene: function(subNode) {
-        if (subNode && !subNode.id) {
-            subNode.id = `sub_${Date.now()}_${Math.floor(Math.random()*999)}`;
-            window.StoryData.sceneMap[subNode.id] = subNode;
-        }
-    },
-    
+
     _renderSimple: function(textArr, options) {
         // Fallback for debugging without View
         console.log("TEXT:", textArr.join("\n"));
@@ -891,7 +883,7 @@ _handleNodeJump: function(opt, passed) {
     // 3. UI 復原與存檔
     if (window.storyView) storyView.renderIdle();
     if (window.App) App.saveData();
-    if (window.view && window.view.updateStoryHUD) window.view.updateStoryHUD();
+    if (window.storyView && window.storyView.updateTopBar) window.storyView.updateTopBar();
     
     console.log("🏁 劇本流程結束，全域數值已保留。");
 },

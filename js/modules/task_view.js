@@ -24,10 +24,10 @@ window.taskView = {
 
         const isList = window.TempState.taskTab === 'list';
 		const segmentHtml = ui.component.segment([
-		{ label: '📋 任務列表', val: 'list' },
-		{ label: '🏆 榮譽成就', val: 'ach' }
+		    { label: '📋 任務列表', val: 'list' },
+		    { label: '🏆 榮譽成就', val: 'ach' }
 		], window.TempState.taskTab, "act.switchTaskTab");
-		const headerHtml = `<div style="display:flex; background:rgba(0,0,0,0.07); border-radius:50px; padding:4px; margin:10px 15px;">${segmentHtml}</div>`;
+		const headerHtml = `<div style="display:flex; background:var(--bg-box); border-radius:50px; padding:4px; margin:10px 15px;">${segmentHtml}</div>`;
         
         let contentHtml = '';
 
@@ -38,15 +38,13 @@ window.taskView = {
             
             const tasks = TaskEngine.getSortedTasks(currentCat);
             
-            // [優化] 使用共用的 filterBar
             const filterArea = ui.layout.filterBar(
                 allCats, currentCat, "act.setTaskFilter",
                 ui.component.btn({ label:'📜 歷史', theme:'normal', size:'sm', action:"act.navigate('history')" })
             );
             
-            // [優化] 使用共用的 empty
             const listItems = tasks.length === 0 
-                ? ui.layout.empty('📭 暫無任務', '📭')
+                ? ui.layout.empty('暫無任務', '📭')
                 : `<div>${tasks.map(t => ui.card.task(t, false)).join('')}</div>`; 
             
             contentHtml = filterArea + `<div style="padding-bottom:100px;">${listItems}</div>`;
@@ -59,7 +57,6 @@ window.taskView = {
             }
         }
 
-        // [優化] FAB 按鈕加上了陰影庫的陰影
         const fabBg = !isList ? 'background:var(--color-gold); border:none; color:var(--text);' : '';
         const fabAction = isList ? "act.editTask(null)" : "act.openCreateCustomAch()"; 
         const fabHtml = ui.component.btn({ 
@@ -79,23 +76,17 @@ window.taskView = {
     renderHistoryPage: function() { 
         const container = document.getElementById('page-history'); if(!container) return;
         
-        // [優化] 使用共用的 pageHeader
-        const headerHtml = ui.layout.pageHeader(
-            '📜 歷史紀錄',
-            ui.component.btn({label:'↩ 返回', theme:'normal', size:'sm', action:"act.navigate('task')"})
-        );
-        
         const history = window.GlobalState.history || [];
         const listHtml = history.length === 0 
-            ? ui.layout.empty('📜 無歷史紀錄', '📜') 
+            ? ui.layout.empty('無歷史紀錄', '📜') 
             : `<div style="padding: 14px;">` + [...history].reverse().map(t => ui.card.task(t, true)).join('') + `</div>`;
             
-        // [優化] 直接使用 flex 排版，取代舊的 scroller
-        container.innerHTML = `
-            <div style="display:flex; flex-direction:column; height:100%; width:100%; background:var(--bg-panel);">
-                ${headerHtml}
-                <div style="flex:1; overflow-y:auto;">${listHtml}</div>
-            </div>`;
+        container.innerHTML = ui.layout.page({
+            title: '📜 歷史紀錄',
+            back: "act.navigate('task')",
+            headerBg: 'var(--bg-card)',
+            body: listHtml
+        });
     },
 
     // =========================================================================
@@ -135,7 +126,6 @@ window.taskView = {
         if (!data.attrs) data.attrs = [];
         const isCount = data.type === 'count';
 
-        // [優化] 使用共用的 input field
         const titleInput = ui.input.text(data.title, "要做什麼呢？", "taskView.updateField('title', this.value)");
         const pinBtn = ui.component.btn({ id: 'btn-pin-toggle', label: '📌', theme: 'ghost', action: `taskView.togglePin()`, style: `font-size:1.4rem; padding:0 8px; border:none; opacity:${data.pinned ? '1' : '0.3'}; transition:all 0.2s;` });
         
@@ -178,7 +168,6 @@ window.taskView = {
             `<div style="display:flex; gap:10px;"><label style="display:flex; align-items:center; color:var(--text-muted);"><input type="radio" ${data.subRule==='all'?'checked':''} onclick="taskView.updateField('subRule', 'all')"><span style="margin-left:4px; font-size:0.8rem;">全部</span></label><label style="display:flex; align-items:center; color:var(--text-muted);"><input type="radio" ${data.subRule==='any'?'checked':''} onclick="taskView.updateField('subRule', 'any')"><span style="margin-left:4px; font-size:0.8rem;">擇一</span></label></div>` : 
             `<div style="display:flex; align-items:center; gap:5px;">${ui.input.number(data.target, "taskView.updateField('target', this.value)", 2)}<span style="font-size:0.9rem; color:var(--text-muted);">次</span></div>`;
 
-        // [優化] 使用 CSS 變數管理盒子顏色
         bodyHtml += `
         <div class="u-box" style="padding:12px; margin-bottom:15px; background:var(--bg-elevated);">
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -209,29 +198,26 @@ window.taskView = {
         }).join('');
         bodyHtml += `<div style="margin-bottom:15px;"><label class="section-title">📚 綁定技能</label><div class="u-box" style="padding:10px; display:flex; flex-wrap:wrap; min-height:50px;">${skillHtml || '<span style="color:var(--text-ghost); font-size:0.8rem; width:100%; text-align:center;">無可用技能，請至屬性頁新增</span>'}</div></div>`;
 
-        // 價值評估矩陣的顏色動態計算
-        const getLabelColor = (val) => val >= 3 ? (val===4?'var(--color-danger)':'#ef6c00') : (val===2?'var(--color-info)':'var(--text-muted)');
-        let borderSideColor = 'var(--text-muted)'; 
-        if(data.importance>=3 && data.urgency>=3) borderSideColor="var(--color-danger)"; 
-        else if(data.importance>=3) borderSideColor="var(--color-info)"; 
-        else if(data.urgency>=3) borderSideColor="#ef6c00";
+        const impInfo = view.getPriorityInfo(data.importance, 1);
+        const urgInfo = view.getPriorityInfo(1, data.urgency);
+        const comboInfo = view.getPriorityInfo(data.importance, data.urgency);
         
         bodyHtml += `
-        <div id="matrix-box" class="u-box" style="padding:12px; margin-bottom:15px; border-left: 4px solid ${borderSideColor}; transition: border-left-color 0.3s ease;">
+        <div id="matrix-box" class="u-box" style="padding:12px; margin-bottom:15px; border-left: 4px solid ${comboInfo.border}; transition: border-left-color 0.3s ease;">
             <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
                 <span style="font-weight:bold; font-size:0.9rem; color:var(--text);">📊 價值評估</span>
                 <div id="matrix-tag-preview" style="font-size:0.85rem; color:var(--text-muted);">...</div>
             </div>
             <div style="margin-bottom:10px;">
                 <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                    <span id="lbl-imp" style="color:${getLabelColor(data.importance)}; font-weight:bold;">重要性</span> 
+                    <span id="lbl-imp" style="color:${impInfo.color}; font-weight:bold;">重要性</span> 
                     <b id="val-imp" style="color:var(--text-2);">${data.importance}</b>
                 </div>
                 <input type="range" min="1" max="4" value="${data.importance}" style="width:100%; accent-color:var(--color-info);" oninput="taskView.updateField('importance', parseInt(this.value));">
             </div>
             <div>
                 <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                    <span id="lbl-urg" style="color:${getLabelColor(data.urgency)}; font-weight:bold;">緊急性</span> 
+                    <span id="lbl-urg" style="color:${urgInfo.color}; font-weight:bold;">緊急性</span> 
                     <b id="val-urg" style="color:var(--text-2);">${data.urgency}</b>
                 </div>
                 <input type="range" min="1" max="4" value="${data.urgency}" style="width:100%; accent-color:var(--color-danger);" oninput="taskView.updateField('urgency', parseInt(this.value));">
@@ -249,7 +235,6 @@ window.taskView = {
             </div>
         </div>`;
 
-        // [優化] 底部按鈕統一調用 (雖然有複製按鈕，手動排版維持一致性)
         const footHtml = taskId 
             ? `${ui.component.btn({label:'刪除', theme:'danger', action:`act.deleteTask('${taskId}')`})} 
                ${ui.component.btn({label:'複製', theme:'normal', action:`act.copyTask('${taskId}')`})} 
@@ -283,21 +268,23 @@ window.taskView = {
         window.TempState.editingTask[field] = val;
 
         if (field === 'importance' || field === 'urgency') {
+            const t = window.TempState.editingTask;
             const valEl = document.getElementById(field === 'importance' ? 'val-imp' : 'val-urg');
             const lblEl = document.getElementById(field === 'importance' ? 'lbl-imp' : 'lbl-urg');
             if(valEl) valEl.innerText = val;
+            
+            // [優化] 修正：明確鎖定另一個維度為 1，徹底解決 Slider 拖曳時顏色閃爍的 Bug
             if(lblEl) {
-                const color = val >= 3 ? (val===4?'var(--color-danger)':'#ef6c00') : (val===2?'var(--color-info)':'var(--text-muted)');
-                lblEl.style.color = color;
+                const info = field === 'importance' 
+                    ? view.getPriorityInfo(val, 1) 
+                    : view.getPriorityInfo(1, val);
+                lblEl.style.color = info.color;
             }
+            
             const box = document.getElementById('matrix-box');
             if(box) {
-                const t = window.TempState.editingTask;
-                let c = 'var(--text-muted)';
-                if(t.importance>=3 && t.urgency>=3) c="var(--color-danger)";
-                else if(t.importance>=3) c="var(--color-info)";
-                else if(t.urgency>=3) c="#ef6c00";
-                box.style.borderLeftColor = c;
+                const comboInfo = view.getPriorityInfo(t.importance, t.urgency);
+                box.style.borderLeftColor = comboInfo.border;
             }
             this.updateMatrixPreview();
             return; 
@@ -378,11 +365,8 @@ window.taskView = {
             
             if (typeof calcFunc === 'function') {
                 const r = calcFunc(t.importance, t.urgency);
-                let label = "🍂 雜務"; let color = "var(--text-muted)";
-                if(t.importance>=3 && t.urgency>=3) { label="🔥 危機"; color="var(--color-danger)"; }
-                else if(t.importance>=3) { label="💎 願景"; color="var(--color-info)"; }
-                else if(t.urgency>=3) { label="⚡ 突發"; color="#ef6c00"; }
-                box.innerHTML = `<span style="color:${color}; font-weight:bold; margin-right:5px;">${label}</span> <span style="color:var(--text-ghost);">💰${r.gold} ✨${r.exp}</span>`;
+                const info = view.getPriorityInfo(t.importance, t.urgency);
+                box.innerHTML = `<span style="color:${info.color}; font-weight:bold; margin-right:5px;">${info.label}</span> <span style="color:var(--text-ghost);">💰${r.gold} ✨${r.exp}</span>`;
             } else {
                 box.innerHTML = `<span style="color:var(--text-ghost);">預覽不可用</span>`;
             }

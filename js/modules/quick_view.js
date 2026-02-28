@@ -16,12 +16,14 @@ window.view.renderquickNoteModal = function(defaultText = '') {
             style="width:100%; height:200px; resize:none;">${defaultText}</textarea>
     `;
 
-    // 使用共用的底部按鈕列
+    // 修復：徹底消除 .replace 黑魔法，直接使用擴充後的 footRow 第 5 參數
     const footHtml = ui.modal.footRow(
         "act.transferToTask(document.getElementById('quick-input').value)",
         "act.saveQuickDraft(document.getElementById('quick-input').value)",
-        "💾 儲存", "correct"
-    ).replace('取消', '🚀 生成任務'); // 運用小技巧覆蓋左側按鈕文字與行為
+        "💾 儲存",        // confirmLabel (右側主要按鈕)
+        "correct",       // confirmTheme
+        "🚀 生成任務"     // cancelLabel (左側次要按鈕)
+    );
 
     ui.modal.render('📝 隨手記', bodyHtml, footHtml, 'panel');
 };

@@ -22,7 +22,6 @@ window.statsView = {
             const currentCal = gs.cal ? gs.cal.today : 0;
             const diff = maxCal - currentCal;
             
-            // 使用變數字串供 badge 使用
             const statusColor = diff >= 0 ? '--color-correct' : '--color-danger'; 
             const statusBg = diff >= 0 ? '--color-correct-soft' : '--color-danger-soft';
             
@@ -45,7 +44,6 @@ window.statsView = {
             </div>
         `;
 
-        // [優化] 直接套用 CSS 的 glass-dashboard 類別
         const glassDashboard = `
             <div class="glass-dashboard">
                 ${chartContent}
@@ -58,7 +56,6 @@ window.statsView = {
         let bodyContent = '';
 
         if (currentTab === 'attr') {
-            // --- 1. 屬性網格 ---
             const attrs = gs.attrs ? Object.values(gs.attrs) : [];
             const attrCardsHtml = attrs.map(a => `
                 <div class="u-box" style="padding:12px; display:flex; flex-direction:column; justify-content:center; border:none; box-shadow:var(--shadow-xs); background:var(--bg-card);">
@@ -72,7 +69,6 @@ window.statsView = {
             
             const gridSection = ui.layout.grid(attrCardsHtml, 2, '10px');
 
-            // --- 2. 技能列表 ---
             const skillHead = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin:25px 0 10px 0; padding: 0 5px;">
                     <h3 style="margin:0; font-size:1.1rem; color:var(--text-2);">修煉技能</h3>
@@ -94,14 +90,12 @@ window.statsView = {
             bodyContent = `<div style="padding:0 15px;">${gridSection}${skillHead}${skillList}</div>`;
 
         } else {
-            // --- 熱量帳本 ---
             const logs = gs.cal?.logs || [];
             const logItems = logs.map(l => {
                 const match = l.match(/([+-]?\d+)$/);
                 const val = match ? parseInt(match[1]) : 0;
                 const txt = l.replace(/([+-]?\d+)$/, '').trim();
                 
-                // 使用變數做判斷
                 const color = val <= 0 ? 'var(--color-correct)' : 'var(--color-danger)'; 
                 const sign = val > 0 ? '+' : '';
 
@@ -123,22 +117,20 @@ window.statsView = {
         }
         
         const isBasicMode = (gs.settings && gs.settings.mode === 'basic');
+        
         container.innerHTML = ui.layout.page({
             title: '📊 狀態分析',
-            back: !isBasicMode, 
+            // 修復：不再隱性依賴底層 boolean，明確給出返回字串或 false
+            back: isBasicMode ? false : "act.navigate('main')", 
             fixedTop: glassDashboard,
             body: bodyContent
         });
 
-        // [C] 繪製雷達圖
         if (currentTab === 'attr') {
             setTimeout(() => this.drawRadarChart(gs.attrs || {}), 100);
         }
     },
 
-    // =========================================
-    // 2. 編輯視窗
-    // =========================================
     renderSkillModal: function(skillName = null) {
         const gs = window.GlobalState;
         const skill = skillName ? gs.skills.find(s => s.name === skillName) : null;
@@ -156,7 +148,6 @@ window.statsView = {
             label: `${gs.attrs[k].icon} ${gs.attrs[k].name}`
         }));
 
-        // [優化] 使用 ui.input.field
         const bodyHtml = `
             ${ui.input.field('技能名稱', ui.input.text(window.TempState.editingSkill.name, "例如: 跑酷...", "window.TempState.editingSkill.name = this.value"))}
             ${ui.input.field('綁定主屬性', ui.input.select(attrOpts, window.TempState.editingSkill.parent, "window.TempState.editingSkill.parent = this.value"), '技能經驗將同時回饋給此屬性')}
@@ -174,9 +165,6 @@ window.statsView = {
         ui.modal.render(isEdit ? '編輯技能' : '新增技能', bodyHtml, footHtml, 'overlay');
     },
 
-    // =========================================
-    // 3. 繪圖
-    // =========================================
     drawRadarChart: function(attrs) {
         const canvas = document.getElementById('radar-canvas');
         if (!canvas || !window.Chart) return;
@@ -193,6 +181,17 @@ window.statsView = {
             }
         });
 
+        // 修復：從系統讀取真實的 CSS 變數，解決圖表顏色脫鉤問題
+        const bodyStyle = getComputedStyle(document.body);
+        const goldHex = bodyStyle.getPropertyValue('--color-gold').trim() || '#f5a623';
+        const textMutedHex = bodyStyle.getPropertyValue('--text-muted').trim() || '#8c6e52';
+        
+        // 簡單將 Hex 轉成帶透明度的 rgba 用於背景
+        const hexToRgba = (hex, alpha) => {
+            const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        };
+
         window.myStatsChart = new Chart(canvas, {
             type: 'radar',
             data: {
@@ -200,11 +199,11 @@ window.statsView = {
                 datasets: [{
                     label: '能力值',
                     data: dataValues,
-                    backgroundColor: 'rgba(245, 166, 35, 0.4)', // 對應新版 var(--color-gold) 的 rgba
-                    borderColor: '#f5a623',                     // 對應新版 var(--color-gold)
+                    backgroundColor: hexToRgba(goldHex, 0.4), 
+                    borderColor: goldHex,                    
                     borderWidth: 2,
                     pointBackgroundColor: '#fff', 
-                    pointBorderColor: '#f5a623'
+                    pointBorderColor: goldHex
                 }]
             },
             options: {
@@ -214,7 +213,7 @@ window.statsView = {
                         beginAtZero: true, 
                         suggestedMax: Math.max(...dataValues) + 2,
                         ticks: { display: false }, 
-                        pointLabels: { font: { size: 12, weight: 'bold' }, color: '#8c6e52' }, // 對應 var(--text-muted)
+                        pointLabels: { font: { size: 12, weight: 'bold' }, color: textMutedHex }, 
                         grid: { color: 'rgba(0,0,0,0.06)' }, 
                         angleLines: { color: 'rgba(0,0,0,0.06)' } 
                     }

@@ -51,7 +51,7 @@ window.SettingsEngine = {
         gs.settings.calMax = numVal;
         
         // [關鍵修復] 同步解鎖 TaskEngine 需要的旗標
-        gs.unlocks.calorie_tracker = true; 
+        gs.unlocks.feature_cal = true; 
         
         if (window.App) App.saveData();
         
@@ -135,8 +135,9 @@ downloadSaveFile: function() {
 	// 4. [補回] 重置資料 (這是原本缺失的部分)
     performReset: function() {
         console.warn("⚠️ 執行系統重置...");
-        localStorage.removeItem('Levelife_Save_V1');
-		localStorage.removeItem('SQ_QUICK_DRAFT');		// 清除存檔
+        const saveKey = (window.GameConfig?.System?.SaveKey) || 'Levelife_Save_V1';
+        localStorage.removeItem(saveKey);
+        localStorage.removeItem('SQ_QUICK_DRAFT');		// 清除存檔
         location.reload(); // 重新整理頁面
     },
 };

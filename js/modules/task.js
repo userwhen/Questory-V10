@@ -2,6 +2,8 @@
 window.TaskEngine = {
     // 1. 初始化
     init: function() {
+		if (this._initialized) return;
+        this._initialized = true;
         const gs = window.GlobalState;
         if (!gs) return; // 現在 main.js 順序對了，這裡就不會被擋下
 
@@ -11,6 +13,11 @@ window.TaskEngine = {
         if (!gs.cal) gs.cal = { today: 0, logs: [] };
         
         // 注意：這裡不再執行重置檢查，改由 Core 統一呼叫 resetDaily
+        
+        // ✅ [Bug 1 修復] 訂閱換日事件，確保跨日或啟動時正確觸發重置
+        if (window.EventBus && window.EVENTS) {
+            window.EventBus.on(window.EVENTS.System.DAILY_RESET, () => this.resetDaily());
+        }
     },
 
     // [新增] 2. 每日重置接口 (供 Core.js 呼叫)

@@ -13,7 +13,7 @@
         // ============================================================
         
         {
-            type: 'love_meet', id: 'rom_meet_classic',
+            type: 'romance_start', id: 'rom_meet_classic',
 			reqTag:['romance'],
             text: { zh: [ "在{noun_location_building}的{noun_location_room}，你正專注於手中的事務。", "突然，一位{lover}因躲避人群而撞到了你懷裡，帶著一股淡淡的香氣。", "就在這時，遠處傳來了{rival}尖銳的聲音：「在那裡！別讓那個『小偷』跑了！」", "這似乎是一場誤會，但卻將你捲入了風暴中心。" ]},
             options: [
@@ -30,7 +30,7 @@
             ]
         },
         {
-            type: 'love_bond', id: 'rom_bond_classic', reqTag: 'route_classic',
+            type: 'romance_mid', id: 'rom_bond_classic', reqTag: 'route_classic',
             text: { zh: [ "為了感謝你的幫助，{lover}約你在一個安靜的角落見面。", "這裡沒有{rival}的眼線。{lover}向你吐露了心聲，原來對方一直受到{rival}的打壓與排擠。", "你看著對方的側臉，心中產生了保護欲。" ]},
             options: [
                 { 
@@ -46,7 +46,7 @@
             ]
         },
 		{
-            type: 'love_bond', 
+            type: 'romance_mid', 
             id: 'rom_bond_normal',
 			reqTags: ['romance',],
             dialogue: [
@@ -65,7 +65,7 @@
             }]
         },
         {
-            type: 'love_date', id: 'rom_date_classic', reqTag: 'route_classic',
+            type: 'romance_adv', id: 'rom_date_classic', reqTag: 'route_classic',
             text: { zh: [ "結盟後的日子裡，你們有了更多獨處的機會。", "今天，{lover}帶著你來到了一處秘密的{noun_location_room}，那是對方放鬆心情的避風港。", "陽光灑在兩人身上，氣氛變得有些曖昧..." ]},
             options: [
                 { 
@@ -75,7 +75,7 @@
             ]
         },
         {
-            type: 'love_scheme', id: 'rom_scheme_classic', reqTag: 'route_classic',
+            type: 'romance_climax', id: 'rom_scheme_classic', reqTag: 'route_classic',
             dialogue: [
 			{text:{ zh:"平靜的日子被打破了。{noun_location_building}裡開始流傳關於你的惡毒謠言。"}}, 
 				{text:{zh:"更糟糕的是，{rival}拿著一份偽造的{noun_item_record}找到了{lover}，試圖證明你接近他是別有用心。"}},
@@ -88,7 +88,7 @@
             ]
         },
         {
-            type: 'love_crisis', id: 'rom_crisis_classic', reqTag: 'route_classic',
+            type: 'romance_climax', id: 'rom_crisis_classic', reqTag: 'route_classic',
             text: { zh: [ "謠言發酵後，你終於見到了{lover}。", "對方的神情顯得疲憊且掙扎，手中緊緊握著那份偽造的{noun_item_record}。", "「告訴我... 那些流言都不是真的，對吧？」" ]},
             options: [
                 { 
@@ -102,7 +102,7 @@
             ]
         },
         {
-            type: 'love_counter', id: 'rom_counter_classic', reqTag: 'route_classic',
+            type: 'romance_climax', id: 'rom_counter_classic', reqTag: 'route_classic',
             text: { zh: [ "這是一場盛大的聚會，所有人都在場。", "{rival}正得意洋洋地高談闊論，準備將你徹底逐出社交圈。", "這是最後的機會，你要如何挽回局面？" ]},
             options: [
                 { 
@@ -112,7 +112,7 @@
             ]
         },
         {
-            type: 'love_confession', id: 'rom_end_classic', reqTag: 'route_classic',
+            type: 'romance_end', id: 'rom_end_classic', reqTag: 'route_classic',
             text: { zh: [ "風波終於平息。在月光下，你和{lover}再次來到了初遇的地方。", "經歷了這一切，你們之間的羈絆已經面臨最終的考驗。", "{lover}靜靜地看著你，等待著你的回應。" ]},
             options: [
                 { 
@@ -131,7 +131,7 @@
         // ============================================================
 
         {
-            type: 'love_meet', id: 'rom_meet_triangle',
+            type: 'romance_start', id: 'rom_meet_triangle',
 			reqTags:['romance'],
             dialogue: [
 		{text:{zh:"在昏暗的{noun_location_room}，你正與{lover}低聲交談，氣氛微醺且曖昧。"}},
@@ -152,7 +152,7 @@
             ]
         },
         {
-            type: 'love_bond', id: 'rom_bond_triangle', reqTag: 'route_triangle',
+            type: 'romance_mid', id: 'rom_bond_triangle', reqTag: 'route_triangle',
             text: { zh: [ "{atom_time}，{lover}暫時離開了座位去接電話。", "{rival}立刻湊近，指尖帶著微涼的溫度，輕輕劃過你的手背。", "「你真的甘心和那種無趣的人在一起嗎？」對方的聲音帶著致命的誘惑，空氣中瀰漫著{atom_smell}。" ]},
             options: [
                 { 
@@ -166,7 +166,7 @@
             ]
         },
         {
-            type: 'love_date', id: 'rom_date_triangle', reqTag: 'route_triangle',
+            type: 'romance_adv', id: 'rom_date_triangle', reqTag: 'route_triangle',
             text: { zh: [ "幾天後的一個{atom_weather}，你在{noun_location_building}的屋簷下躲雨。", "一輛熟悉的車停在面前，車窗搖下，是{rival}那張帶著玩味笑容的臉。", "「上車嗎？還是你要在這裡打給正在忙的{lover}？」" ]},
             options: [
                 { 
@@ -180,7 +180,7 @@
             ]
         },
         {
-            type: 'love_scheme', id: 'rom_scheme_triangle', reqTag: 'route_triangle',
+            type: 'romance_climax', id: 'rom_scheme_triangle', reqTag: 'route_triangle',
             text: { zh: [ "紙終究包不住火。在一次盛大的晚宴上，{lover}在你的手機裡看到了{rival}傳來的曖昧訊息。", "「你們到底是什麼關係？！」{lover}的聲音顫抖著，引來了周圍人的側目。", "而{rival}就站在不遠處，舉著酒杯，彷彿在看一場好戲。" ]},
             options: [
                 { 
@@ -206,7 +206,7 @@
             ]
         },
         {
-            type: 'love_crisis', id: 'rom_crisis_triangle', reqTag: 'route_triangle',
+            type: 'romance_climax', id: 'rom_crisis_triangle', reqTag: 'route_triangle',
             text: { zh: [ "晚宴後的{noun_location_room}，氣氛降至冰點。你被{lover}逼到了牆角，對方眼中的愛意與嫉妒交織成瘋狂的佔有慾。", "「說你只屬於我，否則我不知道我會做出什麼事...」", "與此同時，門外傳來了{rival}漫不經心的敲門聲：「還好嗎？需要我『幫忙』嗎？」" ]},
             options: [
                 { 
@@ -220,14 +220,14 @@
             ]
         },
         {
-            type: 'love_counter', id: 'rom_counter_triangle', reqTag: 'route_triangle',
+            type: 'romance_end', id: 'rom_counter_triangle', reqTag: 'route_triangle',
             text: { zh: [ "三個人的遊戲必須結束。你將{lover}與{rival}同時約到了初遇的那個{noun_location_room}。", "空氣中充滿了火藥味，兩人的目光都鎖定在你身上，等待著最終的判決。" ]},
             options: [
                 { label: "深呼吸，做出決定", action: "advance_chain" }
             ]
         },
         {
-            type: 'love_confession', id: 'rom_end_triangle', reqTag: 'route_triangle',
+            type: 'romance_end', id: 'rom_end_triangle', reqTag: 'route_triangle',
             text: { zh: [ "塵埃落定。這段充滿拉扯、試探與背德的關係，終於迎來了終局。" ]},
             options: [
                 { 
@@ -249,7 +249,7 @@
             ]
         },
 		{
-            type: 'love_confession', 
+            type: 'romance_end', 
             id: 'fallback_romance_end',
             dialogue: [
                 { text: { zh: "夜風微涼，氣氛恰到好處。" } },

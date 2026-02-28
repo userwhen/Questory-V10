@@ -105,7 +105,13 @@ window.AchEngine = {
         // A. 發放獎勵
         const reward = ms.reward || { gold: 0, exp: 0 };
         gs.gold = (gs.gold || 0) + reward.gold;
-        gs.exp = (gs.exp || 0) + reward.exp;
+        
+        // ✅ [Bug 4 修復] 改用 StatsEngine 增加經驗值，確保會觸發升級檢查與 UI 更新
+        if (window.StatsEngine && window.StatsEngine.addPlayerExp) {
+            window.StatsEngine.addPlayerExp(reward.exp);
+        } else {
+            gs.exp = (gs.exp || 0) + reward.exp;
+        }
 
         // B. 狀態流轉 -> 歸檔
         ms.claimed = true; // 標記為已領取 (View 層會根據此屬性將其移至「殿堂」)

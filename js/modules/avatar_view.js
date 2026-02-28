@@ -1,4 +1,4 @@
-/* js/modules/avatar_view.js - V42.1 (Fix Overflow) */
+/* js/modules/avatar_view.js - V42.1 (Fix Overflow & Hover Logic) */
 window.avatarView = {
     render: function() {
         window.TempState.currentView = 'avatar';
@@ -7,7 +7,6 @@ window.avatarView = {
 
         const headerHtml = ui.layout.pageHeader('👗 更衣室', ui.component.btn({ label:'↩ 返回', theme:'ghost', size:'sm', action:"act.navigate('main')" }));
 
-        // [修復] 加入 width:100%; overflow:hidden; 以及衣櫃的彈性高度
         container.innerHTML = `
             <div style="position:relative; width:100%; height:100%; display:flex; flex-direction:column; background:var(--bg-panel); overflow:hidden;">
                 ${headerHtml}
@@ -60,6 +59,12 @@ window.avatarView = {
         const preview = window.TempState.preview || {};
         const gender = window.GlobalState.avatar?.gender || 'm';
 
+        // 修復：精確判斷空狀態，避免字串操作造成的靜默錯誤
+        if (shopData.length === 0) {
+            list.innerHTML = ui.layout.empty('衣櫃空空如也', '👕');
+            return;
+        }
+
         list.innerHTML = shopData.map(item => {
             const isWearing = wearing.suit === item.id;
             const isUnlocked = unlocked.includes(item.id);
@@ -74,9 +79,10 @@ window.avatarView = {
                 btn = { label: `💎 ${item.price}`, theme: 'normal', action: `act.buyAvatarItem('${item.id}')` };
             }
 
+            // 修復：只有在預覽時才掛載 Inline Style，非預覽狀態交給 CSS hover 處理
             const borderStyle = isPreviewing 
                 ? 'border-color: var(--color-gold); background: var(--color-gold-soft); box-shadow: inset 0 0 0 1px var(--color-gold);' 
-                : 'border-color: var(--border); background: var(--bg-card);';
+                : '';
 
             const imgPath = `img/${item.id}_${gender}.png`;
 
@@ -91,6 +97,6 @@ window.avatarView = {
                     </div>
                 </div>
             `;
-        }).join('') || ui.layout.empty('衣櫃空空如也', '👕');
+        }).join('');
     }
 };

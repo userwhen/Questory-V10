@@ -133,6 +133,9 @@ html, body {
     display: flex;
     justify-content: center;
     align-items: center;
+	/* 🚨 加入這行：強制禁止字體根據系統縮放 */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 #app-frame {
@@ -697,6 +700,42 @@ html, body {
 .u-toggle-row.on .toggle-track::after { transform: translateX(16px); }
 .u-toggle-row .toggle-label  { font-size: 0.9rem; font-weight: 600; color: var(--text-2); flex: 1; }
 
+/* =========================================
+   提取出的共用 UI 基礎版型
+========================================= */
+.u-scroll-list {
+    display: flex;
+    overflow-x: auto;
+    gap: 5px;
+    padding-bottom: 5px;
+}
+
+.card-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--bg-box);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.ui-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 50px 20px;
+    font-size: 0.9rem;
+}
+
+.ui-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
 
 /* ==========================================================================
    5. 模組樣式（Modules）
@@ -750,6 +789,22 @@ html, body {
     max-height: 40%; overflow-y: auto;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+}
+
+#page-story .toast-box, 
+#page-story .toast-container, 
+#page-story div[id^="toast"] {
+    top: auto !important;           
+    bottom: 220px !important;       
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 9999 !important;
+}
+
+#tag-drawer-container .drawer-handle,
+#tag-drawer-container [class*="handle"] {
+    top: auto !important;
+    bottom: 210px !important;
 }
 
 /* ── Avatar ──────────────────────────────────────────────────────────── */
@@ -914,12 +969,4 @@ html, body {
     margin: 0 14px 10px;
     padding: 14px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.07);
-}
-
-/* 榮譽殿堂 header（ach_view.js 的 renderMilestonePage 使用）*/
-.milestone-header {
-    background: linear-gradient(135deg, var(--bg-nav) 0%, #130a05 100%);
-    color: var(--text-on-dark);
-    border-bottom: 1px solid var(--color-gold-dark);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }

@@ -16,9 +16,9 @@
         // [BLOCK E] 🌱 明星推手/養成流 (The Mentor)
         // ============================================================
         
-        // 1. 相遇 (raise_meet) - 分支 A
+        // 1. 相遇 (raising_start) - 分支 A
         {
-            type: 'raise_meet', id: 'raise_start_select',
+            type: 'raising_start', id: 'raise_start_select',
             dialogue: [
                 { text: { zh: "這是一個{adj_env_vibe}日子，你在{combo_building}的角落發現了那個獨特的存在。" } },
                 { text: { zh: "那是一位{atom_status}{trainee}，雖然現在還很弱小，但你從對方的眼神中看到了無限的潛力。" } },
@@ -44,7 +44,7 @@
             ]
         },
         {
-            type: 'raise_meet', id: 'raise_meet_normal',
+            type: 'raising_start', id: 'raise_meet_normal',
             dialogue: [
                 { text: { zh: "這是一個命運般的相遇。" } },
                 { text: { zh: "你在人群中一眼就看到了{trainee}。雖然現在還默默無聞，但你從那雙眼睛裡看到了潛力。" } },
@@ -75,9 +75,9 @@
             ]
         },
 
-        // 2. 訓練日常 (raise_train) - 訓練 A
+        // 2. 訓練日常 (raising_mid) - 訓練 A
         {
-            type: 'raise_train', id: 'raise_train_day',
+            type: 'raising_mid', id: 'raise_train_day',
             dialogue: [
                 { text: { zh: "時光飛逝，{trainee}在你的指導下飛速成長。" } },
                 { text: { zh: "今天是一個關鍵的訓練日，你看著對方{atom_manner}練習著。" } },
@@ -111,7 +111,7 @@
             ]
         },
         {
-            type: 'raise_train', id: 'raise_train_hard',
+            type: 'raising_mid', id: 'raise_train_hard',
             dialogue: [
                 { text: { zh: "今天的訓練清單非常魔鬼。" } },
                 { text: { zh: "{trainee}已經累得氣喘吁吁，汗水浸濕了衣背。" } },
@@ -146,9 +146,9 @@
             ]
         },
 
-        // 3. 初次登台/出道 (raise_debut) - 事件 A
+        // 3. 初次登台/出道 (raising_adv) - 事件 A
         {
-            type: 'raise_debut', id: 'raise_event_show',
+            type: 'raising_adv', id: 'raise_event_show',
             dialogue: [
                 { text: { zh: "{trainee}迎來了第一次公開展示的機會——在{noun_location_room}舉行的選拔賽。" } },
                 { text: { zh: "然而，在上場前的後台..." } }
@@ -189,7 +189,7 @@
             ]
         },
         {
-            type: 'raise_debut', id: 'raise_debut_show',
+            type: 'raising_adv', id: 'raise_debut_show',
             dialogue: [
                 { text: { zh: "終於到了檢驗成果的時候。" } },
                 { text: { zh: "舞台下的觀眾並不多，但這是{trainee}的第一次正式亮相。" } },
@@ -239,9 +239,9 @@
             ]
         },
 
-        // 4. 高潮 (raise_climax)
+        // 4. 高潮 (raising_climax)
         {
-            type: 'raise_climax', id: 'raise_final_battle', 
+            type: 'raising_climax', id: 'raise_final_battle', 
             reqTags: ['fame_mid'], // 🌟 升級陣列格式
             dialogue: [
                 { text: { zh: "決戰之日終於來臨。站在巔峰的對手強大得令人窒息。" } },
@@ -259,7 +259,7 @@
             ]
         },
         {
-            type: 'raise_climax', id: 'raise_climax_final', 
+            type: 'raising_climax', id: 'raise_climax_final', 
             dialogue: [ 
                 { text: { zh: "時光飛逝，經歷了出道的洗禮，{trainee}終於站上了全國大賽的決賽舞台。" } },
                 { text: { zh: "對手是業界公認的霸主。在上場前的最後一刻，你想說..." } }
@@ -276,7 +276,7 @@
             ]
         },
 		{
-            type: 'raise_climax', 
+            type: 'raising_climax', 
             id: 'raise_final_battle_low_fame',
 			excludeTag: ['theme_romance',],
             dialogue: [
@@ -295,9 +295,9 @@
             }]
         },
 
-        // 5. 結局 (raise_ending)
+        // 5. 結局 (raising_end)
         {
-            type: 'raise_ending', id: 'raise_end_result',
+            type: 'raising_end', id: 'raise_end_result',
             dialogue: [
                 { text: { zh: "塵埃落定。你看著眼前這個光芒萬丈的存在，回想起最初相遇的那一刻。" } },
                 { text: { zh: "這段旅程，終於畫上了句點。" } }
@@ -341,7 +341,7 @@
             ]
         },
         {
-            type: 'raise_ending', id: 'raise_ending_success',
+            type: 'raising_end', id: 'raise_ending_success',
             dialogue: [
                 { text: { zh: "經過這段時間的努力，初次登台的結果已經決定了未來的走向。" } },
                 { text: { zh: "看著那自信的身影，你知道你的任務已經告一段落。" } },
@@ -388,7 +388,7 @@
             ]
         },
         {
-            type: 'raise_ending', id: 'fallback_raising_end',
+            type: 'raising_end', id: 'fallback_raising_end',
             dialogue: [
                 { text: { zh: "時光飛逝，培育的旅程來到了終點。" } },
                 { text: { zh: "看著{trainee}如今自信的模樣，你露出了欣慰的笑容。" } },

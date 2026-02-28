@@ -15,7 +15,7 @@ window.shopView = {
         const isBagOpen = window.TempState.isBagOpen || false; 
         const items = ShopEngine.getShopItems(currentCat);
 
-        // --- [A] NPC 區域 (套用變數) ---
+        // --- [A] NPC 區域 ---
         const npcDialogs = ["歡迎光臨！", "庫存有限，要買要快！", "有些好貨剛到喔！"];
         if (!window.TempState.npcText) window.TempState.npcText = npcDialogs[0];
         
@@ -30,7 +30,7 @@ window.shopView = {
                 </div>
             </div>`;
 
-        // --- [B] Filter 列 (使用通用組件) ---
+        // --- [B] Filter 列 ---
         const filterBar = `
             <div style="background: var(--bg-elevated); padding: 10px 15px; border-bottom: 1px solid var(--border); flex-shrink: 0;">
                 ${ui.layout.filterBar(
@@ -128,26 +128,24 @@ window.shopView = {
         window.TempState.buyQty = 1; 
         window.TempState.buyMax = item.qty; 
         
-        const body = `
-            <div style="text-align:center; padding:10px;">
-                <div style="font-size:3.5rem; margin-bottom:10px;">${item.icon||'🎁'}</div>
-                <h3 style="color:var(--text);">${item.name}</h3>
-                <p style="color:var(--text-muted); font-size:0.9rem;">${item.desc}</p>
-                <div style="margin:20px 0; padding:15px; background:var(--bg-box); border-radius:var(--radius-md); border:1px solid var(--border);">
-                    <div style="display:flex; justify-content:center; align-items:center; gap:8px;">
-                        ${ui.component.btn({label:'MIN', theme:'ghost', size:'sm', action:"act.updateBuyQty('min')"})}
-                        <button class="u-btn u-btn-ghost" onclick="act.updateBuyQty(-1)">➖</button>
-                        <b id="buy-qty-display" style="font-size:1.5rem; width:50px; text-align:center; color:var(--text);">1</b>
-                        <button class="u-btn u-btn-ghost" onclick="act.updateBuyQty(1)">➕</button>
-                        ${ui.component.btn({label:'MAX', theme:'ghost', size:'sm', action:"act.updateBuyQty('max')"})}
-                    </div>
-                    <div style="font-size:0.8rem; color:var(--text-ghost); margin-top:5px;">(最大庫存: ${item.qty})</div>
-                    <div style="margin-top:10px; color:var(--color-gold-dark); font-weight:bold; font-size:1.1rem;">總價: <span id="buy-total-price">${item.price}</span></div>
+        // [優化] 改用 centeredBody
+        const extraHtml = `
+            <div style="margin:20px 0; padding:15px; background:var(--bg-box); border-radius:var(--radius-md); border:1px solid var(--border);">
+                <div style="display:flex; justify-content:center; align-items:center; gap:8px;">
+                    ${ui.component.btn({label:'MIN', theme:'ghost', size:'sm', action:"act.updateBuyQty('min')"})}
+                    <button class="u-btn u-btn-ghost" onclick="act.updateBuyQty(-1)">➖</button>
+                    <b id="buy-qty-display" style="font-size:1.5rem; width:50px; text-align:center; color:var(--text);">1</b>
+                    <button class="u-btn u-btn-ghost" onclick="act.updateBuyQty(1)">➕</button>
+                    ${ui.component.btn({label:'MAX', theme:'ghost', size:'sm', action:"act.updateBuyQty('max')"})}
                 </div>
+                <div style="font-size:0.8rem; color:var(--text-ghost); margin-top:5px;">(最大庫存: ${item.qty})</div>
+                <div style="margin-top:10px; color:var(--color-gold-dark); font-weight:bold; font-size:1.1rem;">總價: <span id="buy-total-price">${item.price}</span></div>
             </div>`;
             
+        const body = ui.modal.centeredBody(item.icon||'🎁', item.name, item.desc, extraHtml);
         const foot = ui.component.btn({ label:'確認購買', theme:'correct', style:'width:100%;', action:'act.confirmBuy()' });
-        ui.modal.render('購買商品', body, foot, 'overlay');
+        
+        ui.modal.render('🛒 購買商品', body, foot, 'overlay');
     },
 
     // 3. 上架/編輯視窗
@@ -197,8 +195,9 @@ window.shopView = {
 
     // 5. 儲值
     renderPayment: function() {
-        const body = `<div style="text-align:center; padding:10px;"><h3 style="color:var(--color-gold-dark); margin-bottom:15px;">💎 儲值中心</h3><div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">${[30, 100, 300, 1000].map(v => ui.component.btn({label:`💎 ${v}`, theme:'ghost', action:`act.submitPayment(${v})`})).join('')}</div></div>`;
-        ui.modal.render('', body, null, 'overlay');
+        // 修復：給予明確標題，消滅空白黑條
+        const body = `<div style="text-align:center; padding:10px;"><div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">${[30, 100, 300, 1000].map(v => ui.component.btn({label:`💎 ${v}`, theme:'ghost', action:`act.submitPayment(${v})`})).join('')}</div></div>`;
+        ui.modal.render('💎 儲值中心', body, null, 'overlay');
     },
 
     // 6. 物品詳情
@@ -211,32 +210,30 @@ window.shopView = {
         window.TempState.useQty = 1;
         window.TempState.useMax = item.count; 
 
-        const body = `
-            <div style="text-align:center; padding:10px;">
-                <div style="font-size:3.5rem; margin-bottom:10px;">${item.icon||'📦'}</div>
-                <h3 style="color:var(--text);">${item.name}</h3>
-                <p style="color:var(--text-muted); font-size:0.9rem;">${item.desc || '無描述'}</p>
-                <div style="margin:20px 0; padding:15px; background:var(--bg-box); border-radius:var(--radius-md); border:1px solid var(--border);">
-                    <div style="display:flex; justify-content:center; align-items:center; gap:8px;">
-                        ${ui.component.btn({label:'MIN', theme:'ghost', size:'sm', action:"act.updateUseQty('min')"})}
-                        <button class="u-btn u-btn-ghost" onclick="act.updateUseQty(-1)">➖</button>
-                        <b id="use-qty-display" style="font-size:1.5rem; width:50px; text-align:center; color:var(--text);">1</b>
-                        <button class="u-btn u-btn-ghost" onclick="act.updateUseQty(1)">➕</button>
-                        ${ui.component.btn({label:'MAX', theme:'ghost', size:'sm', action:"act.updateUseQty('max')"})}
-                    </div>
-                    <div style="font-size:0.9rem; color:var(--color-info); margin-top:10px; font-weight:bold;">
-                        (擁有數量: ${item.count})
-                    </div>
+        // [優化] 改用 centeredBody
+        const extraHtml = `
+            <div style="margin:20px 0; padding:15px; background:var(--bg-box); border-radius:var(--radius-md); border:1px solid var(--border);">
+                <div style="display:flex; justify-content:center; align-items:center; gap:8px;">
+                    ${ui.component.btn({label:'MIN', theme:'ghost', size:'sm', action:"act.updateUseQty('min')"})}
+                    <button class="u-btn u-btn-ghost" onclick="act.updateUseQty(-1)">➖</button>
+                    <b id="use-qty-display" style="font-size:1.5rem; width:50px; text-align:center; color:var(--text);">1</b>
+                    <button class="u-btn u-btn-ghost" onclick="act.updateUseQty(1)">➕</button>
+                    ${ui.component.btn({label:'MAX', theme:'ghost', size:'sm', action:"act.updateUseQty('max')"})}
+                </div>
+                <div style="font-size:0.9rem; color:var(--color-info); margin-top:10px; font-weight:bold;">
+                    (擁有數量: ${item.count})
                 </div>
             </div>`;
 
+        const body = ui.modal.centeredBody(item.icon||'📦', item.name, item.desc || '無描述', extraHtml);
+        
         const foot = `
             <div style="display:flex; gap:10px; width:100%;">
                 ${ui.component.btn({ label:'🗑️ 丟棄', theme:'danger', style:'flex:1;', action:'act.useItem(true)' })}
                 ${ui.component.btn({ label:'✨ 使用', theme:'correct', style:'flex:2;', action:'act.useItem(false)' })}
             </div>
         `;
-        ui.modal.render('物品詳情', body, foot, 'panel');
+        ui.modal.render('📦 物品詳情', body, foot, 'panel');
     },
 	
     // 7. 精力補給站
@@ -263,15 +260,15 @@ window.shopView = {
             });
         }).join(''), '3', '10px');
 
+        // 修復：給予明確標題，消滅空白黑條
         const body = `
             <div style="text-align:center; padding:10px;">
-                <h3 style="color:var(--color-gold-dark); margin-bottom:5px; font-size:1.3rem;">⚡ 精力補給站</h3>
                 <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:20px;">
                     持有鑽石: <span style="color:var(--color-info); font-weight:bold;">💎 ${gems}</span>
                 </p>
                 ${gridHtml}
             </div>`;
 
-        ui.modal.render('', body, null, 'overlay');
+        ui.modal.render('⚡ 精力補給站', body, null, 'overlay');
     }
 };

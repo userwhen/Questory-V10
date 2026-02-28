@@ -2,6 +2,8 @@
 
 window.StoryController = {
     init: function() {
+		if (this._initialized) return;
+        this._initialized = true;
         if (!window.EventBus) return;
         const E = window.EVENTS || {};
 
@@ -19,10 +21,6 @@ window.StoryController = {
         Object.assign(window.act, {
             enterStoryMode: () => {
                 if (window.act.navigate) act.navigate('story');
-                
-                // [修復] 使用標準常數
-                if (E.Story && E.Story.ENTERED) EventBus.emit(E.Story.ENTERED);
-
                 const gs = window.GlobalState;
                 const hasActiveChain = gs.story && gs.story.chain && gs.story.chain.history.length > 0;
                 const hasActiveNode = gs.story && gs.story.currentNode;

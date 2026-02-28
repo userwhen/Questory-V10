@@ -16,25 +16,28 @@ window.settingsView = {
             {val:'adventurer', label:'🛡️ 冒險者模式'},
             {val:'basic', label:'📊 基礎模式'}
         ];
-        if (unlocks.harem) modeOptions.push({val:'harem', label:'💕 后宮模式'});
+        if (unlocks.harem) modeOptions.push({val:'harem', label:'💕 后宫模式'});
         if (unlocks.learning) modeOptions.push({val:'learning', label:'📚 語言學習'});
 
         const hasCalDLC = unlocks.feature_cal;       
         const hasStrictDLC = unlocks.feature_strict; 
 
-        const calRow = hasCalDLC 
-            ? ui.input.toggleRow({ id: 'set-cal', label: '🔥 卡路里消耗計算', checked: displayState.calMode, onChange: "act.checkCalMode(this.checked)" })
-            : `<div style="padding:12px; color:var(--text-ghost); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-                 <span style="display:flex; align-items:center; gap:5px;">🔒 卡路里消耗計算</span>
-                 <span style="font-size:0.8rem; background:var(--bg-box); padding:2px 8px; border-radius:var(--radius-sm);">未解鎖</span>
-               </div>`;
+        // [優化] 使用擴充的 locked 屬性，消滅手寫的三元判斷 HTML
+        const calRow = ui.input.toggleRow({ 
+            id: 'set-cal', 
+            label: '🔥 卡路里消耗計算', 
+            checked: displayState.calMode, 
+            onChange: "act.checkCalMode(this.checked)",
+            locked: !hasCalDLC
+        });
 
-        const strictRow = hasStrictDLC
-            ? ui.input.toggleRow({ id: 'set-strict', label: '⚡ 嚴格模式 (失敗扣分)', checked: displayState.strictMode, onChange: "act.updateSettingsDraft('strictMode', this.checked)" })
-            : `<div style="padding:12px; color:var(--text-ghost); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-                 <span style="display:flex; align-items:center; gap:5px;">🔒 嚴格模式</span>
-                 <span style="font-size:0.8rem; background:var(--bg-box); padding:2px 8px; border-radius:var(--radius-sm);">未解鎖</span>
-               </div>`;
+        const strictRow = ui.input.toggleRow({ 
+            id: 'set-strict', 
+            label: '⚡ 嚴格模式 (失敗扣分)', 
+            checked: displayState.strictMode, 
+            onChange: "act.updateSettingsDraft('strictMode', this.checked)",
+            locked: !hasStrictDLC
+        });
 
         const bodyHtml = `
             <div class="u-box">
@@ -74,34 +77,34 @@ window.settingsView = {
         const draftVal = window.TempState.settingsDraft ? window.TempState.settingsDraft.calMax : null;
         const currentVal = draftVal || (gs.settings ? gs.settings.calMax : 2000);
 
-        const body = `
-            <div style="padding:20px; text-align:center;">
-                <div style="margin-bottom:15px; color:var(--text-muted);">請設定每日熱量目標 (Kcal)</div>
-                <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
-                    <span style="font-size:1.5rem;">🎯</span>
-                    <input type="text" id="inp-cal-target" value="${currentVal}" 
-                        maxlength="4" inputmode="numeric"
-                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4)"
-                        placeholder="2000"
-                        style="font-size:1.5rem; width:120px; text-align:center; padding:5px; border:2px solid var(--color-info); border-radius:var(--radius-sm); outline:none; color:var(--text); background:var(--bg-input);">
-                </div>
-                <div style="font-size:0.8rem; color:var(--text-ghost); margin-top:5px;">(最多 4 位數字)</div>
+        const extraHtml = `
+            <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
+                <input type="text" id="inp-cal-target" value="${currentVal}" 
+                    maxlength="4" inputmode="numeric"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4)"
+                    placeholder="2000"
+                    style="font-size:1.5rem; width:120px; text-align:center; padding:5px; border:2px solid var(--color-info); border-radius:var(--radius-sm); outline:none; color:var(--text); background:var(--bg-input);">
             </div>
+            <div style="font-size:0.8rem; color:var(--text-ghost); margin-top:5px;">(最多 4 位數字)</div>
         `;
 
+        const body = ui.modal.centeredBody('🎯', '請設定每日熱量目標 (Kcal)', '', extraHtml);
         const foot = ui.component.btn({ label: '確定', theme: 'correct', style: 'width:100%;', action: 'act.submitCalTarget()' });
+        
         ui.modal.render('🔥 目標設定', body, foot, 'overlay');
     },
 
     renderSettingsShop: function() {
         const items = SettingsEngine.shopItems;
         const unlocks = window.GlobalState.unlocks || {};
+        
         const listHtml = items.map(item => {
             const isOwned = unlocks[item.id];
-            return `<div class="std-card" style="margin-bottom:10px; border:2px solid ${item.border}; background:${item.bg}; border-left-width: 2px;">
+            // 修復：不再使用 fallback 覆蓋 CSS，有特殊背景色時才加入 inline style
+            return `<div class="std-card" style="margin-bottom:10px; border-left-color:${item.border}; ${item.bg ? 'background:'+item.bg+';' : ''}">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                         <h4 style="margin:0; color:${item.color}; font-size:1.1rem;">${item.name}</h4>
-                        ${item.badge ? `<span style="background:${item.border}; color:#000; padding:2px 8px; border-radius:var(--radius-xs); font-size:0.75rem; font-weight:bold;">${item.badge}</span>` : ''}
+                        ${item.badge ? ui.component.badge(item.badge, '--color-gold-dark', '--color-gold-soft') : ''}
                     </div>
                     <p style="font-size:0.9rem; color:var(--text-2); margin-bottom:12px; line-height:1.5;">${item.desc}</p>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -114,14 +117,17 @@ window.settingsView = {
     },
 
     renderResetConfirm: function() {
-        const body = `<div style="padding:20px; text-align:center; color:var(--color-danger);"><div style="font-size:3rem; margin-bottom:10px;">⚠️</div><h3 style="margin-bottom:10px;">危險操作</h3><p>確定要刪除所有進度嗎？<br>此操作<b>無法復原</b>。</p></div>`;
-        const foot = ui.component.btn({label:'確定重置', theme:'danger', style:'width:100%;', action:'act.confirmReset()'});
+        const body = ui.modal.centeredBody('⚠️', '危險操作', '確定要刪除所有進度嗎？<br>此操作<b>無法復原</b>。');
+        const foot = ui.modal.footRow("ui.modal.close('m-system')", "act.confirmReset()", "確定重置", "danger");
         ui.modal.render('系統警告', body, foot, 'system');
     },
 
     renderImportModal: function() {
-        const body = `<div style="padding:20px; text-align:center;"><p style="margin-bottom:15px; color:var(--text-muted);">請選擇 .json 存檔檔案</p><input type="file" id="inp-import-file" accept=".json" onchange="act.handleFileImport(this)" style="display:block; width:100%; padding:10px; border:1px dashed var(--border); background:var(--bg-box); border-radius:var(--radius-sm); color:var(--text);"></div>`;
-        const foot = ui.component.btn({label:'關閉', theme:'ghost', style:'width:100%;', action:"act.closeModal('overlay')"});
+        const extraHtml = `<input type="file" id="inp-import-file" accept=".json" onchange="act.handleFileImport(this)" style="display:block; width:100%; padding:10px; border:1px dashed var(--border); background:var(--bg-box); border-radius:var(--radius-sm); color:var(--text);">`;
+        
+        const body = ui.modal.centeredBody('📥', '讀取存檔', '請選擇 .json 存檔檔案', extraHtml);
+        
+        const foot = ui.component.btn({label:'關閉', theme:'ghost', style:'width:100%;', action:"ui.modal.close('m-overlay')"});
         ui.modal.render('📥 讀取存檔', body, foot, 'overlay');
     }
 };

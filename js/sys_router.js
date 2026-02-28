@@ -36,6 +36,13 @@ window.Router = {
     go: function(pageId) {
         // 1. 容錯處理 (加上前綴兼容舊寫法)
         const cleanId = pageId.replace('page-', '');
+        
+        // ✅ [Bug 5 修復] 將 Guard 移到最底層，這樣連 Router.back() 都能成功攔截
+        if (window.GlobalState?.settings?.mode === 'basic' && cleanId === 'main') {
+            console.log("🛡️ [Basic Mode] 攔截大廳導航，停留在 Stats");
+            return this.go('stats');
+        }
+
         const conf = this.config[cleanId];
         
         if (!conf) {

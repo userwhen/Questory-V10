@@ -6,7 +6,8 @@ window.storyView = {
         const container = document.getElementById('page-story');
         if (!container) return;
 
-        if (document.getElementById('story-text-wrapper')) {
+        // 修復：對應 CSS 的 #story-text-box
+        if (document.getElementById('story-text-box')) {
             this.updateTopBar();
             this.updateDrawer();
             const box = document.getElementById('story-content');
@@ -20,10 +21,12 @@ window.storyView = {
             position: 'absolute', top: '0', left: '0'
         });
 
-        const topBarContent = `<div id="story-topbar" style="display:flex; align-items:center; justify-content:space-between; width:100%; gap: 5px;"></div>`;
+        // 修復：ID 改為 story-top-bar 對接 CSS
+        const topBarContent = `<div id="story-top-bar" style="display:flex; align-items:center; justify-content:space-between; width:100%; gap: 5px;"></div>`;
         
+        // 修復：ID 改為 story-text-box 對接 CSS
         const textBody = `
-            <div id="story-text-wrapper" 
+            <div id="story-text-box" 
                  onclick="if(window.StoryEngine && window.StoryEngine.clickScreen) window.StoryEngine.clickScreen()"
                  style="
                     flex: 1; min-height: 0; padding: 15px 20px 20px 20px; overflow-y: auto; 
@@ -35,11 +38,10 @@ window.storyView = {
                 <style>@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }</style>
             </div>`;
 
+        // 修復：移除 display:flex 等會蓋掉 CSS Grid 的 inline style
         const actionsArea = `
             <div id="story-actions" style="
-                min-height: 200px; width: 100%;
-                flex-shrink: 0; display: flex; flex-direction: column; 
-                justify-content: flex-start; gap: 10px; background: var(--bg-hud); 
+                width: 100%; flex-shrink: 0; gap: 10px; background: var(--bg-hud); 
                 border-top: 1px solid rgba(255,255,255,0.08); box-shadow: 0 -4px 15px rgba(0,0,0,0.6);
                 padding: 15px; box-sizing: border-box; overflow-y: auto; z-index: 10;
             "></div>`;
@@ -52,22 +54,6 @@ window.storyView = {
                 ${textBody}
                 ${actionsArea}
                 ${tagDrawerHtml}
-                
-                <style>
-                    .toast-box, .toast-container, div[id^="toast"] {
-                        top: auto !important;           
-                        bottom: 220px !important;       
-                        left: 50% !important;
-                        transform: translateX(-50%) !important;
-                        z-index: 9999 !important;
-                    }
-
-                    #tag-drawer-container .drawer-handle,
-                    #tag-drawer-container [class*="handle"] {
-                        top: auto !important;
-                        bottom: 210px !important;
-                    }
-                </style>
             </div>
         `;
         
@@ -77,7 +63,7 @@ window.storyView = {
     },
 
     updateTopBar: function() {
-        const el = document.getElementById('story-topbar');
+        const el = document.getElementById('story-top-bar'); // 更新 ID 抓取
         if (!el) return;
         
         const gs = window.GlobalState;
@@ -92,7 +78,6 @@ window.storyView = {
         const langOpts = [{value:'mix',label:'Mix'}, {value:'zh',label:'ZH'}, {value:'jp',label:'JP'}, {value:'en',label:'EN'}];
         const langSelector = `<div style="transform: scale(0.9);">${ui.input.select(langOpts, currentLang, "act.setLang(this.value)", "story-lang-select")}</div>`;
 		
-		// [新增] 開發者專用的劇本編輯按鈕
         let devBtnHtml = '';
         if (window.isDebugActive) {
             devBtnHtml = ui.component.btn({
@@ -137,7 +122,6 @@ window.storyView = {
         const currentTagFilter = window.TempState.tagFilter || '全部';
         const myTags = gs.story?.tags || [];
 
-        // 對應 CSS 變數的標籤顏色配置
         const tagStyles = { 
             'loc': { color: '--color-gold-dark', bg: '--color-gold-soft' }, 
             'status': { color: '--color-info', bg: '--color-info-soft' }, 
@@ -190,13 +174,13 @@ window.storyView = {
         if (actBox) actBox.innerHTML = '';
         if (cursor) cursor.style.display = 'none';
         
-        const wrap = document.getElementById('story-text-wrapper');
+        const wrap = document.getElementById('story-text-box'); // 更新 ID 抓取
         if (wrap) wrap.scrollTop = 0;
     },
 
     appendChunk: function(htmlContent, isLastChunk) {
         const box = document.getElementById('story-content');
-        const wrap = document.getElementById('story-text-wrapper');
+        const wrap = document.getElementById('story-text-box'); // 更新 ID 抓取
         const cursor = document.getElementById('story-cursor');
         if (!box || !wrap) return;
 
@@ -269,14 +253,14 @@ window.storyView = {
             }
             
             if (!justCleared) {
-                const wrap = document.getElementById('story-text-wrapper');
+                const wrap = document.getElementById('story-text-box'); // 更新 ID 抓取
                 if(wrap && i % 3 === 0) {
                     if (wrap.scrollHeight - wrap.scrollTop > wrap.clientHeight + 50) {
                         wrap.scrollTop = wrap.scrollHeight;
                     }
                 }
             } else {
-                const wrap = document.getElementById('story-text-wrapper');
+                const wrap = document.getElementById('story-text-box'); // 更新 ID 抓取
                 if (wrap && wrap.scrollTop !== 0) wrap.scrollTop = 0;
             }
 
@@ -312,7 +296,7 @@ window.storyView = {
             style: 'width:100%; max-width:400px; margin:0 auto; padding:12px; font-size:1rem; text-align:center;'
         })).join('');
         
-        const wrap = document.getElementById('story-text-wrapper');
+        const wrap = document.getElementById('story-text-box'); // 更新 ID 抓取
         if(wrap) wrap.scrollTop = wrap.scrollHeight;
     },
 
