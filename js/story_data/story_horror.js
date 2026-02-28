@@ -113,7 +113,7 @@
             dialogue: [
                 { text: { zh: "你試圖離開，但走廊彷彿沒有盡頭。身後傳來了急促的{env_sound}。" } },
                 { text: { zh: "那聲音極不規律，就像是某種肢體扭曲的怪物，正手腳並用在地上爬行。" } },
-                { speaker: "？？？", text: { zh: "「嘻嘻... 找到... 你了...」" } }
+                { speaker: "？？？", text: { zh: "嘻嘻... 找到... 你了..." } }
             ],
             options: [
                 { label: "屏住呼吸，躲進死角", style: "primary", check: { stat: 'INT', val: 5 }, action: "advance_chain" },
@@ -154,7 +154,7 @@
             dialogue: [
                 { text: { zh: "你在{env_room}遇到了一名{actor_survivor}。對方緊緊抱著頭，渾身發抖。" } },
                 { text: { zh: "你試圖搭話，對方卻猛然抬頭，用佈滿血絲的眼睛瞪著你。" } },
-                { speaker: "倖存者", text: { zh: "「別看牆壁... 牆壁裡有眼睛... 它們會鑽進你的腦子裡！」" } },
+                { speaker: "倖存者", text: { zh: "別看牆壁... 牆壁裡有眼睛... 它們會鑽進你的腦子裡！" } },
                 { text: { zh: "對方語無倫次地尖叫著，突然拿起一把碎玻璃，開始狂抓自己的臉。" } }
             ],
             options: [
@@ -232,6 +232,40 @@
                 }
             ]
         },
+		{ 
+		type: 'horror_climax',  // 👈 這是劇本鏈的尾端，預兆爆發時會強制走到這！
+		id: 'boss_haunt_awakens', 
+		// 【不被過濾】Boss 戰絕對不能被歷史紀錄濾掉
+		dialogue: [
+			{ text: { zh: "整棟建築的{env_sound}瞬間消失，取而代之的是令人窒息的壓迫感。" } },
+			{ text: { zh: "一陣陰風吹過，{horror_chase_start}" } }, // 動態生成怪物登場
+			{ text: { zh: "作祟正式開始了！你必須活下去！" } }
+		], 
+		options: [
+			{ 
+				label: "死戰到底！(STR檢定)", 
+				check: { stat: 'STR', val: 8 }, 
+				action: "node_next", 
+				rewards: { exp: 100, gold: 50 },
+				nextScene: { 
+					dialogue: [{ text: { zh: "你拼盡全力擊退了怪物，成功逃出了這棟可怕的建築！" } }], 
+					options: [{ label: "結束這場惡夢", action: "finish_chain" }] 
+				},
+				failScene: { 
+					dialogue: [{ text: { zh: "你敵不過它... 你的意識逐漸模糊..." } }], 
+					rewards: { varOps: [{key:'hp', val:50, op:'-'}] }, 
+					options: [{ label: "眼前一黑", action: "finish_chain" }] 
+				}
+			},
+			{ 
+				// 💡 動態標籤注入魔法：如果剛好身上有神聖物品標籤，可以秒殺！
+				label: "使用神聖力量驅逐！", 
+				condition: { tags: ['bonus_holy'] }, 
+				action: "finish_chain", 
+				rewards: { exp: 200 } 
+			}
+		] 
+		},
         {
             type: 'horror_end', id: 'hor_psych_end',
             dialogue: [
@@ -239,7 +273,7 @@
                 { text: { zh: "人群的喧囂聲讓你感到一陣恍惚。你以為你逃掉了。" } },
                 { text: { zh: "但當你低頭看時，發現自己的腳踝上，多了一個青紫色的手印，而且...還在發燙。" } }
             ],
-            options: [{ label: "這只是一個開始...", action: "finish_chain", rewards: { title: "倖存者(？)", gold: 30 } }]
+            options: [{ label: "這只是一個開始...", action: "finish_chain", rewards: { title: "倖存者", gold: 30 } }]
         }
     );
 

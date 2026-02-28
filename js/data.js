@@ -32,7 +32,7 @@ window.DefaultData = {
     shop: { user: [] }, 
     
     settings: { mode: 'adventurer', calMode: false, calMax: 2000, strictMode: false },
-    unlocks: { basic: true, feature_cal: false }, 
+    unlocks: { basic: true, feature_cal: false, feature_strict: false },
     cal: { today: 0, logs: [] },
     taskCats: ['每日', '運動', '工作', '待辦', '願望']
 };
@@ -49,14 +49,6 @@ window.GameConfig.System = {
     SaveInterval: 5000 
 };
 
-// 難度與獎勵定義
-window.DIFFICULTY_DEFS = { 
-    1: { label: '簡單', baseGold: 15, baseExp: 10, color: '#81c784' }, 
-    2: { label: '中等', baseGold: 35, baseExp: 25, color: '#4db6ac' }, 
-    3: { label: '困難', baseGold: 80, baseExp: 60, color: '#ffb74d' }, 
-    4: { label: '史詩', baseGold: 200, baseExp: 150, color: '#e57373' } 
-};
-
 // 紙娃娃商店列表 [與 avatar.js 的 ID 對齊]
 window.GameConfig.AvatarShop = [
     { id: 'suit_novice', name: '新手套裝', price: 0, type: 'suit' },
@@ -64,9 +56,6 @@ window.GameConfig.AvatarShop = [
     { id: 'suit_mage', name: '法師長袍', price: 150, type: 'suit' },
     { id: 'suit_king', name: '國王新衣', price: 999, type: 'suit' }
 ];
-
-// 劇情模式文本 (Story)
-window.GameConfig.StoryIdleTexts = [ "準備好迎接新的冒險了嗎？", "風平浪靜...", "整裝待發。", "四周很安靜。", "遠方傳來未知的聲音...", "今天天氣真不錯。" ];
 
 // 資源路徑配置 (Assets)
 window.GameConfig.Assets = {

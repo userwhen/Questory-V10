@@ -62,10 +62,13 @@ window.StoryGenerator = {
     // ============================================================
 	globalSeeds: {
         // 1. 玩家開局特質 (Player Traits)
-        player_trait: "global_player_trait", // 👉 直接指向詞庫的陣列名稱
+        player_trait: "global_player_trait", 
         
         // 2. 世界底層氛圍 (World Atmosphere)
-        world_vibe: "global_world_vibe"      // 👉 直接指向詞庫的陣列名稱
+        world_vibe: "global_world_vibe",
+
+        // 🌟 新增這行：讓每一次的冒險，都固定在一棟建築物裡！(例如永遠在工廠)
+        env_building: "env_building" 
     },
     skeletons: {
         'mystery': {

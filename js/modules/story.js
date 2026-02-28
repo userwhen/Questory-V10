@@ -1,5 +1,77 @@
 /* js/modules/story.js - V76.0 (Refactored & Optimized) */
 
+// ============================================================
+// 🗺️ 山中小屋地圖系統 (Map Manager) - 內文顯示版
+// ============================================================
+window.MapManager = {
+    map: [],             
+    currentRoom: null,   
+    omenCount: 0,        
+
+    init: function(startName) {
+        this.map = [];
+        this.omenCount = 0;
+        // 如果有傳入名字就用傳入的，沒有才用生成器
+        let startRoom = this.generateRoom(startName); 
+        this.map.push(startRoom);
+        this.currentRoom = startRoom;
+        this.updateTopBarLocation();
+    },
+
+    clear: function() {
+        this.map = [];
+        this.currentRoom = null;
+        this.omenCount = 0;
+        window.TempState.storyLocation = "未知區域";
+    },
+
+    generateRoom: function(forceName = null) {
+        let roomName = forceName;
+        if (!roomName && window.FragmentDB && window.StoryGenerator) {
+            // 利用詞庫動態生成房間名
+            roomName = window.StoryGenerator._expandGrammar("{env_adj}的{env_room}", window.FragmentDB, {});
+        } else if (!roomName) {
+            roomName = "未知房間";
+        }
+        return { id: 'room_' + Date.now() + Math.floor(Math.random() * 1000), name: roomName };
+    },
+
+    injectMapOptions: function(baseOptions) {
+        let newOptions = [...baseOptions]; 
+        newOptions.push({ label: "🚪 推開未知的門 (探索新房間)", action: "map_explore_new", style: "primary" });
+        this.map.forEach(room => {
+            if (room.id !== this.currentRoom.id) {
+                newOptions.push({ label: `🔙 退回 [${room.name}]`, action: "map_move_to", targetId: room.id });
+            }
+        });
+        return newOptions;
+    },
+
+    handleMapAction: function(action, targetId) {
+        if (action === "map_explore_new") {
+            let newRoom = this.generateRoom();
+            this.map.push(newRoom);
+            this.currentRoom = newRoom;
+            this.omenCount += 1;
+            this.updateTopBarLocation();
+            return `你推開了一扇沉重的木門，來到了 **[${newRoom.name}]**。`;
+        } else if (action === "map_move_to") {
+            let targetRoom = this.map.find(r => r.id === targetId);
+            if (targetRoom) {
+                this.currentRoom = targetRoom;
+                this.updateTopBarLocation();
+                return `你決定原路折返，退回到了 **[${targetRoom.name}]**。`;
+            }
+        }
+        return "";
+    },
+
+    // 只更新當前地點給 TopBar 用
+    updateTopBarLocation: function() {
+        window.TempState.storyLocation = this.currentRoom ? this.currentRoom.name : "未知區域";
+    },
+};
+
 window.StoryEngine = {
     // ============================================================
     // ⚙️ [SECTION 0] CONFIG & CONSTANTS (參數配置區)
@@ -134,6 +206,16 @@ window.StoryEngine = {
             label: this._resolveDynamicText(opt.label),
             action: opt.action || 'node_next'
         }));
+	// 👇 👇 👇 貼上這段：將地圖資訊安插在文本末端與選項中
+    if (activeNode.type && (activeNode.type === 'univ_filler' || activeNode.type.includes('mid') || activeNode.type.includes('adv'))) {
+        if (window.MapManager && window.MapManager.map.length > 0) {
+            options = window.MapManager.injectMapOptions(options);
+        }
+    }
+
+    if (options.length === 0 && !node.noDefaultExit) {
+        options.push({ label: "離開", action: "finish_chain", style: "primary" });
+    }
 
     if (options.length === 0 && !node.noDefaultExit) {
     options.push({ label: "離開", action: "finish_chain", style: "primary" });}
@@ -197,6 +279,45 @@ window.StoryEngine = {
         }
 
         window.TempState.isProcessing = false;
+		
+		if (opt.action.startsWith('map_')) {
+            let transitionText = window.MapManager.handleMapAction(opt.action, opt.targetId);
+            if (window.storyView && storyView.updateTopBar) storyView.updateTopBar(); 
+            
+            // 🌟 1. 抓取地圖狀態
+            const actionLabel = opt.action === "map_explore_new" ? "推開新門" : "原路折返";
+            const roomName = window.MapManager.currentRoom.name;
+            const omenCount = window.MapManager.omenCount;
+            const omenColor = omenCount >= 5 ? 'var(--color-danger)' : 'var(--color-correct)'; // 危險時變紅
+            const pathStr = window.MapManager.map.map(r => r.id === window.MapManager.currentRoom.id ? `📍[${r.name}]` : `🚪[${r.name}]`).join(" ─ ");
+            
+            // 🌟 2. 仿造 appendInlineCheckResult 組合單行 HTML
+            const inlineHtml = `
+                <span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.95rem;">🗺️ 探索 (${actionLabel})........ </span>
+                <span style="font-weight:bold; color:var(--color-info); font-size: 0.95rem;">來到了 [${roomName}]</span><br>
+                <span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.95rem;">📍 路徑: ${pathStr}</span><br>
+                <span style="font-weight:bold; color:${omenColor}; font-size: 0.95rem;">💀 預兆: ${omenCount} / 6</span><br><br>
+            `;
+            
+            // 🌟 3. 將這段日誌塞進 deferredHtml，讓它在下一個場景的最上方打字出來
+            window.TempState.deferredHtml = (window.TempState.deferredHtml || "") + inlineHtml;
+
+            // 💀 預兆爆發檢定！
+            if (window.MapManager.omenCount >= 6) {
+                console.log("💀 預兆爆發！強制進入 Boss 戰！");
+                this.playSceneNode({
+                    text: `<span style="color:var(--color-danger); font-weight:bold; font-size:1.1rem;">💀 突然，整棟建築劇烈搖晃。有什麼極度恐怖的東西被喚醒了... (預兆值已滿，作祟開始！)</span>`,
+                    options: [{ label: "迎擊恐懼！", action: "advance_chain", rewards: { tags: ['risk_high'] } }]
+                });
+                let chain = window.GlobalState.story.chain;
+                if (chain) chain.currentStageIdx = Math.max(0, chain.stages.length - 2); 
+            } else {
+                // 🌟 一般探索：直接推進下一個隨機劇本
+                this.advanceChain(); 
+            }
+            if(window.App) App.saveData();
+            return;
+        }
         
         if (opt.action === 'answer_quiz') {
             this.handleQuizResult(opt.wordId, opt.isCorrect);
@@ -251,8 +372,8 @@ window.StoryEngine = {
 },
 
     // 處理節點跳轉 (抽出邏輯)
-// [替換] 修正版跳轉處理
-_handleNodeJump: function(opt, passed) {
+	// [替換] 修正版跳轉處理
+	_handleNodeJump: function(opt, passed) {
         let targetId = passed ? opt.nextSceneId : opt.failSceneId;
         
         // 🌟 【全新升級】如果 targetId 是一個陣列，系統就會自動幫你隨機抽一個！
@@ -586,7 +707,14 @@ _handleNodeJump: function(opt, passed) {
     // ============================================================
     _processText: function(rawText) {
         let textArr = Array.isArray(rawText) ? rawText : [rawText || "(...)"];
-        
+        // 這樣劇本內文只要呼叫 {env_room} 或 {combo_location}，都會直接印出地圖的名字，絕不亂跳！
+        if (window.MapManager && window.MapManager.currentRoom) {
+             const gs = window.GlobalState;
+             if (gs.story && gs.story.chain && gs.story.chain.memory) {
+                 gs.story.chain.memory['combo_location'] = window.MapManager.currentRoom.name;
+                 gs.story.chain.memory['env_room'] = window.MapManager.currentRoom.name;
+             }
+        }
         return textArr.map(t => {
             // 1. 先解析你原本的靜態變數 (例如 {detective}, {sanity}, {gold})
             let resolvedText = this._resolveDynamicText(t);
@@ -825,7 +953,7 @@ _handleNodeJump: function(opt, passed) {
     // 隨機鏈生成
     startRandomChain: function() {
         const gs = window.GlobalState;
-        
+		if (window.MapManager) window.MapManager.init(); // 🌟 每次開局啟動地圖！
         // 🌟 [新增] 1. 初始化全域劇本歷史紀錄 (跨劇本記憶)
         if (!gs.story.skeletonHistory) gs.story.skeletonHistory = [];
 
@@ -848,7 +976,14 @@ _handleNodeJump: function(opt, passed) {
                 gs.story.skeletonHistory.shift();
             }
 
+            // 先產生劇本鏈，讓系統決定好這次的標籤與記憶
             gs.story.chain = window.StoryGenerator.initChain(randomMode);
+            
+            // 👇 👇 👇 【修改這裡】在此時才啟動地圖，並從 CORE 抽出一個房間給初始地點
+            let initialRoom = window.StoryGenerator._expandGrammar("{env_room}", window.FragmentDB, gs.story.chain.memory);
+            if (window.MapManager) window.MapManager.init(initialRoom);
+            // 👆 👆 👆
+
             console.log(`🎲 隨機劇本啟動，模式: [${randomMode}] | 歷史紀錄:`, gs.story.skeletonHistory);
         } else {
             gs.story.chain = { depth: 0, maxDepth: 5, history: [] };
@@ -866,6 +1001,7 @@ _handleNodeJump: function(opt, passed) {
     // 結束鏈
     finishChain: function() {
     const gs = window.GlobalState;
+	if (window.MapManager) window.MapManager.clear(); // 🌟 結束時清空地圖！
     // 1. 清除導航狀態
     gs.story.chain = null; 
     gs.story.currentNode = null; 
@@ -960,4 +1096,5 @@ _handleNodeJump: function(opt, passed) {
         }
         window.TempState.energyLoopId = setInterval(updateEnergy, 10000); 
     },
+	
 };

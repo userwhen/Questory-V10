@@ -41,9 +41,12 @@ window.storyView = {
         // 修復：移除 display:flex 等會蓋掉 CSS Grid 的 inline style
         const actionsArea = `
             <div id="story-actions" style="
-                width: 100%; flex-shrink: 0; gap: 10px; background: var(--bg-hud); 
+                width: 100%; flex-shrink: 0; background: var(--bg-hud); 
                 border-top: 1px solid rgba(255,255,255,0.08); box-shadow: 0 -4px 15px rgba(0,0,0,0.6);
-                padding: 15px; box-sizing: border-box; overflow-y: auto; z-index: 10;
+                padding: 15px; box-sizing: border-box; z-index: 10;
+                display: flex; flex-direction: column; justify-content: flex-start; gap: 10px;
+                height: 200px; /* 🌟 關鍵：鎖定高度，200px 剛好可無縫塞下 3 個按鈕與間距 */
+                overflow-y: auto; /* 🌟 超過 3 個選項時，會在框內自動產生上下滑動效果 */
             "></div>`;
 
         const tagDrawerHtml = `<div id="tag-drawer-container"></div>`;
@@ -51,9 +54,13 @@ window.storyView = {
         container.innerHTML = `
             <div style="display:flex; flex-direction:column; height:100%; width:100%; position:relative;">
                 <div style="flex-shrink:0; height:60px; background:var(--bg-nav); border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; padding:0 10px; box-shadow:0 2px 10px rgba(0,0,0,0.3); z-index:20;">${topBarContent}</div>
-                ${textBody}
+                
+                <div style="flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column;">
+                    ${textBody}
+                    ${tagDrawerHtml}
+                </div>
+
                 ${actionsArea}
-                ${tagDrawerHtml}
             </div>
         `;
         
@@ -122,6 +129,7 @@ window.storyView = {
         const currentTagFilter = window.TempState.tagFilter || '全部';
         const myTags = gs.story?.tags || [];
 
+        // 1. 定義標籤樣式字典
         const tagStyles = { 
             'loc': { color: '--color-gold-dark', bg: '--color-gold-soft' }, 
             'status': { color: '--color-info', bg: '--color-info-soft' }, 
@@ -129,35 +137,35 @@ window.storyView = {
             'info': { color: '--color-correct', bg: '--color-correct-soft' } 
         };
         
-        let tagsPillsHtml = myTags.length === 0 ? '<div style="color:var(--text-ghost); padding:10px;">尚無標籤</div>' : myTags.map(t => {
-            const label = typeof t === 'string' ? t : t.label;
-            const type = typeof t === 'string' ? 'info' : t.type;
-            if (currentTagFilter !== '全部' && type !== 'loc' && label !== currentTagFilter) return '';
-            const style = tagStyles[type] || tagStyles['info'];
-            return ui.component.badge(label, style.color, style.bg);
-        }).join('');
+        // 2. 生成標籤內容 (移除多餘的 wrapper)
+        let tagsHtml = '<div style="color:var(--text-ghost); padding:10px;">尚無標籤</div>';
+        if (myTags.length > 0) {
+            tagsHtml = myTags.map(t => {
+                const label = typeof t === 'string' ? t : t.label;
+                const type = typeof t === 'string' ? 'info' : t.type;
+                if (currentTagFilter !== '全部' && type !== 'loc' && label !== currentTagFilter) return '';
+                const style = tagStyles[type] || tagStyles['info'];
+                return ui.component.badge(label, style.color, style.bg);
+            }).join('');
+        }
 
-        const tagsAreaHtml = `<div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">${tagsPillsHtml}</div>`;
-
-        const tagDrawerContent = `
-            <div style="display: flex; flex-direction: column; height: 100%; color: var(--text-on-dark);">
-                <div style="flex-shrink: 0; display: flex; align-items: center; gap: 12px; margin: 10px 0; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <div style="font-size: 1rem; font-weight: bold; white-space: nowrap; color: var(--color-gold); padding-left:10px;">標籤</div>
-                    <div style="flex: 1; min-width: 0; background: rgba(255,255,255,0.08); border-radius: 20px; padding: 4px 10px; overflow-x: auto; white-space: nowrap; display: flex; align-items: center; scrollbar-width: none;">
-                        <div style="display: flex; gap: 5px; width: 100%;">
-                             ${ui.layout.scrollX(['全部', '場景', '狀態', '知識'], currentTagFilter, 'act.setTagFilter')}
-                        </div>
-                    </div>
-                </div>
-                <div style="flex: 1; overflow-y: auto; padding:10px;">${tagsAreaHtml}</div>
-            </div>`;
-
-        const drawerHtml = ui.layout.drawer(
-            isTagOpen, tagDrawerContent, "act.toggleTagDrawer()",
-            { dir: 'right', fixedHandle: true, color: 'var(--bg-nav)', iconOpen: '▶', iconClose: '◀' }
+        // 🌟 3. 組合內部 HTML (完美致敬背包的排版結構)
+        const drawerInnerHtml = ui.layout.drawerContent(
+            '🏷️ 狀態標籤', 
+            ['全部', '場景', '狀態', '知識'], 
+            currentTagFilter, 
+            'act.setTagFilter', 
+            tagsHtml, 
+            'display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start;' // 補上標籤專用的排版
         );
-        
-        container.innerHTML = drawerHtml;
+
+        // 4. 呼叫底層元件 (統一為底部抽拉，高度對齊背包的 280px)
+        container.innerHTML = ui.layout.drawer(
+            isTagOpen, 
+            drawerInnerHtml, 
+            "act.toggleTagDrawer()",
+            {color: 'var(--bg-nav)', iconOpen: '▼', iconClose: '▲', height: '280px' }
+        );
     },
 
     clearScreen: function() {
@@ -227,6 +235,8 @@ window.storyView = {
         const speed = 20;
         const text = htmlContent;
         element.innerHTML = '';
+        
+        let currentString = ''; // 🌟 新增：用變數累積字串，避免 HTML 標籤提早被瀏覽器關閉
 
         window.TempState.typingTimer = setInterval(() => {
             if (window.TempState.skipRendering) {
@@ -238,29 +248,33 @@ window.storyView = {
                 return;
             }
 
+            // 處理 HTML 標籤
             if (text.charAt(i) === '<') {
                 const closeIdx = text.indexOf('>', i);
                 if (closeIdx !== -1) {
-                    element.innerHTML += text.substring(i, closeIdx + 1);
+                    currentString += text.substring(i, closeIdx + 1);
                     i = closeIdx + 1;
                 } else {
-                    element.innerHTML += text.charAt(i);
+                    currentString += text.charAt(i);
                     i++;
                 }
             } else {
-                element.innerHTML += text.charAt(i);
+                currentString += text.charAt(i);
                 i++;
             }
             
+            // 🌟 關鍵修復：每次都把到目前為止的完整字串放進去
+            element.innerHTML = currentString; 
+            
             if (!justCleared) {
-                const wrap = document.getElementById('story-text-box'); // 更新 ID 抓取
+                const wrap = document.getElementById('story-text-box');
                 if(wrap && i % 3 === 0) {
                     if (wrap.scrollHeight - wrap.scrollTop > wrap.clientHeight + 50) {
                         wrap.scrollTop = wrap.scrollHeight;
                     }
                 }
             } else {
-                const wrap = document.getElementById('story-text-box'); // 更新 ID 抓取
+                const wrap = document.getElementById('story-text-box');
                 if (wrap && wrap.scrollTop !== 0) wrap.scrollTop = 0;
             }
 

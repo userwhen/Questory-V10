@@ -87,26 +87,19 @@ window.shopView = {
                 </div>
             `).join(''), '4', '8px');
 
-        const drawerInnerHtml = `
-            <div style="display: flex; flex-direction: column; height: 100%; color:var(--text-on-dark);">
-                <div style="flex-shrink: 0; display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <div style="font-size: 1.1rem; font-weight: bold; white-space: nowrap; color: var(--color-gold-soft);">🎒 我的背包</div>
-                    <div style="flex: 1; min-width: 0; background: rgba(0,0,0,0.2); border-radius: 20px; padding: 4px 10px; overflow-x: auto; white-space: nowrap; display: flex; align-items: center; scrollbar-width: none;">
-                        <div style="display: flex; gap: 5px; width: 100%;">
-                            ${ui.layout.scrollX(['全部', '熱量', '時間', '金錢'], bagCat, 'act.setBagFilter')}
-                        </div>
-                    </div>
-                </div>
-                <div style="flex: 1; overflow-y: auto; padding-bottom: 20px;">
-                    ${bagGrid}
-                </div>
-            </div>`;
+        const drawerInnerHtml = ui.layout.drawerContent(
+            '🎒 我的背包', 
+            ['全部', '熱量', '時間', '金錢'], 
+            bagCat, 
+            'act.setBagFilter', 
+            bagGrid
+        );
 
         const bagDrawer = ui.layout.drawer(
             isBagOpen,
             drawerInnerHtml,
             `act.toggleBag(${!isBagOpen})`,
-            { dir: 'bottom', color: 'var(--bg-hud)', iconOpen: '▼', iconClose: '▲', height: '280px' }
+            { color: 'var(--bg-hud)', iconOpen: '▼', iconClose: '▲', height: '280px' }
         );
 
         page.innerHTML = `

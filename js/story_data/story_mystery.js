@@ -1,4 +1,4 @@
-/* js/story_data/story_mystery.js */
+/* js/story_data/story_mystery.js (V5 語法與演員對齊版) */
 (function() {
     // 1. 取得核心活頁簿
     const DB = window.FragmentDB;
@@ -7,7 +7,7 @@
         return;
     }
 
-    // 🛡️ 防呆金牌：確保 templates 陣列絕對存在
+    // 🛡️ 防呆金牌
     DB.templates = DB.templates || [];
 
     // 2. 追加劇本 (Templates)
@@ -21,9 +21,9 @@
             type: 'mystery_start', 
             id: 'mys_start_route_A',
             dialogue: [
-                { text: { zh: "在一個{atom_weather}，這座{noun_location_building}被封鎖了。{victim}倒在{noun_location_room}中央。" } },
-                { text: { zh: "在場只有兩個人有嫌疑：{suspect_A}，以及{suspect_B}。" } },
-                { text: { zh: "雖然表面平靜，但你注意到{suspect_A}的眼神有些閃爍，似乎在隱藏什麼。" } }
+                { text: { zh: "在一個{env_weather}的夜晚，這座{env_adj}{env_building}被封鎖了。{actor_victim}倒在{env_room}中央。" } },
+                { text: { zh: "在場只有兩個人有嫌疑：{actor_suspect_A}，以及{actor_suspect_B}。" } },
+                { text: { zh: "雖然表面平靜，但你注意到{actor_suspect_A}的眼神有些閃爍，似乎在隱藏什麼。" } }
             ],
             options: [{ label: "封鎖現場，開始調查", action: "advance_chain", rewards: { tags: ['truth_A', 'case_started'] } }]
         },
@@ -33,9 +33,9 @@
             type: 'mystery_start', 
             id: 'mys_start_route_B',
             dialogue: [
-                { text: { zh: "在一個{atom_weather}，這座{noun_location_building}被封鎖了。{victim}倒在{noun_location_room}中央。" } },
-                { text: { zh: "在場只有兩個人有嫌疑：{suspect_A}，以及{suspect_B}。" } },
-                { text: { zh: "雖然表面平靜，但你注意到{suspect_B}的手在微微顫抖，似乎非常緊張。" } }
+                { text: { zh: "在一個{env_weather}的夜晚，這座{env_adj}{env_building}被封鎖了。{actor_victim}倒在{env_room}中央。" } },
+                { text: { zh: "在場只有兩個人有嫌疑：{actor_suspect_A}，以及{actor_suspect_B}。" } },
+                { text: { zh: "雖然表面平靜，但你注意到{actor_suspect_B}的手在微微顫抖，似乎非常緊張。" } }
             ],
             options: [{ label: "封鎖現場，開始調查", action: "advance_chain", rewards: { tags: ['truth_B', 'case_started'] } }]
         },
@@ -44,11 +44,11 @@
         {
             type: 'mystery_mid', 
             id: 'mys_clue_for_A', 
-            reqTags: ['truth_A'], // 🌟 更新：陣列標籤過濾器
+            reqTags: ['truth_A'], 
             dialogue: [
-                { text: { zh: "你來到{noun_location_room}的角落，發現了一個被藏起來的{noun_item_common}。" } },
-                { text: { zh: "仔細檢查後，你發現上面刻著{suspect_A}的名字，而且還呈現{atom_item_state}的狀態！" } },
-                { text: { zh: "這無疑是{suspect_A}犯案的關鍵證據。" } }
+                { text: { zh: "你來到{env_room}的角落，在{env_feature}發現了一個被刻意藏起來的{combo_item_simple}。" } },
+                { text: { zh: "仔細檢查後，你發現上面竟然刻著{actor_suspect_A}的名字，而且還沾染著暗沉的血跡！" } },
+                { text: { zh: "這無疑是{actor_suspect_A}犯案的關鍵證據。" } }
             ],
             options: [{ label: "收好這份關鍵證據", action: "advance_chain", rewards: { tags: ['evidence_got_A'], varOps: [{key:'clue', val:1, op:'+'}] } }]
         },
@@ -59,9 +59,9 @@
             id: 'mys_clue_for_B', 
             reqTags: ['truth_B'],
             dialogue: [
-                { text: { zh: "你在沙發縫隙中聞到一股異味，隨後找到了一把{noun_item_weapon}。" } },
-                { text: { zh: "這東西屬於{suspect_B}，且表面呈現{atom_item_state}的狀態。為什麼對方會出現在這裡？" } },
-                { text: { zh: "所有的線索都指向了{suspect_B}。" } }
+                { text: { zh: "你在沙發的縫隙中聞到一股異味，隨後摸出了一把{combo_item_simple}。" } },
+                { text: { zh: "這東西顯然屬於{actor_suspect_B}。為什麼對方隨身攜帶的物品會掉在命案現場？" } },
+                { text: { zh: "所有的線索都指向了{actor_suspect_B}。" } }
             ],
             options: [{ label: "這就是鐵證", action: "advance_chain", rewards: { tags: ['evidence_got_B'], varOps: [{key:'clue', val:1, op:'+'}] } }]
         },
@@ -71,9 +71,9 @@
             type: 'mystery_climax', 
             id: 'mys_twist_event',
             dialogue: [
-                { text: { zh: "就在調查進行到一半時，{noun_location_building}的燈光{atom_time}熄滅了！" } },
-                { text: { zh: "黑暗中傳來了玻璃破碎的聲音和{noun_npc_generic}的尖叫聲。" } },
-                { text: { zh: "當燈光再次亮起，你發現現場被破壞了，有人試圖掩蓋真相。" } }
+                { text: { zh: "就在調查進行到一半時，{env_building}的燈光{atom_time}熄滅了！" } },
+                { text: { zh: "黑暗中傳來了玻璃破碎的聲音和一陣淒厲的尖叫聲。" } },
+                { text: { zh: "當{env_light}再次亮起，你發現現場被破壞了，有人試圖掩蓋真相。" } }
             ],
             options: [{ label: "鎮定眾人，準備推理", action: "advance_chain" }]
         },
@@ -86,8 +86,8 @@
             id: 'mys_start_noir',
             reqTags: ['theme_noir'], 
             dialogue: [ 
-                { text: { zh: "大雨滂沱的夜晚，{noun_location_building}發生命案。" } },
-                { text: { zh: "死者是{victim}，死因不明。現場只有兩個嫌疑人：{suspect_A}與{suspect_B}。" } },
+                { text: { zh: "大雨滂沱的夜晚，這座{env_building}發生命案。" } },
+                { text: { zh: "死者是{actor_victim}，死因不明。現場只有兩個嫌疑人：{actor_suspect_A}與{actor_suspect_B}。" } },
                 { text: { zh: "直覺告訴你，這不是一起簡單的案件，因為現場遺留了一個「上鎖的保險箱」。" } } 
             ],
             options: [
@@ -102,9 +102,9 @@
             type: 'mystery_mid', 
             id: 'mys_clue_locked',
             reqTags: ['truth_A'],
-            excludeTags: ['has_safe_key'], // 🌟 更新：取代舊版的 noTag
+            excludeTags: ['has_safe_key'], 
             dialogue: [ 
-                { text: { zh: "你找到了那個關鍵的保險箱，裡面肯定鎖著指認{suspect_A}的證據。" } },
+                { text: { zh: "你找到了那個關鍵的保險箱，裡面肯定鎖著指認{actor_suspect_A}的證據。" } },
                 { text: { zh: "但是保險箱鎖得很死，你嘗試了各種密碼都打不開。" } },
                 { speaker: "你", text: { zh: "該死...鑰匙一定就在這棟房子的某個角落。" } } 
             ],
@@ -118,7 +118,7 @@
             dialogue: [ 
                 { text: { zh: "你拿出了剛才找到的銹蝕鑰匙，插入保險箱的鎖孔。" } },
                 { text: { zh: "「喀嚓」一聲，櫃門開了！" } },
-                { text: { zh: "裡面是一把沾血的{noun_item_weapon}，上面刻著{suspect_A}的名字！" } } 
+                { text: { zh: "裡面是一把沾血的{combo_item_simple}，上面還刻著{actor_suspect_A}的名字！" } } 
             ],
             options: [
                 { 
@@ -130,11 +130,11 @@
         },
         {
             type: 'mystery_adv',
-            id: 'uni_find_key',
+            id: 'mys_find_key',
             conditions: { "exp_puzzle": true, "has_safe_key": false },
             weight: 100,
             dialogue: [ 
-                { text: { zh: "你在走廊的{noun_env_feature}下面發現了一個閃閃發光的東西。" } },
+                { text: { zh: "你在走廊的{env_feature}下面發現了一個閃閃發光的東西。" } },
                 { text: { zh: "撿起來一看，是一把造型古老的鑰匙！" } },
                 { text: { zh: "這該不會就是那個保險箱的鑰匙吧？" } } 
             ],
@@ -153,16 +153,16 @@
             dialogue: [{ text: { zh: "真相大白。你指著犯人說..." } }],
             options: [
                 { 
-                    label: "兇手是 {suspect_A}", 
+                    label: "兇手是 {actor_suspect_A}", 
                     condition: { tags: ['truth_A', 'evidence_got_A'] }, 
-                    action: "node_next", // 🌟 確保先顯示結局文字
+                    action: "node_next", 
                     nextScene: { 
                         dialogue: [
-                            { text: { zh: "你亮出了保險箱裡的血衣，{suspect_A}無話可說。" } },
+                            { text: { zh: "你亮出了保險箱裡的血衣，{actor_suspect_A}無話可說。" } },
                             { text: { zh: "【結局：正義執行】" } }
                         ],
                         rewards: { gold: 50, title: "名偵探" },
-                        options: [{ label: "結案", action: "finish_chain" }] // 🌟 在這裡才呼叫結束
+                        options: [{ label: "結案", action: "finish_chain" }]
                     } 
                 },
                 { 
@@ -187,9 +187,9 @@
             type: 'mystery_mid', 
             id: 'mys_inv_generic_1',
             dialogue: [ 
-                { text: { zh: "你繼續在{noun_location_room}搜索。" } },
+                { text: { zh: "你繼續在{env_room}裡搜索。" } },
                 { text: { zh: "雖然沒有發現決定性的證據，但你感覺自己離真相越來越近了。" } },
-                { text: { zh: "這裡的{noun_env_feature}似乎有人移動過的痕跡。" } } 
+                { text: { zh: "這裡的{env_feature}似乎有人移動過的痕跡。" } } 
             ],
             options: [{ label: "記錄下來，繼續搜查", action: "advance_chain" }]
         },
@@ -207,11 +207,23 @@
             type: 'mystery_mid', 
             id: 'mys_inv_generic_witness',
             dialogue: [ 
-                { text: { zh: "一位{noun_npc_generic}怯生生地走了過來。" } },
-                { speaker: "{noun_npc_generic}", text: { zh: "那個...我當時好像看到了一個人影往{noun_location_room}跑去。" } },
+                { text: { zh: "突然，{combo_person_appearance}，對方看起來神情十分緊張。" } },
+                { speaker: "目擊者", text: { zh: "那個...我當時好像看到了一個人影往{env_room}的方向跑去。" } },
                 { text: { zh: "這條證詞或許能佐證你的推論。" } } 
             ],
             options: [{ label: "感謝情報", action: "advance_chain" }]
+        },
+        {
+            type: 'mystery_adv',
+            id: 'mys_item_magnifier',
+            weight: 80,
+            conditions: { "exp_puzzle": true, "has_magnifier": false },
+            dialogue: [
+                { text: { zh: "經過書房時，你被桌上的一個物件吸引了目光。" } },
+                { text: { zh: "那是一個做工精良的放大鏡，雖然邊緣有點磨損，但還能用。" } },
+                { text: { zh: "有了這個，或許能看清一些原本忽略的細節。" } }
+            ],
+            options: [{ label: "裝備放大鏡", action: "advance_chain", rewards: { tags: ['has_magnifier'] } }]
         },
         
         // --- 備案 (Safety Net) ---
@@ -231,7 +243,7 @@
                 { text: { zh: "你指著名單上的那個名字，一切真相大白。" } },
                 { text: { zh: "犯人低下了頭，承認了所有的罪行。這場風波終於平息了。" } }
             ],
-            options: [{ label: "結案 (獲得獎勵)", action: "finish_chain", rewards: { gold: 100, gold: 50 } }]
+            options: [{ label: "結案 (獲得獎勵)", action: "finish_chain", rewards: { gold: 100, exp: 50 } }]
         },
 
         // ==========================================
@@ -241,17 +253,17 @@
             type: 'mystery_end', 
             id: 'mys_final_logic',
             dialogue: [ 
-                { text: { zh: "所有的碎片都已經拼湊完成。面對在場的眾人，你{atom_manner}走到了大廳中央。" } },
+                { text: { zh: "所有的碎片都已經拼湊完成。面對在場的眾人，你冷靜地走到了大廳中央。" } },
                 { text: { zh: "現在，是時候指出那個隱藏在幕後的真兇了。" } } 
             ],
             options: [
                 { 
-                    label: "兇手是 {suspect_A}！", 
+                    label: "兇手是 {actor_suspect_A}！", 
                     condition: { tags: ['truth_A', 'evidence_got_A'] }, 
                     action: "node_next", 
                     nextScene: { 
                         dialogue: [
-                            { text: { zh: "你亮出了鐵證，{suspect_A}崩潰認罪。" } },
+                            { text: { zh: "你亮出了鐵證，{actor_suspect_A}崩潰認罪。" } },
                             { text: { zh: "【結局：真相大白】" } }
                         ],
                         rewards: { gold: 50, title: "名偵探" },
@@ -259,12 +271,12 @@
                     } 
                 },
                 { 
-                    label: "兇手是 {suspect_B}！", 
+                    label: "兇手是 {actor_suspect_B}！", 
                     condition: { tags: ['truth_B', 'evidence_got_B'] }, 
                     action: "node_next", 
                     nextScene: { 
                         dialogue: [
-                            { text: { zh: "你亮出了鐵證，{suspect_B}無話可說。" } },
+                            { text: { zh: "你亮出了鐵證，{actor_suspect_B}無話可說。" } },
                             { text: { zh: "【結局：正義執行】" } }
                         ],
                         rewards: { gold: 50, title: "名偵探" },
@@ -284,43 +296,8 @@
                     } 
                 }
             ]
-        },
-		{
-            type: 'mystery_adv',
-            id: 'uni_item_key_safe',
-			excludeTag: ['theme_romance',],
-            weight: 100, 
-            conditions: { "exp_puzzle": true, "has_safe_key": false },
-            dialogue: [
-                { text: { zh: "你在走廊的{noun_env_feature}下面發現了一個閃閃發光的東西。" } },
-                { text: { zh: "撿起來一看，是一把造型古老的鑰匙，上面刻著奇怪的花紋。" } },
-                { text: { zh: "這該不會就是那個保險箱的鑰匙吧？" } }
-            ],
-            options: [{ 
-                label: "收下鑰匙", 
-                action: "node_next", 
-                rewards: { tags: ['has_safe_key', 'found_something'] },
-                nextScene: { 
-                    dialogue: [{ text: { zh: "你把鑰匙放進口袋。現在你可以回去試試看那個保險箱了。" } }],
-                    options: [{ label: "繼續探索", action: "advance_chain" }]
-                }
-            }]
-        },
-        {
-            type: 'mystery_adv',
-            id: 'uni_item_magnifier',
-			excludeTag: ['theme_romance',],
-            weight: 80,
-            conditions: { "exp_puzzle": true, "has_magnifier": false },
-            dialogue: [
-                { text: { zh: "經過書房時，你被桌上的一個物件絆倒了。" } },
-                { text: { zh: "那是一個做工精良的放大鏡，雖然鏡片有點裂痕，但還能用。" } },
-                { text: { zh: "有了這個，或許能看清一些原本忽略的細節。" } }
-            ],
-            options: [{ label: "裝備放大鏡", action: "advance_chain", rewards: { tags: ['has_magnifier'] } }]
-        },
-		
+        }
     );
 
-    console.log("🕵️‍♂️ 偵探劇本已載入");
+    console.log("🕵️‍♂️ 懸疑偵探劇本已載入 (V5 演員與場景升級版)");
 })();

@@ -233,7 +233,139 @@
                 { label: "保持距離，繞道而行", action: "advance_chain" }
             ]
         },
+		// ============================================================
+        // 🧭 【分類 A：探索與發現】 (純環境與物品互動)
+        // ============================================================
+        { 
+            type: 'univ_filler', id: 'rand_explore_normal', weight: 15,
+            dialogue: [
+                { text: { zh: "{phrase_explore_start}" } },
+                { text: { zh: "{phrase_explore_vibe}" } }
+            ], 
+            options: [
+                { label: "保持警惕，繼續前進", action: "advance_chain" },
+                { label: "仔細觀察周圍 (INT檢定)", check: { stat: 'INT', val: 5 }, action: "advance_chain", rewards: { tags: ['observed'] } }
+            ] 
+        },
+        { 
+            type: 'univ_filler', id: 'rand_explore_find_item', weight: 15,
+            dialogue: [
+                { text: { zh: "{phrase_find_action}" } },
+                { text: { zh: "{phrase_find_result}" } },
+                { text: { zh: "{sentence_tension}" } } // 使用 core 裡的 sentence_tension 取代舊版
+            ], 
+            options: [
+                { label: "收進背包", action: "advance_chain", rewards: { tags: ['item_found'], varOps: [{key:'gold', val:15, op:'+'}] } },
+                { label: "太可疑了，不要亂碰", action: "advance_chain", rewards: { varOps: [{key:'sanity', val:5, op:'+'}] } }
+            ] 
+        },
 
+        // ============================================================
+        // ⚠️ 【分類 B：異象與高壓】 (心理恐懼、環境異變)
+        // ============================================================
+        { 
+            type: 'univ_filler', id: 'rand_tension_event', weight: 10,
+            dialogue: [
+                { text: { zh: "{phrase_danger_warn}" } },
+                { text: { zh: "{sentence_tension}" } }
+            ], 
+            options: [
+                { label: "深呼吸平復心情 (MND檢定)", check: { stat: 'MND', val: 5 }, action: "advance_chain", failScene: { dialogue: [{ text: { zh: "恐懼揮之不去..." } }], rewards: { varOps: [{key:'energy', val:5, op:'-'}] } } },
+                { label: "立刻拔出武器警戒", action: "advance_chain" }
+            ] 
+        },
+
+        // ============================================================
+        // ⚔️ 【分類 C：遭遇與衝突】 (戰鬥、突發事件)
+        // ============================================================
+        {
+            type: 'univ_filler', id: 'rand_combat_ambush', weight: 10,
+            excludeTags: ['theme_romance', 'theme_raising'], 
+            dialogue: [
+                { text: { zh: "{phrase_explore_vibe}" } },
+                { text: { zh: "{phrase_danger_warn}" } },
+                { text: { zh: "{phrase_danger_appear}" } }
+            ],
+            options: [
+                { label: "正面迎擊！(STR檢定)", check: { stat: 'STR', val: 5 }, action: "advance_chain", rewards: { exp: 20 }, failScene: { dialogue: [{ text: { zh: "你被打退了，受了點傷！" } }], rewards: { varOps: [{key:'hp', val:10, op:'-'}] } } },
+                { label: "冷靜撤退 (AGI檢定)", check: { stat: 'AGI', val: 5 }, action: "advance_chain", failScene: { dialogue: [{ text: { zh: "你沒能跑掉，被迫捲入混戰！" } }], rewards: { varOps: [{key:'energy', val:15, op:'-'}] } } }
+            ]
+        },
+        {
+            type: 'univ_filler', id: 'random_combat_sudden', weight: 5,
+            excludeTags: ['theme_romance', 'theme_raising'],
+            dialogue: [
+                // 替換酒館鬥毆：用 core 裡現有的衝突語句
+                { text: { zh: "{sentence_event_sudden}" } },
+                { text: { zh: "{sentence_encounter}" } },
+                { text: { zh: "{phrase_combat_start}" } }
+            ],
+            options: [
+                { label: "開打！(STR)", check: { stat: 'STR', val: 6 }, action: "advance_chain", rewards: { exp: 30 } },
+                { label: "趁亂繞過去 (AGI)", check: { stat: 'AGI', val: 6 }, action: "advance_chain", rewards: { gold: 20 } }
+            ]
+        },
+        {
+            type: 'univ_filler', id: 'rand_event_horror_chase', weight: 5,
+            reqTags: ['risk_high'], 
+            dialogue: [
+                // 嚴格對齊 core 中的 horror_chase_start 與 sentence_tension
+                { text: { zh: "{horror_chase_start}" } },
+                { text: { zh: "{sentence_tension}" } }
+            ],
+            options: [
+                { 
+                    label: "拼命逃跑 (AGI檢定)", check: { stat: 'AGI', val: 5 }, action: "node_next", 
+                    nextScene: { dialogue: [{ text: { zh: "你千鈞一髮之際撞開了旁邊的門，成功甩掉了對方。" } }], options: [{ label: "大口喘氣", action: "advance_chain" }] },
+                    failScene: { dialogue: [{ text: { zh: "你被地上的雜物絆倒了！對方瞬間追了上來..." } }], rewards: { varOps: [{key:'hp', val:15, op:'-'}] }, options: [{ label: "死命掙扎", action: "advance_chain" }] }
+                }
+            ]
+        },
+
+        // ============================================================
+        // 💬 【分類 D：社交與人際】 (NPC互動、情報交流)
+        // ============================================================
+        {
+            type: 'univ_filler', id: 'rand_social_conflict', weight: 10,
+            dialogue: [
+                // 利用人物登場與心理壓力句型來建構社交情境
+                { text: { zh: "{combo_person_appearance}" } },
+                { text: { zh: "{sentence_tension}" } }
+            ],
+            options: [
+                { label: "靜觀其變", action: "advance_chain" },
+                { label: "上前搭話 (CHR檢定)", check: { stat: 'CHR', val: 5 }, action: "advance_chain", rewards: { varOps: [{key:'trust', val:10, op:'+'}] } }
+            ]
+        },
+		
+		{ 
+		type: 'univ_filler', 
+		id: 'map_event_creepy_doll', 
+		weight: 15,
+		// 【動態文本】利用你的 V5 詞庫，自動生成場景與物品
+		dialogue: [
+			{ text: { zh: "{atom_time}，你正在觀察這個房間。" } },
+			{ text: { zh: "{env_pack_visual}" } }, // 隨機視覺描述
+			{ text: { zh: "突然，你在{env_feature}發現了{combo_item_desc}" } } // 隨機生成物品與能力描述
+		], 
+		options: [
+			// 玩家專屬選項 (處理完這些，玩家就可以點擊下方自動生成的開門選項)
+			{ 
+				label: "小心翼翼地收起 (AGI檢定)", 
+				check: { stat: 'AGI', val: 5 }, 
+				action: "advance_chain", 
+				rewards: { tags: ['item_found'], gold: 15 } 
+			},
+			{ 
+				label: "這東西太邪門了，不要碰", 
+				action: "advance_chain", 
+				rewards: { varOps: [{key:'sanity', val:5, op:'+'}] } 
+			}
+			// 💡 引擎魔法：MapManager 會在這裡自動幫你加上：
+			// [🚪 推開未知的門 (探索新房間)]
+			// [🔙 退回 [大廳]]
+		] 
+		},
         // ============================================================
         // 🛠️ 【系統測試區】 (保留用於診斷 Context Injection)
         // ============================================================

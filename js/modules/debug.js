@@ -88,8 +88,11 @@ const DebugEngine = {
             act.save();
             if (window.Core && Core.checkDailyReset) Core.checkDailyReset();
             else if (window.TaskEngine && TaskEngine.resetDaily) TaskEngine.resetDaily();
-            if(window.view && view.renderTasks) view.renderTasks();
-            if(window.view && view.renderHUD) view.renderHUD();
+            // 時光機觸發換日後，改成：
+			if (window.Core && Core.checkDailyReset) Core.checkDailyReset();
+			if (window.view && view.updateHUD) view.updateHUD(window.GlobalState);
+			// 如果在任務頁，刷新任務
+			if (window.TempState.currentView === 'task' && window.taskView) taskView.render();
             act.toast("已模擬跨日！");
         } else if (mode === 'week_ago') {
             d.setDate(d.getDate() - 7);
@@ -116,8 +119,10 @@ const DebugEngine = {
             gs.freeGem = (gs.freeGem || 0) + val;
             act.toast(`💎 鑽石 +${val}`);
         } else if (type === 'energy') {
-            if (!gs.story) gs.story = {};
-            gs.story.energy = val; 
+		if (!gs.story) gs.story = {};
+			const max = (window.StoryEngine && StoryEngine.calculateMaxEnergy)
+						? StoryEngine.calculateMaxEnergy() : 30;
+			gs.story.energy = max; // ✅ 補滿至當前等級上限，而非固定 100
             if (window.view && view.renderStoryPage && window.TempState.currentView === 'story') view.renderStoryPage();
             act.toast(`⚡ 精力已設定為 ${val}`);
         }
@@ -166,8 +171,9 @@ const DebugEngine = {
             // 2. 如果你有一個全域劇本庫 (例如 window.GameConfig.Story 或 window.StoryData)，也一併更新
             if (window.GameConfig && window.GameConfig.Story && parsed.id) {
                 window.GameConfig.Story[parsed.id] = parsed;
-            } else if (window.StoryData && parsed.id) {
-                window.StoryData[parsed.id] = parsed;
+            } else if (window.StoryData && window.StoryData.sceneMap && parsed.id) {
+                // ✅ 修正了這裡的括號與路徑
+                window.StoryData.sceneMap[parsed.id] = parsed;
             }
 
             ui.modal.close('m-system');

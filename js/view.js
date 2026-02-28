@@ -86,31 +86,39 @@ window.ui = {
 
         drawer: (isOpen, contentHtml, onToggle, opts = {}) => {
             const bgColor = opts.color || '#222';
-            const dir = opts.dir || 'bottom';
-            const isFixedHandle = opts.fixedHandle || false; 
-            const wrapperStyle = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 200; pointer-events: none; overflow: hidden;`;
-            let handleBaseStyle = `background: ${bgColor}; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; box-shadow: var(--shadow-sm); user-select: none; width: 60px; height: 40px; border-radius: 8px 8px 0 0; border: 1px solid rgba(255,255,255,0.1); border-bottom: none; pointer-events: auto; z-index: 202;`;
-            let drawerBaseStyle = `position: absolute; background: ${bgColor}; box-shadow: var(--shadow-lg); transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: auto; display: flex; flex-direction: column; z-index: 201; overflow: visible;`;
-            
-            let finalHandleStyle = handleBaseStyle + 'position: absolute; right: 0; ';
-            let finalDrawerStyle = drawerBaseStyle;
-
-            if (dir === 'right') {
-                finalDrawerStyle += `bottom: 0; right: 0; width: 100%; height: 220px; transform: translateX(${isOpen ? '0%' : '100%'}); border-top: 2px solid rgba(255,255,255,0.1);`;
-                finalHandleStyle += isFixedHandle ? `bottom: 220px;` : `bottom: 100%;`; 
-            } else {
-                const h = opts.height || '35%';
-                finalDrawerStyle += `bottom: 0; left: 0; width: 100%; height: ${h}; transform: translateY(${isOpen ? '0%' : '100%'}); border-top: 1px solid rgba(255,255,255,0.1);`;
-                finalHandleStyle += isFixedHandle ? `bottom: ${h};` : `bottom: 100%;`;
-            }
-
+            const h = opts.height || '35%';
             const icon = isOpen ? (opts.iconOpen || '▼') : (opts.iconClose || '▲');
-            const handleHtml = `<div onclick="event.preventDefault(); event.stopPropagation(); ${onToggle}" style="${finalHandleStyle}">${icon}</div>`;
+
+            // 外層隱形容器
+            const wrapperStyle = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 200; pointer-events: none; overflow: hidden;`;
+            
+            // 抽屜本體 (永遠從底部升起)
+            const drawerStyle = `position: absolute; bottom: 0; left: 0; width: 100%; height: ${h}; background: ${bgColor}; box-shadow: var(--shadow-lg); transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: auto; display: flex; flex-direction: column; z-index: 201; border-top: 1px solid rgba(255,255,255,0.1); transform: translateY(${isOpen ? '0%' : '100%'});`;
+            
+            // 把手 (永遠黏在抽屜頂部右側)
+            const handleStyle = `position: absolute; right: 0; bottom: 100%; background: ${bgColor}; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; box-shadow: var(--shadow-sm); user-select: none; width: 60px; height: 40px; border-radius: 8px 8px 0 0; border: 1px solid rgba(255,255,255,0.1); border-bottom: none; pointer-events: auto; z-index: 202;`;
+
+            const handleHtml = `<div onclick="event.preventDefault(); event.stopPropagation(); ${onToggle}" style="${handleStyle}">${icon}</div>`;
             const bodyContent = `<div style="width:100%; height:100%; overflow-y:auto; padding:15px; box-sizing:border-box;">${contentHtml}</div>`;
             
-            return isFixedHandle 
-                ? `<div class="u-drawer-wrapper" style="${wrapperStyle}">${handleHtml}<div class="u-drawer-body" style="${finalDrawerStyle}">${bodyContent}</div></div>`
-                : `<div class="u-drawer-wrapper" style="${wrapperStyle}"><div class="u-drawer-body" style="${finalDrawerStyle}">${handleHtml}${bodyContent}</div></div>`;
+            // 結構簡化：統一為單一 HTML 輸出
+            return `<div class="u-drawer-wrapper" style="${wrapperStyle}"><div class="u-drawer-body" style="${drawerStyle}">${handleHtml}${bodyContent}</div></div>`;
+        },
+		drawerContent: (title, filters, activeFilter, filterAction, contentHtml, contentStyle = "") => {
+            return `
+            <div style="display: flex; flex-direction: column; height: 100%; color:var(--text-on-dark);">
+                <div style="flex-shrink: 0; display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <div style="font-size: 1.1rem; font-weight: bold; white-space: nowrap; color: var(--color-gold-soft);">${title}</div>
+                    <div style="flex: 1; min-width: 0; background: rgba(0,0,0,0.2); border-radius: 20px; padding: 4px 10px; overflow-x: auto; white-space: nowrap; display: flex; align-items: center; scrollbar-width: none;">
+                        <div style="display: flex; gap: 5px; width: 100%;">
+                            ${ui.layout.scrollX(filters, activeFilter, filterAction)}
+                        </div>
+                    </div>
+                </div>
+                <div style="flex: 1; overflow-y: auto; padding-bottom: 20px; ${contentStyle}">
+                    ${contentHtml}
+                </div>
+            </div>`;
         },
         
         scroller: (header, body, id='') => `
