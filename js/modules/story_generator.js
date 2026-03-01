@@ -15,45 +15,24 @@ window.StoryGenerator = {
     _t: function(k, l) { return (this._sysDict[k] && this._sysDict[k][l]) || this._sysDict[k]?.zh || k; },
 
 	buildUnifiedFlow: function(skel) {
-        // 相容舊版：如果沒有設定 flow，就退回使用固定的 stages
-        if (!skel.flow) return skel.stages || ['univ_filler']; 
-
-        let finalFlow = [];
-        const flow = skel.flow;
-        
-        // 1. 開頭 (Start)
-        if (flow.start) finalFlow.push(...(Array.isArray(flow.start) ? flow.start : [flow.start]));
-
-        // 2. 中間主線 (Middle) + 通用劇情 (univ_filler)
-        let middleArr = flow.middle || [];
+        let finalFlow = ['start'];
+        const flow = skel.flow || { isSequential: false, minMiddle: 3, maxMiddle: 3 };
         
         if (flow.isSequential) {
-            // 💖 【循序漸進模式】(適用：戀愛、養成)
-            // 照著陣列順序走，但每個主線節點前，有 30% 機率插入通用劇情
-            for (let i = 0; i < middleArr.length; i++) {
-                if (Math.random() < 0.3) finalFlow.push('univ_filler');
-                finalFlow.push(middleArr[i]);
-            }
+            // 💖【循序漸進模式】(適用：戀愛、養成)
+            finalFlow.push('middle', 'middle', 'adv');
         } else {
-            // ⚔️ 【隨機抽取模式】(適用：懸疑、冒險、恐怖)
-            // 決定中間要跑幾回合
-            let min = flow.minMiddle || 2;
-            let max = flow.maxMiddle || 4;
+            // ⚔️【箱庭/隨機抽取模式】(適用：懸疑、恐怖、冒險)
+            let min = flow.minMiddle || 3;
+            let max = flow.maxMiddle || 3;
             let middleCount = min + Math.floor(Math.random() * (max - min + 1));
 
             for (let i = 0; i < middleCount; i++) {
-                // 30% 機率是通用碎片，70% 從中間主線池裡隨機抽
-                if (Math.random() < 0.3) {
-                    finalFlow.push('univ_filler');
-                } else if (middleArr.length > 0) {
-                    finalFlow.push(middleArr[Math.floor(Math.random() * middleArr.length)]);
-                }
+                finalFlow.push('middle');
             }
         }
 
-        // 3. 結尾 (End)
-        if (flow.end) finalFlow.push(...(Array.isArray(flow.end) ? flow.end : [flow.end]));
-
+        finalFlow.push('climax', 'end');
         return finalFlow;
     },
 
@@ -61,109 +40,67 @@ window.StoryGenerator = {
     // 2. 劇本骨架定義 (Skeletons - 極致瘦身動態版)
     // ============================================================
 	globalSeeds: {
-        // 1. 玩家開局特質 (Player Traits)
         player_trait: "global_player_trait", 
-        
-        // 2. 世界底層氛圍 (World Atmosphere)
         world_vibe: "global_world_vibe",
-
-        // 🌟 新增這行：讓每一次的冒險，都固定在一棟建築物裡！(例如永遠在工廠)
-        env_building: "env_building" 
+        env_building: "env_building", 
+        
+        // 🌟 新增：開局擲骰決定這場遊戲是「箱庭」還是「線性」
+        play_mode: "global_play_mode" 
     },
     skeletons: {
         'mystery': {
+            tensionName: "暴露度",
             seeds: {
-                weather: "env_weather",       // 👈 去詞庫抓天氣
-                atmosphere: "env_atmosphere", // 👈 去詞庫抓氛圍
-                motive: "mystery_motive"      // 👈 去詞庫抓動機
+                weather: "env_weather",       
+                atmosphere: "env_atmosphere",
+                // 🌟 箱庭推理核心種子！開局直接決定兇手與凶器
+                true_culprit: "mystery_true_culprit", 
+                murder_weapon: "mystery_murder_weapon"
             },
             actors: [
-                { key: 'detective', pool: 'core_identity', tags: ['human'] },
-                { key: 'victim', pool: 'core_identity', tags: ['human'] },
-                { key: 'suspect_A', pool: 'core_identity', tags: ['human'] },
-                { key: 'suspect_B', pool: 'core_identity', tags: ['human'] }
+                { key: 'detective', pool: 'core_identity', tags: ['human', 'mystery'] },
+                { key: 'victim', pool: 'core_identity', tags: ['human', 'mystery'] },
+				{ key: 'suspect_A', pool: 'core_identity', tags: ['human', 'mystery'] },
+                { key: 'suspect_B', pool: 'core_identity', tags: ['human', 'mystery'] }
             ], 
-            baseTension: 10,
-            flow: {
-                isSequential: false,
-                start: ['mystery_start'],
-                middle: ['mystery_mid'], 
-                adv: ['mystery_adv'],    
-                end: ['mystery_climax', 'mystery_end'],
-                minMiddle: 2, maxMiddle: 4 
-            }
+            // 🌟 懸疑劇本強制鎖定 3 回合的調查時間
+            flow: { isSequential: false, minMiddle: 3, maxMiddle: 3 }
         },
-
         'horror': {
-            seeds: {
-                weather: "env_weather",         // 👈 天氣庫共用！(這就是正規化的好處)
-                curse_type: "horror_curse_type" // 👈 專屬恐怖詞庫
-            },
+            tensionName: "恐懼值",
+            seeds: { weather: "env_weather", curse_type: "horror_curse_type" },
             actors: [
                 { key: 'survivor', pool: 'core_identity', tags: ['human'] },
-                { key: 'monster', pool: 'core_identity', tags: ['monster'] } // 👈 強制抽怪物
+                { key: 'monster', pool: 'core_identity', tags: ['monster'] }
             ],
-            baseTension: 30,
-            flow: {
-                isSequential: false, 
-                start: ['horror_start'],
-                middle: ['horror_mid'],
-                adv: ['horror_adv'],    
-                end: ['horror_climax', 'horror_end'], 
-                minMiddle: 2, maxMiddle: 3
-            }
+            flow: { isSequential: false, minMiddle: 3, maxMiddle: 4 }
         },
-
         'adventure': { 
-            seeds: {
-                world_state: "adventure_world_state",
-                start_bonus: "adventure_start_bonus"
-            },
-			actors: [
+            tensionName: "危險級別",
+            seeds: { world_state: "adventure_world_state", start_bonus: "adventure_start_bonus" },
+            actors: [
                 { key: 'hero', pool: 'core_identity', tags: ['human'] },
-                { key: 'monster', pool: 'core_identity', tags: ['monster'] },
-				{ key: 'boss', pool: 'core_identity', tags: ['monster'] }// 👈 強制抽怪物
+                { key: 'boss', pool: 'core_identity', tags: ['monster', 'boss'] } 
             ],
-            baseTension: 20,
-            flow: {
-                isSequential: false,
-                start: ['adventure_start'],
-                middle: ['adventure_mid'],
-                adv: ['adventure_adv'],    
-                end: ['adventure_climax', 'adventure_end'], 
-                minMiddle: 3, maxMiddle: 5
-            }
+            flow: { isSequential: false, minMiddle: 3, maxMiddle: 5 }
         },
-        
         'romance': {
-             seeds: {
-                 meet_location: "romance_meet_location"
-             },
-			 actors: [
-			 { key: 'lover', pool: 'core_identity', tags: ['human'] },
-             { key: 'rival', pool: 'core_identity', tags: ['human'] },],
-             baseTension: 5,
-             flow: {
-                 isSequential: true, 
-                 start: ['romance_start'],
-                 middle: ['romance_mid', 'romance_adv'], 
-                 end: ['romance_climax', 'romance_end']  
-             }
+            tensionName: "流言蜚語",
+            seeds: { meet_location: "romance_meet_location" },
+            actors: [
+                { key: 'lover', pool: 'core_identity', tags: ['human', 'romance'] },
+                { key: 'rival', pool: 'core_identity', tags: ['human', 'romance'] }
+            ],
+            flow: { isSequential: true }
         },
-
         'raising': {
-			actors: [
-			 { key: 'humantrainee', pool: 'core_identity', tags: ['human'] },
-			 { key: 'animaltrainee', pool: 'core_identity', tags: ['monster'] },
-			 { key: 'mentor', pool: 'core_identity', tags: ['human'] },
-             { key: 'rival', pool: 'core_identity', tags: ['human'] },],
-             baseTension: 0,
-             flow: {
-                 isSequential: true, 
-                 start: ['raising_start'],
-                 middle: ['raising_mid', 'raising_adv'], 
-                 end: ['raising_climax', 'raising_end']  
-             }
+            tensionName: "壓力值",
+            actors: [
+                { key: 'trainee', pool: 'core_identity', tags: ['is_trainee'] },
+                { key: 'mentor', pool: 'core_identity', tags: ['human', 'mentor'] },
+                { key: 'rival', pool: 'core_identity', tags: ['human'] }
+            ],
+            flow: { isSequential: true }
         }
     },
     // ============================================================
@@ -302,7 +239,7 @@ window.StoryGenerator = {
             maxDepth: dynamicStages.length,
             stages: dynamicStages,
             currentStageIdx: 0,
-            tension: skel.baseTension || 0,
+            tensionName: skel.tensionName || "張力值", // 🌟 記住這個劇本的專屬張力名稱
             memory: memory,               
             history: [],
             tags: initialTags
@@ -344,18 +281,15 @@ window.StoryGenerator = {
         
         let targetType = chain.stages[chain.currentStageIdx];
         
-        // 4. 張力調整 (Tension)
-        let tensionDelta = 5; 
-        if (mergedTags.includes('risk_high')) tensionDelta += 15;
-        chain.tension = Math.min(100, Math.max(0, (chain.tension || 0) + tensionDelta));
-        console.log(`🎬 Director: Stage [${targetType}], Tension ${chain.tension}%`);
-
-        // 5. 選擇劇本 (Pick Template) - 改為傳入 mergedTags
+        // 4. 選擇劇本 (Pick Template) - 改為傳入 mergedTags
         // [修復 STORY-3] 合併確保力量/敏捷等屬性檢定能生效
-    const currentStats = { ...(gs['stats'] || {}), ...(gs.attrs || {}) };
+    const currentStats = { 
+        ...(gs.attrs || {}), 
+        ...(gs.story && gs.story.vars ? gs.story.vars : {}) 
+    };
     
     // 將 currentStats 傳遞給 pickTemplate
-    const template = this.pickTemplate(targetType, mergedTags, chain.history, chain.tension, currentStats);
+    const template = this.pickTemplate(targetType, mergedTags, chain.history, currentStats);
         
         const lang = gs.settings?.targetLang || 'zh';
 
@@ -513,135 +447,88 @@ window.StoryGenerator = {
     // ============================================================
     // 修改：挑選模板 (加入數值條件判斷)
     // ============================================================
-    pickTemplate: function(type, currentTags, history, tension, currentStats = {}) {
-    const db = window.FragmentDB;
-    
-    // ===========================
-    // 步驟 1: 初步篩選 (Type)
-    // ===========================
-    // 先找出所有類型符合的劇本
-    let candidates = db.templates.filter(t => t.type === type);
-
-    // ===========================
-    // 步驟 2: 嚴格過濾 (Tags & Conditions)
-    // ===========================
-    let validCandidates = candidates.filter(t => {
+    pickTemplate: function(type, currentTags, history, currentStats = {}) {
+        const db = window.FragmentDB;
         
-        // 🌟 A. 終極陣列標籤過濾器 (Tags)
+        // 🌟 1. 提前判定高危狀態 (最高優先級！)
+        let isDangerState = currentTags.includes('risk_high') || 
+                            (currentStats.tension !== undefined && currentStats.tension >= 80);
+
+        let candidates = db.templates.filter(t => t.type === type);
         
-        // 1. 檢查「排除 (NOR)」：只要踩中任何一個地雷，直接淘汰
-        if (t.excludeTags && Array.isArray(t.excludeTags)) {
-            if (t.excludeTags.some(tag => currentTags.includes(tag))) return false;
-        } else if (t.excludeTag && currentTags.includes(t.excludeTag)) { // 相容舊寫法 excludeTag
-            return false;
-        } else if (t.noTag && currentTags.includes(t.noTag)) {         // 相容舊寫法 noTag
-            return false;
-        }
+        // 判斷是否為關鍵劇情 (Start, Climax, End 不受高危隨機事件干擾)
+        const isCritical = type.includes('setup') || type.includes('climax') || type.includes('end') || type.includes('start');
 
-        // 2. 檢查「需求 (OR)」：必須擁有陣列中至少一個標籤，否則淘汰
-        if (t.reqTags && Array.isArray(t.reqTags)) {
-            if (!t.reqTags.some(tag => currentTags.includes(tag))) return false;
-        } else if (t.reqTag && !currentTags.includes(t.reqTag)) {      // 相容舊寫法 reqTag
-            return false;
-        }
-
-        // B. 數值/狀態條件過濾 (保持你原本的寫法不動)
-        if (t.conditions) {
-            for (let [key, val] of Object.entries(t.conditions)) {
-                let userVal = currentStats[key] || 0;
-                if (typeof val === 'string') {
-                    if (val.startsWith('>')) {
-                        if (userVal <= parseFloat(val.substring(1))) return false;
-                    } else if (val.startsWith('<')) {
-                        if (userVal >= parseFloat(val.substring(1))) return false;
-                    } else if (val !== userVal.toString()) {
-                        return false; 
+        // 🌟 2. 嚴格過濾
+        let validCandidates = candidates.filter(t => {
+            // A. 排除檢查
+            if (t.excludeTags && Array.isArray(t.excludeTags)) {
+                if (t.excludeTags.some(tag => currentTags.includes(tag))) return false;
+            }
+            // B. 需求檢查
+            if (t.reqTags && Array.isArray(t.reqTags)) {
+                // 【核心魔法】如果是高危狀態，系統會「臨時」視為玩家身上有 risk_high 標籤，以解鎖怪物劇本！
+                let tempTags = isDangerState ? [...currentTags, 'risk_high'] : currentTags;
+                if (!t.reqTags.some(tag => tempTags.includes(tag))) return false;
+            }
+            // C. 數值檢查
+            if (t.conditions) {
+                for (let [key, val] of Object.entries(t.conditions)) {
+                    let userVal = currentStats[key] || 0;
+                    if (typeof val === 'string') {
+                        let num = parseFloat(val.substring(1));
+                        if (val.startsWith('>') && userVal <= num) return false;
+                        if (val.startsWith('<') && userVal >= num) return false;
+                    } else {
+                        if (userVal < val) return false;
                     }
-                } else {
-                    if (userVal !== val) return false;
                 }
             }
-        }
-        return true;
-    });
+            return true;
+        });
 
-    // ===========================
-    // 步驟 3: 歷史過濾 (History)
-    // ===========================
-    // 從「符合條件」的清單中，濾掉「最近出現過」的
-    let historyFiltered = validCandidates.filter(t => !t.id || !history.includes(t.id));
-
-    // ===========================
-    // 步驟 4: 決定最終候選池 (Final Pool) - 這是修正重點
-    // ===========================
-    let finalPool = [];
-
-    if (historyFiltered.length > 0) {
-        // 首選：符合條件 且 沒出現過的新劇本
-        finalPool = historyFiltered;
-    } else {
-        // 🚨 牌庫被抽乾了！(所有符合條件的牌都在歷史紀錄裡)
-        
-        // 判斷是否為「絕對不能被替換」的關鍵劇情
-        const isCritical = type.includes('setup') || type.includes('adventure_climax') || type.includes('ending') || type.includes('climax');
-        
-        if (isCritical && validCandidates.length > 0) {
-            // 只有關鍵劇情 (例如魔王只有一隻)，才允許重複上演
-            console.warn(`⚠️ [${type}] 牌庫耗盡，但因屬於關鍵劇情，允許重複抽取。`);
-            finalPool = validCandidates;
-        } else {
-            // 一般劇情 (像調查、追蹤) 絕對不允許重複！
-            // 我們故意讓 finalPool 保持為空 []
-            // 這樣系統就會自動掉進下一步驟的「救命機制」，去抽一張 univ_filler (通用事件) 來完美頂替！
-            finalPool = [];
-        }
-    }
-    // 此時 finalPool 可能仍為空 (如果連 validCandidates 都是空的)
-
-    // ===========================
-    // 步驟 5: 救命機制 (Fallback Logic)
-    // ===========================
-    if (finalPool.length === 0) {
-        console.warn(`⚠️ [${type}] 無可用劇本 (Tags不符或耗盡)。啟動備案機制...`);
-
-        const isCritical = type.includes('setup') || type.includes('adventure_climax') || type.includes('ending') || type.includes('climax');
-        
-        if (isCritical) {
-            if (candidates.length > 0) {
-                console.warn(`🚨 強制執行關鍵劇情: ${candidates[0].id}`);
-                return candidates[0];
-            } else {
-                return db.templates.find(t => t.type === 'univ_filler') || null;
+        // 🌟 3. 強制高危攔截 (截胡機制)
+        if (isDangerState && !isCritical) {
+            // 嘗試從當前候選中找出高危劇本
+            let dangerOnly = validCandidates.filter(t => t.reqTags && t.reqTags.includes('risk_high'));
+            
+            // 💀 如果當前進度 (例如 mystery_mid) 沒有寫專屬的高危劇本，
+            // 系統會「跨維度」直接去 univ_filler 裡把怪物拖出來打你！
+            if (dangerOnly.length === 0) {
+                 dangerOnly = db.templates.filter(t => t.type === 'univ_filler' && t.reqTags && t.reqTags.includes('risk_high'));
             }
+            
+            if (dangerOnly.length > 0) {
+                validCandidates = dangerOnly;
+                console.log("🚨 玩家狀態不穩，強制鎖定 [高危牌庫]！");
+            }
+        } else if (!isCritical) {
+            // 🕊️ 安全狀態：強制把會嚇人的劇本全部濾掉，保證日常體驗
+            validCandidates = validCandidates.filter(t => !(t.reqTags && t.reqTags.includes('risk_high')));
         }
 
-        console.log(`🔄 切換至通用填充 (Universal Filler)`);
-        let fillers = db.templates.filter(t => t.type === 'univ_filler');
+        // 4. 歷史過濾 (不重複體驗)
+        let historyFiltered = validCandidates.filter(t => !t.id || !history.includes(t.id));
         
-        // 🌟 [關鍵修復] 讓通用 Filler 也遵守歷史紀錄，避免連續抽到同一個 uni_env_danger！
-        let safeFillers = fillers.filter(t => !history.includes(t.id));
+        // 決定最終牌池
+        let finalPool = historyFiltered.length > 0 ? historyFiltered : (isCritical ? validCandidates : []);
 
-        if (tension > 50 || currentTags.includes('risk_high')) {
-            let dangerFillers = safeFillers.filter(t => t.conditions && t.conditions.risk_high);
-            if (dangerFillers.length > 0) safeFillers = dangerFillers;
+        // 5. 救命機制 (如果真的沒牌了)
+        if (finalPool.length === 0) {
+            console.warn(`⚠️ [${type}] 無可用劇本，啟動備案...`);
+            if (isCritical && candidates.length > 0) return candidates[0];
+            
+            // 抽一張絕對安全的通用劇本來頂替
+            let safeFillers = db.templates.filter(t => t.type === 'univ_filler' && !history.includes(t.id) && !(t.reqTags && t.reqTags.includes('risk_high')));
+            if (safeFillers.length > 0) return safeFillers[Math.floor(Math.random() * safeFillers.length)];
+            
+            // 最終防呆
+            return db.templates.find(t => t.type === 'univ_filler'); 
         }
 
-        // 優先從過濾過歷史的「安全牌庫」抽
-        if (safeFillers.length > 0) {
-            return safeFillers[Math.floor(Math.random() * safeFillers.length)];
-        } else if (fillers.length > 0) {
-            // 防呆：如果牌真的太少，安全牌庫空了，只好無視歷史硬抽一張 (總比系統 crash 好)
-            return fillers[Math.floor(Math.random() * fillers.length)];
-        }
-        
-        return null;
-    }
-
-    // ===========================
-    // 步驟 6: 隨機抽出
-    // ===========================
-    return finalPool[Math.floor(Math.random() * finalPool.length)];
-},
+        // 6. 最終抽取
+        return finalPool[Math.floor(Math.random() * finalPool.length)];
+    },
 
     generateOptions: function(tmpl, fragments, lang, type, currentTags = [], currentStats = {}) {
     let opts = [];

@@ -142,10 +142,17 @@ window.storyView = {
         `;
         // 動態抓取 vars 裡的狀態 (例如 SAN, 時間)
         for (let [k, v] of Object.entries(myVars)) {
-            statusHtml += `<div style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; font-size: 0.9rem;">${k}: <span style="color:var(--color-info);">${v}</span></div>`;
+            // 🌟 檢查是不是張力值
+            let displayKey = k;
+            if (k === 'tension' && gs.story.chain && gs.story.chain.tensionName) {
+                displayKey = gs.story.chain.tensionName;
+            } else {
+                displayKey = window.t_tag ? window.t_tag(k) : k;
+            }
+            
+            statusHtml += `<div style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; font-size: 0.9rem;">${displayKey}: <span style="color:var(--color-info);">${v}</span></div>`;
         }
-        statusHtml += `</div></div>`;
-
+		statusHtml += `</div></div>`;
         // 3. 生成標籤 HTML (下半部，移除分類過濾)
         const tagStyles = { 
             'loc': { color: '--color-gold-dark', bg: '--color-gold-soft' }, 
@@ -153,14 +160,17 @@ window.storyView = {
             'warn': { color: '--color-danger', bg: '--color-danger-soft' }, 
             'info': { color: '--color-correct', bg: '--color-correct-soft' } 
         };
-        
         let tagsHtml = '<div style="color:var(--text-ghost); font-size: 0.9rem;">尚無標籤</div>';
         if (myTags.length > 0) {
             tagsHtml = myTags.map(t => {
-                const label = typeof t === 'string' ? t : t.label;
+                const rawLabel = typeof t === 'string' ? t : t.label; 
                 const type = typeof t === 'string' ? 'info' : t.type;
                 const style = tagStyles[type] || tagStyles['info'];
-                return ui.component.badge(label, style.color, style.bg);
+                
+                // 🌟 核心魔法：呼叫字典翻譯 (內部是英文，顯示變中文)
+                const displayLabel = window.t_tag ? window.t_tag(rawLabel) : rawLabel;
+                
+                return ui.component.badge(displayLabel, style.color, style.bg);
             }).join('');
         }
 

@@ -1,7 +1,47 @@
-/* js/story_data/story_data_core.js (V5 標籤生態系升級版) */
+/* js/story_data/story_data_core.js */
 (function() {
     window.FragmentDB = window.FragmentDB || { fragments: {}, templates: [] };
     const DB = window.FragmentDB;
+
+    // 👇 👇 👇 🌟 [新增] 全域多國語言字典 (i18n)
+    window.I18N_DICT = {
+        // 系統狀態標籤 (Tags)
+        'observed': { zh: '已觀察', en: 'Observed', ko: '관찰됨' },
+        'item_found': { zh: '發現物品', en: 'Item Found', ko: '아이템 발견' },
+        'risk_high': { zh: '高風險', en: 'High Risk', ko: '고위험' },
+        'cursed': { zh: '受詛咒', en: 'Cursed', ko: '저주받은' },
+        'knowledge_found': { zh: '獲得知識', en: 'Knowledge', ko: '지식 획득' },
+        'cautious': { zh: '保持警戒', en: 'Cautious', ko: '경계' },
+        
+        // 屬性與變數 (Vars)
+        'sanity': { zh: '理智', en: 'SAN', ko: '이성' },
+        'energy': { zh: '精力', en: 'Energy', ko: '에너지' },
+        'time_left': { zh: '剩餘時間', en: 'Time Left', ko: '남은 시간' },
+        'stress': { zh: '壓力', en: 'Stress', ko: '스트레스' },
+        'trust': { zh: '信任度', en: 'Trust', ko: '신뢰' },
+        'favor': { zh: '好感度', en: 'Favor', ko: '호감도' },
+        'hp': { zh: '生命值', en: 'HP', ko: 'HP' },
+        'exp': { zh: '經驗值', en: 'EXP', ko: 'EXP' },
+        'gold': { zh: '金幣', en: 'Gold', ko: '골드' },
+		'youth_given': { zh: '奉獻的青春', en: 'Youth Given', ko: '바친 청춘' },
+        'dignity': { zh: '尊嚴', en: 'Dignity', ko: '존엄' },
+        'route_illicit': { zh: '禁忌路線', en: 'Illicit Route', ko: '금지된 경로' }
+    };
+
+    window.t_tag = function(key) {
+        if (!key) return "";
+        let lang = (window.GlobalState && window.GlobalState.settings && window.GlobalState.settings.targetLang) 
+                   ? window.GlobalState.settings.targetLang 
+                   : 'zh';
+        
+        // 🌟 防呆機制：如果語言是 mix，或者字典裡剛好沒有這個語言的翻譯，就強制使用中文 (zh)
+        if (lang === 'mix' || (window.I18N_DICT[key] && !window.I18N_DICT[key][lang])) {
+            lang = 'zh';
+        }
+
+        if (window.I18N_DICT[key] && window.I18N_DICT[key][lang]) return window.I18N_DICT[key][lang];
+        return key; 
+    };
 
     Object.assign(DB.fragments, {
     // ============================================================
@@ -10,6 +50,12 @@
         
         // 🌟【1. 動態種子庫 (Dynamic Seeds)】- 供 story_generator.js 引擎開局抽取
         // ------------------------------------------------------------
+		global_play_mode: [
+            { val: "【箱庭探索】", tag: "is_hub_mode" },
+            { val: "【線性敘事】", tag: "is_linear_mode" },
+            // 你可以多放幾個 is_linear_mode 讓一般劇情的機率高一點，例如 2:1
+            { val: "【線性敘事】", tag: "is_linear_mode" } 
+        ],
         global_player_trait: [
             { val: "幸運的", tag: "trait_lucky" }, { val: "倒楣的", tag: "trait_unlucky" },
             { val: "富有的", tag: "trait_rich" }, { val: "貧窮的", tag: "trait_poor" },
@@ -96,45 +142,93 @@
             { val: "祭壇室", tag: ["room", "magic", "horror"] }, { val: "實驗室", tag: ["room", "sci-fi", "raising"] }
         ],
 
-        // 👤【3. 核心身份 (Core Identity)】- 超級強化的生態系！
+        // 🌟【新增：性格與階級前綴 (Trait Prefix)】- 取代原本寫死的組合
+        trait_prefix: [
+            { val: "" }, { val: "" }, // 故意放兩個空值，增加「沒有前綴」的普通機率
+            { val: "皇家" }, { val: "神秘" }, { val: "瘋狂" }, { val: "豪門" }, 
+            { val: "落魄" }, { val: "傲嬌" }, { val: "溫柔" }, { val: "冷酷" }, 
+            { val: "天才" }, { val: "笨拙" }, { val: "不良" }, { val: "退役" }, 
+            { val: "嚴厲" }, { val: "霸道" }, { val: "嗜血" }, { val: "流浪" }, 
+            { val: "首席" }, { val: "病嬌" }, { val: "變異" }, { val: "殘暴" },
+            { val: "高雅的" }, { val: "被詛咒的" }, { val: "傳說中的" }
+        ],
+
+        // 👤【3. 核心身份 (Core Identity)】- V8 Rogue-like 百搭生態系！
         // ------------------------------------------------------------
         core_identity: [ 
-            // 🕵️ 懸疑/犯罪 (Mystery)
-            { val: "偵探", tag: ["human", "mystery"] }, { val: "法醫", tag: ["human", "mystery"] },
-            { val: "嫌疑犯", tag: ["human", "mystery"] }, { val: "怪盜", tag: ["human", "mystery"] },
-            { val: "目擊者", tag: ["human", "mystery"] }, { val: "豪門寡婦", tag: ["human", "mystery", "romance"] },
-            { val: "私人保鑣", tag: ["human", "mystery", "combat"] },
+            // 🕵️ 懸疑/犯罪 (Mystery) - 拆解豪門寡婦、瘋狂法醫等
+            { val: "{trait_prefix}偵探", tag: ["human", "mystery"] }, 
+            { val: "{trait_prefix}法醫", tag: ["human", "mystery"] },
+            { val: "{trait_prefix}嫌疑犯", tag: ["human", "mystery"] }, 
+            { val: "{trait_prefix}怪盜", tag: ["human", "mystery"] },
+            { val: "{trait_prefix}目擊者", tag: ["human", "mystery"] }, 
+            { val: "{trait_prefix}寡婦", tag: ["human", "mystery", "romance"] },
+            { val: "{trait_prefix}保鑣", tag: ["human", "mystery", "combat"] },
 
             // 👻 恐怖/驚悚 (Horror) - 人類
-            { val: "倖存者", tag: ["human", "horror", "survivor"] }, { val: "除靈師", tag: ["human", "horror", "magic"] },
-            { val: "靈媒", tag: ["human", "horror", "magic"] }, { val: "瘋狂科學家", tag: ["human", "horror", "sci-fi"] },
+            { val: "{trait_prefix}倖存者", tag: ["human", "horror", "survivor"] }, 
+            { val: "{trait_prefix}除靈師", tag: ["human", "horror", "magic"] },
+            { val: "{trait_prefix}靈媒", tag: ["human", "horror", "magic"] }, 
+            { val: "{trait_prefix}科學家", tag: ["human", "horror", "sci-fi"] },
             // 👻 恐怖/驚悚 (Horror) - 怪物
-            { val: "觸手畸變體", tag: ["monster", "horror", "mutant"] }, { val: "怨靈", tag: ["monster", "horror", "spirit"] },
-            { val: "食屍鬼", tag: ["monster", "horror", "undead"] }, { val: "無面者", tag: ["monster", "horror", "creepy"] },
-            { val: "喪屍", tag: ["monster", "horror", "undead"] }, { val: "血肉傀儡", tag: ["monster", "horror", "construct"] },
+            { val: "{trait_prefix}觸手", tag: ["monster", "horror", "mutant"] }, 
+            { val: "{trait_prefix}怨靈", tag: ["monster", "horror", "spirit"] },
+            { val: "{trait_prefix}食屍鬼", tag: ["monster", "horror", "undead"] }, 
+            { val: "{trait_prefix}無面者", tag: ["monster", "horror", "creepy"] },
+            { val: "{trait_prefix}喪屍", tag: ["monster", "horror", "undead"] }, 
+            { val: "{trait_prefix}血肉傀儡", tag: ["monster", "horror", "construct"] },
 
-            // ⚔️ 冒險/奇幻 (Adventure / Magic) - 人類
-            { val: "老鳥獵人", tag: ["human", "adventure", "combat"] }, { val: "流浪騎士", tag: ["human", "adventure", "combat"] },
-            { val: "精靈弓箭手", tag: ["human", "adventure", "magic"] }, { val: "大魔法師", tag: ["human", "adventure", "magic"] },
-            { val: "賞金獵人", tag: ["human", "adventure", "combat"] }, { val: "吟遊詩人", tag: ["human", "adventure", "romance"] },
-            // ⚔️ 冒險/奇幻 (Adventure / Magic) - 怪物
-            { val: "史萊姆", tag: ["monster", "adventure", "beast"] }, { val: "哥布林", tag: ["monster", "adventure", "beast"] },
-            { val: "狂暴巨熊", tag: ["monster", "adventure", "beast"] }, { val: "石像鬼", tag: ["monster", "adventure", "construct"] },
-            { val: "深淵巨龍", tag: ["monster", "adventure", "boss"] }, { val: "巫妖", tag: ["monster", "adventure", "boss"] },
+            // ⚔️ 冒險/奇幻 (Adventure) - 人類
+            { val: "{trait_prefix}獵人", tag: ["human", "adventure", "combat"] }, 
+            { val: "{trait_prefix}騎士", tag: ["human", "adventure", "combat"] },
+            { val: "{trait_prefix}弓箭手", tag: ["human", "adventure", "magic"] }, 
+            { val: "{trait_prefix}魔法師", tag: ["human", "adventure", "magic"] },
+            { val: "{trait_prefix}賞金獵人", tag: ["human", "adventure", "combat"] }, 
+            { val: "{trait_prefix}吟遊詩人", tag: ["human", "adventure", "romance"] },
+            // ⚔️ 冒險/奇幻 (Adventure) - 怪物
+            { val: "{trait_prefix}史萊姆", tag: ["monster", "adventure", "beast"] }, 
+            { val: "{trait_prefix}哥布林", tag: ["monster", "adventure", "beast"] },
+            { val: "{trait_prefix}巨熊", tag: ["monster", "adventure", "beast"] }, 
+            { val: "{trait_prefix}石像鬼", tag: ["monster", "adventure", "construct"] },
+            { val: "{trait_prefix}巨龍", tag: ["monster", "adventure", "boss"] }, 
+            { val: "{trait_prefix}巫妖", tag: ["monster", "adventure", "boss"] },
 
             // 💕 戀愛 (Romance)
-            { val: "青梅竹馬", tag: ["human", "romance"] }, { val: "霸道總裁", tag: ["human", "romance", "rich"] },
-            { val: "神秘轉學生", tag: ["human", "romance", "mystery"] }, { val: "傲嬌千金", tag: ["human", "romance", "rich"] },
-            { val: "溫柔學長", tag: ["human", "romance"] }, { val: "冷酷未婚夫", tag: ["human", "romance"] },
+            { val: "{trait_prefix}青梅竹馬", tag: ["human", "romance"] }, 
+            { val: "{trait_prefix}總裁", tag: ["human", "romance", "rich"] },
+            { val: "{trait_prefix}轉學生", tag: ["human", "romance", "mystery"] }, 
+            { val: "{trait_prefix}千金", tag: ["human", "romance", "rich"] },
+            { val: "{trait_prefix}學長", tag: ["human", "romance"] }, 
+            { val: "{trait_prefix}未婚夫", tag: ["human", "romance"] },
 
-            // 📈 養成 (Raising)
-            { val: "嚴厲導師", tag: ["human", "raising", "mentor"] }, { val: "天才見習生", tag: ["human", "raising", "trainee"] },
-            { val: "笨拙學徒", tag: ["human", "raising", "trainee"] }, { val: "退役教官", tag: ["human", "raising", "mentor"] },
-            { val: "皇家考官", tag: ["human", "raising", "mentor"] }, { val: "不良少年", tag: ["human", "raising", "trainee"] },
+            // 📈 養成 (Raising) - 導師與學徒
+            { val: "{trait_prefix}導師", tag: ["human", "raising", "mentor"] },
+            { val: "{trait_prefix}教官", tag: ["human", "raising", "mentor"] },
+            { val: "{trait_prefix}考官", tag: ["human", "raising", "mentor"] }, 
+            { val: "{trait_prefix}見習生", tag: ["human", "is_trainee"] }, 
+            { val: "{trait_prefix}學徒", tag: ["human", "is_trainee"] }, 
+            { val: "{trait_prefix}少年", tag: ["human", "is_trainee"] },
             
+            // 👇 這是你的動物/怪物學徒！
+            { val: "{trait_prefix}史萊姆寶寶", tag: ["monster", "is_trainee", "beast"] }, 
+            { val: "{trait_prefix}幼龍", tag: ["monster", "is_trainee", "dragon"] },
+            { val: "{trait_prefix}機關犬", tag: ["monster", "is_trainee", "construct"] },
+
             // 🏘️ 通用路人 (Civilian - 補底用)
-            { val: "村民", tag: ["human", "civilian"] }, { val: "商人", tag: ["human", "civilian"] },
-            { val: "老人", tag: ["human", "civilian"] }, { val: "酒館老闆", tag: ["human", "civilian"] }
+            { val: "{trait_prefix}村民", tag: ["human", "civilian"] }, { val: "{trait_prefix}商人", tag: ["human", "civilian"] },
+            { val: "{trait_prefix}老人", tag: ["human", "civilian"] }, { val: "{trait_prefix}酒館老闆", tag: ["human", "civilian"] }
+        ],
+
+        // 🏷️【4. 實體前綴修飾 (Identity Modifier)】- 帶「的」，只能加在名詞前
+        // ------------------------------------------------------------
+        identity_modifier: [ 
+            { val: "" }, { val: "年輕的", tag: ["romance", "raising"] }, { val: "年邁的" }, 
+            { val: "成熟的", tag: ["romance"] }, { val: "蒼老的", tag: ["ancient", "horror"] }, 
+            { val: "不朽的", tag: ["ancient", "magic"] }, { val: "新生的", tag: ["mutant", "raising"] },
+            { val: "神祕的", tag: ["mystery"] }, { val: "落魄的", tag: ["poor"] }, 
+            { val: "身穿制服的", tag: ["sci-fi", "raising"] }, { val: "腐敗的", tag: ["horror", "undead"] },
+            { val: "異化的", tag: ["horror", "sci-fi"] }, { val: "氣質高雅的", tag: ["romance", "rich"] }, 
+            { val: "滿身傷痕的", tag: ["combat", "survivor"] }
         ],
 
         // 🏷️【4. 實體前綴修飾 (Identity Modifier)】- 帶「的」，只能加在名詞前

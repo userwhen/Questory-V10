@@ -6,15 +6,11 @@
 window.MapManager = {
     map: [],             
     currentRoom: null,   
-    building: "未知建築", // 🌟 新增：記住當前所處的大建築物
-    omenCount: 0,        
+    building: "未知建築", 
 
-    // 🌟 修改：現在 init 需要同時接收「建築」與「初始房間」
     init: function(buildingName, startRoomName) {
         this.map = [];
-        this.omenCount = 0;
         this.building = buildingName || "未知區域"; 
-        
         let startRoom = this.generateRoom(startRoomName); 
         this.map.push(startRoom);
         this.currentRoom = startRoom;
@@ -25,7 +21,6 @@ window.MapManager = {
         this.map = [];
         this.currentRoom = null;
         this.building = "未知建築";
-        this.omenCount = 0;
         window.TempState.storyLocation = "未知區域";
     },
 
@@ -55,7 +50,6 @@ window.MapManager = {
             let newRoom = this.generateRoom();
             this.map.push(newRoom);
             this.currentRoom = newRoom;
-            this.omenCount += 1;
             this.updateLocationString();
             return `你推開了一扇沉重的木門，來到了 **[${newRoom.name}]**。`;
         } else if (action === "map_move_to") {
@@ -68,7 +62,6 @@ window.MapManager = {
         }
         return "";
     },
-
     // 🌟 修改：將建築與房間組合，存入全域讓 View 讀取
     updateLocationString: function() {
         let room = this.currentRoom ? this.currentRoom.name : "未知房間";
@@ -288,37 +281,17 @@ window.StoryEngine = {
             let transitionText = window.MapManager.handleMapAction(opt.action, opt.targetId);
             if (window.storyView && storyView.updateTopBar) storyView.updateTopBar(); 
             
-            // 🌟 1. 抓取地圖狀態
             const actionLabel = opt.action === "map_explore_new" ? "推開新門" : "原路折返";
             const roomName = window.MapManager.currentRoom.name;
-            const omenCount = window.MapManager.omenCount;
-            const omenColor = omenCount >= 5 ? 'var(--color-danger)' : 'var(--color-correct)'; // 危險時變紅
             const pathStr = window.MapManager.map.map(r => r.id === window.MapManager.currentRoom.id ? `📍[${r.name}]` : `🚪[${r.name}]`).join(" ─ ");
             
-            // 🌟 2. 仿造 appendInlineCheckResult 組合單行 HTML
-            const inlineHtml = `
-                <span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.95rem;">🗺️ 探索 (${actionLabel})........ </span>
-                <span style="font-weight:bold; color:var(--color-info); font-size: 0.95rem;">來到了 [${window.MapManager.building} - ${roomName}]</span><br>
-                <span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.95rem;">📍 路徑: ${pathStr}</span><br>
-                <span style="font-weight:bold; color:${omenColor}; font-size: 0.95rem;">💀 預兆: ${omenCount} / 6</span><br><br>
-            `;
-            
-            // 🌟 3. 將這段日誌塞進 deferredHtml，讓它在下一個場景的最上方打字出來
+            const inlineHtml = 
+			`<span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.95rem;">🗺️ 探索 (${actionLabel})........ </span><span style="font-weight:bold; color:var(--color-info); font-size: 0.95rem;">來到了 [${roomName}]</span><br><span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.85rem;">📍 路徑: ${pathStr}</span><br><br>`;	
             window.TempState.deferredHtml = (window.TempState.deferredHtml || "") + inlineHtml;
 
-            // 💀 預兆爆發檢定！
-            if (window.MapManager.omenCount >= 6) {
-                console.log("💀 預兆爆發！強制進入 Boss 戰！");
-                this.playSceneNode({
-                    text: `<span style="color:var(--color-danger); font-weight:bold; font-size:1.1rem;">💀 突然，整棟建築劇烈搖晃。有什麼極度恐怖的東西被喚醒了... (預兆值已滿，作祟開始！)</span>`,
-                    options: [{ label: "迎擊恐懼！", action: "advance_chain", rewards: { tags: ['risk_high'] } }]
-                });
-                let chain = window.GlobalState.story.chain;
-                if (chain) chain.currentStageIdx = Math.max(0, chain.stages.length - 2); 
-            } else {
-                // 🌟 一般探索：直接推進下一個隨機劇本
-                this.advanceChain(); 
-            }
+            // 🌟 移除預兆爆發邏輯，直接推進劇本 (危險交給 Tension 系統處理)
+            this.advanceChain(); 
+            
             if(window.App) App.saveData();
             return;
         }
@@ -643,9 +616,17 @@ window.StoryEngine = {
                 else if (op.op === '-' || op.op === 'sub') gs.story.vars[k] -= v;
                 else if (op.op === '=' || op.op === 'set') gs.story.vars[k] = v;
 
-                // 顯示邏輯：如果有 msg 就顯示
+                // 🌟 [升級] 顯示邏輯：支援動態張力名稱
                 if (op.msg) {
                     msgs.push(op.msg);
+                } else {
+                    let displayKey = k;
+                    if (k === 'tension' && gs.story.chain && gs.story.chain.tensionName) {
+                        displayKey = gs.story.chain.tensionName; // 使用劇本專屬名稱 (如: 暴露度)
+                    } else {
+                        displayKey = window.t_tag ? window.t_tag(k) : k;
+                    }
+                    msgs.push(`📊 ${displayKey}: ${v > 0 ? '+' : ''}${v}`);
                 }
             }
         });
@@ -731,6 +712,16 @@ window.StoryEngine = {
                                 : {};
                  // 強制經過翻譯引擎
                  resolvedText = window.StoryGenerator._expandGrammar(resolvedText, window.FragmentDB, memory);
+            }
+
+            // 🌟 自動文法修復：消除多餘的贅字與標點衝突
+            if (typeof resolvedText === 'string') {
+                resolvedText = resolvedText
+                    .replace(/的\s*的/g, '的')               // 消除連續兩個「的」 (例如：廢棄的的房間 -> 廢棄的房間)
+                    .replace(/的(?=[，。！、？]|$)/g, '')    // 消除緊接著標點符號或句尾的「的」 (例如：他看著空蕩蕩的。 -> 他看著空蕩蕩。)
+                    .replace(/^(的|與|和)/, '')             // 消除句首多出來的連接詞
+                    .replace(/，\s*，/g, '，')               // 消除連續逗號
+                    .replace(/。\s*。/g, '。');              // 消除連續句號
             }
 
             // 3. 最後套用 CSS 顏色與排版
