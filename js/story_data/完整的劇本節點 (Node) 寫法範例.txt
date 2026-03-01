@@ -1,0 +1,86 @@
+{
+    // ==========================================
+    // 🏷️ 1. 基本資訊與篩選條件
+    // ==========================================
+    id: 'rose_start1',         // 【必填】節點的唯一 ID。
+    type: 'mystery_start',     // 【必填】節點類型 (如 univ_filler, mystery_mid, ending 等，決定在哪個階段被抽出)。
+    weight: 10,                // 【選填】權重，數字越高越容易被隨機抽中 (預設為 10)。
+    entry: true,               // 【選填】是否可作為靜態劇本的「開局入口」 (隨機動態生成的劇本通常不需要)。
+    
+    // 【選填】嚴格過濾器：決定這個劇本什麼情況下才「有資格」出現
+    reqTags: ['theme_mystery'],           // 需要玩家身上有這些標籤的「其中之一」才會出現。
+    excludeTags: ['risk_high', 'injured'],// 只要玩家身上有其中一個標籤，這劇本就「絕對不會」出現。
+    conditions: { "risk_high": true },    // 早期版本的狀態判斷 (建議統一用 reqTags 取代)。
+
+    // ==========================================
+    // ⚙️ 2. 進入節點時的自動處理 (進入瞬間觸發)
+    // ==========================================
+    onEnter: { 
+        // 變數操作 (可操作區域變數 vars，或全域變數如 gold, energy)
+        varOps: [
+            { key: 'sanity', val: 100, op: 'set' },    // 將區域變數 SAN 值設為 100
+            { key: 'time_left', val: 5, op: 'set' },   // 將區域變數 剩餘回合 設為 5
+            { key: 'gold', val: 50, op: '+' },         // 全域金幣 +50
+        ],
+        // 獲得/移除標籤 (常用於清空上一輪的道具，或賦予開局狀態)
+        rewards: { 
+            tags: ['start_investigation'], 
+            removeTags: ['has_key', 'evidence_poison'] 
+        }
+    },
+
+    // ==========================================
+    // 📖 3. 劇本內容 (對話或文本)
+    // ==========================================
+    dialogue: [
+        // 支援動態詞庫展開 (如 {env_room}, {combo_person_appearance})
+        { text: { zh: "「直升機到了，快走！」伊芙拉著你衝上頂樓停機坪。" } },
+        
+        // 帶有發言者的格式 (系統會自動變色)
+        { speaker: "伊芙", text: { zh: "任務結束了。現在，是檢視成果的時候..." } },
+        
+        // 旁白或動作描述
+        { speaker: "旁白", text: { zh: "你感覺到{sentence_tension}" } }
+    ],
+
+    // ==========================================
+    // 🔘 4. 玩家選項清單
+    // ==========================================
+    options: [
+        { 
+            // 選項 1：最基礎的跳轉
+            label: "掙扎著站起來", 
+            action: "node_next",             // 動作類型：跳轉到指定節點
+            nextSceneId: 'rose_cellar_1',    // 成功/預設跳轉的目標節點 ID
+            rewards: { exp: 10 }             // 點擊此選項給予的獎勵
+        },
+        { 
+            // 選項 2：帶有屬性檢定的動作
+            label: "強行破門 (STR檢定)", 
+            check: { stat: 'STR', val: 6 },  // 力量需大於等於 6 才算成功
+            action: "node_next", 
+            nextSceneId: 'success_door',     // 檢定【成功】跳轉這裡
+            failSceneId: 'fail_door',        // 檢定【失敗】跳轉這裡
+            rewards: { varOps: [{key: 'energy', val: 5, op: '-'}] } // 點擊就扣 5 精力
+        },
+        { 
+            // 選項 3：帶有「出現條件」的隱藏選項
+            label: "[使用鐵鏽鑰匙] 開門", 
+            condition: { tags: ['has_key'] },// 只有身上有 'has_key' 標籤才看得到這個按鈕
+            action: "node_next", 
+            nextSceneId: 'secret_room_node'
+        },
+        { 
+            // 選項 4：推進隨機劇本鏈
+            label: "環顧四周", 
+            action: "advance_chain",         // 讓引擎自動從 FragmentDB 抽下一張隨機卡牌
+            rewards: { tags: ['observed'] }  // 獲得「已觀察」標籤
+        },
+        {
+            // 選項 5：地圖探索專用
+            label: "推開未知的門",
+            action: "map_explore_new",       // 觸發 MapManager 生成新房間
+            style: "primary"                 // 按鈕樣式 (primary, danger, correct 等)
+        }
+    ]
+}

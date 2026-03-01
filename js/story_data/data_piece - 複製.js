@@ -366,193 +366,29 @@
 			// [🔙 退回 [大廳]]
 		] 
 		},
-		// ============================================================
-        // 🔍 【分區 A：高壓探索與發現】 (消耗時間、理智檢定、物品互動)
-        // 適用：所有主題，但帶有 TRPG 資源管理的壓力
         // ============================================================
-        
-        { 
-            type: 'univ_filler', id: 'uni_env_ominous_room', weight: 15,
-            // 🌟 [TRPG機制] 踏入這個異常房間，會自動扣除時間與微量理智
-            onEnter: { 
-                varOps: [
-                    { key: 'time_left', val: 1, op: '-', msg: "⏳ 時間流逝了..." },
-                    { key: 'sanity', val: 2, op: '-', msg: "🧠 詭異的氣氛讓你感到不適 (-2 SAN)" }
-                ]
-            },
-            dialogue: [
-                { text: { zh: "{phrase_explore_start}" } },
-                { text: { zh: "{phrase_explore_vibe}" } }, // 極高隨機性的視覺與聽覺描寫
-                { text: { zh: "{sentence_tension}" } }     // 動態心理壓力描寫
-            ], 
-            options: [
-                { 
-                    label: "強忍不適，深入搜查 (INT檢定)", 
-                    check: { stat: 'INT', val: 6 }, 
-                    action: "advance_chain", 
-                    rewards: { tags: ['observed'], gold: 15, varOps: [{key:'sanity', val:5, op:'-'}] } // 成功搜查但也看了不該看的
-                },
-                { 
-                    label: "直覺不妙，快步離開", 
-                    action: "advance_chain",
-                    rewards: { varOps: [{key:'energy', val:5, op:'-'}] } // 消耗精力趕路
-                }
-            ] 
-        },
-        { 
-            type: 'univ_filler', id: 'uni_item_cursed_discovery', weight: 15,
-            // 🌟 [嚴格過濾] 只有在帶有魔法、恐怖或懸疑標籤的世界才會觸發這個詭異物品
-            reqTags: ['theme_horror', 'theme_mystery', 'magic', 'ancient'],
-            onEnter: {
-                varOps: [{ key: 'stress', val: 5, op: '+', msg: "💢 未知的壓力增加了" }]
-            },
-            dialogue: [
-                { text: { zh: "你在{env_feature}附近發現了一樣引人注目的東西。" } },
-                { text: { zh: "{phrase_find_action}" } },
-                { text: { zh: "竟然是{combo_item_desc}" } } // 動態生成：生鏽的匕首，它似乎在吸收生命力...
-            ], 
-            options: [
-                { 
-                    label: "小心翼翼地收起 (AGI檢定)", 
-                    check: { stat: 'AGI', val: 6 }, 
-                    action: "node_next", 
-                    nextScene: {
-                        dialogue: [{ text: { zh: "你以極快的速度將它包好收起，沒有直接接觸到它。" } }],
-                        rewards: { tags: ['item_found'], exp: 20 },
-                        options: [{ label: "繼續前進", action: "advance_chain" }]
-                    },
-                    failScene: {
-                        dialogue: [{ text: { zh: "在拿起它的瞬間，一股寒意竄入腦海！" } }],
-                        rewards: { varOps: [{key:'sanity', val:15, op:'-'}], tags: ['cursed'] },
-                        options: [{ label: "痛苦地喘息", action: "advance_chain" }]
-                    }
-                },
-                { label: "這東西太邪門了，不要碰", action: "advance_chain" }
-            ] 
-        },
-
+        // 🛠️ 【系統測試區】 (保留用於診斷 Context Injection)
         // ============================================================
-        // ⚔️ 【分區 B：遭遇與衝突】 (動態怪物、戰鬥檢定)
-        // 適用：排除戀愛與養成等和平主題
-        // ============================================================
-
         {
-            type: 'univ_filler', id: 'rand_combat_ambush', weight: 10,
-            // 🌟 [嚴格過濾] 確保不會在戀愛或養成日常中突然跳出怪物砍人
-            excludeTags: ['theme_romance', 'theme_raising', 'peace'], 
-            onEnter: {
-                varOps: [{ key: 'tension', val: 20, op: '+', msg: "⚠️ 危機降臨！" }] // 區域張力暴增
-            },
+            type: 'univ_filler', id: 'test_context_injection', weight: 10000, 
             dialogue: [
-                { text: { zh: "{phrase_explore_vibe}" } },
-                { text: { zh: "{phrase_danger_warn}" } },  // 突然，雷聲響起...
-                { text: { zh: "{phrase_danger_appear}" } } // 赫然發現一名食屍鬼擋住去路！
+                { text: { zh: "【系統診斷】你走進房間，前方出現了一個{core_identity}！" } }
             ],
             options: [
-                { 
-                    label: "正面迎擊！(STR檢定)", 
-                    check: { stat: 'STR', val: 6 }, 
-                    action: "advance_chain", 
-                    rewards: { exp: 30, gold: 20, varOps: [{key:'stress', val:10, op:'-'}] }, // 贏了釋放壓力
-                    failScene: { 
-                        dialogue: [{ text: { zh: "你被打退了，受了不小的傷！" } }], 
-                        rewards: { varOps: [{key:'hp', val:15, op:'-'}, {key:'sanity', val:5, op:'-'}] },
-                        options: [{ label: "咬牙撤退", action: "advance_chain" }]
-                    } 
+                {
+                    label: "🗣️ 上前攀談 (系統判定：對方帶有 human 標籤)",
+                    condition: { tags: ['human'] }, 
+                    action: "advance_chain"
                 },
-                { 
-                    label: "冷靜尋找退路 (AGI檢定)", 
-                    check: { stat: 'AGI', val: 6 }, 
-                    action: "advance_chain", 
-                    rewards: { exp: 10 },
-                    failScene: { 
-                        dialogue: [{ text: { zh: "你沒能跑掉，被迫捲入混戰且消耗了大量體力！" } }], 
-                        rewards: { varOps: [{key:'energy', val:20, op:'-'}, {key:'hp', val:5, op:'-'}] },
-                        options: [{ label: "負傷逃離", action: "advance_chain" }]
-                    } 
+                {
+                    label: "⚔️ 拔出銀劍 (系統判定：對方帶有 monster 標籤)",
+                    condition: { tags: ['monster'] }, 
+                    action: "advance_chain"
+                },
+                {
+                    label: "🏃 轉身就跑 (通用選項)",
+                    action: "advance_chain" 
                 }
-            ]
-        },
-
-        // ============================================================
-        // 💬 【分區 C：社交與人際互動】 (好感度、NPC動態生成)
-        // 適用：所有主題，系統會根據主題抽出適合的 NPC (如：霸道總裁 vs 嚴厲導師)
-        // ============================================================
-
-        {
-            type: 'univ_filler', id: 'rand_social_encounter', weight: 12,
-            onEnter: {
-                varOps: [{ key: 'time_left', val: 1, op: '-' }] // 社交也會消耗時間回合
-            },
-            dialogue: [
-                { text: { zh: "{phrase_explore_start}" } },
-                { text: { zh: "你注意到前方出現了一個人影。那是一名{combo_person_appearance}。" } }, // 動態生成角色與動作
-                { text: { zh: "{phrase_social_action}" } }, // 對方正用難以捉摸的眼神打量著你
-                { text: { zh: "{phrase_social_react}" } }   // 場面一度十分尷尬
-            ],
-            options: [
-                { 
-                    label: "展現善意上前搭話 (CHR檢定)", 
-                    check: { stat: 'CHR', val: 5 }, 
-                    action: "node_next", 
-                    nextScene: {
-                        dialogue: [{ text: { zh: "你的魅力與談吐打破了僵局，對方似乎對你產生了些許信任。" } }],
-                        rewards: { varOps: [{key:'favor', val:10, op:'+', msg:"💖 好感度增加了"}, {key:'trust', val:5, op:'+'}] },
-                        options: [{ label: "禮貌道別", action: "advance_chain" }]
-                    },
-                    failScene: {
-                        dialogue: [{ text: { zh: "你說錯了話，對方的臉色沉了下來，轉身離去。" } }],
-                        rewards: { varOps: [{key:'favor', val:5, op:'-', msg:"💔 好感度下降了"}] },
-                        options: [{ label: "尷尬地摸摸鼻子", action: "advance_chain" }]
-                    }
-                },
-                { 
-                    label: "保持警惕，默默觀察", 
-                    action: "advance_chain", 
-                    rewards: { tags: ['cautious'] } 
-                }
-            ]
-        },
-
-        // ============================================================
-        // 🏕️ 【分區 D：休憩與整備】 (恢復檢定、資源補給)
-        // 適用：所有主題，為玩家提供喘息空間
-        // ============================================================
-
-        {
-            type: 'univ_filler', id: 'uni_rest_safezone', weight: 10,
-            onEnter: {
-                // 進入安全區自動恢復微量精力
-                varOps: [{ key: 'energy', val: 5, op: '+', msg: "♨️ 稍微喘了口氣" }]
-            },
-            dialogue: [
-                { text: { zh: "連續的行動讓你感到有些疲憊。這裡暫時看起來是安全的。" } },
-                { text: { zh: "你靠在{env_feature}旁，稍微整理了一下思緒。" } },
-                { text: { zh: "雖然{env_pack_sensory}，但你必須把握機會恢復狀態。" } }
-            ],
-            options: [
-                { 
-                    label: "閉目養神 (耗時, 恢復大量體力)", 
-                    // 只有時間大於 2 才能選這個選項
-                    condition: { stats: { time_left: '>1' } }, 
-                    action: "advance_chain", 
-                    rewards: { varOps: [{key:'energy', val:20, op:'+'}, {key:'time_left', val:2, op:'-'}, {key:'stress', val:10, op:'-'}] } 
-                },
-                { 
-                    label: "點算身上物資 (LUK檢定)", 
-                    check: { stat: 'LUK', val: 6 },
-                    action: "node_next",
-                    nextScene: {
-                        dialogue: [{ text: { zh: "你在口袋深處意外發現了之前遺忘的備用金幣！" } }],
-                        rewards: { gold: 30, varOps: [{key:'sanity', val:5, op:'+'}] },
-                        options: [{ label: "心情大好", action: "advance_chain" }]
-                    },
-                    failScene: {
-                        dialogue: [{ text: { zh: "沒什麼特別的發現，物資依舊匱乏。" } }],
-                        options: [{ label: "無奈嘆氣", action: "advance_chain" }]
-                    }
-                },
-                { label: "不浪費時間，立刻出發", action: "advance_chain" }
             ]
         }
     );

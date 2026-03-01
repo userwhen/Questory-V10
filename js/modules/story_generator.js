@@ -404,7 +404,8 @@ window.StoryGenerator = {
             text: filledData.text[0],
             dialogue: filledData.dialogue, 
             options: opts, 
-            rewards: filledData.rewards
+            rewards: filledData.rewards,
+			onEnter: template.onEnter // 🌟 【關鍵修復】確保劇本的 onEnter 設定被完整送進引擎執行！
         };
     },
 

@@ -108,11 +108,9 @@ window.storyView = {
                 </div>
                 ${btnStamina}
             </div>
-            <div style="flex: 1; display:flex; justify-content:center; align-items:center; overflow:hidden; padding: 0 5px;">
-                <div style="text-align:center; color:var(--text-ghost); font-size:0.95rem; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    📍 ${locationName}
-                </div>
-            </div>
+            
+            <div style="flex: 1;"></div>
+            
             <div style="display:flex; align-items:center; gap:2px; flex-shrink: 0;">
                 ${devBtnHtml}
                 ${langSelector}
@@ -126,10 +124,29 @@ window.storyView = {
 
         const gs = window.GlobalState;
         const isTagOpen = window.TempState.isTagDrawerOpen || false;
-        const currentTagFilter = window.TempState.tagFilter || '全部';
         const myTags = gs.story?.tags || [];
+        const myVars = gs.story?.vars || {};
 
-        // 1. 定義標籤樣式字典
+        // 1. 取得地圖資訊
+        const roomName = window.MapManager && window.MapManager.currentRoom ? window.MapManager.currentRoom.name : '未知區域';
+        const pathStr = window.MapManager && window.MapManager.map ? 
+            window.MapManager.map.map(r => r.id === window.MapManager.currentRoom.id ? `📍[${r.name}]` : `🚪[${r.name}]`).join(" ─ ") : 
+            "📍 無紀錄";
+
+        // 2. 組裝狀態列 HTML (上半部)
+        let statusHtml = `
+            <div style="margin-bottom: 15px;">
+                <div style="font-size: 1.1rem; font-weight: bold; color: var(--color-gold); margin-bottom: 8px;">📍 ${roomName}</div>
+                <div style="font-size: 0.85rem; color: var(--text-ghost); margin-bottom: 10px; line-height: 1.5;">🗺️ 路徑: ${pathStr}</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        `;
+        // 動態抓取 vars 裡的狀態 (例如 SAN, 時間)
+        for (let [k, v] of Object.entries(myVars)) {
+            statusHtml += `<div style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; font-size: 0.9rem;">${k}: <span style="color:var(--color-info);">${v}</span></div>`;
+        }
+        statusHtml += `</div></div>`;
+
+        // 3. 生成標籤 HTML (下半部，移除分類過濾)
         const tagStyles = { 
             'loc': { color: '--color-gold-dark', bg: '--color-gold-soft' }, 
             'status': { color: '--color-info', bg: '--color-info-soft' }, 
@@ -137,34 +154,38 @@ window.storyView = {
             'info': { color: '--color-correct', bg: '--color-correct-soft' } 
         };
         
-        // 2. 生成標籤內容 (移除多餘的 wrapper)
-        let tagsHtml = '<div style="color:var(--text-ghost); padding:10px;">尚無標籤</div>';
+        let tagsHtml = '<div style="color:var(--text-ghost); font-size: 0.9rem;">尚無標籤</div>';
         if (myTags.length > 0) {
             tagsHtml = myTags.map(t => {
                 const label = typeof t === 'string' ? t : t.label;
                 const type = typeof t === 'string' ? 'info' : t.type;
-                if (currentTagFilter !== '全部' && type !== 'loc' && label !== currentTagFilter) return '';
                 const style = tagStyles[type] || tagStyles['info'];
                 return ui.component.badge(label, style.color, style.bg);
             }).join('');
         }
 
-        // 🌟 3. 組合內部 HTML (完美致敬背包的排版結構)
-        const drawerInnerHtml = ui.layout.drawerContent(
-            '🏷️ 狀態標籤', 
-            ['全部', '場景', '狀態', '知識'], 
-            currentTagFilter, 
-            'act.setTagFilter', 
-            tagsHtml, 
-            'display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start;' // 補上標籤專用的排版
-        );
+        // 4. 組合最終 HTML (移除卷軸)
+        const drawerInnerHtml = `
+            <div style="display: flex; flex-direction: column; height: 100%; color:var(--text-on-dark);">
+                <div style="flex-shrink: 0; padding-bottom: 8px; border-bottom: 1px dashed rgba(255,255,255,0.2); margin-bottom: 10px;">
+                    <div style="font-size: 1.1rem; font-weight: bold; color: var(--color-gold-soft);">📊 當前狀態</div>
+                </div>
+                ${statusHtml}
+                
+                <div style="flex-shrink: 0; padding-bottom: 8px; border-bottom: 1px dashed rgba(255,255,255,0.2); margin-top: 10px; margin-bottom: 10px;">
+                    <div style="font-size: 1.1rem; font-weight: bold; color: var(--color-gold-soft);">🏷️ 標籤紀錄</div>
+                </div>
+                <div style="flex: 1; overflow-y: auto; padding-bottom: 20px; display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start;">
+                    ${tagsHtml}
+                </div>
+            </div>`;
 
-        // 4. 呼叫底層元件 (統一為底部抽拉，高度對齊背包的 280px)
+        // 5. 呼叫 UI 渲染
         container.innerHTML = ui.layout.drawer(
             isTagOpen, 
             drawerInnerHtml, 
             "act.toggleTagDrawer()",
-            {color: 'var(--bg-nav)', iconOpen: '▼', iconClose: '▲', height: '280px' }
+            { color: 'var(--bg-nav)', iconOpen: '▼', iconClose: '▲', height: '320px' } // 高度稍微加高以容納狀態
         );
     },
 
@@ -305,7 +326,7 @@ window.storyView = {
         
         container.style.opacity = '1';
         container.innerHTML = options.map((btn, idx) => ui.component.btn({
-            label: btn.label, theme: 'normal',
+            label: btn.label, theme: btn.style || 'normal', // 🌟 這裡修正！讓按鈕可以變色
             action: `window.StoryEngine.selectOption(${idx})`,
             style: 'width:100%; max-width:400px; margin:0 auto; padding:12px; font-size:1rem; text-align:center;'
         })).join('');

@@ -1,26 +1,30 @@
 /* js/modules/story.js - V76.0 (Refactored & Optimized) */
 
 // ============================================================
-// 🗺️ 山中小屋地圖系統 (Map Manager) - 內文顯示版
+// 🗺️ 山中小屋地圖系統 (Map Manager) - 內文與抽屜連動版
 // ============================================================
 window.MapManager = {
     map: [],             
     currentRoom: null,   
+    building: "未知建築", // 🌟 新增：記住當前所處的大建築物
     omenCount: 0,        
 
-    init: function(startName) {
+    // 🌟 修改：現在 init 需要同時接收「建築」與「初始房間」
+    init: function(buildingName, startRoomName) {
         this.map = [];
         this.omenCount = 0;
-        // 如果有傳入名字就用傳入的，沒有才用生成器
-        let startRoom = this.generateRoom(startName); 
+        this.building = buildingName || "未知區域"; 
+        
+        let startRoom = this.generateRoom(startRoomName); 
         this.map.push(startRoom);
         this.currentRoom = startRoom;
-        this.updateTopBarLocation();
+        this.updateLocationString();
     },
 
     clear: function() {
         this.map = [];
         this.currentRoom = null;
+        this.building = "未知建築";
         this.omenCount = 0;
         window.TempState.storyLocation = "未知區域";
     },
@@ -28,7 +32,6 @@ window.MapManager = {
     generateRoom: function(forceName = null) {
         let roomName = forceName;
         if (!roomName && window.FragmentDB && window.StoryGenerator) {
-            // 利用詞庫動態生成房間名
             roomName = window.StoryGenerator._expandGrammar("{env_adj}的{env_room}", window.FragmentDB, {});
         } else if (!roomName) {
             roomName = "未知房間";
@@ -53,22 +56,23 @@ window.MapManager = {
             this.map.push(newRoom);
             this.currentRoom = newRoom;
             this.omenCount += 1;
-            this.updateTopBarLocation();
+            this.updateLocationString();
             return `你推開了一扇沉重的木門，來到了 **[${newRoom.name}]**。`;
         } else if (action === "map_move_to") {
             let targetRoom = this.map.find(r => r.id === targetId);
             if (targetRoom) {
                 this.currentRoom = targetRoom;
-                this.updateTopBarLocation();
+                this.updateLocationString();
                 return `你決定原路折返，退回到了 **[${targetRoom.name}]**。`;
             }
         }
         return "";
     },
 
-    // 只更新當前地點給 TopBar 用
-    updateTopBarLocation: function() {
-        window.TempState.storyLocation = this.currentRoom ? this.currentRoom.name : "未知區域";
+    // 🌟 修改：將建築與房間組合，存入全域讓 View 讀取
+    updateLocationString: function() {
+        let room = this.currentRoom ? this.currentRoom.name : "未知房間";
+        window.TempState.storyLocation = `${this.building} - ${room}`;
     },
 };
 
@@ -294,7 +298,7 @@ window.StoryEngine = {
             // 🌟 2. 仿造 appendInlineCheckResult 組合單行 HTML
             const inlineHtml = `
                 <span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.95rem;">🗺️ 探索 (${actionLabel})........ </span>
-                <span style="font-weight:bold; color:var(--color-info); font-size: 0.95rem;">來到了 [${roomName}]</span><br>
+                <span style="font-weight:bold; color:var(--color-info); font-size: 0.95rem;">來到了 [${window.MapManager.building} - ${roomName}]</span><br>
                 <span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.95rem;">📍 路徑: ${pathStr}</span><br>
                 <span style="font-weight:bold; color:${omenColor}; font-size: 0.95rem;">💀 預兆: ${omenCount} / 6</span><br><br>
             `;
@@ -979,9 +983,11 @@ window.StoryEngine = {
             // 先產生劇本鏈，讓系統決定好這次的標籤與記憶
             gs.story.chain = window.StoryGenerator.initChain(randomMode);
             
-            // 👇 👇 👇 【修改這裡】在此時才啟動地圖，並從 CORE 抽出一個房間給初始地點
+            // 👇 👇 👇 【修改這裡】抓取引擎抽出的建築物與房間，餵給地圖初始化
+            let initialBuilding = gs.story.chain.memory['env_building'] || "未知地點";
             let initialRoom = window.StoryGenerator._expandGrammar("{env_room}", window.FragmentDB, gs.story.chain.memory);
-            if (window.MapManager) window.MapManager.init(initialRoom);
+            
+            if (window.MapManager) window.MapManager.init(initialBuilding, initialRoom);
             // 👆 👆 👆
 
             console.log(`🎲 隨機劇本啟動，模式: [${randomMode}] | 歷史紀錄:`, gs.story.skeletonHistory);
