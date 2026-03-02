@@ -7,15 +7,15 @@ window.AchController = {
         Object.assign(window.act, {
             // A. 開啟建立表單 (發送訊號)
             openCreateCustomAch: () => {
-                // 初始化暫存物件
-                window.TempState.editingAch = {
+                // [V43 優化] 使用深拷貝初始化，確保不污染 GlobalState
+                window.TempState.editingAch = JSON.parse(JSON.stringify({
+                    id: null,
                     title: '',
                     targetType: 'tag', 
                     targetValue: '運動',
                     tier: 'C'          
-                };
-                console.log("📡 發送成就編輯訊號..."); // Debug
-                window.EventBus.emit(E.Ach.EDIT_MODE);
+                }));
+                window.EventBus.emit(window.EVENTS.Ach.EDIT_MODE);
             },
 
             // B. 提交建立

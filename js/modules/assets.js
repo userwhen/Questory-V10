@@ -18,11 +18,14 @@ window.Assets = window.Assets || {
         const gs = window.GlobalState;
         if (!gs) return ''; 
         
-        const gender = gs.avatar?.gender || 'm';
-        const path = this.getAvatarPath(gs.settings.mode, gender);
-        const fallbackEmoji = (gender === 'f') ? '👩' : '🧑';
+        // ✅ [核心衝突修復] 讓大廳與 HUD 真正讀取「更衣室正在穿的服裝」
+        const currentSuitId = (gs.avatar && gs.avatar.wearing && gs.avatar.wearing.suit) 
+                               ? gs.avatar.wearing.suit 
+                               : 'adventurer_m'; // 預設防呆
         
-        // [修正點] 在 style='...' 這裡加上了單引號，避免 style 內容包含分號時造成語法錯誤
-        return `<img src="${path}" class="${className}" style="${style}" onerror="this.outerHTML='<span class=\\'${className}\\' style=\\'${style} font-size:80px; display:flex; justify-content:center; align-items:center;\\'>${fallbackEmoji}</span>'">`;
+        const conf = this.getConf();
+        const path = `${conf.basePath}${currentSuitId}${conf.defExt}`;
+        
+        return `<img src="${path}" class="${className}" style="${style}" onerror="this.outerHTML='<span class=\\'${className}\\' style=\\'${style} font-size:80px; display:flex; justify-content:center; align-items:center;\\'>🧍</span>'">`;
     }
 };

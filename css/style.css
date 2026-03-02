@@ -1,89 +1,71 @@
 /* ==========================================================================
-   Levelife V10 — style.css V2.0
-   
-   升級原則：
-   ✅ 所有 class name 完全不變（JS 不需要改任何一行）
-   ✅ 保留所有舊變數名（向後相容），只在後面新增
-   ✅ 每個改動都有「改動說明」注解
-   
-   要換主題？只改第 1 節的 :root 變數值即可，其餘不動。
+   Levelife V10 — style.css V43.0 (Pure CSS Architecture)
    ========================================================================== */
 
-
-/* ==========================================================================
-   1. 設計 Token 系統（Design Tokens）
-   ========================================================================== */
+/* ====================== 1. 核心變數 & 主題系統 (Theme Variants) ====================== */
 :root {
-
-    /* ── 舊變數：完整保留，向後相容 ──────────────────────────────── */
+    /* ── 保留的基礎變數 ── */
     --bg-frame:       #1a100c;
-    --bg-main:        #f7e7ce;
-    --bg-wood:        #5d4037;
-    --bg-wood-dark:   #3e2723;
     --bg-panel:       #f7e7ce;
     --bg-input:       #ffffff;
-    --text-main:      #3e2723;
-    --text-light:     #5d4037;
-    --color-gold:     #f5a623;   /* 微調：原 #ffb300 偏橙黃，改成更沉的琥珀金 */
-    --color-acc:      #2e9e74;   /* 微調：原 #00897b 偏冷，改成更暖的翠綠 */
-    --color-danger:   #c0392b;   /* 微調：原 #d32f2f 偏亮，改成更沉穩的磚紅 */
-    --color-success:  #2e9e74;   /* 統一與 color-acc 相同 */
+    --color-gold:     #f5a623;   
+    --color-danger:   #c0392b;   
 
-    /* ── 新增：語意色的深色 & 淺色變體（按鈕立體感的基礎）─────────── */
+    /* ── 語意色的深色 & 淺色變體 ── */
     --color-gold-dark:    #c47d0e;
     --color-gold-soft:    #fef3c7;
     --color-gold-glow:    rgba(245,166,35,0.28);
     --color-correct:      #2e9e74;
-    --color-correct-dark: #1d7a57;   /* 確認按鈕底部陰影色 */
+    --color-correct-dark: #1d7a57;   
     --color-correct-soft: #d1fae5;
-    --color-danger-dark:  #922b21;   /* 刪除按鈕底部陰影色 */
+    --color-danger-dark:  #922b21;   
     --color-danger-soft:  #fee2e2;
     --color-info:         #2980b9;
     --color-info-soft:    #dbeafe;
 
-    /* ── 新增：背景層次（5 層，由深到淺）────────────────────────── */
-    --bg-hud:         #2c1a0e;   /* HUD / Navbar 深底色 */
-    --bg-nav:         #1e1208;   /* Navbar（比 HUD 更深） */
-    --bg-card:        #ffffff;   /* 卡片白底 */
-    --bg-card-done:   #fef9ee;   /* 完成任務卡底色 */
-    --bg-elevated:    #fdf0d8;   /* 比頁面底色稍深的浮起區域 */
+    /* ── 背景層次 ── */
+    --bg-hud:         #2c1a0e;   
+    --bg-nav:         #1e1208;   
+    --bg-card:        #ffffff;   
+    --bg-card-done:   #fef9ee;   
+    --bg-elevated:    #fdf0d8;   
     --bg-modal:       #fdf5e6;
-    --bg-modal-head:  #3b2519;   /* Modal header */
-    --bg-modal-foot:  #f0e4cc;   /* Modal footer（比 body 深一階） */
+    --bg-modal-head:  #3b2519;   
+    --bg-modal-foot:  #f0e4cc;   
     --bg-box:         rgba(0,0,0,0.035);
 
-    /* ── 新增：文字層次（4 層，由深到淺）────────────────────────── */
-    --text:           #2c1a0e;   /* 主要文字 */
-    --text-2:         #5c3d2e;   /* 次要文字 */
-    --text-muted:     #8c6e52;   /* 說明文字（取代 #888、#666） */
-    --text-ghost:     #b89878;   /* 佔位/禁用（取代 #aaa、#999） */
-    --text-on-dark:   #f5e6cf;   /* 深色背景上的文字 */
+    /* ── 文字層次 ── */
+    --text:           #2c1a0e;   
+    --text-2:         #5c3d2e;   
+    --text-muted:     #8c6e52;   
+    --text-ghost:     #b89878;   
+    --text-on-dark:   #f5e6cf;   
 
-    /* ── 新增：邊框 ─────────────────────────────────────────────── */
+    /* ── 邊框 ── */
     --border:         rgba(0,0,0,0.09);
     --border-card:    rgba(0,0,0,0.07);
     --border-input:   #d5c5a8;
     --border-focus:   var(--color-gold);
     --border-wood:    #3e2723;
 
-    /* ── 新增：陰影庫（4 個層級）────────────────────────────────── */
+    /* ── 陰影庫 ── */
     --shadow-xs:    0 1px 2px rgba(0,0,0,0.07);
     --shadow-sm:    0 2px 6px rgba(0,0,0,0.09), 0 1px 2px rgba(0,0,0,0.05);
     --shadow:       0 4px 14px rgba(0,0,0,0.11), 0 2px 4px rgba(0,0,0,0.06);
     --shadow-lg:    0 12px 36px rgba(0,0,0,0.20), 0 4px 8px rgba(0,0,0,0.08);
     --shadow-inner: inset 0 1px 3px rgba(0,0,0,0.10);
 
-    /* ── 新增：動畫系統 ──────────────────────────────────────────── */
-    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1); /* 彈跳（勾選、按鈕、modal入場） */
-    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);       /* 流暢（顏色、頁面切換） */
+    /* ── 動畫系統 ── */
+    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1); 
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);       
     --ease-out:    cubic-bezier(0, 0, 0.2, 1);
     --t-fast:  0.12s;
     --t-base:  0.22s;
     --t-slow:  0.35s;
 
-    /* ── 尺寸（保留舊值，新增 xs / lg / full）────────────────────── */
-    --hud-h:       88px;        /* 原 90px → 88px，比例更好看 */
-    --nav-h:       68px;        /* 原 70px → 68px */
+    /* ── 尺寸 ── */
+    --hud-h:       88px;        
+    --nav-h:       68px;        
     --safe-top:    env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --radius-xs:   6px;
@@ -92,7 +74,7 @@
     --radius-lg:   18px;
     --radius-full: 9999px;
 
-    /* ── Z-Index（不變）────────────────────────────────────────── */
+    /* ── Z-Index ── */
     --z-bg:    0;
     --z-page:  100;
     --z-nav:   1000;
@@ -101,15 +83,41 @@
     --z-mask:  8000;
     --z-modal: 9000;
     --z-toast: 9999;
+
+    /* ── 主題配置表 ── */
+    --theme-wood-bg:      #36271F;
+    --theme-wood-text:    #E6D3B8;
+    --theme-wood-border:  #634A3A;
+    --theme-wood-accent:  #f5a623;
+    --theme-wood-soft:    #4A362A;
+
+    --theme-white-bg:     #ffffff;
+    --theme-white-text:   #2c1a0e;
+    --theme-white-border: #d5c5a8;
+    --theme-white-accent: #5d4037;
+    --theme-white-soft:   #f7e7ce;
+
+    --theme-story-bg:     rgba(0,0,0,0.92);
+    --theme-story-text:   #f0e6d3;
+    --theme-story-border: rgba(255,255,255,0.07);
+    --theme-story-accent: #f5a623;
+    --theme-story-soft:   rgba(245,166,35,0.15);
+
+    --theme-default-bg:     var(--bg-card);
+    --theme-default-text:   var(--text);
+    --theme-default-border: var(--border);
+    --theme-default-accent: var(--color-gold);
+    --theme-default-soft:   var(--bg-box);
 }
+
+.theme-wood     { --current-bg: var(--theme-wood-bg);     --current-text: var(--theme-wood-text);     --current-border: var(--theme-wood-border);     --current-accent: var(--theme-wood-accent);     --current-soft: var(--theme-wood-soft); }
+.theme-white    { --current-bg: var(--theme-white-bg);    --current-text: var(--theme-white-text);    --current-border: var(--theme-white-border);    --current-accent: var(--theme-white-accent);    --current-soft: var(--theme-white-soft); }
+.theme-story    { --current-bg: var(--theme-story-bg);    --current-text: var(--theme-story-text);    --current-border: var(--theme-story-border);    --current-accent: var(--theme-story-accent);    --current-soft: var(--theme-story-soft); }
+.theme-default  { --current-bg: var(--theme-default-bg);  --current-text: var(--theme-default-text);  --current-border: var(--theme-default-border);  --current-accent: var(--theme-default-accent);  --current-soft: var(--theme-default-soft); }
 
 
 /* ==========================================================================
    2. 重置與框架（Reset & Layout Frame）
-   改動：
-   - font-family 升級為中文友好字體
-   - 加 -webkit-font-smoothing（文字更清晰）
-   - app-frame 陰影更精緻
    ========================================================================== */
 *, *::before, *::after {
     box-sizing: border-box;
@@ -127,13 +135,10 @@ html, body {
     width: 100%; height: 100%;
     overflow: hidden;
     background: var(--bg-frame);
-    /* 改動：加 Noto Sans TC，中文顯示精緻很多
-       若不想引入 Google Fonts，刪掉第一個即可，後面的系統字體會頂替 */
     font-family: 'Noto Sans TC', 'PingFang TC', 'Heiti TC', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-	/* 🚨 加入這行：強制禁止字體根據系統縮放 */
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
 }
@@ -146,32 +151,22 @@ html, body {
     background: var(--bg-panel);
     display: flex; flex-direction: column;
     overflow: hidden;
-    /* 改動：三層陰影讓 App 邊框有「實體感」 */
     box-shadow:
         0 0 0 1px rgba(255,255,255,0.04),
         0 0 60px rgba(0,0,0,0.65),
         0 0 120px rgba(0,0,0,0.35);
 }
 
-
 /* ==========================================================================
    3. 全域結構（HUD · Navbar · Content · Layers）
    ========================================================================== */
 
-/* ── HUD ──────────────────────────────────────────────────────────────── */
-/* 改動：
-   - 背景改成更深的漸層（--bg-hud），和 Navbar 統一風格
-   - border-bottom 改為微妙金色細線，品牌識別感更強
-   - 加 box-shadow 懸浮感
-   - ::before 加細微木紋裝飾（可移除） */
 #hud {
     flex-shrink: 0;
     height: calc(var(--hud-h) + var(--safe-top));
     padding-top: var(--safe-top);
     background: linear-gradient(160deg, var(--bg-hud) 0%, #130a05 100%);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    box-shadow: 0 1px 0 var(--color-gold-dark),
-                0 4px 20px rgba(0,0,0,0.45);
+    border-bottom: 1px solid rgba(0,0,0,0.05); 
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -180,793 +175,180 @@ html, body {
     position: relative;
     overflow: hidden;
 }
-/* 木紋裝飾（純裝飾線條，不喜歡可整段刪除）*/
 #hud::before {
     content: '';
     position: absolute; inset: 0;
-    background: repeating-linear-gradient(
-        90deg,
-        transparent, transparent 55px,
-        rgba(255,255,255,0.012) 55px,
-        rgba(255,255,255,0.012) 56px
-    );
+    background: repeating-linear-gradient(90deg, transparent, transparent 55px, rgba(255,255,255,0.012) 55px, rgba(255,255,255,0.012) 56px);
     pointer-events: none;
 }
-
 .hud-left  { flex: 1; display: flex; align-items: center; gap: 11px; margin-right: 12px; min-width: 0; }
 .hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
 .hud-info  { display: flex; flex-direction: column; justify-content: center; gap: 3px; width: 100%; }
 
-.hud-name {
-    font-size: 0.92rem;
-    font-weight: 700;
-    color: var(--text-on-dark);
-    letter-spacing: 0.02em;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-}
-
+.hud-name { font-size: 0.92rem; font-weight: 700; color: var(--text-on-dark); letter-spacing: 0.02em; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
 .hud-lv-row { display: flex; align-items: center; gap: 7px; width: 100%; }
+.hud-lv-txt { font-size: 0.68rem; color: var(--color-gold); font-weight: 900; letter-spacing: 0.06em; background: rgba(245,166,35,0.15); border: 1px solid rgba(245,166,35,0.3); padding: 1px 7px; border-radius: var(--radius-full); flex-shrink: 0; }
 
-/* 改動：lv 文字改成小膠囊徽章，比純文字更精緻 */
-.hud-lv-txt {
-    font-size: 0.68rem;
-    color: var(--color-gold);
-    font-weight: 900;
-    letter-spacing: 0.06em;
-    background: rgba(245,166,35,0.15);
-    border: 1px solid rgba(245,166,35,0.3);
-    padding: 1px 7px;
-    border-radius: var(--radius-full);
-    flex-shrink: 0;
-}
-
-/* 改動：HUD 進度條更細（5px）、全圓角、無邊框 */
-.hud-lv-row .u-progress {
-    flex: 1;
-    width: auto !important;
-    height: 5px !important;
-    border-radius: var(--radius-full) !important;
-    background: rgba(255,255,255,0.12) !important;
-    border: none !important;
-}
-.hud-lv-row .u-progress .u-progress-bar {
-    background: linear-gradient(90deg, var(--color-gold-dark), var(--color-gold)) !important;
-    border-radius: var(--radius-full) !important;
-}
-/* HUD 進度條不需要顯示數字文字 */
+.hud-lv-row .u-progress { flex: 1; width: auto !important; height: 5px !important; border-radius: var(--radius-full) !important; background: rgba(255,255,255,0.12) !important; border: none !important; }
+.hud-lv-row .u-progress .u-progress-bar { background: linear-gradient(90deg, var(--color-gold-dark), var(--color-gold)) !important; border-radius: var(--radius-full) !important; }
 .hud-lv-row .u-progress .u-progress-text { display: none !important; }
 
-
-/* ── Avatar（HUD 頭像）───────────────────────────────────────────────── */
-/* 改動：從圓形改為圓角方形（12px），更現代；加按壓彈跳效果 */
 .u-avatar {
-    width: 52px; height: 52px;
-    border-radius: 12px;
-    border: 2px solid var(--color-gold);
-    box-shadow: 0 0 0 1px rgba(245,166,35,0.25), var(--shadow-sm);
-    background: #3b2519;
-    overflow: hidden;
-    display: flex; justify-content: center; align-items: center;
-    font-size: 26px;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: transform var(--t-fast) var(--ease-bounce),
-                box-shadow var(--t-base);
+    width: 52px; height: 52px; border-radius: 12px; border: 2px solid var(--color-gold);
+    box-shadow: 0 0 0 1px rgba(245,166,35,0.25), var(--shadow-sm); background: #3b2519; overflow: hidden;
+    display: flex; justify-content: center; align-items: center; font-size: 26px; cursor: pointer; flex-shrink: 0;
+    transition: transform var(--t-fast) var(--ease-bounce), box-shadow var(--t-base);
 }
-.u-avatar:active {
-    transform: scale(0.90);
-    box-shadow: 0 0 0 2px var(--color-gold);
-}
+.u-avatar:active { transform: scale(0.90); box-shadow: 0 0 0 2px var(--color-gold); }
 .u-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-
-/* ── Navbar ──────────────────────────────────────────────────────────── */
-/* 改動：
-   - 背景改成 --bg-nav（比 HUD 更深，形成「框架最深」的視覺）
-   - active 狀態：移除上浮，改成底部金色指示線
-   - 圖示和標籤分開顯示，標籤更小更精緻 */
 #navbar {
     flex-shrink: 0;
     height: calc(var(--nav-h) + var(--safe-bottom));
     padding-bottom: var(--safe-bottom);
     background: var(--bg-nav);
-    border-top: 1px solid rgba(255,255,255,0.05);
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.40);
+    border-top: 1px solid rgba(0,0,0,0.05);
     display: flex;
     z-index: var(--z-nav);
 }
 
 .nav-item {
-    flex: 1;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    background: transparent;
-    border: none;
-    color: rgba(255,255,255,0.28);
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    padding: 0; margin: 0;
-    cursor: pointer;
-    transition: color var(--t-base) var(--ease-smooth),
-                transform var(--t-base) var(--ease-bounce);
-    position: relative;
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: transparent; border: none; color: rgba(255,255,255,0.28); font-size: 0.62rem; font-weight: 700;
+    letter-spacing: 0.04em; padding: 0; margin: 0; cursor: pointer;
+    transition: color var(--t-base) var(--ease-smooth), transform var(--t-base) var(--ease-bounce); position: relative;
 }
-/* 改動：active 時輕微上移，搭配下方指示線 */
-.nav-item.active {
-    color: var(--color-gold);
-    transform: translateY(-1px);
-}
-/* 改動：底部金色指示線（取代原本的 text-shadow）*/
+.nav-item.active { color: var(--color-gold); transform: translateY(-1px); }
 .nav-item.active::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 50%;
-    transform: translateX(-50%);
-    width: 22px; height: 2px;
-    background: var(--color-gold);
-    border-radius: var(--radius-full) var(--radius-full) 0 0;
+    content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 22px; height: 2px; background: var(--color-gold); border-radius: var(--radius-full) var(--radius-full) 0 0;
     box-shadow: 0 0 6px var(--color-gold-glow);
 }
 
-
-/* ── Content & Pages ─────────────────────────────────────────────────── */
-#content-area {
-    flex: 1; position: relative; overflow: hidden;
-    z-index: var(--z-page);
-    background-color: var(--bg-panel);
-}
-
-#layer-full {
-    position: absolute;
-    top: calc(var(--hud-h) + var(--safe-top));
-    bottom: 0; left: 0; right: 0;
-    z-index: var(--z-layer);
-    opacity: 0; pointer-events: none;
-    background-color: #000;
-    transition: opacity var(--t-slow) var(--ease-smooth);
-    overflow: hidden;
-}
+#content-area { flex: 1; position: relative; overflow: hidden; z-index: var(--z-page); background-color: var(--bg-panel); }
+#layer-full { position: absolute; top: calc(var(--hud-h) + var(--safe-top)); bottom: 0; left: 0; right: 0; z-index: var(--z-layer); opacity: 0; pointer-events: none; background-color: #000; transition: opacity var(--t-slow) var(--ease-smooth); overflow: hidden; }
 #layer-full.active { opacity: 1; pointer-events: auto; }
-
-.page {
-    display: none;
-    opacity: 0;
-    transition: opacity var(--t-fast) var(--ease-out);
-    width: 100%; height: 100%;
-    overflow: hidden;
-}
+.page { display: none; opacity: 0; transition: opacity var(--t-fast) var(--ease-out); width: 100%; height: 100%; overflow: hidden; }
 .page.active { opacity: 1; }
-
 #page-story, #page-avatar { padding: 0 !important; background: #000; }
-
 
 /* ==========================================================================
    4. 通用元件庫（Universal Components）
    ========================================================================== */
 
-/* ════ 4-A. 按鈕（Buttons）════════════════════════════════════════════ */
-/* 改動：
-   - 加 font-family: inherit（按鈕文字跟 body 一致）
-   - 底部 box-shadow 製造立體厚度感
-   - :active 時陰影縮短 → 模擬被按下的物理感
-   - transition 換彈跳曲線，點擊有「回彈」*/
 .u-btn {
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 9px 18px;
-    font-weight: 700;
-    font-family: inherit;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center; justify-content: center;
-    gap: 5px;
-    background: var(--bg-card, #fff);
-    color: var(--text);
-    transition:
-        transform var(--t-fast) var(--ease-bounce),
-        box-shadow var(--t-fast),
-        filter var(--t-base);
-    flex-shrink: 0;
-    letter-spacing: 0.02em;
-    font-size: 0.9rem;
-    white-space: nowrap;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 9px 18px; font-weight: 700; font-family: inherit;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: var(--bg-card, #fff);
+    color: var(--text); transition: transform var(--t-fast) var(--ease-bounce), box-shadow var(--t-fast), filter var(--t-base);
+    flex-shrink: 0; letter-spacing: 0.02em; font-size: 0.9rem; white-space: nowrap;
 }
-.u-btn:active {
-    transform: translateY(2px);
-    filter: brightness(0.92);
-}
-.u-btn:disabled {
-    background: #e8e0d5;
-    color: var(--text-ghost);
-    cursor: not-allowed;
-    box-shadow: none !important;
-    opacity: 0.6;
-}
-
-/* 確認（綠色）—— 改動：加底部立體陰影 */
-.u-btn-correct {
-    background: var(--color-correct);
-    color: #fff;
-    border: none;
-    box-shadow: 0 4px 0 var(--color-correct-dark),
-                0 2px 8px rgba(46,158,116,0.28);
-}
-.u-btn-correct:active {
-    box-shadow: 0 1px 0 var(--color-correct-dark),
-                0 1px 3px rgba(46,158,116,0.12);
-}
-
-/* 危險（紅色）—— 改動：加底部立體陰影 */
-.u-btn-danger {
-    background: var(--color-danger);
-    color: #fff;
-    border: none;
-    box-shadow: 0 4px 0 var(--color-danger-dark),
-                0 2px 8px rgba(192,57,43,0.28);
-}
-.u-btn-danger:active {
-    box-shadow: 0 1px 0 var(--color-danger-dark),
-                0 1px 3px rgba(192,57,43,0.12);
-}
-
-/* 普通（白底）—— 改動：邊框顏色更暖、加微陰影 */
-.u-btn-normal {
-    background: #fff;
-    border: 1.5px solid var(--border-input);
-    color: var(--text-2);
-    box-shadow: 0 2px 0 rgba(0,0,0,0.08), var(--shadow-xs);
-}
+.u-btn:active { transform: translateY(2px); filter: brightness(0.92); }
+.u-btn:disabled { background: #e8e0d5; color: var(--text-ghost); cursor: not-allowed; box-shadow: none !important; opacity: 0.6; }
+.u-btn-correct { background: var(--color-correct); color: #fff; border: none; box-shadow: 0 4px 0 var(--color-correct-dark), 0 2px 8px rgba(46,158,116,0.28); }
+.u-btn-correct:active { box-shadow: 0 1px 0 var(--color-correct-dark), 0 1px 3px rgba(46,158,116,0.12); }
+.u-btn-danger { background: var(--color-danger); color: #fff; border: none; box-shadow: 0 4px 0 var(--color-danger-dark), 0 2px 8px rgba(192,57,43,0.28); }
+.u-btn-danger:active { box-shadow: 0 1px 0 var(--color-danger-dark), 0 1px 3px rgba(192,57,43,0.12); }
+.u-btn-normal { background: #fff; border: 1.5px solid var(--border-input); color: var(--text-2); box-shadow: 0 2px 0 rgba(0,0,0,0.08), var(--shadow-xs); }
 .u-btn-normal:active { box-shadow: none; }
-
-/* 幽靈（透明）—— 改動：邊框改實線半透明 */
-.u-btn-ghost {
-    background: transparent;
-    border: 1.5px solid rgba(0,0,0,0.12);
-    color: var(--text-muted);
-    box-shadow: none;
-}
-.u-btn-ghost:active {
-    background: rgba(0,0,0,0.04);
-    box-shadow: none;
-}
-
-/* 小尺寸 */
-.u-btn-sm {
-    padding: 5px 12px;
-    font-size: 0.8rem;
-    border-radius: var(--radius-xs);
-    box-shadow: 0 2px 0 rgba(0,0,0,0.10);
-}
+.u-btn-ghost { background: transparent; border: 1.5px solid rgba(0,0,0,0.12); color: var(--text-muted); box-shadow: none; }
+.u-btn-ghost:active { background: rgba(0,0,0,0.04); box-shadow: none; }
+.u-btn-sm { padding: 5px 12px; font-size: 0.8rem; border-radius: var(--radius-xs); box-shadow: 0 2px 0 rgba(0,0,0,0.10); }
 .u-btn-sm:active { box-shadow: none; }
 
+.u-box { background: var(--bg-box); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 13px; margin-bottom: 12px; width: 100%; }
+.u-bar { background: rgba(0,0,0,0.07); border-radius: var(--radius-full); padding: 4px; display: flex; align-items: center; gap: 4px; width: 100%; }
 
-/* ════ 4-B. 容器（Boxes & Bars）══════════════════════════════════════ */
-.u-box {
-    background: var(--bg-box);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 13px;
-    margin-bottom: 12px;
-    width: 100%;
-}
-/* 改動：u-bar 用相對透明度，背景色改變時能自動適應 */
-.u-bar {
-    background: rgba(0,0,0,0.07);
-    border-radius: var(--radius-full);
-    padding: 4px;
-    display: flex; align-items: center; gap: 4px;
-    width: 100%;
-}
-
-
-/* ════ 4-C. 輸入框（Inputs）══════════════════════════════════════════ */
 .input-group { margin-bottom: 14px; width: 100%; }
-
-/* 改動：section-title 改成全大寫小字，更精緻的 Label 風格 */
-.section-title {
-    display: block;
-    font-weight: 700;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-    font-size: 0.72rem;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-}
-
-/* 改動：輸入框加 focus 金色光暈，邊框顏色更暖 */
-.inp {
-    width: 100%;
-    padding: 10px 12px;
-    background: var(--bg-input);
-    border: 1.5px solid var(--border-input);
-    border-radius: var(--radius-sm);
-    font-size: 0.95rem;
-    font-family: inherit;
-    color: var(--text);
-    transition:
-        border-color var(--t-base) var(--ease-smooth),
-        box-shadow  var(--t-base) var(--ease-smooth);
-}
-.inp:focus {
-    border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px var(--color-gold-glow);
-    outline: none;
-}
+.section-title { display: block; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; }
+.inp { width: 100%; padding: 10px 12px; background: var(--bg-input); border: 1.5px solid var(--border-input); border-radius: var(--radius-sm); font-size: 0.95rem; font-family: inherit; color: var(--text); transition: border-color var(--t-base) var(--ease-smooth), box-shadow var(--t-base) var(--ease-smooth); }
+.inp:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--color-gold-glow); outline: none; }
 .inp::placeholder { color: var(--text-ghost); }
 
+.u-progress { position: relative; background: rgba(0,0,0,0.09); border: none; border-radius: var(--radius-full); overflow: hidden; width: 100%; height: 14px; box-shadow: var(--shadow-inner); }
+.u-progress-bar { height: 100%; background: linear-gradient(90deg, var(--color-correct) 0%, #4ac994 60%, #6ee7b7 100%); width: 0%; transition: width var(--t-slow) var(--ease-smooth); border-radius: var(--radius-full); position: relative; }
+.u-progress-bar::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,0.22) 0%, transparent 55%); border-radius: var(--radius-full); pointer-events: none; }
+.u-progress-text { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text); font-weight: 800; letter-spacing: 0.04em; text-shadow: 0 0 4px rgba(255,255,255,0.8); }
 
-/* ════ 4-D. 進度條（Progress）════════════════════════════════════════ */
-/* 改動：
-   - border-radius 從 4px 改全圓角（膠囊形）
-   - 移除邊框（更乾淨）
-   - 加內凹陰影（讓進度條有「槽」的感覺）
-   - 進度條加漸層 + 高光偽元素 */
-.u-progress {
-    position: relative;
-    background: rgba(0,0,0,0.09);
-    border: none;
-    border-radius: var(--radius-full);
-    overflow: hidden;
-    width: 100%;
-    height: 14px;
-    box-shadow: var(--shadow-inner);
-}
-.u-progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg,
-        var(--color-correct) 0%,
-        #4ac994           60%,
-        #6ee7b7           100%
-    );
-    width: 0%;
-    transition: width var(--t-slow) var(--ease-smooth);
-    border-radius: var(--radius-full);
-    position: relative;
-}
-/* 改動：高光反射偽元素，不影響 DOM 結構 */
-.u-progress-bar::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(180deg,
-        rgba(255,255,255,0.22) 0%,
-        transparent 55%
-    );
-    border-radius: var(--radius-full);
-    pointer-events: none;
-}
-.u-progress-text {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 10px;
-    color: var(--text);
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-shadow: 0 0 4px rgba(255,255,255,0.8);
-}
-
-
-/* ════ 4-E. 勾選框（Checkbox）════════════════════════════════════════ */
-/* 改動：
-   - 邊框顏色改成暖色（原 #aaa → 暖米色）
-   - 加 :hover 狀態
-   - transition 換彈跳曲線
-   - checked 加光暈（完成時的「啪」感） */
-.chk {
-    width: 24px; height: 24px;
-    border: 2px solid #c4a882;
-    border-radius: 50%;
-    cursor: pointer;
-    background: #fff;
-    transition: all var(--t-base) var(--ease-bounce);
-    position: relative;
-    flex-shrink: 0;
-}
+.chk { width: 24px; height: 24px; border: 2px solid var(--border-input); border-radius: 50%; cursor: pointer; background: #fff; transition: all var(--t-base) var(--ease-bounce); position: relative; flex-shrink: 0; }
 .chk:hover { border-color: var(--color-correct); }
-.chk.checked {
-    background: var(--color-correct);
-    border-color: var(--color-correct);
-    box-shadow: 0 0 0 3px rgba(46,158,116,0.18);
-}
-.chk.checked::after {
-    content: '✓';
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 900;
-    line-height: 1;
-}
+.chk.checked { background: var(--color-correct); border-color: var(--color-correct); box-shadow: 0 0 0 3px rgba(46,158,116,0.18); }
+.chk.checked::after { content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 13px; font-weight: 900; line-height: 1; }
 
+.task-card, .std-card { display: flex; flex-direction: column; background: var(--bg-card, #fff); border-radius: var(--radius-md); padding: 12px 13px 12px 17px; margin-bottom: 10px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-card); border-left: 4px solid #d5c5a8; transition: transform var(--t-fast) var(--ease-bounce), box-shadow var(--t-fast); cursor: pointer; }
+.task-card:active { transform: scale(0.985); box-shadow: var(--shadow-xs); }
+.task-card.status-done { border-left-color: var(--color-gold); background: var(--bg-card-done); opacity: 0.82; }
+.task-main-row, .card-main-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+.task-content, .card-col-center { flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.task-title { font-weight: 700; color: var(--text); font-size: 0.95rem; line-height: 1.3; transition: color var(--t-base); }
+.task-card.status-done .task-title { color: var(--text-ghost); text-decoration: line-through; text-decoration-color: var(--text-ghost); }
 
-/* ════ 4-F. 任務卡（Cards）══════════════════════════════════════════ */
-/* 改動：
-   - 邊框改 1px + border-left 4px（原 5px 顯重）
-   - box-shadow 改用陰影庫
-   - :active 縮放更有感（0.985）
-   - done 狀態加 opacity 降低，讓未完成的更突出 */
-.task-card, .std-card {
-    display: flex; flex-direction: column;
-    background: var(--bg-card, #fff);
-    border-radius: var(--radius-md);
-    padding: 12px 13px 12px 17px;
-    margin-bottom: 10px;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-card);
-    border-left: 4px solid #d5c5a8;
-    transition:
-        transform var(--t-fast) var(--ease-bounce),
-        box-shadow var(--t-fast);
-    cursor: pointer;
-}
-.task-card:active {
-    transform: scale(0.985);
-    box-shadow: var(--shadow-xs);
-}
-.task-card.status-done {
-    border-left-color: var(--color-gold);
-    background: var(--bg-card-done);
-    opacity: 0.82;
-}
-.task-main-row, .card-main-row {
-    display: flex; align-items: center; gap: 10px; width: 100%;
-}
-.task-content, .card-col-center {
-    flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0;
-}
-.task-title {
-    font-weight: 700;
-    color: var(--text);
-    font-size: 0.95rem;
-    line-height: 1.3;
-    transition: color var(--t-base);
-}
-/* 改動：done 標題加刪除線 */
-.task-card.status-done .task-title {
-    color: var(--text-ghost);
-    text-decoration: line-through;
-    text-decoration-color: var(--text-ghost);
-}
-.card-col-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.u-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: var(--radius-xs); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.14); font-size: 0.75rem; color: var(--text-on-dark); font-weight: 700; letter-spacing: 0.02em; }
 
-
-/* ════ 4-G. 標籤（Pill）═════════════════════════════════════════════ */
-/* 改動：從純黑半透明改成更靈活的膠囊形式 */
-.u-pill {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 9px;
-    border-radius: var(--radius-xs);
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.14);
-    font-size: 0.75rem;
-    color: var(--text-on-dark);
-    font-weight: 700;
-    letter-spacing: 0.02em;
-}
-
-
-/* ════ 4-H. Segment Control ══════════════════════════════════════════ */
-.radio-pill-group {
-    display: flex;
-    background: rgba(0,0,0,0.07);
-    border-radius: var(--radius-full);
-    padding: 3px;
-}
-.radio-pill-group input { display: none; }
-
-
-/* ════ 4-I. Toggle 開關（新增）══════════════════════════════════════ */
-/* 使用方法：
-   HTML：<div class="u-toggle-row" onclick="this.classList.toggle('on')">
-             <div class="toggle-track"></div>
-             <span class="toggle-label">功能名稱</span>
-         </div>
-   JS 加 .on class → 開啟；移除 .on → 關閉 */
-.u-toggle-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 13px;
-    background: var(--bg-card, #fff);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    cursor: pointer; margin-bottom: 8px;
-    transition: border-color var(--t-base), background var(--t-base);
-}
+.u-toggle-row { display: flex; align-items: center; gap: 12px; padding: 12px 13px; background: var(--bg-card, #fff); border: 1.5px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; margin-bottom: 8px; transition: border-color var(--t-base), background var(--t-base); }
 .u-toggle-row:hover  { background: var(--bg-elevated); }
-.u-toggle-row.on     {
-    border-color: rgba(46,158,116,0.4);
-    background: var(--color-correct-soft);
-}
-.u-toggle-row .toggle-track {
-    width: 38px; height: 22px;
-    border-radius: var(--radius-full);
-    background: #c8b89a;
-    position: relative; flex-shrink: 0;
-    transition: background var(--t-base);
-}
+.u-toggle-row.on     { border-color: rgba(46,158,116,0.4); background: var(--color-correct-soft); }
+.u-toggle-row .toggle-track { width: 38px; height: 22px; border-radius: var(--radius-full); background: #c8b89a; position: relative; flex-shrink: 0; transition: background var(--t-base); }
 .u-toggle-row.on .toggle-track { background: var(--color-correct); }
-.u-toggle-row .toggle-track::after {
-    content: '';
-    position: absolute;
-    width: 16px; height: 16px;
-    background: #fff;
-    border-radius: 50%;
-    top: 3px; left: 3px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-    transition: transform var(--t-base) var(--ease-bounce);
-}
+.u-toggle-row .toggle-track::after { content: ''; position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; top: 3px; left: 3px; box-shadow: 0 1px 4px rgba(0,0,0,0.2); transition: transform var(--t-base) var(--ease-bounce); }
 .u-toggle-row.on .toggle-track::after { transform: translateX(16px); }
 .u-toggle-row .toggle-label  { font-size: 0.9rem; font-weight: 600; color: var(--text-2); flex: 1; }
 
-/* =========================================
-   提取出的共用 UI 基礎版型
-========================================= */
-.u-scroll-list {
-    display: flex;
-    overflow-x: auto;
-    gap: 5px;
-    padding-bottom: 5px;
-}
-
-.card-icon {
-    width: 40px;
-    height: 40px;
-    background: var(--bg-box);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    flex-shrink: 0;
-}
-
-.ui-empty {
-    text-align: center;
-    color: var(--text-muted);
-    padding: 50px 20px;
-    font-size: 0.9rem;
-}
-
-.ui-empty-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-}
+.u-scroll-list { display: flex; overflow-x: auto; gap: 5px; padding-bottom: 5px; }
+.card-icon { width: 40px; height: 40px; background: var(--bg-box); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+.ui-empty { text-align: center; color: var(--text-muted); padding: 50px 20px; font-size: 0.9rem; }
+.ui-empty-icon { display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin-bottom: 10px; }
 
 /* ==========================================================================
    5. 模組樣式（Modules）
    ========================================================================== */
-
-/* ── 商店 Shop ────────────────────────────────────────────────────────── */
-.shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-/* 改動：圓角和陰影統一用變數 */
-.card-vertical {
-    display: flex; flex-direction: column; align-items: center;
-    background: var(--bg-card, #fff);
-    border: 1px solid var(--border-card);
-    border-radius: var(--radius-md);
-    padding: 12px 10px;
-    box-shadow: var(--shadow-sm);
-    transition: transform var(--t-fast), box-shadow var(--t-fast);
-}
+.card-vertical { display: flex; flex-direction: column; align-items: center; background: var(--bg-card, #fff); border: 1px solid var(--border-card); border-radius: var(--radius-md); padding: 12px 10px; box-shadow: var(--shadow-sm); transition: transform var(--t-fast), box-shadow var(--t-fast); }
 .card-vertical:active { transform: scale(0.97); }
-.card-img-area {
-    width: 100%; height: 76px;
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 8px;
-}
+.card-img-area { width: 100%; height: 76px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
 
-/* ── 劇情 Story ──────────────────────────────────────────────────────── */
-#story-top-bar {
-    position: relative; z-index: 10; flex-shrink: 0;
-    background: rgba(0,0,0,0.92);
-    border-bottom: 1px solid rgba(255,255,255,0.07);
-    padding: 8px 15px;
-    display: flex; justify-content: space-between; align-items: center;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
-#story-text-box {
-    position: relative; z-index: 10;
-    flex: 1; width: 100%;
-    padding: 20px 24px;
-    color: #f0e6d3;
-    font-size: 1.05rem;
-    line-height: 1.75;
-    overflow-y: auto;
-}
-#story-actions {
-    position: relative; z-index: 10; flex-shrink: 0;
-    width: 100%; padding: 14px;
-    background: rgba(10,5,3,0.95);
-    border-top: 1px solid rgba(255,255,255,0.07);
-    display: grid; gap: 8px;
-    max-height: 40%; overflow-y: auto;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
+#story-top-bar { position: relative; z-index: 10; flex-shrink: 0; background: rgba(0,0,0,0.92); border-bottom: 1px solid rgba(255,255,255,0.07); padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+#story-text-box { position: relative; z-index: 10; flex: 1; width: 100%; padding: 20px 24px; color: #f0e6d3; font-size: 1.05rem; line-height: 1.75; overflow-y: auto; }
+#story-actions { position: relative; z-index: 10; flex-shrink: 0; width: 100%; padding: 14px; background: rgba(10,5,3,0.95); border-top: 1px solid rgba(255,255,255,0.07); display: grid; gap: 8px; max-height: 40%; overflow-y: auto; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+#page-story .toast-box, #page-story .toast-container, #page-story div[id^="toast"] { top: auto !important; bottom: 220px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999 !important; }
+#tag-drawer-container .drawer-handle, #tag-drawer-container [class*="handle"] { top: auto !important; bottom: 210px !important; }
 
-#page-story .toast-box, 
-#page-story .toast-container, 
-#page-story div[id^="toast"] {
-    top: auto !important;           
-    bottom: 220px !important;       
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    z-index: 9999 !important;
-}
-
-#tag-drawer-container .drawer-handle,
-#tag-drawer-container [class*="handle"] {
-    top: auto !important;
-    bottom: 210px !important;
-}
-
-/* ── Avatar ──────────────────────────────────────────────────────────── */
-/* u-avatar 已在第 3 節（HUD）統一改動 */
-.avatar-card {
-    background: var(--bg-card, #fff);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-md);
-    transition: all var(--t-base);
-}
-.avatar-card:hover {
-    border-color: var(--color-gold);
-    box-shadow: 0 0 0 2px var(--color-gold-glow);
-}
-
+.avatar-card { background: var(--bg-card, #fff); border: 1.5px solid var(--border); border-radius: var(--radius-md); transition: all var(--t-base); }
+.avatar-card:hover { border-color: var(--color-gold); box-shadow: 0 0 0 2px var(--color-gold-glow); }
 
 /* ==========================================================================
    6. 覆蓋層（Overlays：Modal · Toast）
    ========================================================================== */
-
-/* ── 遮罩 ─────────────────────────────────────────────────────────────── */
-.mask {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.65);
-    z-index: var(--z-mask);
-    display: none; align-items: center; justify-content: center;
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-}
+.mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); z-index: var(--z-mask); display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 .mask.active { display: flex; }
 
-/* ── Modal ───────────────────────────────────────────────────────────── */
-/* 改動：
-   - 邊框 3px → 2px（更精緻）
-   - 加入場動畫（彈跳縮放）
-   - m-foot 加深色背景，和 m-body 有視覺分層 */
-.modal {
-    width: 92%; max-width: 400px; max-height: 88%;
-    background: var(--bg-modal);
-    border-radius: var(--radius-lg);
-    border: 2px solid var(--border-wood);
-    box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.04),
-        var(--shadow-lg);
-    display: flex; flex-direction: column;
-    z-index: var(--z-modal);
-    overflow: hidden;
-    animation: modal-in var(--t-slow) var(--ease-bounce);
-}
-@keyframes modal-in {
-    from { opacity: 0; transform: scale(0.90) translateY(14px); }
-    to   { opacity: 1; transform: scale(1)    translateY(0); }
-}
+.modal { width: 92%; max-width: 400px; max-height: 88%; background: var(--bg-modal); border-radius: var(--radius-lg); border: 2px solid var(--border-wood); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), var(--shadow-lg); display: flex; flex-direction: column; z-index: var(--z-modal); overflow: hidden; animation: modal-in var(--t-slow) var(--ease-bounce); }
+@keyframes modal-in { from { opacity: 0; transform: scale(0.90) translateY(14px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-.m-head {
-    flex-shrink: 0;
-    background: var(--bg-modal-head);
-    color: var(--text-on-dark);
-    padding: 13px 16px;
-    font-weight: 700;
-    font-size: 1.0rem;
-    letter-spacing: 0.03em;
-    display: flex; justify-content: space-between; align-items: center;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.m-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 18px 16px;
-    background: var(--bg-modal);
-}
-/* 改動：m-foot 加深一階背景色，讓使用者眼睛自然流向底部按鈕 */
-.m-foot {
-    flex-shrink: 0;
-    padding: 12px 14px;
-    background: var(--bg-modal-foot);
-    border-top: 1px solid rgba(93,64,55,0.12);
-    display: flex; justify-content: flex-end; gap: 8px;
-}
+.m-head { flex-shrink: 0; background: var(--bg-modal-head); color: var(--text-on-dark); padding: 13px 16px; font-weight: 700; font-size: 1.0rem; letter-spacing: 0.03em; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.m-body { flex: 1; overflow-y: auto; padding: 18px 16px; background: var(--bg-modal); }
+.m-foot { flex-shrink: 0; padding: 12px 14px; background: var(--bg-modal-foot); border-top: 1px solid rgba(93,64,55,0.12); display: flex; justify-content: flex-end; gap: 8px; }
 
-/* ── Toast ───────────────────────────────────────────────────────────── */
-/* 改動：
-   - bottom 從硬字串 120px 改成跟 nav-h 變數連動
-   - 加入場動畫（向上浮現） */
-.u-toast {
-    position: fixed;
-    left: 50%;
-    bottom: calc(var(--nav-h) + 14px + var(--safe-bottom));
-    transform: translateX(-50%) translateY(8px);
-    z-index: var(--z-toast);
-    background: var(--bg-hud);
-    color: var(--text-on-dark);
-    padding: 10px 20px;
-    border-radius: var(--radius-full);
-    font-size: 0.88rem;
-    font-weight: 600;
-    pointer-events: none;
-    opacity: 0;
-    transition:
-        opacity var(--t-base),
-        transform var(--t-base) var(--ease-bounce);
-    box-shadow: var(--shadow-lg);
-    border: 1px solid rgba(255,255,255,0.1);
-    max-width: 80%;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.u-toast.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-}
-
+.u-toast { position: fixed; left: 50%; bottom: calc(var(--nav-h) + 14px + var(--safe-bottom)); transform: translateX(-50%) translateY(8px); z-index: var(--z-toast); background: var(--bg-hud); color: var(--text-on-dark); padding: 10px 20px; border-radius: var(--radius-full); font-size: 0.88rem; font-weight: 600; pointer-events: none; opacity: 0; transition: opacity var(--t-base), transform var(--t-base) var(--ease-bounce); box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,0.1); max-width: 80%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.u-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* ==========================================================================
    7. 動畫庫（Animations）
    ========================================================================== */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes pulse-gold {
-    0%, 100% { box-shadow: 0 0 0 0   var(--color-gold-glow); }
-    50%       { box-shadow: 0 0 0 6px transparent; }
-}
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20%       { transform: translateX(-6px); }
-    40%       { transform: translateX( 6px); }
-    60%       { transform: translateX(-4px); }
-    80%       { transform: translateX( 4px); }
-}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse-gold { 0%, 100% { box-shadow: 0 0 0 0 var(--color-gold-glow); } 50% { box-shadow: 0 0 0 6px transparent; } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX( 6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX( 4px); } }
 
-/* JS 用 classList.add 動態套用 */
 .anim-fade-in  { animation: fadeIn   var(--t-base) var(--ease-out)    both; }
 .anim-slide-up { animation: slideUp  var(--t-slow) var(--ease-bounce) both; }
 .anim-pulse    { animation: pulse-gold 1.8s ease infinite; }
 .anim-shake    { animation: shake    0.4s var(--ease-bounce); }
 
-
 /* ==========================================================================
    8. 特殊場景 & 輔助（Special Cases）
    ========================================================================== */
-
-/* 教學聚焦層 */
 #tuto-spotlight { pointer-events: none; z-index: 7999; position: absolute; inset: 0; }
 
-/* Stats 頁毛玻璃儀表板 */
 .glass-dashboard {
-    background: rgba(255,255,255,0.22);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.45);
-    border-radius: var(--radius-lg);
-    margin: 0 14px 10px;
-    padding: 14px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    background: rgba(255,255,255,0.22); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.45); border-radius: var(--radius-lg); margin: 0 14px 10px; padding: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.07);
 }

@@ -1,4 +1,4 @@
-/* js/modules/ach_view.js - V42.0 UI System Upgrade */
+/* js/modules/ach_view.js - V43.0 Pure Architecture Upgrade */
 window.achView = {
     // =========================================
     // 1. 成就列表渲染 (List Render)
@@ -16,16 +16,32 @@ window.achView = {
             return true;
         });
 
-        const achFilterArea = ui.layout.filterBar(
-            achCats, currentAchCat, "act.setAchFilter",
-            ui.component.btn({ label:'🏆 殿堂', theme:'normal', size:'sm', action:"act.navigate('milestone')" })
-        );
+        // [V43] 替換舊版 filterBar，改用 pure layout + atom 組合
+        const filterBtnsHtml = achCats.map(opt => {
+            const isActive = currentAchCat === opt;
+            return ui.atom.buttonBase({
+                label: opt,
+                theme: isActive ? 'normal' : 'ghost',
+                style: 'flex-shrink:0; border-radius:50px; padding:4px 12px;',
+                action: `act.setAchFilter('${opt}')`
+            });
+        }).join('');
+
+        const achFilterArea = `
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                <div style="flex:1; overflow:hidden;">
+                    <div class="u-scroll-list" style="-webkit-overflow-scrolling:touch;">${filterBtnsHtml}</div>
+                </div>
+                <div style="flex-shrink:0;">
+                    ${ui.atom.buttonBase({ label:'🏆 殿堂', theme:'normal', size:'sm', action:"act.navigate('milestone')" })}
+                </div>
+            </div>`;
 
         let achListItems = '';
         if (displayAchs.length === 0) {
-            achListItems = ui.layout.empty('暫無成就', '🏅');
+            achListItems = `<div class="ui-empty"><div class="ui-empty-icon">🏅</div>暫無成就</div>`;
         } else {
-            // [優化] 全面改用 ui.card.row 來生成標準卡片
+            // [V43] 完全捨棄舊版 ui.card.row 與 ui.progress，改用純淨 HTML 結構
             achListItems = displayAchs.map(a => {
                 const isCheckIn = a.type === 'check_in';
                 const isReady = isCheckIn ? !a.done : (a.curr >= a.target); 
@@ -33,42 +49,39 @@ window.achView = {
                 let btnHtml = '';
                 if (isCheckIn) {
                     btnHtml = a.done 
-                        ? ui.component.btn({ label:'已簽到', disabled:true, size:'sm' })
-                        : ui.component.btn({ label:'簽到', theme:'correct', size:'sm', action:`event.stopPropagation(); act.checkInAch('${a.id}')` });
+                        ? ui.atom.buttonBase({ label:'已簽到', disabled:true, size:'sm' })
+                        : ui.atom.buttonBase({ label:'簽到', theme:'correct', size:'sm', action:`event.stopPropagation(); act.checkInAch('${a.id}')` });
                 } else {
                     btnHtml = isReady 
-                        // 修復：theme 改為 paper，對應系統的金色按鈕
-                        ? ui.component.btn({ label:'🎁 領取', theme:'paper', size:'sm', action:`event.stopPropagation(); act.claimReward('${a.id}')` })
-                        : ui.component.btn({ label:'未完成', disabled:true, size:'sm' });
+                        ? ui.atom.buttonBase({ label:'🎁 領取', theme:'paper', size:'sm', action:`event.stopPropagation(); act.claimReward('${a.id}')` })
+                        : ui.atom.buttonBase({ label:'未完成', disabled:true, size:'sm', theme:'ghost' });
                 }
                 
                 let icon = isCheckIn ? '📅' : '🏅';
                 let tierBadge = '';
                 if (a.tier) {
-                    if (a.tier === 'S') { icon = '👑'; tierBadge = ui.component.badge('S', '--color-gold-dark', '--color-gold-soft'); }
-                    else if (a.tier === 'A') { icon = '💎'; tierBadge = ui.component.badge('A', '--color-info', '--color-info-soft'); }
-                    else { tierBadge = ui.component.badge(a.tier); }
+                    if (a.tier === 'S') { icon = '👑'; tierBadge = ui.atom.badgeBase({text:'S', style:'color:var(--color-gold-dark); background:var(--color-gold-soft); border-color:var(--color-gold-dark);'}); }
+                    else if (a.tier === 'A') { icon = '💎'; tierBadge = ui.atom.badgeBase({text:'A', style:'color:var(--color-info); background:var(--color-info-soft); border-color:var(--color-info);'}); }
+                    else { tierBadge = ui.atom.badgeBase({text:a.tier}); }
                 }
 
-                // 將進度條與描述包裝進 subTitle
-                const subTitleHtml = `
-                    <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:4px;">
-                        ${tierBadge}
-                        <span style="font-size:0.85rem; color:var(--text-ghost); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">- ${a.desc || ''}</span>
-                    </div>
-                    <div style="margin-top:6px;">
-                        ${ui.progress.bar(a.curr, a.target)}
-                    </div>`;
+                const pct = Math.min(100, Math.max(0, (a.curr / a.target) * 100));
+                const progressHtml = `<div class="u-progress" style="margin-top:6px;"><div class="u-progress-bar" style="width:${pct}%;"></div><div class="u-progress-text">${a.curr} / ${a.target}</div></div>`;
+                const borderColor = isReady ? 'var(--color-correct)' : 'var(--border)';
 
-                return ui.card.row({
-                    iconHtml: icon,
-                    title: a.title,
-                    subTitle: subTitleHtml,
-                    rightHtml: `<div onclick="event.stopPropagation();">${btnHtml}</div>`,
-                    themeColor: isReady ? 'var(--color-correct)' : 'var(--border)',
-                    onClick: `act.editAch('${a.id}')`,
-                    style: 'margin-bottom: 10px;'
-                });
+                return `
+                <div class="std-card" onclick="act.editAch('${a.id}')" style="flex-direction:row; justify-content:space-between; border-left-color:${borderColor}; margin-bottom:10px; cursor:pointer;">
+                    <div class="card-icon" style="font-size:2rem; margin-right:12px;">${icon}</div>
+                    <div class="card-col-center" style="flex:1; min-width:0;">
+                        <div style="font-weight:bold; font-size:1rem; color:var(--text); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.title}</div>
+                        <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:4px;">
+                            ${tierBadge}
+                            <span style="font-size:0.85rem; color:var(--text-ghost); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">- ${a.desc || ''}</span>
+                        </div>
+                        ${progressHtml}
+                    </div>
+                    <div style="flex-shrink:0; margin-left:10px;" onclick="event.stopPropagation();">${btnHtml}</div>
+                </div>`;
             }).join('');
         }
 
@@ -76,7 +89,7 @@ window.achView = {
     },
 
     // =========================================
-    // 2. 編輯表單 (完全適配 Engine Tier System)
+    // 2. 編輯表單 (Edit Form)
     // =========================================
     renderCreateAchForm: function(achId = null) {
         const gs = window.GlobalState;
@@ -90,13 +103,17 @@ window.achView = {
         }
         const data = window.TempState.editingAch;
 
-        let bodyHtml = ui.input.field('目標標題', ui.input.text(data.title, "例如: 健身達人", "achView.updateField('title', this.value)"));
+        // [V43] 全面改用 ui.atom.inputBase 與 ui.composer.formField
+        let bodyHtml = ui.composer.formField({
+            label: '目標標題', 
+            inputHtml: ui.atom.inputBase({type: 'text', val: data.title, placeholder: "例如: 健身達人", onChange: "achView.updateField('title', this.value)"})
+        });
 
         const typeOpts = [ {value:'tag', label:'🏷️ 任務分類'}, {value:'attr', label:'💪 屬性鍛鍊'}, {value:'challenge', label:'🔥 極限挑戰'} ];
         
         bodyHtml += `
             <div class="u-box" style="margin-top:10px;">
-                ${ui.input.field('監聽目標', ui.input.select(typeOpts, data.targetType, "achView.updateField('targetType', this.value)"))}
+                ${ui.composer.formField({label: '監聽目標', inputHtml: ui.atom.inputBase({type: 'select', val: data.targetType, onChange: "achView.updateField('targetType', this.value)", options: typeOpts})})}
                 <div style="margin-top:10px;">
                     ${this._renderTargetValueInput(data)}
                 </div>
@@ -105,18 +122,15 @@ window.achView = {
         const tierInfo = {
             'S': { label: 'S - 傳奇', target: 1000, reward: '💰500 ✨1000' },
             'A': { label: 'A - 史詩', target: 500, reward: '💰200 ✨400' },
-            'B': { label: 'B - 稀有', target: 200, reward: '💰80 ✨150' },
+            'B': { label: 'B - 稀少', target: 200, reward: '💰80 ✨150' },
             'C': { label: 'C - 普通', target: 50, reward: '💰20 ✨50' }
         };
         const currentTier = tierInfo[data.tier] || tierInfo['C'];
 
-        // 修復：按鈕改用 ui.component.btn 以確保樣式與動畫一致
         const tierButtons = Object.keys(tierInfo).map(t => {
             const theme = data.tier === t ? 'correct' : 'normal';
-            return ui.component.btn({
-                label: t,
-                theme: theme,
-                action: `achView.updateField('tier', '${t}')`,
+            return ui.atom.buttonBase({
+                label: t, theme: theme, action: `achView.updateField('tier', '${t}')`,
                 style: `flex:1; padding:6px; border-radius:var(--radius-sm);`
             });
         }).join('');
@@ -134,8 +148,8 @@ window.achView = {
             </div>`;
 
         const footHtml = isEdit 
-            ? `${ui.component.btn({label:'刪除', theme:'danger', action:`act.deleteAchievement('${achId}')`})} ${ui.component.btn({label:'儲存', theme:'correct', style:'flex:1;', action:'act.submitMilestone()'})}`
-            : ui.component.btn({label:'建立目標', theme:'correct', style:'width:100%;', action:'act.submitMilestone()'});
+            ? `${ui.atom.buttonBase({label:'刪除', theme:'danger', action:`act.deleteAchievement('${achId}')`})} ${ui.atom.buttonBase({label:'儲存', theme:'correct', style:'flex:1;', action:'act.submitMilestone()'})}`
+            : ui.atom.buttonBase({label:'建立目標', theme:'correct', style:'width:100%;', action:'act.submitMilestone()'});
 
         ui.modal.render(isEdit ? '編輯目標' : '建立新目標', bodyHtml, footHtml, 'overlay');
     },
@@ -151,13 +165,13 @@ window.achView = {
             const attrs = gs.attrs ? Object.keys(gs.attrs) : ['STR','INT'];
             const opts = attrs.map(k => ({ value: k, label: `${gs.attrs[k].icon} ${gs.attrs[k].name}` }));
             if (!attrs.includes(data.targetValue)) data.targetValue = attrs[0];
-            return ui.input.field('選擇屬性', ui.input.select(opts, data.targetValue, "achView.updateField('targetValue', this.value)"));
+            return ui.composer.formField({label: '選擇屬性', inputHtml: ui.atom.inputBase({type: 'select', val: data.targetValue, onChange: "achView.updateField('targetValue', this.value)", options: opts})});
         }
         
         const cats = gs.taskCats || ['每日', '運動', '工作'];
         const opts = cats.map(c => ({ value: c, label: c }));
         if (!cats.includes(data.targetValue)) data.targetValue = cats[0];
-        return ui.input.field('選擇分類', ui.input.select(opts, data.targetValue, "achView.updateField('targetValue', this.value)"));
+        return ui.composer.formField({label: '選擇分類', inputHtml: ui.atom.inputBase({type: 'select', val: data.targetValue, onChange: "achView.updateField('targetValue', this.value)", options: opts})});
     },
 
     // =========================================
@@ -169,29 +183,36 @@ window.achView = {
 
         const achs = AchEngine.getSortedAchievements().filter(a => a.claimed);
 
+        // [V43] 捨棄舊版 ui.layout.page 與 ui.card.row
         const listHtml = achs.length === 0 
-            ? ui.layout.empty('尚無榮譽紀錄', '🏅')
+            ? `<div class="ui-empty"><div class="ui-empty-icon">🏅</div>尚無榮譽紀錄</div>`
             : `<div style="padding: 14px;">` + achs.map(a => {
                 const d = new Date(a.finishDate || Date.now());
                 const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
                 
-                return ui.card.row({
-                    iconHtml: '🏅',
-                    title: a.title,
-                    subTitle: a.desc,
-                    rightHtml: `<div style="font-size:0.8rem; color:var(--text-ghost);">${dateStr}</div>`,
-                    themeColor: 'var(--color-gold)',
-                    style: 'margin-bottom: 10px;'
-                });
+                return `
+                <div class="std-card" style="flex-direction:row; justify-content:space-between; border-left-color:var(--color-gold); margin-bottom:10px;">
+                    <div class="card-icon" style="font-size:2rem; margin-right:12px;">🏅</div>
+                    <div class="card-col-center" style="flex:1; min-width:0;">
+                        <div style="font-weight:bold; font-size:1rem; color:var(--text); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.title}</div>
+                        <div style="font-size:0.85rem; color:var(--text-muted);">${a.desc}</div>
+                    </div>
+                    <div style="flex-shrink:0; font-size:0.8rem; color:var(--text-ghost); margin-left:10px;">${dateStr}</div>
+                </div>`;
             }).join('') + `</div>`;
 
-        // [優化] 使用升級版的 ui.layout.page 取代手寫容器
-        container.innerHTML = ui.layout.page({
-            title: '🏆 榮譽殿堂',
-            back: "act.navigate('task')",
-            headerBg: 'var(--bg-card)',
-            body: listHtml
-        });
+        container.innerHTML = `
+            <div style="display:flex; flex-direction:column; height:100%; overflow:hidden; background:var(--bg-panel);">
+                ${ui.composer.pageHeader({
+                    title: '🏆 榮譽殿堂',
+                    backAction: "act.navigate('task')",
+                    style: 'background:var(--bg-card);'
+                })}
+                <div style="flex:1; overflow-y:auto; overflow-x:hidden; position:relative; z-index:10; padding-bottom: 20px;">
+                    ${listHtml}
+                </div>
+            </div>
+        `;
     },
 
     updateField: function(field, val) { 

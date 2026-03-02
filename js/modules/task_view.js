@@ -1,4 +1,4 @@
-/* js/modules/task_view.js - V42.0 UI System Upgrade */
+/* js/modules/task_view.js - V43.0 UI Componentized Upgrade */
 window.taskView = {
     // =========================================
     // 1. 主列表渲染 (Render Main List)
@@ -22,13 +22,24 @@ window.taskView = {
             currentScrollY = window.TempState.mainListScrollY;
         }
 
-        const isList = window.TempState.taskTab === 'list';
-		const segmentHtml = ui.component.segment([
-		    { label: '📋 任務列表', val: 'list' },
-		    { label: '🏆 榮譽成就', val: 'ach' }
-		], window.TempState.taskTab, "act.switchTaskTab");
-		const headerHtml = `<div style="display:flex; background:var(--bg-box); border-radius:50px; padding:4px; margin:10px 15px;">${segmentHtml}</div>`;
+        const isList = window.TempState.taskTab === 'list'; 
         
+        const tabs = [
+            { label: '📋 任務列表', val: 'list' },
+            { label: '🏆 榮譽成就', val: 'ach' }
+        ];
+        const segmentHtml = tabs.map(opt => {
+            const isActive = window.TempState.taskTab === opt.val;
+            return ui.atom.buttonBase({
+                label: opt.label,
+                theme: isActive ? 'correct' : 'normal',
+                style: `flex:1; margin:2px; ${isActive ? 'box-shadow:inset 0 2px 4px rgba(0,0,0,0.1);' : ''}`,
+                action: `act.switchTaskTab('${opt.val}')`
+            });
+        }).join('');
+        const headerHtml = `<div style="display:flex; background:var(--bg-box); border-radius:50px; padding:4px; margin:10px 15px;">${segmentHtml}</div>`;
+        // --- 👆 修復結束 👆 ---
+
         let contentHtml = '';
 
         if (isList) {
@@ -38,14 +49,25 @@ window.taskView = {
             
             const tasks = TaskEngine.getSortedTasks(currentCat);
             
-            const filterArea = ui.layout.filterBar(
-                allCats, currentCat, "act.setTaskFilter",
-                ui.component.btn({ label:'📜 歷史', theme:'normal', size:'sm', action:"act.navigate('history')" })
-            );
+            const filterBtns = allCats.map(c => ui.atom.buttonBase({
+                label: c, theme: c === currentCat ? 'normal' : 'ghost', 
+                style: 'flex-shrink:0; border-radius:50px; padding:4px 12px;', action: `act.setTaskFilter('${c}')`
+            })).join('');
+
+            const filterArea = `
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                    <div style="flex:1; overflow:hidden;">
+                        <div class="u-scroll-list" style="-webkit-overflow-scrolling:touch;">${filterBtns}</div>
+                    </div>
+                    <div style="flex-shrink:0;">
+                        ${ui.atom.buttonBase({ label:'📜 歷史', theme:'normal', size:'sm', action:"act.navigate('history')" })}
+                    </div>
+                </div>`;
             
+            // 完美呼叫 V43.0 的智慧組件 ui.smart.taskCard
             const listItems = tasks.length === 0 
-                ? ui.layout.empty('暫無任務', '📭')
-                : `<div>${tasks.map(t => ui.card.task(t, false)).join('')}</div>`; 
+                ? `<div class="ui-empty"><div class="ui-empty-icon">📭</div>暫無任務</div>`
+                : `<div>${tasks.map(t => ui.smart.taskCard(t, false)).join('')}</div>`;
             
             contentHtml = filterArea + `<div style="padding-bottom:100px;">${listItems}</div>`;
 
@@ -59,7 +81,7 @@ window.taskView = {
 
         const fabBg = !isList ? 'background:var(--color-gold); border:none; color:var(--text);' : '';
         const fabAction = isList ? "act.editTask(null)" : "act.openCreateCustomAch()"; 
-        const fabHtml = ui.component.btn({ 
+        const fabHtml = ui.atom.buttonBase({ 
             label: '＋', theme: isList ? 'correct' : 'normal', 
             style: `position:absolute; bottom:25px; right:25px; width:60px; height:60px; border-radius:50%; font-size:2rem; box-shadow:var(--shadow-lg); z-index:10; ${fabBg}`, 
             action: fabAction 
@@ -77,18 +99,26 @@ window.taskView = {
         const container = document.getElementById('page-history'); if(!container) return;
         
         const history = window.GlobalState.history || [];
+        
+        // V43 寫法：直接輸出乾淨的 HTML 結構，不依賴舊版工具
         const listHtml = history.length === 0 
-            ? ui.layout.empty('無歷史紀錄', '📜') 
-            : `<div style="padding: 14px;">` + [...history].reverse().map(t => ui.card.task(t, true)).join('') + `</div>`;
+            ? `<div class="ui-empty"><div class="ui-empty-icon">📜</div>無歷史紀錄</div>` 
+            : `<div style="padding: 14px;">` + [...history].reverse().map(t => ui.smart.taskCard(t, true)).join('') + `</div>`;
             
-        container.innerHTML = ui.layout.page({
-            title: '📜 歷史紀錄',
-            back: "act.navigate('task')",
-            headerBg: 'var(--bg-card)',
-            body: listHtml
-        });
+        // V43 寫法：利用 flexbox 結合 composer.pageHeader 構建標準頁面
+        container.innerHTML = `
+            <div style="display:flex; flex-direction:column; height:100%; overflow:hidden; background:var(--bg-panel);">
+                ${ui.composer.pageHeader({
+                    title: '📜 歷史紀錄',
+                    backAction: "act.navigate('task')",
+                    style: 'background:var(--bg-card);'
+                })}
+                <div style="flex:1; overflow-y:auto; overflow-x:hidden; position:relative; z-index:10; padding-bottom: 20px;">
+                    ${listHtml}
+                </div>
+            </div>
+        `;
     },
-
     // =========================================================================
     // 2. 編輯表單 (Edit Form)
     // =========================================================================
@@ -126,15 +156,16 @@ window.taskView = {
         if (!data.attrs) data.attrs = [];
         const isCount = data.type === 'count';
 
-        const titleInput = ui.input.text(data.title, "要做什麼呢？", "taskView.updateField('title', this.value)");
-        const pinBtn = ui.component.btn({ id: 'btn-pin-toggle', label: '📌', theme: 'ghost', action: `taskView.togglePin()`, style: `font-size:1.4rem; padding:0 8px; border:none; opacity:${data.pinned ? '1' : '0.3'}; transition:all 0.2s;` });
+        // [V43] 全面改用 ui.atom.inputBase 與 ui.composer.formField
+        const titleInput = ui.atom.inputBase({type: 'text', val: data.title, placeholder: "要做什麼呢？", onChange: "taskView.updateField('title', this.value)"});
+        const pinBtn = ui.atom.buttonBase({ id: 'btn-pin-toggle', label: '📌', theme: 'ghost', action: `taskView.togglePin()`, style: `font-size:1.4rem; padding:0 8px; border:none; opacity:${data.pinned ? '1' : '0.3'}; transition:all 0.2s;` });
         
         let bodyHtml = `
         <div style="display:flex; align-items:flex-end; gap:10px;">
-            <div style="flex:1;">${ui.input.field('任務名稱', titleInput)}</div>
+            <div style="flex:1;">${ui.composer.formField({label:'任務名稱', inputHtml:titleInput})}</div>
             <div style="margin-bottom:14px;">${pinBtn}</div>
         </div>
-        ${ui.input.field('詳細說明', ui.input.textarea(data.desc, "備註...", "taskView.updateField('desc', this.value)"))}`;
+        ${ui.composer.formField({label:'詳細說明', inputHtml: ui.atom.inputBase({type: 'textarea', val: data.desc, placeholder: "備註...", onChange: "taskView.updateField('desc', this.value)"})})}`;
 
         const defaultCats = ['每日', '運動', '工作'];
         const catButtons = (gs.taskCats && gs.taskCats.length > 0 ? gs.taskCats : defaultCats).map(c => {
@@ -144,12 +175,6 @@ window.taskView = {
                 onclick="taskView.updateCategory('${c}')">${c}</button>`;
         }).join('');
 
-        let caloriesInput = '';
-        const isCalActive = (gs.unlocks && gs.unlocks.feature_cal) || (gs.settings && gs.settings.calMode);
-        if (data.cat === '運動' && isCalActive) {
-            caloriesInput = `<div style="display:flex; align-items:center; gap:5px; background:var(--color-gold-soft); padding:2px 8px; border-radius:15px; border:1px solid rgba(245,166,35,0.3); margin-left:10px; flex-shrink:0;"><span style="font-size:0.9rem;">🔥</span>${ui.input.number(data.calories, "taskView.updateField('calories', parseInt(this.value)||0)", 4)}<span style="font-size:0.8rem; color:var(--color-gold-dark);">Kcal</span></div>`;
-        }
-
         bodyHtml += `
         <div style="margin-bottom:15px;">
             <label class="section-title">分類</label>
@@ -158,22 +183,39 @@ window.taskView = {
                     ${catButtons}
                 </div>
                 <div style="flex-shrink:0; display:flex; align-items:center;">
-                    ${caloriesInput}
-                    ${ui.component.btn({label:'+', size:'sm', theme:'normal', action:'taskView.handleAddCategory()', style:'margin-left:5px; height:32px; width:32px; padding:0; border-radius:50%;'})}
+                    ${ui.atom.buttonBase({label:'+', size:'sm', theme:'normal', action:'taskView.handleAddCategory()', style:'margin-left:5px; height:32px; width:32px; padding:0; border-radius:50%;'})}
                 </div>
             </div>
         </div>`;
 
+        const isCalActive = (gs.unlocks && gs.unlocks.feature_cal) || (gs.settings && gs.settings.calMode);
+        if (data.cat === '運動' && isCalActive) {
+            bodyHtml += `
+            <div class="u-box" style="margin-bottom:15px; background:var(--color-gold-soft); border:1px dashed var(--color-gold); display:flex; justify-content:space-between; align-items:center; padding:12px;">
+                <span style="font-weight:bold; color:var(--color-gold-dark); flex-shrink:0; white-space:nowrap;">🔥 消耗熱量</span>
+                
+                <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+                    ${ui.atom.inputBase({
+                        type: 'number', 
+                        val: data.calories, 
+                        onChange: "taskView.updateField('calories', parseInt(this.value)||0)", 
+                        style: "width:70px; background:rgba(255,255,255,0.7); border:none; padding:6px; font-weight:bold; color:var(--text); outline:none;"
+                    })}
+                    <span style="font-size:0.9rem; color:var(--color-gold-dark); font-weight:bold;">Kcal</span>
+                </div>
+            </div>`;
+        }
+		
         let rightSettingHtml = !isCount ? 
             `<div style="display:flex; gap:10px;"><label style="display:flex; align-items:center; color:var(--text-muted);"><input type="radio" ${data.subRule==='all'?'checked':''} onclick="taskView.updateField('subRule', 'all')"><span style="margin-left:4px; font-size:0.8rem;">全部</span></label><label style="display:flex; align-items:center; color:var(--text-muted);"><input type="radio" ${data.subRule==='any'?'checked':''} onclick="taskView.updateField('subRule', 'any')"><span style="margin-left:4px; font-size:0.8rem;">擇一</span></label></div>` : 
-            `<div style="display:flex; align-items:center; gap:5px;">${ui.input.number(data.target, "taskView.updateField('target', this.value)", 2)}<span style="font-size:0.9rem; color:var(--text-muted);">次</span></div>`;
+            `<div style="display:flex; align-items:center; gap:5px;">${ui.atom.inputBase({type: 'number', val: data.target, onChange: "taskView.updateField('target', this.value)", extra: 'style="width:50px; text-align:center;"'})}<span style="font-size:0.9rem; color:var(--text-muted);">次</span></div>`;
 
         bodyHtml += `
         <div class="u-box" style="padding:12px; margin-bottom:15px; background:var(--bg-elevated);">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div style="display:flex; background:rgba(0,0,0,0.05); border-radius:20px; padding:2px;">
-                    ${ui.component.pillBtn({label:'📝 一般', theme:!isCount?'correct':'ghost', action:"taskView.updateField('type', 'normal')"})}
-                    ${ui.component.pillBtn({label:'🔢 計次', theme:isCount?'correct':'ghost', action:"taskView.updateField('type', 'count')"})}
+                    ${ui.atom.buttonBase({label:'📝 一般', theme:!isCount?'correct':'ghost', action:"taskView.updateField('type', 'normal')", style:'border-radius:50px; padding:4px 12px;'})}
+                    ${ui.atom.buttonBase({label:'🔢 計次', theme:isCount?'correct':'ghost', action:"taskView.updateField('type', 'count')", style:'border-radius:50px; padding:4px 12px;'})}
                 </div>
                 ${rightSettingHtml}
             </div>
@@ -181,12 +223,12 @@ window.taskView = {
             <div style="margin-top:12px; border-top:1px dashed var(--border); padding-top:12px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <div style="font-size:0.85rem; font-weight:bold; color:var(--text-muted);">🔨 子任務</div>
-                    ${ui.component.btn({label:'+ 新增步驟', theme:'paper', size:'sm', action:'act.addSubtask()'})}
+                    ${ui.atom.buttonBase({label:'+ 新增步驟', theme:'paper', size:'sm', action:'act.addSubtask()'})}
                 </div>
                 ${(data.subs || []).map((s, i) => `
                 <div style="display:flex; gap:5px; margin-bottom:6px; align-items:center;">
-                    ${ui.input.text(s.text, `步驟 ${i+1}`, `act.updateSubtaskText(${i}, this.value)`)}
-                    ${ui.component.btn({label:'✕', theme:'ghost', size:'sm', style:'color:var(--color-danger); border:none;', action:`act.removeSubtask(${i})`})}
+                    ${ui.atom.inputBase({type:'text', val: s.text, placeholder: `步驟 ${i+1}`, onChange: `act.updateSubtaskText(${i}, this.value)`})}
+                    ${ui.atom.buttonBase({label:'✕', theme:'ghost', size:'sm', style:'color:var(--color-danger); border:none;', action:`act.removeSubtask(${i})`})}
                 </div>`).join('')}
             </div>` : ''}
         </div>`;
@@ -228,18 +270,18 @@ window.taskView = {
         bodyHtml += `
         <div style="display:flex; gap:10px; align-items:flex-end;">
             <div style="flex: 1 1 0; min-width: 0;"> 
-                ${ui.input.field('📅 到期時間', ui.input.datetime(data.deadline, "taskView.updateField('deadline', this.value)"))}
+                ${ui.composer.formField({label:'📅 到期時間', inputHtml: ui.atom.inputBase({type: 'datetime-local', val: data.deadline, onChange: "taskView.updateField('deadline', this.value)"})})}
             </div>
             <div style="flex: 1 1 0; min-width: 0;"> 
-                ${ui.input.field('🔄 循環', ui.input.select(recurrenceOpts, data.recurrence, "taskView.updateField('recurrence', this.value)"))}
+                ${ui.composer.formField({label:'🔄 循環', inputHtml: ui.atom.inputBase({type: 'select', val: data.recurrence, onChange: "taskView.updateField('recurrence', this.value)", options: recurrenceOpts})})}
             </div>
         </div>`;
 
         const footHtml = taskId 
-            ? `${ui.component.btn({label:'刪除', theme:'danger', action:`act.deleteTask('${taskId}')`})} 
-               ${ui.component.btn({label:'複製', theme:'normal', action:`act.copyTask('${taskId}')`})} 
-               ${ui.component.btn({label:'保存', theme:'correct', style:'flex:1;', action:'act.submitTask()'})}` 
-            : ui.component.btn({label:'新增任務', theme:'correct', style:'width:100%;', action:'act.submitTask()'});
+            ? `${ui.atom.buttonBase({label:'刪除', theme:'danger', action:`act.deleteTask('${taskId}')`})} 
+               ${ui.atom.buttonBase({label:'複製', theme:'normal', action:`act.copyTask('${taskId}')`})} 
+               ${ui.atom.buttonBase({label:'保存', theme:'correct', style:'flex:1;', action:'act.submitTask()'})}` 
+            : ui.atom.buttonBase({label:'新增任務', theme:'correct', style:'width:100%;', action:'act.submitTask()'});
 
         ui.modal.render(taskId ? '編輯任務' : '新增任務', bodyHtml, footHtml, 'overlay');
         
@@ -273,7 +315,6 @@ window.taskView = {
             const lblEl = document.getElementById(field === 'importance' ? 'lbl-imp' : 'lbl-urg');
             if(valEl) valEl.innerText = val;
             
-            // [優化] 修正：明確鎖定另一個維度為 1，徹底解決 Slider 拖曳時顏色閃爍的 Bug
             if(lblEl) {
                 const info = field === 'importance' 
                     ? view.getPriorityInfo(val, 1) 

@@ -6,26 +6,26 @@
     // 👇 👇 👇 🌟 [新增] 全域多國語言字典 (i18n)
     window.I18N_DICT = {
         // 系統狀態標籤 (Tags)
-        'observed': { zh: '已觀察', en: 'Observed', ko: '관찰됨' },
-        'item_found': { zh: '發現物品', en: 'Item Found', ko: '아이템 발견' },
-        'risk_high': { zh: '高風險', en: 'High Risk', ko: '고위험' },
-        'cursed': { zh: '受詛咒', en: 'Cursed', ko: '저주받은' },
-        'knowledge_found': { zh: '獲得知識', en: 'Knowledge', ko: '지식 획득' },
-        'cautious': { zh: '保持警戒', en: 'Cautious', ko: '경계' },
+        'observed': { zh: '已觀察', en: 'Observed', ko: '관찰됨', jp: '観察済み' },
+        'item_found': { zh: '發現物品', en: 'Item Found', ko: '아이템 발견', jp: 'アイテム発見' },
+        'risk_high': { zh: '高風險', en: 'High Risk', ko: '고위험', jp: '高リスク' },
+        'cursed': { zh: '受詛咒', en: 'Cursed', ko: '저주받은', jp: '呪われた' },
+        'knowledge_found': { zh: '獲得知識', en: 'Knowledge', ko: '지식 획득', jp: '知識獲得' },
+        'cautious': { zh: '保持警戒', en: 'Cautious', ko: '경계', jp: '警戒中' },
         
         // 屬性與變數 (Vars)
-        'sanity': { zh: '理智', en: 'SAN', ko: '이성' },
-        'energy': { zh: '精力', en: 'Energy', ko: '에너지' },
-        'time_left': { zh: '剩餘時間', en: 'Time Left', ko: '남은 시간' },
-        'stress': { zh: '壓力', en: 'Stress', ko: '스트레스' },
-        'trust': { zh: '信任度', en: 'Trust', ko: '신뢰' },
-        'favor': { zh: '好感度', en: 'Favor', ko: '호감도' },
-        'hp': { zh: '生命值', en: 'HP', ko: 'HP' },
-        'exp': { zh: '經驗值', en: 'EXP', ko: 'EXP' },
-        'gold': { zh: '金幣', en: 'Gold', ko: '골드' },
-		'youth_given': { zh: '奉獻的青春', en: 'Youth Given', ko: '바친 청춘' },
-        'dignity': { zh: '尊嚴', en: 'Dignity', ko: '존엄' },
-        'route_illicit': { zh: '禁忌路線', en: 'Illicit Route', ko: '금지된 경로' }
+        'sanity': { zh: '理智', en: 'SAN', ko: '이성', jp: '正気度' },
+        'energy': { zh: '精力', en: 'Energy', ko: '에너지', jp: 'スタミナ' },
+        'time_left': { zh: '剩餘時間', en: 'Time Left', ko: '남은 시간', jp: '残り時間' },
+        'stress': { zh: '壓力', en: 'Stress', ko: '스트레스', jp: 'ストレス' },
+        'trust': { zh: '信任度', en: 'Trust', ko: '신뢰', jp: '信頼度' },
+        'favor': { zh: '好感度', en: 'Favor', ko: '호감도', jp: '好感度' },
+        'hp': { zh: '生命值', en: 'HP', ko: 'HP', jp: 'HP' },
+        'exp': { zh: '經驗值', en: 'EXP', ko: 'EXP', jp: 'EXP' },
+        'gold': { zh: '金幣', en: 'Gold', ko: '골드', jp: 'ゴールド' },
+        'youth_given': { zh: '奉獻的青春', en: 'Youth Given', ko: '바친 청춘', jp: '捧げた青春' },
+        'dignity': { zh: '尊嚴', en: 'Dignity', ko: '존엄', jp: '尊厳' },
+        'route_illicit': { zh: '禁忌路線', en: 'Illicit Route', ko: '금지된 경로', jp: '禁忌ルート' }
     };
 
     window.t_tag = function(key) {

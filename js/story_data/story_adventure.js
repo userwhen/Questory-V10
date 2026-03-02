@@ -39,7 +39,7 @@
                 ] 
             },
             dialogue: [
-                { text: { zh: "【地城探索箱庭模式】你踏入了這座{env_adj}的{env_building}。" } },
+                { text: { zh: "你踏入了這座{env_adj}的{env_building}。" } },
                 { text: { zh: "沉睡在最深處的【{boss}】將在 4 小時後甦醒。你必須在這段時間內盡可能搜刮物資、尋找對方的弱點，或是找出傳說中的武器。" } },
                 { text: { zh: "出發前，你決定依靠什麼力量戰鬥？" } }
             ],
@@ -184,7 +184,7 @@
             reqTags: ['adventure', 'is_linear_mode'], 
             onEnter: { varOps: [{key: 'tension', val: 10, op: 'set'}] },
             dialogue: [
-                { text: { zh: "【線性史詩模式】強烈的暈眩感退去後，你發現自己身處於一座{env_adj}的{env_building}之中。" } },
+                { text: { zh: "強烈的暈眩感退去後，你發現自己身處於一座{env_adj}的{env_building}之中。" } },
                 { text: { zh: "天空中懸掛著破碎的月亮，遠處傳來了怪物的嘶吼聲。你必須依靠力量活下去。" } }
             ],
             options: [

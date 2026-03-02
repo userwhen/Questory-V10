@@ -26,8 +26,20 @@ window.TaskEngine = {
         if (!gs || !gs.tasks) return;
 
         console.log("📅 [TaskEngine] 執行每日重置...");
+        const todayStr = new Date().toDateString();
         
-        // 重置每日任務狀態
+        // ✅ 1. 先把「昨天已完成的每日任務」備份存入 history (修復 B2 遺漏問題)
+        gs.tasks.forEach(t => {
+            if ((t.cat === '每日' || t.recurrence === 'daily') && t.done) {
+                if (!gs.history) gs.history = [];
+                // 必須使用深拷貝，否則指標會連動導致歷史紀錄也被重置
+                const entry = JSON.parse(JSON.stringify(t));
+                entry.archivedDate = todayStr; // 加上歸檔日期的標籤
+                gs.history.push(entry);
+            }
+        });
+
+        // ✅ 2. 再執行每日任務狀態重置 (原有的邏輯)
         gs.tasks.forEach(t => {
             if (t.cat === '每日' || t.recurrence === 'daily') {
                 t.done = false;
@@ -37,7 +49,7 @@ window.TaskEngine = {
             }
         });
 
-        // 重置今日熱量
+        // ✅ 3. 重置今日熱量 (原有的邏輯)
         if (gs.cal) {
             gs.cal.today = 0;
             gs.cal.logs = []; 

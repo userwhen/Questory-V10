@@ -16,7 +16,6 @@ window.EventBus = {
 
     emit: function(event, data) {
         if (!this.listeners[event]) return;
-        // console.log(`📡 [EventBus] 廣播: ${event}`, data || ''); 
         this.listeners[event].forEach(callback => {
             try {
                 callback(data);

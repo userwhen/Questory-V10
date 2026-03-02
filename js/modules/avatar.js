@@ -3,27 +3,36 @@ window.AvatarEngine = {
     // 1. 初始化試穿 Session (進入頁面時呼叫)
     initSession: function() {
         const gs = window.GlobalState;
+        // 確保結構存在
         if (!gs.avatar) gs.avatar = { unlocked: [], wearing: {}, gender: 'm' };
         
         // 確保商店數據存在 (Fallback)
         if (!window.GameConfig) window.GameConfig = {};
         if (!window.GameConfig.AvatarShop) {
             window.GameConfig.AvatarShop = [
-                { id: 'suit_novice', name: '新手套裝', price: 0 },
-                { id: 'suit_knight', name: '騎士鎧甲', price: 100 },
-                { id: 'suit_mage', name: '法師長袍', price: 150 },
-                { id: 'suit_king', name: '國王新衣', price: 999 }
+                { id: 'adventurer_m', name: '冒險者 (男)', price: 0, type: 'suit' },
+                { id: 'adventurer_f', name: '冒險者 (女)', price: 0, type: 'suit' }, 
+                { id: 'harem_m', name: '後宮 (男)', price: 150, type: 'suit' },
+                { id: 'harem_f', name: '後宮 (女)', price: 150, type: 'suit' }
             ];
+        }
+
+        // 🚨 [相容性修復] 把舊存檔的 suit_novice 自動轉換為 adventurer_m
+        if (gs.avatar.wearing.suit === 'suit_novice' || !gs.avatar.wearing.suit) {
+            gs.avatar.wearing.suit = 'adventurer_m';
+        }
+        if (gs.avatar.unlocked.includes('suit_novice')) {
+            gs.avatar.unlocked = gs.avatar.unlocked.filter(id => id !== 'suit_novice');
+        }
+
+        // 如果還沒解鎖預設套裝，自動解鎖
+        if (!gs.avatar.unlocked.includes('adventurer_m')) {
+            gs.avatar.unlocked.push('adventurer_m');
         }
 
         // 複製當前穿著到預覽暫存
         window.TempState.preview = JSON.parse(JSON.stringify(gs.avatar.wearing || {}));
         
-        // 如果還沒解鎖新手套裝，自動解鎖
-        if (!gs.avatar.unlocked.includes('suit_novice')) {
-            gs.avatar.unlocked.push('suit_novice');
-        }
-
         window.EventBus.emit(window.EVENTS.Avatar.UPDATED);
     },
 

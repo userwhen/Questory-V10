@@ -50,7 +50,7 @@
                 ] 
             },
             dialogue: [
-                { text: { zh: "【箱庭探索模式】在一個{env_weather}的夜晚，這座{env_building}發生命案了。" } },
+                { text: { zh: "【在一個{env_weather}的夜晚，這座{env_building}發生命案了。" } },
                 { text: { zh: "{victim}倒在血泊中。你有 3 小時的時間搜查現場。" } },
                 { text: { zh: "這場案件的真兇，就在嫌疑犯A與嫌疑犯B之中..." } } 
             ],

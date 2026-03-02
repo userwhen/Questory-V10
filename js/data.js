@@ -51,12 +51,11 @@ window.GameConfig.System = {
 
 // 紙娃娃商店列表 [與 avatar.js 的 ID 對齊]
 window.GameConfig.AvatarShop = [
-    { id: 'suit_novice', name: '新手套裝', price: 0, type: 'suit' },
-    { id: 'suit_knight', name: '騎士鎧甲', price: 100, type: 'suit' }, 
-    { id: 'suit_mage', name: '法師長袍', price: 150, type: 'suit' },
-    { id: 'suit_king', name: '國王新衣', price: 999, type: 'suit' }
+    { id: 'adventurer_m', name: '冒險者 (男)', price: 0, type: 'suit' },
+    { id: 'adventurer_f', name: '冒險者 (女)', price: 0, type: 'suit' }, 
+    { id: 'harem_m', name: '後宮 (男)', price: 150, type: 'suit' },
+    { id: 'harem_f', name: '後宮 (女)', price: 150, type: 'suit' }
 ];
-
 // 資源路徑配置 (Assets)
 window.GameConfig.Assets = {
     basePath: 'img/',

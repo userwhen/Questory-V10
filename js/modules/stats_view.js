@@ -1,4 +1,4 @@
-/* js/modules/stats_view.js - V42.0 UI System Upgrade */
+/* js/modules/stats_view.js - V43.0 Pure Architecture Upgrade */
 window.statsView = {
     // =========================================
     // 1. 主渲染入口
@@ -12,40 +12,53 @@ window.statsView = {
         let currentTab = window.TempState.statsTab || 'attr';
 
         // =========================================================
-        // [A] 頂部儀表板
+        // [A] 頂部儀表板 (已縮小高度並優化間距)
         // =========================================================
         let chartContent = '';
         if (currentTab === 'attr') {
-            chartContent = `<div style="height:220px; width:100%; position:relative;"><canvas id="radar-canvas"></canvas></div>`;
+            // 高度從 220px 縮小至 170px
+            chartContent = `<div style="height:170px; width:100%; position:relative;"><canvas id="radar-canvas"></canvas></div>`;
         } else {
             const maxCal = (gs.settings && gs.settings.calMax) || 2000;
             const currentCal = gs.cal ? gs.cal.today : 0;
             const diff = maxCal - currentCal;
             
-            const statusColor = diff >= 0 ? '--color-correct' : '--color-danger'; 
-            const statusBg = diff >= 0 ? '--color-correct-soft' : '--color-danger-soft';
+            const statusColor = diff >= 0 ? 'var(--color-correct)' : 'var(--color-danger)'; 
+            const statusBg = diff >= 0 ? 'var(--color-correct-soft)' : 'var(--color-danger-soft)';
             
+            const pct = Math.min(100, Math.max(0, (currentCal / maxCal) * 100));
+            const progressHtml = `<div class="u-progress"><div class="u-progress-bar" style="width:${pct}%;"></div><div class="u-progress-text">${currentCal}/${maxCal}</div></div>`;
+            const badgeHtml = ui.atom.badgeBase({ text: `${diff>=0?'剩餘額度':'已超標'} ${Math.abs(diff)} kcal`, style: `color:${statusColor}; background:${statusBg}; border-color:${statusColor};` });
+
+            // 緊湊化：高度 170px，數字字體從 3.5rem 降至 2.8rem
             chartContent = `
-                <div style="height:220px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                    <div style="font-size:0.9rem; color:var(--text-muted); font-weight:700;">🔥 今日淨攝取</div>
-                    <div style="font-size:3.5rem; font-weight:bold; color:var(--text); font-family:monospace; line-height:1.2; text-shadow:0 2px 4px rgba(0,0,0,0.1);">${currentCal}</div>
-                    <div style="width:80%; margin:15px 0;">
-                        ${ui.progress.bar(Math.max(0, currentCal), maxCal, `${currentCal}/${maxCal}`)}
+                <div style="height:170px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                    <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">🔥 今日淨攝取</div>
+                    <div style="font-size:2.8rem; font-weight:bold; color:var(--text); font-family:monospace; line-height:1.2; text-shadow:0 2px 4px rgba(0,0,0,0.1);">${currentCal}</div>
+                    <div style="width:80%; margin:10px 0;">
+                        ${progressHtml}
                     </div>
-                    ${ui.component.badge(`${diff>=0?'剩餘額度':'已超標'} ${Math.abs(diff)} kcal`, statusColor, statusBg)}
+                    ${badgeHtml}
                 </div>`;
         }
         
+        // [V43] 捨棄舊版 segment，改用原生 buttonBase 迴圈
+        const tabs = [{label:'● 能力分析', val:'attr'}, {label:'● 熱量監控', val:'cal'}];
         const tabsHtml = `
-            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); display:flex; width:100%;">
-                ${ui.component.segment([
-                    {label:'● 能力分析', val:'attr'}, {label:'● 熱量監控', val:'cal'}
-                ], currentTab, "act.switchStatsTab")}
+            <div style="margin-top: 5px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); display:flex; width:100%;">
+                ${tabs.map(opt => {
+                    const isActive = currentTab === opt.val;
+                    return ui.atom.buttonBase({
+                        label: opt.label, theme: isActive ? 'correct' : 'normal',
+                        style: `flex:1; margin:2px; ${isActive ? 'box-shadow:inset 0 2px 4px rgba(0,0,0,0.1);' : ''}`,
+                        action: `act.switchStatsTab('${opt.val}')`
+                    });
+                }).join('')}
             </div>
         `;
 
         const glassDashboard = `
-            <div class="glass-dashboard">
+            <div class="glass-dashboard" style="padding: 10px 15px;">
                 ${chartContent}
                 ${tabsHtml}
             </div>`;
@@ -57,35 +70,43 @@ window.statsView = {
 
         if (currentTab === 'attr') {
             const attrs = gs.attrs ? Object.values(gs.attrs) : [];
-            const attrCardsHtml = attrs.map(a => `
+            const attrCardsHtml = attrs.map(a => {
+                const pct = Math.min(100, Math.max(0, (a.exp / (a.v*100)) * 100));
+                return `
                 <div class="u-box" style="padding:12px; display:flex; flex-direction:column; justify-content:center; border:none; box-shadow:var(--shadow-xs); background:var(--bg-card);">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                         <span style="font-size:1rem; color:var(--text);">${a.icon} <b>${a.name}</b></span>
                         <span style="font-weight:bold; color:var(--color-gold-dark);">Lv.${a.v}</span>
                     </div>
-                    ${ui.progress.bar(a.exp, a.v*100, `${a.exp}/${a.v*100}`)}
-                </div>
-            `).join('');
+                    <div class="u-progress"><div class="u-progress-bar" style="width:${pct}%;"></div><div class="u-progress-text">${a.exp}/${a.v*100}</div></div>
+                </div>`;
+            }).join('');
             
-            const gridSection = ui.layout.grid(attrCardsHtml, 2, '10px');
+            const gridSection = `<div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; width:100%;">${attrCardsHtml}</div>`;
 
             const skillHead = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin:25px 0 10px 0; padding: 0 5px;">
                     <h3 style="margin:0; font-size:1.1rem; color:var(--text-2);">修煉技能</h3>
-                    ${ui.component.btn({label:'+ 新增', theme:'normal', size:'sm', action:'act.openAddSkill()'})}
+                    ${ui.atom.buttonBase({label:'+ 新增', theme:'normal', size:'sm', action:'act.openAddSkill()'})}
                 </div>`;
             
             const skillList = (gs.skills && gs.skills.length > 0) ? gs.skills.map(s => {
                 const pAttr = (s.parent && gs.attrs[s.parent]) ? gs.attrs[s.parent] : {icon:'❓'};
-                return ui.card.row({
-                    iconHtml: pAttr.icon,
-                    title: s.name,
-                    subTitle: ui.progress.bar(s.exp, s.lv*10, `${s.exp}/${s.lv*10}`, 'margin-top:6px;'),
-                    rightHtml: ui.component.btn({label:'⚙️', theme:'ghost', action:`event.stopPropagation(); act.editSkill('${s.name}')`, style:'padding:5px; font-size:1.2rem; border:none;'}),
-                    themeColor: 'var(--color-gold)',
-                    onClick: `act.editSkill('${s.name}')`
-                });
-            }).join('') : ui.layout.empty('尚無技能', '⚔️');
+                const pct = Math.min(100, Math.max(0, (s.exp / (s.lv*10)) * 100));
+                const prog = `<div class="u-progress" style="margin-top:6px;"><div class="u-progress-bar" style="width:${pct}%;"></div><div class="u-progress-text">${s.exp}/${s.lv*10}</div></div>`;
+                const btnHtml = ui.atom.buttonBase({label:'⚙️', theme:'ghost', action:`event.stopPropagation(); act.editSkill('${s.name}')`, style:'padding:5px; font-size:1.2rem; border:none;'});
+                
+                // [V43] 取代舊版 card.row
+                return `
+                <div class="std-card" onclick="act.editSkill('${s.name}')" style="flex-direction:row; justify-content:space-between; border-left-color:var(--color-gold); margin-bottom:10px; cursor:pointer;">
+                    <div class="card-icon" style="font-size:2rem; margin-right:12px;">${pAttr.icon}</div>
+                    <div class="card-col-center" style="flex:1; min-width:0;">
+                        <div style="font-weight:bold; font-size:1rem; color:var(--text); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</div>
+                        ${prog}
+                    </div>
+                    <div style="flex-shrink:0; margin-left:10px;" onclick="event.stopPropagation();">${btnHtml}</div>
+                </div>`;
+            }).join('') : `<div class="ui-empty"><div class="ui-empty-icon">⚔️</div>尚無技能</div>`;
 
             bodyContent = `<div style="padding:0 15px;">${gridSection}${skillHead}${skillList}</div>`;
 
@@ -110,7 +131,7 @@ window.statsView = {
                 <div style="padding:0 15px;">
                     <div class="u-box" style="background:var(--bg-card); padding:20px; box-shadow:var(--shadow-sm); position:relative; min-height:300px; border:none;">
                         <h3 style="text-align:center; color:var(--text-muted); margin-bottom:20px; border-bottom:2px solid var(--border); display:inline-block; padding-bottom:5px;">Daily Logs</h3>
-                        ${logs.length > 0 ? logItems : ui.layout.empty('尚無紀錄', '🍽️')}
+                        ${logs.length > 0 ? logItems : `<div class="ui-empty"><div class="ui-empty-icon">🍽️</div>尚無紀錄</div>`}
                         <div style="margin-top:20px; text-align:center; color:var(--text-ghost); font-size:0.8rem;">--- 每日 00:00 自動重置 ---</div>
                     </div>
                 </div>`;
@@ -118,13 +139,20 @@ window.statsView = {
         
         const isBasicMode = (gs.settings && gs.settings.mode === 'basic');
         
-        container.innerHTML = ui.layout.page({
-            title: '📊 狀態分析',
-            // 修復：不再隱性依賴底層 boolean，明確給出返回字串或 false
-            back: isBasicMode ? false : "act.navigate('main')", 
-            fixedTop: glassDashboard,
-            body: bodyContent
-        });
+        // [V43] 捨棄 ui.layout.page，改用純 Flex 佈局
+        container.innerHTML = `
+            <div style="display:flex; flex-direction:column; height:100%; overflow:hidden; background:var(--bg-panel);">
+                ${ui.composer.pageHeader({
+                    title: '📊 狀態分析',
+                    backAction: isBasicMode ? '' : "act.navigate('main')",
+                    style: 'background:transparent; border:none;'
+                })}
+                <div style="flex-shrink:0;">${glassDashboard}</div>
+                <div style="flex:1; overflow-y:auto; overflow-x:hidden; position:relative; z-index:10; padding-bottom: 20px;">
+                    ${bodyContent}
+                </div>
+            </div>
+        `;
 
         if (currentTab === 'attr') {
             setTimeout(() => this.drawRadarChart(gs.attrs || {}), 100);
@@ -148,9 +176,17 @@ window.statsView = {
             label: `${gs.attrs[k].icon} ${gs.attrs[k].name}`
         }));
 
+        // [V43] 改用 composer.formField + atom.inputBase
         const bodyHtml = `
-            ${ui.input.field('技能名稱', ui.input.text(window.TempState.editingSkill.name, "例如: 跑酷...", "window.TempState.editingSkill.name = this.value"))}
-            ${ui.input.field('綁定主屬性', ui.input.select(attrOpts, window.TempState.editingSkill.parent, "window.TempState.editingSkill.parent = this.value"), '技能經驗將同時回饋給此屬性')}
+            ${ui.composer.formField({
+                label: '技能名稱', 
+                inputHtml: ui.atom.inputBase({type:'text', val: window.TempState.editingSkill.name, placeholder: "例如: 跑酷...", onChange: "window.TempState.editingSkill.name = this.value"})
+            })}
+            ${ui.composer.formField({
+                label: '綁定主屬性', 
+                inputHtml: ui.atom.inputBase({type:'select', val: window.TempState.editingSkill.parent, onChange: "window.TempState.editingSkill.parent = this.value", options: attrOpts}), 
+                hint: '技能經驗將同時回饋給此屬性'
+            })}
             ${isEdit ? `
             <div style="margin-top:15px; padding:12px; background:var(--color-gold-soft); border-radius:var(--radius-sm); font-size:0.85rem; color:var(--color-gold-dark); box-shadow:var(--shadow-inner);">
                 🔥 目前等級: Lv.${skill.lv} <br> 累積經驗: ${skill.exp}
@@ -158,9 +194,9 @@ window.statsView = {
         `;
 
         const footHtml = isEdit 
-            ? `${ui.component.btn({label:'刪除', theme:'danger', action:`act.deleteSkill('${skill.name}')`})} 
-               ${ui.component.btn({label:'儲存變更', theme:'correct', style:'flex:1;', action:'act.saveSkill()'})}`
-            : ui.component.btn({label:'確認新增', theme:'correct', style:'width:100%;', action:'act.saveSkill()'});
+            ? `${ui.atom.buttonBase({label:'刪除', theme:'danger', action:`act.deleteSkill('${skill.name}')`})} 
+               ${ui.atom.buttonBase({label:'儲存變更', theme:'correct', style:'flex:1;', action:'act.saveSkill()'})}`
+            : ui.atom.buttonBase({label:'確認新增', theme:'correct', style:'width:100%;', action:'act.saveSkill()'});
 
         ui.modal.render(isEdit ? '編輯技能' : '新增技能', bodyHtml, footHtml, 'overlay');
     },
@@ -181,12 +217,10 @@ window.statsView = {
             }
         });
 
-        // 修復：從系統讀取真實的 CSS 變數，解決圖表顏色脫鉤問題
         const bodyStyle = getComputedStyle(document.body);
         const goldHex = bodyStyle.getPropertyValue('--color-gold').trim() || '#f5a623';
         const textMutedHex = bodyStyle.getPropertyValue('--text-muted').trim() || '#8c6e52';
         
-        // 簡單將 Hex 轉成帶透明度的 rgba 用於背景
         const hexToRgba = (hex, alpha) => {
             const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;

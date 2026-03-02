@@ -1,4 +1,4 @@
-/* js/modules/story_view.js - V42.0 UI System Upgrade */
+/* js/modules/story_view.js - V43.0 Pure Architecture Upgrade */
 
 window.storyView = {
     render: function() {
@@ -6,10 +6,9 @@ window.storyView = {
         const container = document.getElementById('page-story');
         if (!container) return;
 
-        // 修復：對應 CSS 的 #story-text-box
+        // 如果結構已經存在，直接呼叫 refresh 並退出 (避免閃爍)
         if (document.getElementById('story-text-box')) {
-            this.updateTopBar();
-            this.updateDrawer();
+            this.refresh();
             const box = document.getElementById('story-content');
             if (!box || box.innerHTML.trim() === "") this.renderIdle();
             return;
@@ -21,10 +20,8 @@ window.storyView = {
             position: 'absolute', top: '0', left: '0'
         });
 
-        // 修復：ID 改為 story-top-bar 對接 CSS
         const topBarContent = `<div id="story-top-bar" style="display:flex; align-items:center; justify-content:space-between; width:100%; gap: 5px;"></div>`;
         
-        // 修復：ID 改為 story-text-box 對接 CSS
         const textBody = `
             <div id="story-text-box" 
                  onclick="if(window.StoryEngine && window.StoryEngine.clickScreen) window.StoryEngine.clickScreen()"
@@ -38,15 +35,14 @@ window.storyView = {
                 <style>@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }</style>
             </div>`;
 
-        // 修復：移除 display:flex 等會蓋掉 CSS Grid 的 inline style
         const actionsArea = `
             <div id="story-actions" style="
                 width: 100%; flex-shrink: 0; background: var(--bg-hud); 
                 border-top: 1px solid rgba(255,255,255,0.08); box-shadow: 0 -4px 15px rgba(0,0,0,0.6);
                 padding: 15px; box-sizing: border-box; z-index: 10;
                 display: flex; flex-direction: column; justify-content: flex-start; gap: 10px;
-                height: 200px; /* 🌟 關鍵：鎖定高度，200px 剛好可無縫塞下 3 個按鈕與間距 */
-                overflow-y: auto; /* 🌟 超過 3 個選項時，會在框內自動產生上下滑動效果 */
+                height: 200px; 
+                overflow-y: auto; 
             "></div>`;
 
         const tagDrawerHtml = `<div id="tag-drawer-container"></div>`;
@@ -64,13 +60,17 @@ window.storyView = {
             </div>
         `;
         
+        this.refresh();
+        this.renderIdle();
+    },
+	
+	refresh: function() {
         this.updateTopBar();
         this.updateDrawer();
-        this.renderIdle();
     },
 
     updateTopBar: function() {
-        const el = document.getElementById('story-top-bar'); // 更新 ID 抓取
+        const el = document.getElementById('story-top-bar'); 
         if (!el) return;
         
         const gs = window.GlobalState;
@@ -79,33 +79,35 @@ window.storyView = {
             currentMax = StoryEngine.calculateMaxEnergy();
         }
         const energy = Math.floor(gs.story?.energy || 0);
-        const locationName = window.TempState.storyLocation || '---';
         const currentLang = (gs.settings && gs.settings.targetLang) ? gs.settings.targetLang : 'mix';
         
         const langOpts = [{value:'mix',label:'Mix'}, {value:'zh',label:'ZH'}, {value:'jp',label:'JP'}, {value:'en',label:'EN'}];
-        const langSelector = `<div style="transform: scale(0.9);">${ui.input.select(langOpts, currentLang, "act.setLang(this.value)", "story-lang-select")}</div>`;
+        
+        // [V43] 純淨 Select 與 Button 實作
+        const langSelector = `<div style="transform: scale(0.9);">${ui.atom.inputBase({type:'select', val:currentLang, onChange:"EventBus.emit(window.EVENTS.Action.SET_LANG, this.value)", id:"story-lang-select", options:langOpts, style:'padding:4px 8px; font-size:0.85rem;'})}</div>`;
 		
         let devBtnHtml = '';
         if (window.isDebugActive) {
-            devBtnHtml = ui.component.btn({
+            devBtnHtml = ui.atom.buttonBase({
                 label: '📝', theme: 'danger', size: 'sm', 
                 style: 'padding:2px 8px; margin-right:2px;', 
                 action: 'Debug.openLiveStoryEditor()'
             });
         }
 
-        const btnStamina = ui.component.btn({
+        const btnStamina = ui.atom.buttonBase({
             label: '+', theme: 'correct', size: 'sm', 
             style: 'padding:0 6px; height:20px; line-height:1; margin-left:4px;', 
             action: 'if(window.shopView) shopView.renderStaminaShop()' 
         });
 
+        const pct = Math.min(100, Math.max(0, (energy / currentMax) * 100));
+        const progressHtml = `<div class="u-progress" style="height:12px; background:rgba(255,255,255,0.1); font-size:0.7rem;"><div class="u-progress-bar" style="width:${pct}%;"></div><div class="u-progress-text">${energy}/${currentMax}</div></div>`;
+
         el.innerHTML = `
             <div style="display:flex; align-items:center; width: 130px; flex-shrink: 0;">
                 <span style="color:var(--color-gold); font-size:0.9rem; margin-right:4px;">⚡</span>
-                <div style="flex:1;">
-                    ${ui.progress.bar(energy, currentMax, `${energy}/${currentMax}`, 'height:12px; background:rgba(255,255,255,0.1); font-size:0.7rem;')}
-                </div>
+                <div style="flex:1;">${progressHtml}</div>
                 ${btnStamina}
             </div>
             
@@ -114,67 +116,64 @@ window.storyView = {
             <div style="display:flex; align-items:center; gap:2px; flex-shrink: 0;">
                 ${devBtnHtml}
                 ${langSelector}
-                ${ui.component.btn({label:'✕', theme:'danger', size:'sm', style:'padding:2px 8px;', action:"act.navigate('main')"})}
-            </div>`;
+                ${ui.atom.buttonBase({label:'✕', theme:'danger', size:'sm', style:'padding:2px 8px;', action:"act.navigate('main')"})}
+			</div>`;
     },
 
     updateDrawer: function() {
         const container = document.getElementById('tag-drawer-container');
-        if (!container || !window.ui || !window.ui.layout) return;
+        if (!container) return;
 
         const gs = window.GlobalState;
         const isTagOpen = window.TempState.isTagDrawerOpen || false;
         const myTags = gs.story?.tags || [];
         const myVars = gs.story?.vars || {};
 
-        // 1. 取得地圖資訊
         const roomName = window.MapManager && window.MapManager.currentRoom ? window.MapManager.currentRoom.name : '未知區域';
         const pathStr = window.MapManager && window.MapManager.map ? 
             window.MapManager.map.map(r => r.id === window.MapManager.currentRoom.id ? `📍[${r.name}]` : `🚪[${r.name}]`).join(" ─ ") : 
             "📍 無紀錄";
 
-        // 2. 組裝狀態列 HTML (上半部)
         let statusHtml = `
             <div style="margin-bottom: 15px;">
                 <div style="font-size: 1.1rem; font-weight: bold; color: var(--color-gold); margin-bottom: 8px;">📍 ${roomName}</div>
                 <div style="font-size: 0.85rem; color: var(--text-ghost); margin-bottom: 10px; line-height: 1.5;">🗺️ 路徑: ${pathStr}</div>
                 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
         `;
-        // 動態抓取 vars 裡的狀態 (例如 SAN, 時間)
         for (let [k, v] of Object.entries(myVars)) {
-            // 🌟 檢查是不是張力值
             let displayKey = k;
             if (k === 'tension' && gs.story.chain && gs.story.chain.tensionName) {
                 displayKey = gs.story.chain.tensionName;
             } else {
                 displayKey = window.t_tag ? window.t_tag(k) : k;
             }
-            
             statusHtml += `<div style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; font-size: 0.9rem;">${displayKey}: <span style="color:var(--color-info);">${v}</span></div>`;
         }
 		statusHtml += `</div></div>`;
-        // 3. 生成標籤 HTML (下半部，移除分類過濾)
+
         const tagStyles = { 
             'loc': { color: '--color-gold-dark', bg: '--color-gold-soft' }, 
             'status': { color: '--color-info', bg: '--color-info-soft' }, 
             'warn': { color: '--color-danger', bg: '--color-danger-soft' }, 
             'info': { color: '--color-correct', bg: '--color-correct-soft' } 
         };
+        
         let tagsHtml = '<div style="color:var(--text-ghost); font-size: 0.9rem;">尚無標籤</div>';
         if (myTags.length > 0) {
             tagsHtml = myTags.map(t => {
                 const rawLabel = typeof t === 'string' ? t : t.label; 
                 const type = typeof t === 'string' ? 'info' : t.type;
                 const style = tagStyles[type] || tagStyles['info'];
-                
-                // 🌟 核心魔法：呼叫字典翻譯 (內部是英文，顯示變中文)
                 const displayLabel = window.t_tag ? window.t_tag(rawLabel) : rawLabel;
                 
-                return ui.component.badge(displayLabel, style.color, style.bg);
+                // [V43] 使用原生 badgeBase 取代舊版
+                return ui.atom.badgeBase({ 
+                    text: displayLabel, 
+                    style: `color:var(${style.color}); background:var(${style.bg}); border-color:var(${style.color});` 
+                });
             }).join('');
         }
 
-        // 4. 組合最終 HTML (移除卷軸)
         const drawerInnerHtml = `
             <div style="display: flex; flex-direction: column; height: 100%; color:var(--text-on-dark);">
                 <div style="flex-shrink: 0; padding-bottom: 8px; border-bottom: 1px dashed rgba(255,255,255,0.2); margin-bottom: 10px;">
@@ -190,13 +189,16 @@ window.storyView = {
                 </div>
             </div>`;
 
-        // 5. 呼叫 UI 渲染
-        container.innerHTML = ui.layout.drawer(
-            isTagOpen, 
-            drawerInnerHtml, 
-            "act.toggleTagDrawer()",
-            { color: 'var(--bg-nav)', iconOpen: '▼', iconClose: '▲', height: '320px' } // 高度稍微加高以容納狀態
-        );
+        // [V43] 呼叫全新的 ui.composer.drawer
+        container.innerHTML = ui.composer.drawer({
+            isOpen: isTagOpen, 
+            contentHtml: drawerInnerHtml, 
+            onToggle: "EventBus.emit(window.EVENTS.Action.TOGGLE_DRAWER)",
+            height: '320px', 
+            handleIconOpen: '▼', 
+            handleIconClose: '▲',
+            variant: 'story' 
+        });
     },
 
     clearScreen: function() {
@@ -213,13 +215,13 @@ window.storyView = {
         if (actBox) actBox.innerHTML = '';
         if (cursor) cursor.style.display = 'none';
         
-        const wrap = document.getElementById('story-text-box'); // 更新 ID 抓取
+        const wrap = document.getElementById('story-text-box'); 
         if (wrap) wrap.scrollTop = 0;
     },
 
     appendChunk: function(htmlContent, isLastChunk) {
         const box = document.getElementById('story-content');
-        const wrap = document.getElementById('story-text-box'); // 更新 ID 抓取
+        const wrap = document.getElementById('story-text-box'); 
         const cursor = document.getElementById('story-cursor');
         if (!box || !wrap) return;
 
@@ -262,16 +264,34 @@ window.storyView = {
     typeWriter: function(element, htmlContent, justCleared, onComplete) {
         if (window.TempState.typingTimer) clearInterval(window.TempState.typingTimer);
 
-        let i = 0;
-        const speed = 20;
-        const text = htmlContent;
         element.innerHTML = '';
         
-        let currentString = ''; // 🌟 新增：用變數累積字串，避免 HTML 標籤提早被瀏覽器關閉
+        const tokens = [];
+        let tempHtml = htmlContent;
+        const tagRegex = /(<[^>]+>)/g; 
+        
+        let lastIdx = 0;
+        let match;
+        while ((match = tagRegex.exec(tempHtml)) !== null) {
+            if (match.index > lastIdx) {
+                const textPart = tempHtml.substring(lastIdx, match.index);
+                for (let char of textPart) tokens.push({ type: 'text', val: char });
+            }
+            tokens.push({ type: 'html', val: match[0] });
+            lastIdx = tagRegex.lastIndex;
+        }
+        if (lastIdx < tempHtml.length) {
+            const textPart = tempHtml.substring(lastIdx);
+            for (let char of textPart) tokens.push({ type: 'text', val: char });
+        }
+
+        let i = 0;
+        const speed = 20;
+        let currentString = ''; 
 
         window.TempState.typingTimer = setInterval(() => {
             if (window.TempState.skipRendering) {
-                element.innerHTML = text;
+                element.innerHTML = htmlContent;
                 clearInterval(window.TempState.typingTimer);
                 window.TempState.typingTimer = null; 
                 window.TempState.skipRendering = false;
@@ -279,37 +299,26 @@ window.storyView = {
                 return;
             }
 
-            // 處理 HTML 標籤
-            if (text.charAt(i) === '<') {
-                const closeIdx = text.indexOf('>', i);
-                if (closeIdx !== -1) {
-                    currentString += text.substring(i, closeIdx + 1);
-                    i = closeIdx + 1;
-                } else {
-                    currentString += text.charAt(i);
-                    i++;
-                }
-            } else {
-                currentString += text.charAt(i);
+            while (i < tokens.length && tokens[i].type === 'html') {
+                currentString += tokens[i].val;
+                i++;
+            }
+
+            if (i < tokens.length) {
+                currentString += tokens[i].val;
                 i++;
             }
             
-            // 🌟 關鍵修復：每次都把到目前為止的完整字串放進去
             element.innerHTML = currentString; 
             
             if (!justCleared) {
                 const wrap = document.getElementById('story-text-box');
                 if(wrap && i % 3 === 0) {
-                    if (wrap.scrollHeight - wrap.scrollTop > wrap.clientHeight + 50) {
-                        wrap.scrollTop = wrap.scrollHeight;
-                    }
+                    if (wrap.scrollHeight - wrap.scrollTop > wrap.clientHeight + 50) wrap.scrollTop = wrap.scrollHeight;
                 }
-            } else {
-                const wrap = document.getElementById('story-text-box');
-                if (wrap && wrap.scrollTop !== 0) wrap.scrollTop = 0;
             }
 
-            if (i >= text.length) {
+            if (i >= tokens.length) {
                 clearInterval(window.TempState.typingTimer);
                 window.TempState.typingTimer = null;
                 if (onComplete) onComplete();
@@ -335,13 +344,14 @@ window.storyView = {
         }
         
         container.style.opacity = '1';
-        container.innerHTML = options.map((btn, idx) => ui.component.btn({
-            label: btn.label, theme: btn.style || 'normal', // 🌟 這裡修正！讓按鈕可以變色
-            action: `window.StoryEngine.selectOption(${idx})`,
+        // [V43] 改用原生 atom 產生選項按鈕
+        container.innerHTML = options.map((btn, idx) => ui.atom.buttonBase({
+            label: btn.label, theme: btn.style || 'normal',
+            action: `EventBus.emit(window.EVENTS.Action.MAKE_CHOICE, ${idx})`,
             style: 'width:100%; max-width:400px; margin:0 auto; padding:12px; font-size:1rem; text-align:center;'
         })).join('');
         
-        const wrap = document.getElementById('story-text-box'); // 更新 ID 抓取
+        const wrap = document.getElementById('story-text-box');
         if(wrap) wrap.scrollTop = wrap.scrollHeight;
     },
 
@@ -355,12 +365,12 @@ window.storyView = {
 
         if (hasSavedStory) {
             if(box) box.innerHTML = `<div style="text-align:center; padding-top:40px; color:var(--color-gold);">⚠️ 檢測到未完成的冒險</div>`;
-            const btnResume = ui.component.btn({ label: "▶ 繼續冒險", theme: 'correct', action: "window.StoryEngine.resumeStory()", style: 'width:100%; max-width:400px; margin:0 auto 10px; padding:14px; font-size:1.1rem;' });
-            const btnAbandon = ui.component.btn({ label: "🗑️ 放棄並重新開始", theme: 'danger', action: "window.StoryEngine.abandonStory()", style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1.1rem;' });
+            const btnResume = ui.atom.buttonBase({ label: "▶ 繼續冒險", theme: 'correct', action: "EventBus.emit(window.EVENTS.Action.RESUME_STORY)", style: 'width:100%; max-width:400px; margin:0 auto 10px; padding:14px; font-size:1.1rem;' });
+            const btnAbandon = ui.atom.buttonBase({ label: "🗑️ 放棄並重新開始", theme: 'danger', action: "EventBus.emit(window.EVENTS.Action.ABANDON_STORY)", style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1.1rem;' });
             if(actBox) actBox.innerHTML = btnResume + btnAbandon;
         } else {
             if(box) box.innerHTML = `<div style="text-align:center; padding-top:40px; color:var(--text-muted);">準備好開始新的旅程了嗎？</div>`;
-            const btnExplore = ui.component.btn({ label: "🔍 開始探索 (5⚡)", theme: 'correct', action: "window.StoryEngine.explore()", style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1.1rem;' });
+            const btnExplore = ui.atom.buttonBase({ label: "🔍 開始探索 (5⚡)", theme: 'correct', action: "EventBus.emit(window.EVENTS.Action.EXPLORE)", style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1.1rem;' });
             if(actBox) actBox.innerHTML = btnExplore;
         }
     },
@@ -380,9 +390,7 @@ window.storyView = {
         console.log("📺 StoryView Listening...");
 
         EventBus.on(window.EVENTS.System.NAVIGATE, (pageId) => {
-            if (pageId === 'story' && window.storyView) {
-                storyView.render();
-            }
+            if (pageId === 'story' && window.storyView) storyView.render();
         });
 
         EventBus.on(window.EVENTS.Story.RENDER_IDLE, () => {
@@ -390,7 +398,7 @@ window.storyView = {
         });
 
         EventBus.on(window.EVENTS.Story.REFRESH_VIEW, () => {
-            if (window.storyView) storyView.render();
+            if (window.storyView) storyView.refresh();
         });
-    }
+    },
 };

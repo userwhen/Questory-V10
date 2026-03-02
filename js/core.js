@@ -1,4 +1,4 @@
-/* js/core.js - V35.0 System Core (Foundation) */
+/* js/core.js - V36.0 System Core (Phase 1 Fix) */
 /* 包含：GlobalState 定義、存檔機制、核心導航、通用工具 */
 
 window.act = window.act || {};
@@ -12,7 +12,7 @@ window.Core = {
         console.log("🚀 System Core Initializing...");
         this.load();         // 1. 讀檔
         this.migrateData();  // 2. 補丁
-        this.checkDailyReset(); // 3. [新增] 換日檢測
+        // ⚠️ 已移除 this.checkDailyReset()，改由 main.js 在所有模組就緒後統一呼叫，解決 Race Condition
         
         if (window.EventBus && window.EVENTS) {
             window.EventBus.emit(window.EVENTS.System.INIT);
@@ -21,7 +21,6 @@ window.Core = {
 
     // --- 讀檔邏輯 ---
     load: function() {
-        // 💎 動態讀取 SaveKey，如果沒讀到則 fallback 為預設值
         const saveKey = (window.GameConfig && window.GameConfig.System && window.GameConfig.System.SaveKey) ? window.GameConfig.System.SaveKey : 'Levelife_Save_V1';
         const savedData = localStorage.getItem(saveKey);
         
@@ -52,7 +51,6 @@ window.Core = {
         try {
             const json = JSON.stringify(window.GlobalState);
             const encoded = btoa(unescape(encodeURIComponent(json)));
-            // 💎 同步動態讀取 SaveKey
             const saveKey = (window.GameConfig && window.GameConfig.System && window.GameConfig.System.SaveKey) ? window.GameConfig.System.SaveKey : 'Levelife_Save_V1';
             localStorage.setItem(saveKey, encoded);
         } catch (e) {
@@ -71,7 +69,6 @@ window.Core = {
             window.GlobalState.lastLoginDate = new Date().toDateString();
             window.GlobalState.installDate = Date.now();
         } else {
-            // Fallback (萬一 data.js 沒載入時的最小安全結構)
             window.GlobalState = {
                 name: 'Commander', lv: 1, exp: 0,
                 gold: 0, freeGem: 0, paidGem: 0,
@@ -93,10 +90,12 @@ window.Core = {
         const gs = window.GlobalState;
         if(!gs) return;
         
-        // 確保所有關鍵陣列與屬性存在 (補丁機制)
-        if(!gs.unlocks) gs.unlocks = {'basic':true, 'feature_cal': false};
-        if(gs.unlocks.feature_cal === undefined) gs.unlocks.feature_cal = false;
-        
+        if (!gs.unlocks) {
+            gs.unlocks = { basic: true, feature_cal: false, feature_strict: false };
+        } else {
+            if (gs.unlocks.feature_cal === undefined) gs.unlocks.feature_cal = false;
+            if (gs.unlocks.feature_strict === undefined) gs.unlocks.feature_strict = false;
+        }
         if(!gs.history) gs.history = [];
         if(!gs.tasks) gs.tasks = [];
         if(!gs.milestones) gs.milestones = []; 
@@ -104,7 +103,6 @@ window.Core = {
         if(!gs.settings) gs.settings = { mode: 'basic' };
         if(!gs.avatar) gs.avatar = { gender: 'm', unlocked: [], wearing: {} };
         
-        // [新增防呆] 補齊 story 物件內部的缺失
         if(!gs.story) gs.story = { energy: 30, tags: [], vars: {}, flags: {}, chain: null, currentNode: null };
         if(gs.story.chain === undefined) gs.story.chain = null;
         if(gs.story.currentNode === undefined) gs.story.currentNode = null;
@@ -112,43 +110,52 @@ window.Core = {
         if(gs.story.flags === undefined) gs.story.flags = {};
         if (!gs.cal) gs.cal = { today: 0, logs: [] };
 		if (!gs.cal.logs) gs.cal.logs = [];
-        // [關鍵修復] 舊玩家若無此欄位，給予初始值，避免觸發無限換日
         if(!gs.lastLoginDate) gs.lastLoginDate = new Date().toDateString(); 
         
-        // 轉移並銷毀舊版熱量旗標
         if (gs.unlocks.calorie_tracker !== undefined) {
             gs.unlocks.feature_cal = gs.unlocks.calorie_tracker;
             delete gs.unlocks.calorie_tracker; 
         }
     },
 
-    // --- [修復 CORE-3] 換日檢測邏輯重構 ---
     checkDailyReset: function() {
         const gs = window.GlobalState;
         if (!gs) return;
 
         const today = new Date().toDateString();
-        
-        // 如果上次登入日期 不等於 今天
+
         if (gs.lastLoginDate !== today) {
             console.log(`🌅 換日觸發！(${gs.lastLoginDate} -> ${today})`);
-            
-            // 優先發送全域換日事件，讓各個 Engine (Task, Shop) 獨立監聽處理，不再互相干擾
-            if (window.EventBus && window.EVENTS && window.EVENTS.System.DAILY_RESET) {
-                window.EventBus.emit(window.EVENTS.System.DAILY_RESET);
+
+            if (gs.lastLoginDate) {
+                const lastDate = new Date(gs.lastLoginDate);
+                const nowDate = new Date();
+                const diffTime = Math.abs(nowDate.setHours(0,0,0,0) - lastDate.setHours(0,0,0,0));
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 1) {
+                    gs.loginStreak = (gs.loginStreak || 0) + 1;
+                } else if (diffDays > 1) {
+                    gs.loginStreak = 1; 
+                }
             } else {
-                // 相容舊寫法 Fallback
-                if (window.TaskEngine && window.TaskEngine.resetDaily) window.TaskEngine.resetDaily();
+                gs.loginStreak = 1; 
             }
 
-            // 更新日期並存檔
             gs.lastLoginDate = today;
-            this.save();
+
+            if (window.EventBus && window.EVENTS && window.EVENTS.System.DAILY_RESET) {
+                window.EventBus.emit(window.EVENTS.System.DAILY_RESET);
+            }
             
-            if (window.act.toast) window.act.toast("☀️ 早安！每日狀態已刷新");
+            if (this.save) this.save();
         }
-    },
-	}; // 🚨 這裡非常關鍵！必須是 }; 來關閉整個 window.Core 物件！// --- B. 視窗管理 (Modal Router) ---
+    }
+}; // ✅ 徹底修復：在這裡乾淨地關閉 Core 物件
+
+// =========================================================
+// 2. 視窗管理與通用操作 (Modal Router & Utils)
+// =========================================================
 window.act.openModal = function(id) {
     if (id === 'settings' && window.SettingsController) {
         window.SettingsController.renderSettings();
@@ -164,7 +171,6 @@ window.act.openModal = function(id) {
     if (m) {
         m.style.display = 'flex';
         setTimeout(() => m.classList.add('active'), 10);
-        // [修復 EVENT-2] 發送 MODAL_OPEN 事件
         if(window.EventBus && window.EVENTS) {
             window.EventBus.emit(window.EVENTS.System.MODAL_OPEN, id);
         }
@@ -188,7 +194,6 @@ window.act.closeModal = function(id) {
     }
 };
 
-// --- C. 通用操作 (Utils & Bridge) ---
 window.act.save = function() {
     Core.save();
 };
@@ -210,4 +215,4 @@ window.act.showQA = function() {
     }
 };
 
-console.log("✅ Core V35 Loaded (Phase 1 Fixes Applied).");
+console.log("✅ Core V36 Loaded (Phase 1 Fixes Applied).");

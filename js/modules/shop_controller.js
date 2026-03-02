@@ -6,6 +6,15 @@ window.ShopController = {
         if (window.ShopEngine) ShopEngine.init();
         const E = window.EVENTS;
 
+        // ✅ [把這一段補回來] 監聽換日事件，強制刷新商店畫面
+        if (window.EventBus && window.EVENTS) {
+            EventBus.on(window.EVENTS.System.DAILY_RESET, () => {
+                // 如果玩家現在正看著商店，就強制重繪畫面
+                if (window.TempState.currentView === 'shop' && window.shopView) {
+                    window.shopView.render();
+                }
+            });
+        }
         Object.assign(window.act, {
             setShopFilter: (cat) => { window.TempState.shopCategory = cat; shopView.render(); },
             setBagFilter: (cat) => { window.TempState.bagCategory = cat; shopView.render(); },
@@ -121,13 +130,20 @@ window.ShopController = {
                     val = (h * 60) + m; // 存成總分鐘數
                 }
 
+                // ✅ [新增] 讀取商品類型與數量
+                const typeSelect = document.getElementById('up-type');
+                const itemType = typeSelect ? typeSelect.value : 'daily'; // 預設常駐
+                const inputQty = parseInt(document.getElementById('up-qty').value || 1);
+
                 const success = ShopEngine.uploadItem({
                     name: name,
                     price: parseInt(price),
                     desc: document.getElementById('up-desc').value,
                     category: cat,
-                    qty: parseInt(document.getElementById('up-qty').value || 1),
-                    val: val, // 儲存數值
+                    type: itemType,        // ✅ 修正 1：正確寫入「單次/常駐」
+                    maxQty: inputQty,      // ✅ 修正 2：記錄「原始最大庫存」，讓換日有依據補滿
+                    qty: inputQty,         // 這是用來扣除的當前庫存
+                    val: val, 
                     id: window.TempState.uploadEditId
                 });
 

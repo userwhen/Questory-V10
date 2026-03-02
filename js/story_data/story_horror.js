@@ -39,7 +39,7 @@
                 ] 
             },
             dialogue: [
-                { text: { zh: "【生存箱庭模式】你不該來這裡的。" } },
+                { text: { zh: "你不該來這裡的。" } },
                 { text: { zh: "在{env_weather}的夜晚，你的車拋錨在了半路。這棟廢棄的{env_building}是你唯一的避難所。" } },
                 { text: { zh: "但大門在你身後死死鎖上。黑暗中傳來了令人毛骨悚然的{env_sound}。" } },
                 { text: { zh: "你必須在這裡撐過 3 個小時，直到天亮..." } }
@@ -168,7 +168,7 @@
             reqTags: ['horror', 'is_linear_mode'],
             onEnter: { varOps: [{ key: 'tension', val: 10, op: 'set' }] },
             dialogue: [
-                { text: { zh: "【線性驚悚模式】這裡本該是你熟悉的{env_room}，但此刻看起來卻異常陌生。" } },
+                { text: { zh: "這裡本該是你熟悉的{env_room}，但此刻看起來卻異常陌生。" } },
                 { text: { zh: "{env_pack_visual}，牆角的陰影似乎比平常更深、更濃。" } },
                 { text: { zh: "你停下腳步，總覺得有某種視線正在從{env_feature}的縫隙中窺視著你。" } },
                 { speaker: "旁白", text: { zh: "（耳邊傳來一陣若有似無的竊笑聲，聽起來既像老人，又像嬰兒...）" } }

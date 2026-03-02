@@ -75,24 +75,37 @@ window.ShopEngine = {
         const gs = window.GlobalState;
         
         // 安全檢查
-        if (!gs || !gs.tasks) return;
+        if (!gs || !gs.sysShop) return; 
         
         console.log("🌅 [Shop] Received Daily Reset! Restocking...");
         
-        // 遍歷目前的 sysShop 狀態進行重置
+        // 1. 系統商品的重置
         for (let id in gs.sysShop) {
             const itemState = gs.sysShop[id];
             const proto = this.systemPrototypes.find(p => p.id === id);
             
             if (proto && proto.type === 'daily') {
-                // 常駐商品：重置庫存
                 delete gs.sysShop[id];
             } else if (proto && proto.type === 'once') {
-                // 單次商品：如果已售完，標記為永久移除
                 if (itemState.qty <= 0) {
                     itemState.removed = true; 
                 }
             }
+        }
+
+        // 2. ✅ 玩家自訂商品的重置 (你原本的檔案漏了這一段！)
+        if (gs.shop && gs.shop.user) {
+            gs.shop.user = gs.shop.user.filter(item => {
+                // 單次商品：賣光就淘汰
+                if (item.type === 'once' && item.qty <= 0) {
+                    return false; 
+                }
+                // 常駐商品：補滿庫存
+                if (item.type === 'daily') {
+                    item.qty = item.maxQty || 1;
+                }
+                return true; 
+            });
         }
         
         if (window.App && window.App.saveData) App.saveData();
@@ -237,5 +250,9 @@ window.ShopEngine = {
             if(window.App) App.saveData(); 
         }
     },
-    addGem: function(amount) { const gs = window.GlobalState; gs.paidGem = (gs.paidGem || 0) + amount; App.saveData(); }
+    addGem: function(amount) { 
+    const gs = window.GlobalState; 
+    gs.paidGem = (gs.paidGem || 0) + amount; 
+    if (window.App) App.saveData();  // ✅
+	}
 };

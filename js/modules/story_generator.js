@@ -53,17 +53,16 @@ window.StoryGenerator = {
             seeds: {
                 weather: "env_weather",       
                 atmosphere: "env_atmosphere",
-                // 🌟 箱庭推理核心種子！開局直接決定兇手與凶器
-                true_culprit: "mystery_true_culprit", 
-                murder_weapon: "mystery_murder_weapon"
+                // 🌟 核心修復：直接對接 Layer 0 和 Layer 1 的組合詞庫！
+                true_culprit: "core_identity",      // 從核心身份抽人 (如: 傲嬌寡婦)
+                murder_weapon: "combo_item_simple"  // 從物品組合抽 (如: 生鏽的匕首)
             },
             actors: [
                 { key: 'detective', pool: 'core_identity', tags: ['human', 'mystery'] },
                 { key: 'victim', pool: 'core_identity', tags: ['human', 'mystery'] },
-				{ key: 'suspect_A', pool: 'core_identity', tags: ['human', 'mystery'] },
+                { key: 'suspect_A', pool: 'core_identity', tags: ['human', 'mystery'] },
                 { key: 'suspect_B', pool: 'core_identity', tags: ['human', 'mystery'] }
             ], 
-            // 🌟 懸疑劇本強制鎖定 3 回合的調查時間
             flow: { isSequential: false, minMiddle: 3, maxMiddle: 3 }
         },
         'horror': {
@@ -170,11 +169,22 @@ window.StoryGenerator = {
                     const pick = pool[Math.floor(Math.random() * pool.length)];
                     
                     if (pick && typeof pick === 'object' && pick.val) {
-                        memory[key] = pick.val; 
                         if (pick.tag) initialTags.push(...(Array.isArray(pick.tag) ? pick.tag : [pick.tag]));
                         if (pick.tags) initialTags.push(...(Array.isArray(pick.tags) ? pick.tags : [pick.tags]));
+                        
+                        let val = pick.val.zh || pick.val;
+                        // 🌟 核心修復：開局時就把組合文法展開並「烤死 (Bake)」，存入記憶庫！
+                        // 這樣凶器就不會在這行是「匕首」，下一行變成「手槍」了。
+                        if (typeof val === 'string' && val.includes('{')) {
+                            val = this._expandGrammar(val, window.FragmentDB, memory, 0, initialTags);
+                        }
+                        memory[key] = val; 
                     } else {
-                        memory[key] = pick; 
+                        let val = pick;
+                        if (typeof val === 'string' && val.includes('{')) {
+                            val = this._expandGrammar(val, window.FragmentDB, memory, 0, initialTags);
+                        }
+                        memory[key] = val; 
                     }
                 }
             }
@@ -196,22 +206,16 @@ window.StoryGenerator = {
                             let itemTags = [];
                             if (item.tag) itemTags.push(...(Array.isArray(item.tag) ? item.tag : [item.tag]));
                             if (item.tags) itemTags.push(...(Array.isArray(item.tags) ? item.tags : [item.tags]));
-                            return requiredTags.every(t => itemTags.includes(t));
+                            // 必須包含所有需要的標籤 (例如 lover 必須要有 human 和 romance)
+                            return requiredTags.every(t => itemTags.includes(t)); 
                         });
                     }
                     if (validPool.length === 0) validPool = pool; 
 
-                    let contextualPool = validPool.filter(item => {
-                        let itemTags = [];
-                        if (item.tag) itemTags.push(...(Array.isArray(item.tag) ? item.tag : [item.tag]));
-                        if (item.tags) itemTags.push(...(Array.isArray(item.tags) ? item.tags : [item.tags]));
-                        return itemTags.some(t => initialTags.includes(t));
-                    });
-
-                    let finalPool = contextualPool.length > 0 ? contextualPool : validPool;
-                    const pick = finalPool[Math.floor(Math.random() * finalPool.length)];
+                    const pick = validPool[Math.floor(Math.random() * validPool.length)];
                     let val = pick.val.zh || pick.val;
                     
+                    // 🌟 確保前綴 (trait_prefix) 等巢狀變數被正確展開
                     if (val.includes('{')) {
                          val = this._expandGrammar(val, window.FragmentDB, memory, 0, initialTags);
                     }
@@ -219,9 +223,11 @@ window.StoryGenerator = {
                     if (pick.tag) initialTags.push(...(Array.isArray(pick.tag) ? pick.tag : [pick.tag]));
                     if (pick.tags) initialTags.push(...(Array.isArray(pick.tags) ? pick.tags : [pick.tags]));
                     
+                    // 🌟 存入 memory，讓後續的 _expandGrammar 能夠替換
                     memory[roleKey] = val; 
+                    console.log(`👤 抽出角色 [${roleKey}]: ${val}`); // 加上這行，我們可以在 Console 看到到底抽了誰
                 } else {
-                    memory[roleKey] = "???";
+                    memory[roleKey] = "神祕人";
                 }
             });
         }
@@ -289,7 +295,7 @@ window.StoryGenerator = {
     };
     
     // 將 currentStats 傳遞給 pickTemplate
-    const template = this.pickTemplate(targetType, mergedTags, chain.history, currentStats);
+    const template = this.pickTemplate(targetType, mergedTags, chain.history, currentStats, chain);
         
         const lang = gs.settings?.targetLang || 'zh';
 
@@ -423,13 +429,14 @@ window.StoryGenerator = {
                 }
                 let speakerName = (d && d.speaker) ? d.speaker : "旁白";
                 
+                // 🌟 核心修復：使用 _expandGrammar 去解析 speakerName 和 rawDiagText，
+                // 把 memory 傳進去，這樣遇到 {lover} 就會變成 "傲嬌的青梅竹馬"
                 return {
                     speaker: this._expandGrammar(speakerName, db, memory, 0, collectedTags), 
                     text: this._expandGrammar(rawDiagText, db, memory, 0, collectedTags) 
                 };
             });
         }
-
         // 3. 處理獎勵與變數
         let newRewards = tmpl.rewards ? JSON.parse(JSON.stringify(tmpl.rewards)) : undefined;
         if (newRewards && newRewards.tags) {
@@ -445,33 +452,88 @@ window.StoryGenerator = {
     },
 
     // ============================================================
-    // 修改：挑選模板 (加入數值條件判斷)
+    // 升級版：挑選模板 (模組化拆分版)
     // ============================================================
-    pickTemplate: function(type, currentTags, history, currentStats = {}) {
+    pickTemplate: function(type, currentTags, history, currentStats = {}, chain) {
         const db = window.FragmentDB;
         
-        // 🌟 1. 提前判定高危狀態 (最高優先級！)
-        let isDangerState = currentTags.includes('risk_high') || 
-                            (currentStats.tension !== undefined && currentStats.tension >= 80);
-
+        // 1. 狀態判定
+        const isDangerState = currentTags.includes('risk_high') || (currentStats.tension !== undefined && currentStats.tension >= 80);
+        const isCritical = type.includes('setup') || type.includes('climax') || type.includes('end') || type.includes('start');
+        
+        // 2. 初步篩選類型
         let candidates = db.templates.filter(t => t.type === type);
         
-        // 判斷是否為關鍵劇情 (Start, Climax, End 不受高危隨機事件干擾)
-        const isCritical = type.includes('setup') || type.includes('climax') || type.includes('end') || type.includes('start');
+        // 3. 模組化過濾流水線
+        candidates = this._filterByTheme(candidates, chain);
+        candidates = this._filterByTags(candidates, currentTags, isDangerState);
+        candidates = this._filterByStats(candidates, currentStats);
+        
+        // 4. 高危攔截與日常安全隔離
+        candidates = this._applyDangerOverride(candidates, db, isDangerState, isCritical);
+        
+        // 5. 歷史防重複過濾
+        let finalPool = this._filterByHistory(candidates, history, isCritical);
 
-        // 🌟 2. 嚴格過濾
-        let validCandidates = candidates.filter(t => {
-            // A. 排除檢查
+        // 6. 最終抽取與備案機制
+        if (finalPool.length === 0) {
+            return this._getFallbackTemplate(db, type, isCritical, history, candidates);
+        }
+
+        return finalPool[Math.floor(Math.random() * finalPool.length)];
+    },
+	// ------------------------------------------------------------
+    // 輔助函式群 (Filters)
+    // ------------------------------------------------------------
+    _filterByTheme: function(candidates, chain) {
+        // 定義系統的五大核心主題
+        const coreThemes = ['mystery', 'horror', 'adventure', 'romance', 'raising'];
+        
+        return candidates.filter(t => {
+            // 1. 通用劇本 (univ_filler) 永遠放行
+            if (t.type === 'univ_filler') return true;
+            
+            // 2. 防呆：沒有主題的主線直接放行
+            if (!chain || !chain.theme) return true;
+
+            // 3. 🌟 關鍵修復：檢查卡片本身定義的「需求標籤 (reqTags)」
+            if (t.reqTags && Array.isArray(t.reqTags)) {
+                // 看看這張卡片有沒有綁定任何核心主題
+                const cardThemes = t.reqTags.filter(tag => coreThemes.includes(tag));
+
+                if (cardThemes.length > 0) {
+                    return cardThemes.includes(chain.theme);
+                }
+            }
+            
+            // 4. 如果卡片有明確的 theme 屬性 (雙重保險)
+            if (t.theme) {
+                if (Array.isArray(t.theme)) return t.theme.includes(chain.theme);
+                return t.theme === chain.theme;
+            }
+
+            // 5. 如果都沒有明確標示，則視為中立卡片放行
+            return true;
+        });
+    },
+
+    _filterByTags: function(candidates, currentTags, isDangerState) {
+        return candidates.filter(t => {
+            // A. 排除檢查 (身上有此標籤則不抽)
             if (t.excludeTags && Array.isArray(t.excludeTags)) {
                 if (t.excludeTags.some(tag => currentTags.includes(tag))) return false;
             }
-            // B. 需求檢查
+            // B. 需求檢查 (必須有此標籤才能抽)
             if (t.reqTags && Array.isArray(t.reqTags)) {
-                // 【核心魔法】如果是高危狀態，系統會「臨時」視為玩家身上有 risk_high 標籤，以解鎖怪物劇本！
                 let tempTags = isDangerState ? [...currentTags, 'risk_high'] : currentTags;
                 if (!t.reqTags.some(tag => tempTags.includes(tag))) return false;
             }
-            // C. 數值檢查
+            return true;
+        });
+    },
+
+    _filterByStats: function(candidates, currentStats) {
+        return candidates.filter(t => {
             if (t.conditions) {
                 for (let [key, val] of Object.entries(t.conditions)) {
                     let userVal = currentStats[key] || 0;
@@ -486,48 +548,44 @@ window.StoryGenerator = {
             }
             return true;
         });
+    },
 
-        // 🌟 3. 強制高危攔截 (截胡機制)
+    _applyDangerOverride: function(candidates, db, isDangerState, isCritical) {
         if (isDangerState && !isCritical) {
             // 嘗試從當前候選中找出高危劇本
-            let dangerOnly = validCandidates.filter(t => t.reqTags && t.reqTags.includes('risk_high'));
+            let dangerOnly = candidates.filter(t => t.reqTags && t.reqTags.includes('risk_high'));
             
-            // 💀 如果當前進度 (例如 mystery_mid) 沒有寫專屬的高危劇本，
-            // 系統會「跨維度」直接去 univ_filler 裡把怪物拖出來打你！
+            // 💀 如果當前進度沒有專屬高危劇本，跨維度去 univ_filler 抓
             if (dangerOnly.length === 0) {
                  dangerOnly = db.templates.filter(t => t.type === 'univ_filler' && t.reqTags && t.reqTags.includes('risk_high'));
             }
             
             if (dangerOnly.length > 0) {
-                validCandidates = dangerOnly;
                 console.log("🚨 玩家狀態不穩，強制鎖定 [高危牌庫]！");
+                return dangerOnly;
             }
         } else if (!isCritical) {
-            // 🕊️ 安全狀態：強制把會嚇人的劇本全部濾掉，保證日常體驗
-            validCandidates = validCandidates.filter(t => !(t.reqTags && t.reqTags.includes('risk_high')));
+            // 🕊️ 安全狀態：強制把會嚇人的劇本全部濾掉
+            return candidates.filter(t => !(t.reqTags && t.reqTags.includes('risk_high')));
         }
+        return candidates;
+    },
 
-        // 4. 歷史過濾 (不重複體驗)
-        let historyFiltered = validCandidates.filter(t => !t.id || !history.includes(t.id));
+    _filterByHistory: function(candidates, history, isCritical) {
+        let historyFiltered = candidates.filter(t => !t.id || !history.includes(t.id));
+        return historyFiltered.length > 0 ? historyFiltered : (isCritical ? candidates : []);
+    },
+
+    _getFallbackTemplate: function(db, type, isCritical, history, originalCandidates) {
+        console.warn(`⚠️ [${type}] 無可用劇本，啟動備案...`);
+        if (isCritical && originalCandidates.length > 0) return originalCandidates[0];
         
-        // 決定最終牌池
-        let finalPool = historyFiltered.length > 0 ? historyFiltered : (isCritical ? validCandidates : []);
-
-        // 5. 救命機制 (如果真的沒牌了)
-        if (finalPool.length === 0) {
-            console.warn(`⚠️ [${type}] 無可用劇本，啟動備案...`);
-            if (isCritical && candidates.length > 0) return candidates[0];
-            
-            // 抽一張絕對安全的通用劇本來頂替
-            let safeFillers = db.templates.filter(t => t.type === 'univ_filler' && !history.includes(t.id) && !(t.reqTags && t.reqTags.includes('risk_high')));
-            if (safeFillers.length > 0) return safeFillers[Math.floor(Math.random() * safeFillers.length)];
-            
-            // 最終防呆
-            return db.templates.find(t => t.type === 'univ_filler'); 
-        }
-
-        // 6. 最終抽取
-        return finalPool[Math.floor(Math.random() * finalPool.length)];
+        // 抽一張絕對安全的通用劇本來頂替
+        let safeFillers = db.templates.filter(t => t.type === 'univ_filler' && !history.includes(t.id) && !(t.reqTags && t.reqTags.includes('risk_high')));
+        if (safeFillers.length > 0) return safeFillers[Math.floor(Math.random() * safeFillers.length)];
+        
+        // 最終防呆
+        return db.templates.find(t => t.type === 'univ_filler'); 
     },
 
     generateOptions: function(tmpl, fragments, lang, type, currentTags = [], currentStats = {}) {

@@ -31,12 +31,31 @@ window.MapManager = {
         } else if (!roomName) {
             roomName = "未知房間";
         }
-        return { id: 'room_' + Date.now() + Math.floor(Math.random() * 1000), name: roomName };
+        // 使用 crypto.randomUUID 確保絕對不碰撞
+        let uuid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'room_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+        return { id: uuid, name: roomName };
     },
-
+	
     injectMapOptions: function(baseOptions) {
         let newOptions = [...baseOptions]; 
-        newOptions.push({ label: "🚪 推開未知的門 (探索新房間)", action: "map_explore_new", style: "primary" });
+        
+        // 🌟 動態判斷按鈕名稱與圖示
+        let actionLabel = "探索未知";
+        let actionIcon = "🚪";
+        
+        // 安全地取得當前主題
+        const currentTheme = window.GlobalState && window.GlobalState.story && window.GlobalState.story.chain 
+                             ? window.GlobalState.story.chain.theme : null;
+
+        if (currentTheme === 'mystery') { actionLabel = "前往下一個地點"; actionIcon = "🔎"; }
+        else if (currentTheme === 'horror') { actionLabel = "推開未知的門"; actionIcon = "🚪"; }
+        else if (currentTheme === 'adventure') { actionLabel = "深入未知區域"; actionIcon = "⚔️"; }
+        else if (currentTheme === 'romance') { actionLabel = "轉換場景"; actionIcon = "☕"; }
+        else if (currentTheme === 'raising') { actionLabel = "推進排程"; actionIcon = "📅"; }
+
+        // 將動態文字注入按鈕
+        newOptions.push({ label: `${actionIcon} ${actionLabel}`, action: "map_explore_new", style: "primary" });
+        
         this.map.forEach(room => {
             if (room.id !== this.currentRoom.id) {
                 newOptions.push({ label: `🔙 退回 [${room.name}]`, action: "map_move_to", targetId: room.id });
@@ -281,21 +300,34 @@ window.StoryEngine = {
             let transitionText = window.MapManager.handleMapAction(opt.action, opt.targetId);
             if (window.storyView && storyView.updateTopBar) storyView.updateTopBar(); 
             
-            const actionLabel = opt.action === "map_explore_new" ? "推開新門" : "原路折返";
+            // 🌟 動態判斷動作名稱 (根據當前主線的主題)
+            let actionLabel = "探索未知";
+            let actionIcon = "🗺️";
+            const currentTheme = window.GlobalState.story.chain.theme;
+            
+            if (opt.action === "map_explore_new") {
+                if (currentTheme === 'mystery') { actionLabel = "前往下一個地點"; actionIcon = "🔎"; }
+                else if (currentTheme === 'horror') { actionLabel = "推開未知的門"; actionIcon = "🚪"; }
+                else if (currentTheme === 'adventure') { actionLabel = "深入未知區域"; actionIcon = "⚔️"; }
+                else if (currentTheme === 'romance') { actionLabel = "轉換場景"; actionIcon = "☕"; }
+                else if (currentTheme === 'raising') { actionLabel = "推進排程"; actionIcon = "📅"; }
+            } else {
+                actionLabel = "原路折返";
+                actionIcon = "🔙";
+            }
+
             const roomName = window.MapManager.currentRoom.name;
-            const pathStr = window.MapManager.map.map(r => r.id === window.MapManager.currentRoom.id ? `📍[${r.name}]` : `🚪[${r.name}]`).join(" ─ ");
+            const pathStr = window.MapManager.map.map(r => r.id === window.MapManager.currentRoom.id ? `📍[${r.name}]` : `[${r.name}]`).join(" ─ ");
             
             const inlineHtml = 
-			`<span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.95rem;">🗺️ 探索 (${actionLabel})........ </span><span style="font-weight:bold; color:var(--color-info); font-size: 0.95rem;">來到了 [${roomName}]</span><br><span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.85rem;">📍 路徑: ${pathStr}</span><br><br>`;	
+			`<span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.95rem;">${actionIcon} ${actionLabel}........ </span><span style="font-weight:bold; color:var(--color-info); font-size: 0.95rem;">來到了 [${roomName}]</span><br><span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.85rem;">📍 路徑: ${pathStr}</span><br><br>`;
+            
             window.TempState.deferredHtml = (window.TempState.deferredHtml || "") + inlineHtml;
 
-            // 🌟 移除預兆爆發邏輯，直接推進劇本 (危險交給 Tension 系統處理)
             this.advanceChain(); 
-            
             if(window.App) App.saveData();
             return;
         }
-        
         if (opt.action === 'answer_quiz') {
             this.handleQuizResult(opt.wordId, opt.isCorrect);
             this.finishChain();
@@ -905,8 +937,17 @@ window.StoryEngine = {
         console.log("OPTS:", options);
     },
 
-    _shuffle: function(arr) { return arr.sort(() => Math.random() - 0.5); },
-
+    _shuffle: function(arr) { 
+        // 標準 Fisher-Yates 洗牌演算法 (解決機率不均問題)
+        let currentIndex = arr.length, randomIndex;
+        while (currentIndex > 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [arr[currentIndex], arr[randomIndex]] = [arr[randomIndex], arr[currentIndex]];
+        }
+        return arr;
+    },
+	
     findSceneById: function(id) {
         if (!window.StoryData.sceneMap) this.loadDatabase();
         return window.StoryData.sceneMap[id] || null;

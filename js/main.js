@@ -1,41 +1,48 @@
-/* js/main.js - V39.2 System Bootloader (UI Manager & Lobby Fix) */
+/* js/main.js - V40.0 System Bootloader (Phase 1 Fix) */
 /* 負責：系統初始化順序、全域 UI 管理、錯誤攔截、相容性接口 */
-    // =========================================================================
-    // 1. 系統啟動 (Boot Sequence)
-    // =========================================================================
-	window.App = {
+
+// =========================================================================
+// 1. 系統啟動 (Boot Sequence)
+// =========================================================================
+window.App = {
     boot: function() {
+        // [V43 優化] 統一初始化 TempState，放在最前面確保全站狀態安全
+        window.TempState = window.TempState || {};
+        Object.assign(window.TempState, {
+            currentView: 'main',
+            taskTab: 'list',
+            statsTab: 'attr',
+            shopCategory: '全部',
+            bagCategory: '全部',
+            isTagDrawerOpen: false,
+            isBagOpen: false,
+            editingTask: null,
+            editingAch: null
+        });
+
         console.log("🔌 [App] System Booting...");
 
-        // ============================================================
-        // 1. 【絕對優先】啟動 Core 並讀取存檔
-        // ============================================================
-        // 只有先讀檔，GlobalState 才有資料，後續的 Controller/Engine 才不會把空資料存進去
+        // 1. 啟動 Core
         if (window.Core) {
             window.Core.init(); 
         } else {
             console.error("❌ [Fatal] Core 未載入，系統無法啟動");
-            return; // Core 沒活，後面都不用跑了
+            return;
         }
 
-        // ============================================================
         // 2. 啟動基礎引擎 (Engines)
-        // ============================================================
-        // 建議先啟動引擎，確保邏輯層就緒，再啟動 UI 控制器
-        if (window.TaskEngine) window.TaskEngine.init();
-        if (window.AchEngine) window.AchEngine.init();
-        if (window.StatsEngine) window.StatsEngine.init();
-        // ShopEngine 通常由 Controller 帶起，但如果這裡先跑也沒關係，因為 Core 已經 ready 了
+        if (window.TaskEngine) TaskEngine.init();
+        if (window.AchEngine) AchEngine.init();
+        if (window.StatsEngine) StatsEngine.init();
+        if (window.ShopEngine) ShopEngine.init(); 
 
-        // ============================================================
         // 3. 啟動 UI 控制器 (Controllers)
-        // ============================================================
         const controllers = [
             window.MainController,    
             window.TaskController, 
             window.StatsController, 
             window.AchController, 
-            window.ShopController, // 它會呼叫 ShopEngine，現在安全了，因為 Core 已經有資料
+            window.ShopController, 
             window.AvatarController, 
             window.StoryController, 
             window.SettingsController,
@@ -44,36 +51,25 @@
         
         controllers.forEach(ctrl => { 
             if (ctrl && ctrl.init) {
-                try {
-                    ctrl.init(); 
-                } catch(e) {
-                    console.error(`❌ 控制器初始化失敗: ${ctrl}`, e);
-                }
+                try { ctrl.init(); } catch(e) { console.error(`❌ 控制器初始化失敗:`, e); }
             }
         });
 
-        // ============================================================
-        // 4. 啟動導航 (Navigation)
-        // ============================================================
+        // 4. 所有人就緒！正式觸發換日檢查
+        if (window.Core && window.Core.checkDailyReset) {
+            window.Core.checkDailyReset();
+        }
+
+        // 5. 啟動導航
         setTimeout(() => {
             if (window.act && window.act.navigate) {
                 console.log("🚀 Launching App UI...");
                 if (window.Router) window.Router.init();
-                
-                // 讀取上次最後所在的頁面，如果沒有則回首頁
-                // (你可以之後再實作記住最後頁面的功能，現在先回 main)
                 window.act.navigate('main');
-            } else {
-                console.error("❌ Router/Nav 未就緒");
             }
         }, 100);
-        
-        console.log("🚀 [App] System Booted Successfully.");
     },
 
-    // =========================================================================
-    // [兼容接口] Shop 重構後可移除
-    // =========================================================================
     saveData: function() {
         if (window.Core && window.Core.save) {
             window.Core.save();
@@ -83,11 +79,8 @@
                 try {
                     const json = JSON.stringify(window.GlobalState);
                     const encoded = btoa(unescape(encodeURIComponent(json)));
-                    // [修復 CORE-2] 將原本未定義的 SAVE_KEY 改為具體字串，避免 Crash
                     localStorage.setItem('Levelife_Save_V1', encoded);
-                } catch(e) {
-                    // ignore
-                }
+                } catch(e) {}
             }
         }
     },
@@ -96,6 +89,17 @@
         if (window.Core && window.Core.resetData) window.Core.resetData();
     }
 };
+// [V43 優化] 統一初始化 TempState，確保全站狀態安全
+        window.TempState = window.TempState || {};
+        Object.assign(window.TempState, {
+            currentView: 'main',
+            taskTab: 'list',
+            statsTab: 'attr',
+            shopCategory: '全部',
+            bagCategory: '全部',
+            isTagDrawerOpen: false,
+            isBagOpen: false
+        });
 
 // =============================================================================
 // 2. 主控制器 (Main Controller) - [HUD/Navbar 管理員]
@@ -104,40 +108,30 @@ window.MainController = {
     init: function() {
         if (!window.EventBus) return;
 
-        // 監聽導航：負責全域 UI 的持續渲染
         window.EventBus.on(window.EVENTS.System.NAVIGATE, (pageId) => {
-            
-            // 1. 強制渲染 HUD 與 Navbar
             if (window.view) {
                 const isFullScreen = ['story', 'avatar'].includes(pageId);
-                
-                // [優化] 如果是 Basic 模式，可以選擇不渲染 Navbar 的 Home 按鈕
-                // 但有了上面的攔截器，就算按了也不會壞，這樣比較保險
                 if (view.initHUD) view.initHUD(window.GlobalState);
                 if (view.renderNavbar && !isFullScreen) view.renderNavbar();
             }
-
-            // 2. 渲染頁面內容
             if (pageId === 'main') {
                 if (window.view && view.renderMain) view.renderMain();
             }
         });
 
-        // 監聽數值變更
         window.EventBus.on(window.EVENTS.Stats.UPDATED, () => {
             if (window.view && view.updateHUD) {
                 view.updateHUD(window.GlobalState);
             }
         });
         
-        console.log("✅ MainController Active (With Basic Mode Guard)");
+        console.log("✅ MainController Active");
     }
 };
 
 // =============================================================================
 // 3. 系統視窗攔截 (System Interceptors)
 // =============================================================================
-
 window.sys = {
     confirm: (msg, onConfirm, onCancel) => {
         if (window.view && view.renderSystemModal) {
