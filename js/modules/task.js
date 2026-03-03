@@ -1,10 +1,12 @@
 /* js/modules/task.js - V42.1 Fixed (Daily Reset Interface) */
-window.TaskEngine = {
+window.SQ = window.SQ || {};
+window.SQ.Engine = window.SQ.Engine || {};
+window.SQ.Engine.Task = {
     // 1. 初始化
     init: function() {
 		if (this._initialized) return;
         this._initialized = true;
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if (!gs) return; // 現在 main.js 順序對了，這裡就不會被擋下
 
         if (!gs.tasks) gs.tasks = [];
@@ -15,14 +17,14 @@ window.TaskEngine = {
         // 注意：這裡不再執行重置檢查，改由 Core 統一呼叫 resetDaily
         
         // ✅ [Bug 1 修復] 訂閱換日事件，確保跨日或啟動時正確觸發重置
-        if (window.EventBus && window.EVENTS) {
-            window.EventBus.on(window.EVENTS.System.DAILY_RESET, () => this.resetDaily());
+        if (window.SQ.EventBus && window.SQ.Events) {
+            window.SQ.EventBus.on(window.SQ.Events.System.DAILY_RESET, () => this.resetDaily());
         }
     },
 
     // [新增] 2. 每日重置接口 (供 Core.js 呼叫)
     resetDaily: function() {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if (!gs || !gs.tasks) return;
 
         console.log("📅 [TaskEngine] 執行每日重置...");
@@ -56,14 +58,14 @@ window.TaskEngine = {
         }
         
         // 儲存變更
-        this._saveAndNotify(window.EVENTS.Task.UPDATED);
+        this._saveAndNotify(window.SQ.Events.Task.UPDATED);
     },
 
     // =========================================
     // 2. 讀取與排序
     // =========================================
     getSortedTasks: function(categoryFilter) {
-        const tasks = window.GlobalState.tasks || [];
+        const tasks = window.SQ.State.tasks || [];
         const now = new Date();
         const todayStr = now.toDateString();
 
@@ -97,7 +99,7 @@ window.TaskEngine = {
     // 3. 核心 CRUD
     // =========================================
     addTask: function(temp) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const newTask = { 
             id: 't_' + Date.now(), 
             createDate: Date.now(), 
@@ -123,11 +125,11 @@ window.TaskEngine = {
         });
 
         gs.tasks.unshift(newTask);
-        this._saveAndNotify(window.EVENTS.Task.CREATED, newTask);
+        this._saveAndNotify(window.SQ.Events.Task.CREATED, newTask);
     },
 
     updateTask: function(temp) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const task = gs.tasks.find(t => t.id === temp.id);
         if (task) {
             task.title = temp.title;
@@ -145,21 +147,21 @@ window.TaskEngine = {
             task.recurrence = temp.recurrence;
             task.subRule = temp.subRule;
 
-            this._saveAndNotify(window.EVENTS.Task.UPDATED, task);
+            this._saveAndNotify(window.SQ.Events.Task.UPDATED, task);
         }
     },
 
     deleteTask: function(id) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         gs.tasks = gs.tasks.filter(t => t.id !== id);
-        this._saveAndNotify(window.EVENTS.Task.DELETED, { id });
+        this._saveAndNotify(window.SQ.Events.Task.DELETED, { id });
     },
 
     // =========================================
     // 4. 業務邏輯 (完成/取消)
     // =========================================
     resolveTask: function(taskId) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const task = gs.tasks.find(t => t.id === taskId);
         if (!task) return;
 
@@ -168,10 +170,10 @@ window.TaskEngine = {
             const doneCount = task.subs.filter(s => s.done).length;
             const rule = task.subRule || 'all';
             if (rule === 'all' && doneCount < task.subs.length) { 
-                return window.EventBus.emit(window.EVENTS.System.TOAST, "🔒 請先完成所有步驟"); 
+                return window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, "🔒 請先完成所有步驟"); 
             }
             if (rule === 'any' && doneCount === 0) { 
-                return window.EventBus.emit(window.EVENTS.System.TOAST, "🔒 請至少完成一個步驟"); 
+                return window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, "🔒 請至少完成一個步驟"); 
             }
         }
 
@@ -199,8 +201,8 @@ window.TaskEngine = {
             gs.gold = (gs.gold || 0) + rewards.gold;
             
             // [關鍵修復] 直接呼叫 StatsEngine 增加經驗值並確保觸發升級
-            if (window.StatsEngine && StatsEngine.addPlayerExp) {
-                StatsEngine.addPlayerExp(rewards.exp);
+            if (window.SQ.Engine.Stats && window.SQ.Engine.Stats.addPlayerExp) {
+                window.SQ.Engine.Stats.addPlayerExp(rewards.exp);
             } else {
                 gs.exp = (gs.exp || 0) + rewards.exp; // 備用方案
             }
@@ -218,9 +220,13 @@ window.TaskEngine = {
             const historyEntry = JSON.parse(JSON.stringify(task));
             historyEntry.doneImpact = impact; 
             gs.history.push(historyEntry);
-
-            window.EventBus.emit(window.EVENTS.Task.COMPLETED, { task: task, impact: impact, gained: rewards });
-            window.EventBus.emit(window.EVENTS.System.TOAST, `完成！+${rewards.gold}💰 +${rewards.exp}✨`);
+			// [Fix] 關鍵修復：防止存檔隨著時間膨脹
+				// 500 筆紀錄大約佔用數十 KB，足以應付絕大多數玩家查閱，且保證存檔穩定
+				if (gs.history.length > 500) {
+					gs.history.shift(); 
+				}
+            window.SQ.EventBus.emit(window.SQ.Events.Task.COMPLETED, { task: task, impact: impact, gained: rewards });
+            window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, `完成！+${rewards.gold}💰 +${rewards.exp}✨`);
 
         } else {
             // ==========================================
@@ -241,8 +247,8 @@ window.TaskEngine = {
                 }
 
                 // 經驗回收
-                if(window.StatsEngine && StatsEngine.reducePlayerExp) {
-                    StatsEngine.reducePlayerExp(r.exp, isStrict);
+                if(window.SQ.Engine.Stats && window.SQ.Engine.Stats.reducePlayerExp) {
+                    window.SQ.Engine.Stats.reducePlayerExp(r.exp, isStrict);
                 } else {
                     gs.exp = Math.max(0, gs.exp - r.exp);
                 }
@@ -262,25 +268,25 @@ window.TaskEngine = {
                     if (hIdx !== -1) gs.history.splice(hIdx, 1);
                 }
 
-                window.EventBus.emit(window.EVENTS.System.TOAST, isStrict ? "已撤銷 (⚠️ 獎勵全數回收)" : "已撤銷");
+                window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, isStrict ? "已撤銷 (⚠️ 獎勵全數回收)" : "已撤銷");
                 task.lastReward = null;
             }
             
             // [關鍵修復] 正確發送 UNCOMPLETED 事件，不再發錯成 COMPLETED
-            window.EventBus.emit(window.EVENTS.Task.UNCOMPLETED, { task: task, impact: impact });
+            window.SQ.EventBus.emit(window.SQ.Events.Task.UNCOMPLETED, { task: task, impact: impact });
         }
 
         // 統一存檔與 UI 更新
         if (window.App && window.App.saveData) App.saveData(); 
         
-        if (window.EventBus) {
-            window.EventBus.emit(window.EVENTS.Stats.UPDATED);
-            window.EventBus.emit(window.EVENTS.Task.UPDATED);
+        if (window.SQ.EventBus) {
+            window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
+            window.SQ.EventBus.emit(window.SQ.Events.Task.UPDATED);
         }
     },
 
     incrementTask: function(id) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const t = gs.tasks.find(x => x.id === id);
         if (!t || t.done || t.type !== 'count') return;
         t.curr = (t.curr || 0) + 1;
@@ -288,16 +294,16 @@ window.TaskEngine = {
             t.curr = t.target;
             this.resolveTask(id);
         } else {
-            this._saveAndNotify(window.EVENTS.Task.UPDATED, t);
+            this._saveAndNotify(window.SQ.Events.Task.UPDATED, t);
         }
     },
 
     toggleSubtask: function(taskId, subIdx) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const task = gs.tasks.find(t => t.id === taskId);
         if (task && task.subs && task.subs[subIdx]) {
             task.subs[subIdx].done = !task.subs[subIdx].done;
-            this._saveAndNotify(window.EVENTS.Task.UPDATED, task);
+            this._saveAndNotify(window.SQ.Events.Task.UPDATED, task);
         }
     },
 
@@ -305,7 +311,7 @@ window.TaskEngine = {
     // 5. 數據聚合 (History Summary)
     // =========================================
     getHistorySummary: function() {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const history = gs.history || [];
         const dailyMap = {};
 
@@ -383,6 +389,6 @@ window.TaskEngine = {
 
     _saveAndNotify: function(event, data) {
         if (window.App && window.App.saveData) App.saveData();
-        if (window.EventBus) window.EventBus.emit(event, data);
+        if (window.SQ.EventBus) window.SQ.EventBus.emit(event, data);
     }
 };

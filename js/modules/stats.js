@@ -1,10 +1,12 @@
 /* js/modules/stats.js - V42.0 XP Logic Fix */
-window.StatsEngine = {
+window.SQ = window.SQ || {};
+window.SQ.Engine = window.SQ.Engine || {};
+window.SQ.Engine.Stats = {
     // =========================================
     // 1. 初始化
     // =========================================
     init: function() {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if (!gs) return;
 
         const defaults = {
@@ -66,7 +68,7 @@ window.StatsEngine = {
     // 3. 數值計算 Helper
     // =========================================
 	addPlayerExp: function(amount) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if (!gs) return;
         
         gs.exp = (gs.exp || 0) + amount;
@@ -75,7 +77,7 @@ window.StatsEngine = {
     },
 	
     checkLevelUp: function() {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if (!gs) return;
 
         let leveledUp = false;
@@ -87,19 +89,19 @@ window.StatsEngine = {
             gs.lv++;
             leveledUp = true;
             
-            if(window.EventBus) {
-                window.EventBus.emit(window.EVENTS.System.TOAST, `🆙 玩家等級提升！Lv.${gs.lv}`);
+            if(window.SQ.EventBus) {
+                window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, `🆙 玩家等級提升！Lv.${gs.lv}`);
             }
         }
 
-        if (leveledUp && window.EventBus) {
-            window.EventBus.emit(window.EVENTS.Stats.LEVEL_UP);
+        if (leveledUp && window.SQ.EventBus) {
+            window.SQ.EventBus.emit(window.SQ.Events.Stats.LEVEL_UP);
         }
     },
 
     // [新增] 玩家經驗倒扣與降級邏輯 (供 TaskEngine 呼叫)
     reducePlayerExp: function(amount, isStrict) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         
         // 先直接扣除
         gs.exp -= amount;
@@ -111,8 +113,8 @@ window.StatsEngine = {
                 gs.lv--;
                 gs.exp += (gs.lv * 100); // 補回上一級的經驗池
                 
-                if(window.EventBus) {
-                    window.EventBus.emit(window.EVENTS.System.TOAST, `📉 經驗回收... 等級降回 Lv.${gs.lv}`);
+                if(window.SQ.EventBus) {
+                    window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, `📉 經驗回收... 等級降回 Lv.${gs.lv}`);
                 }
             }
             // 最低底限：Lv.1 0 exp (不能變成 Lv.0 或 Lv.1 的負經驗)
@@ -130,7 +132,7 @@ window.StatsEngine = {
     },
 
     addSkillProficiency: function(name, amount = 1) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const skillIndex = gs.skills.findIndex(s => s.name === name);
         
         if (skillIndex > -1) {
@@ -145,12 +147,12 @@ window.StatsEngine = {
             if (skill.exp >= max) {
                 skill.exp = 0;
                 skill.lv++;
-                if(window.EventBus) window.EventBus.emit(window.EVENTS.System.TOAST, `💡 技能 [${skill.name}] 升至 Lv.${skill.lv}`);
+                if(window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, `💡 技能 [${skill.name}] 升至 Lv.${skill.lv}`);
                 
                 if (skill.lv >= 10 && !skill.isMaxed) {
                     skill.isMaxed = true;
-                    if(window.EventBus && window.EVENTS.Stats.SKILL_MAXED) {
-                        window.EventBus.emit(window.EVENTS.Stats.SKILL_MAXED, skill);
+                    if(window.SQ.EventBus && window.SQ.Events.Stats.SKILL_MAXED) {
+                        window.SQ.EventBus.emit(window.SQ.Events.Stats.SKILL_MAXED, skill);
                     }
                     this.archiveSkill(skill.name);
                 }
@@ -167,7 +169,7 @@ window.StatsEngine = {
 
     // [內部] 增加屬性經驗並檢查升級
     _addAttributeExp: function(attrKey, amount) {
-    const gs = window.GlobalState;
+    const gs = window.SQ.State;
     const attr = gs.attrs[attrKey];
     if (!attr) return;
 
@@ -180,7 +182,7 @@ window.StatsEngine = {
     while (attr.exp >= nextLevelCap) {
         attr.exp -= nextLevelCap;
         attr.v++;
-        if(window.EventBus) window.EventBus.emit(window.EVENTS.System.TOAST, `🎉 ${attr.name} 提升至 Lv.${attr.v}`);
+        if(window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, `🎉 ${attr.name} 提升至 Lv.${attr.v}`);
         
         // 更新下一級門檻
         nextLevelCap = attr.v * 100;
@@ -189,7 +191,7 @@ window.StatsEngine = {
 
     // [關鍵修改] 減少技能經驗 -> 同步減少主屬性經驗
     _reduceSkillProficiency: function(name, amount) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const skill = gs.skills.find(s => s.name === name);
         
         if (skill) {
@@ -214,7 +216,7 @@ window.StatsEngine = {
     },
 
     _reduceAttributeExp: function(attrKey, amount) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const attr = gs.attrs[attrKey];
         if (!attr) return;
 
@@ -228,7 +230,7 @@ window.StatsEngine = {
     },
 
     archiveSkill: function(skillName) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const idx = gs.skills.findIndex(s => s.name === skillName);
         
         if (idx !== -1) {
@@ -236,7 +238,7 @@ window.StatsEngine = {
             gs.skills.splice(idx, 1);
             gs.archivedSkills.push(skill);
             
-            if(window.act.alert) window.act.alert(`🎉 恭喜！技能 [${skill.name}] 已達到大師級！\n它將被移至榮譽殿堂。`);
+            if(window.SQ.Actions.alert) window.SQ.Actions.alert(`🎉 恭喜！技能 [${skill.name}] 已達到大師級！\n它將被移至榮譽殿堂。`);
             this._saveAndNotify();
         }
     },
@@ -245,7 +247,7 @@ window.StatsEngine = {
     // 4. 管理與其他 (CRUD)
     // =========================================
     saveSkill: function(name, parentAttr, editId = null) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const exists = gs.skills.find(s => s.name === name && s.name !== editId);
         if (exists) return { success: false, msg: "技能名稱重複" };
 
@@ -271,7 +273,7 @@ window.StatsEngine = {
     },
 
     deleteSkill: function(name) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         gs.skills = gs.skills.filter(s => s.name !== name);
         gs.tasks.forEach(t => {
             if (t.attrs && t.attrs.includes(name)) {
@@ -283,7 +285,7 @@ window.StatsEngine = {
 
     // 嚴格模式懲罰 (仍保留)
     deductExp: function(totalExp, skillNames) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         // 1. 檢查變數 (新版 DLC 變數 + 設定開關)
         const isStrict = gs.unlocks && gs.unlocks.feature_strict && gs.settings.strictMode;
         if (!isStrict) return;
@@ -302,6 +304,6 @@ window.StatsEngine = {
 
     _saveAndNotify: function() {
         if (window.App && window.App.saveData) App.saveData();
-        if (window.EventBus) window.EventBus.emit(window.EVENTS.Stats.UPDATED);
+        if (window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
     }
 };

@@ -1,11 +1,13 @@
-/* js/modules/ach_view.js - V43.0 Pure Architecture Upgrade */
-window.achView = {
+/* js/modules/ach_view.js - V51.3 Full Features + Pure CSP */
+window.SQ = window.SQ || {};
+window.SQ.View = window.SQ.View || {};
+window.SQ.View.Ach = {
     // =========================================
     // 1. 成就列表渲染 (List Render)
     // =========================================
     renderList: function() {
-        const achs = AchEngine.getSortedAchievements();
-        const currentAchCat = window.TempState.achFilter || '全部';
+        const achs = window.SQ.Engine.Ach.getSortedAchievements();
+        const currentAchCat = window.SQ.Temp.achFilter || '全部';
         const achCats = ['全部', '每日', '里程碑', '官方'];
         
         const displayAchs = achs.filter(a => {
@@ -16,14 +18,13 @@ window.achView = {
             return true;
         });
 
-        // [V43] 替換舊版 filterBar，改用 pure layout + atom 組合
         const filterBtnsHtml = achCats.map(opt => {
             const isActive = currentAchCat === opt;
             return ui.atom.buttonBase({
                 label: opt,
                 theme: isActive ? 'normal' : 'ghost',
                 style: 'flex-shrink:0; border-radius:50px; padding:4px 12px;',
-                action: `act.setAchFilter('${opt}')`
+                action: 'setAchFilter', actionVal: opt
             });
         }).join('');
 
@@ -33,7 +34,7 @@ window.achView = {
                     <div class="u-scroll-list" style="-webkit-overflow-scrolling:touch;">${filterBtnsHtml}</div>
                 </div>
                 <div style="flex-shrink:0;">
-                    ${ui.atom.buttonBase({ label:'🏆 殿堂', theme:'normal', size:'sm', action:"act.navigate('milestone')" })}
+                    ${ui.atom.buttonBase({ label:'🏆 殿堂', theme:'normal', size:'sm', action:'navigate', actionVal:'milestone' })}
                 </div>
             </div>`;
 
@@ -41,7 +42,6 @@ window.achView = {
         if (displayAchs.length === 0) {
             achListItems = `<div class="ui-empty"><div class="ui-empty-icon">🏅</div>暫無成就</div>`;
         } else {
-            // [V43] 完全捨棄舊版 ui.card.row 與 ui.progress，改用純淨 HTML 結構
             achListItems = displayAchs.map(a => {
                 const isCheckIn = a.type === 'check_in';
                 const isReady = isCheckIn ? !a.done : (a.curr >= a.target); 
@@ -50,10 +50,10 @@ window.achView = {
                 if (isCheckIn) {
                     btnHtml = a.done 
                         ? ui.atom.buttonBase({ label:'已簽到', disabled:true, size:'sm' })
-                        : ui.atom.buttonBase({ label:'簽到', theme:'correct', size:'sm', action:`event.stopPropagation(); act.checkInAch('${a.id}')` });
+                        : ui.atom.buttonBase({ label:'簽到', theme:'correct', size:'sm', action:'checkInAch', actionId: a.id, stop:true });
                 } else {
                     btnHtml = isReady 
-                        ? ui.atom.buttonBase({ label:'🎁 領取', theme:'paper', size:'sm', action:`event.stopPropagation(); act.claimReward('${a.id}')` })
+                        ? ui.atom.buttonBase({ label:'🎁 領取', theme:'paper', size:'sm', action:'claimReward', actionId: a.id, stop:true })
                         : ui.atom.buttonBase({ label:'未完成', disabled:true, size:'sm', theme:'ghost' });
                 }
                 
@@ -70,7 +70,7 @@ window.achView = {
                 const borderColor = isReady ? 'var(--color-correct)' : 'var(--border)';
 
                 return `
-                <div class="std-card" onclick="act.editAch('${a.id}')" style="flex-direction:row; justify-content:space-between; border-left-color:${borderColor}; margin-bottom:10px; cursor:pointer;">
+                <div class="std-card" data-action="editAch" data-id="${a.id}" style="flex-direction:row; justify-content:space-between; border-left-color:${borderColor}; margin-bottom:10px; cursor:pointer;">
                     <div class="card-icon" style="font-size:2rem; margin-right:12px;">${icon}</div>
                     <div class="card-col-center" style="flex:1; min-width:0;">
                         <div style="font-weight:bold; font-size:1rem; color:var(--text); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.title}</div>
@@ -80,7 +80,7 @@ window.achView = {
                         </div>
                         ${progressHtml}
                     </div>
-                    <div style="flex-shrink:0; margin-left:10px;" onclick="event.stopPropagation();">${btnHtml}</div>
+                    <div style="flex-shrink:0; margin-left:10px;">${btnHtml}</div>
                 </div>`;
             }).join('');
         }
@@ -92,28 +92,27 @@ window.achView = {
     // 2. 編輯表單 (Edit Form)
     // =========================================
     renderCreateAchForm: function(achId = null) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const achs = gs ? (gs.milestones || []) : []; 
-        const ach = achId ? achs.find(a => a.id === achId) : null;
-        const isEdit = !!achId;
+        const ach = achId && achId !== 'null' ? achs.find(a => a.id === achId) : null;
+        const isEdit = !!ach;
 
-        window.TempState = window.TempState || {};
-        if (!window.TempState.editingAch || window.TempState.editingAch.id !== achId) {
-            window.TempState.editingAch = ach ? JSON.parse(JSON.stringify(ach)) : { id: null, title: '', targetType: 'tag', targetValue: '每日', tier: 'C' };
+        window.SQ.Temp = window.SQ.Temp || {};
+        if (!window.SQ.Temp.editingAch || window.SQ.Temp.editingAch.id !== achId) {
+            window.SQ.Temp.editingAch = ach ? JSON.parse(JSON.stringify(ach)) : { id: null, title: '', targetType: 'tag', targetValue: '每日', tier: 'C' };
         }
-        const data = window.TempState.editingAch;
+        const data = window.SQ.Temp.editingAch;
 
-        // [V43] 全面改用 ui.atom.inputBase 與 ui.composer.formField
         let bodyHtml = ui.composer.formField({
             label: '目標標題', 
-            inputHtml: ui.atom.inputBase({type: 'text', val: data.title, placeholder: "例如: 健身達人", onChange: "achView.updateField('title', this.value)"})
+            inputHtml: ui.atom.inputBase({type: 'text', val: data.title, placeholder: "例如: 健身達人", action: "updateAchField", actionId: "title"})
         });
 
         const typeOpts = [ {value:'tag', label:'🏷️ 任務分類'}, {value:'attr', label:'💪 屬性鍛鍊'}, {value:'challenge', label:'🔥 極限挑戰'} ];
         
         bodyHtml += `
             <div class="u-box" style="margin-top:10px;">
-                ${ui.composer.formField({label: '監聽目標', inputHtml: ui.atom.inputBase({type: 'select', val: data.targetType, onChange: "achView.updateField('targetType', this.value)", options: typeOpts})})}
+                ${ui.composer.formField({label: '監聽目標', inputHtml: ui.atom.inputBase({type: 'select', val: data.targetType, action: "updateAchField", actionId: "targetType", options: typeOpts})})}
                 <div style="margin-top:10px;">
                     ${this._renderTargetValueInput(data)}
                 </div>
@@ -130,7 +129,7 @@ window.achView = {
         const tierButtons = Object.keys(tierInfo).map(t => {
             const theme = data.tier === t ? 'correct' : 'normal';
             return ui.atom.buttonBase({
-                label: t, theme: theme, action: `achView.updateField('tier', '${t}')`,
+                label: t, theme: theme, action: 'updateAchField', actionId: 'tier', actionVal: t,
                 style: `flex:1; padding:6px; border-radius:var(--radius-sm);`
             });
         }).join('');
@@ -148,14 +147,14 @@ window.achView = {
             </div>`;
 
         const footHtml = isEdit 
-            ? `${ui.atom.buttonBase({label:'刪除', theme:'danger', action:`act.deleteAchievement('${achId}')`})} ${ui.atom.buttonBase({label:'儲存', theme:'correct', style:'flex:1;', action:'act.submitMilestone()'})}`
-            : ui.atom.buttonBase({label:'建立目標', theme:'correct', style:'width:100%;', action:'act.submitMilestone()'});
+            ? `${ui.atom.buttonBase({label:'刪除', theme:'danger', action: 'deleteAchievement', actionId: ach.id})} ${ui.atom.buttonBase({label:'儲存', theme:'correct', style:'flex:1;', action: 'submitMilestone'})}`
+            : ui.atom.buttonBase({label:'建立目標', theme:'correct', style:'width:100%;', action: 'submitMilestone'});
 
         ui.modal.render(isEdit ? '編輯目標' : '建立新目標', bodyHtml, footHtml, 'overlay');
     },
 
     _renderTargetValueInput: function(data) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         
         if (data.targetType === 'challenge') {
             return `<div style="color:var(--text-muted); font-size:0.9rem;"><i>監聽重要性與緊急性皆 >= 3 的任務</i></div>`;
@@ -165,13 +164,13 @@ window.achView = {
             const attrs = gs.attrs ? Object.keys(gs.attrs) : ['STR','INT'];
             const opts = attrs.map(k => ({ value: k, label: `${gs.attrs[k].icon} ${gs.attrs[k].name}` }));
             if (!attrs.includes(data.targetValue)) data.targetValue = attrs[0];
-            return ui.composer.formField({label: '選擇屬性', inputHtml: ui.atom.inputBase({type: 'select', val: data.targetValue, onChange: "achView.updateField('targetValue', this.value)", options: opts})});
+            return ui.composer.formField({label: '選擇屬性', inputHtml: ui.atom.inputBase({type: 'select', val: data.targetValue, action: "updateAchField", actionId: "targetValue", options: opts})});
         }
         
         const cats = gs.taskCats || ['每日', '運動', '工作'];
         const opts = cats.map(c => ({ value: c, label: c }));
         if (!cats.includes(data.targetValue)) data.targetValue = cats[0];
-        return ui.composer.formField({label: '選擇分類', inputHtml: ui.atom.inputBase({type: 'select', val: data.targetValue, onChange: "achView.updateField('targetValue', this.value)", options: opts})});
+        return ui.composer.formField({label: '選擇分類', inputHtml: ui.atom.inputBase({type: 'select', val: data.targetValue, action: "updateAchField", actionId: "targetValue", options: opts})});
     },
 
     // =========================================
@@ -181,9 +180,8 @@ window.achView = {
         const container = document.getElementById('page-milestone');
         if(!container) return;
 
-        const achs = AchEngine.getSortedAchievements().filter(a => a.claimed);
+        const achs = window.SQ.Engine.Ach.getSortedAchievements().filter(a => a.claimed);
 
-        // [V43] 捨棄舊版 ui.layout.page 與 ui.card.row
         const listHtml = achs.length === 0 
             ? `<div class="ui-empty"><div class="ui-empty-icon">🏅</div>尚無榮譽紀錄</div>`
             : `<div style="padding: 14px;">` + achs.map(a => {
@@ -205,7 +203,8 @@ window.achView = {
             <div style="display:flex; flex-direction:column; height:100%; overflow:hidden; background:var(--bg-panel);">
                 ${ui.composer.pageHeader({
                     title: '🏆 榮譽殿堂',
-                    backAction: "act.navigate('task')",
+                    backAction: 'navigate',
+                    backActionVal: 'task',
                     style: 'background:var(--bg-card);'
                 })}
                 <div style="flex:1; overflow-y:auto; overflow-x:hidden; position:relative; z-index:10; padding-bottom: 20px;">
@@ -216,14 +215,16 @@ window.achView = {
     },
 
     updateField: function(field, val) { 
-        if(window.TempState?.editingAch) {
-            window.TempState.editingAch[field] = val;
+        if(window.SQ.Temp?.editingAch) {
+            window.SQ.Temp.editingAch[field] = val;
             if (field === 'targetType' || field === 'tier') {
-                this.renderCreateAchForm(window.TempState.editingAch.id);
+                this.renderCreateAchForm(window.SQ.Temp.editingAch.id);
             }
         } 
     }
 };
 
+// 轉接器 (Adapter) - 註冊給全域大腦
+window.SQ.Actions.updateAchField = (f, v) => window.SQ.View.Ach.updateField(f, v);
 window.view = window.view || {};
-window.view.renderMilestonePage = () => achView.renderMilestonePage();
+window.SQ.View.Main.renderMilestonePage = () => window.SQ.View.Ach.renderMilestonePage();

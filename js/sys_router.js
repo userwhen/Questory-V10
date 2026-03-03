@@ -1,7 +1,7 @@
 /* js/modules/sys_router.js - V2.0 Integrated Router */
 /* 負責：頁面切換、全螢幕判斷、歷史堆疊、Navbar 狀態連動 */
-
-window.Router = {
+window.SQ = window.SQ || {};
+window.SQ.Router = {
     // [配置] 定義所有頁面的屬性
     // divId: HTML 中的 ID
     // navId: Navbar 按鈕的 ID (沒有則填 null)
@@ -17,7 +17,6 @@ window.Router = {
         // --- 子頁面 ---
         'history':   { divId: 'page-history',   navId: null, fullscreen: false },
         'milestone': { divId: 'page-milestone', navId: null, fullscreen: false },
-        'quick':     { divId: 'page-quick',     navId: null, fullscreen: false }, // 假設有
 
         // --- 全螢幕層 (Story / Avatar) ---
         'story':  { divId: 'page-story',  navId: null, fullscreen: true },
@@ -32,17 +31,20 @@ window.Router = {
         console.log("🚀 Router V2.0 Initialized");
     },
 
-    // [核心] 跳轉邏輯 (取代原本 Core.js 的 act.navigate)
+    // [核心] 跳轉邏輯 (取代原本 Core.js 的window.SQ.Actions.navigate)
     go: function(pageId) {
         // 1. 容錯處理 (加上前綴兼容舊寫法)
         const cleanId = pageId.replace('page-', '');
         
         // ✅ [Bug 5 修復] 將 Guard 移到最底層，這樣連 Router.back() 都能成功攔截
-        if (window.GlobalState?.settings?.mode === 'basic' && cleanId === 'main') {
-            console.log("🛡️ [Basic Mode] 攔截大廳導航，停留在 Stats");
-            return this.go('stats');
-        }
-
+        if (
+		window.SQ.State?.settings?.mode === 'basic' && 
+		cleanId === 'main' && 
+		this.stack[this.stack.length - 1] !== 'stats'
+		) {
+		console.log("🛡️ [Basic Mode] 攔截大廳導航，停留在 Stats");
+		return this.go('stats');
+		}
         const conf = this.config[cleanId];
         
         if (!conf) {
@@ -102,9 +104,9 @@ window.Router = {
         }
 
         // 5. 關閉干擾視窗 (Overlay / Modals)
-        if (window.act.closeModal) {
-            window.act.closeModal('overlay');
-            window.act.closeModal('system');
+        if (window.SQ.Actions.closeModal) {
+            window.SQ.Actions.closeModal('overlay');
+            window.SQ.Actions.closeModal('system');
         }
 
         // 6. 堆疊管理
@@ -113,8 +115,8 @@ window.Router = {
         }
 
         // 7. 更新全域狀態並發送事件
-        if (window.TempState) window.TempState.currentView = cleanId;
-        if (window.EventBus) window.EventBus.emit(window.EVENTS.System.NAVIGATE, cleanId);
+        if (window.SQ.Temp) window.SQ.Temp.currentView = cleanId;
+        if (window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.System.NAVIGATE, cleanId);
     },
 
     back: function() {
@@ -125,7 +127,6 @@ window.Router = {
     }
 };
 
-// [綁定接口] 讓舊代碼呼叫 act.navigate 時自動轉發給 Router
-window.act = window.act || {};
-window.act.navigate = (id) => Router.go(id);
-window.act.back = () => Router.back();
+window.SQ.Actions = window.SQ.Actions || {};
+window.SQ.Actions.navigate = (id) => window.SQ.Router.go(id);
+window.SQ.Actions.back = () => window.SQ.Router.back();

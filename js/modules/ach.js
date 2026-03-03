@@ -1,7 +1,9 @@
 /* js/modules/ach.js - V40.0 Gamification Engine */
-window.AchEngine = {
+window.SQ = window.SQ || {};
+window.SQ.Engine = window.SQ.Engine || {};
+window.SQ.Engine.Ach = {
     init: function() {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if (!gs) return;
         // 統一存放在 achievements，若有舊的 milestones 則在 getSorted 時合併
         if (!gs.achievements) gs.achievements = [];
@@ -14,7 +16,7 @@ window.AchEngine = {
         // [修復 ACH-1] 補上防呆，確保 impact 必為數字，避免 NaN 壞檔
         const val = (typeof impact === 'number') ? impact : 1;
         
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const targets = gs.milestones || []; 
         let anyUpdate = false;
 
@@ -49,7 +51,7 @@ window.AchEngine = {
         // [防呆] 確保 val 是一個數字，如果是 undefined 則預設為 1
         const val = (typeof impact === 'number') ? impact : 1;
         
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const targets = gs.milestones || [];
         let anyUpdate = false;
 
@@ -88,14 +90,14 @@ window.AchEngine = {
         ms.curr = ms.target; // 避免溢出
         ms.done = true;      // 標記為達成 (此時應顯示「領取」按鈕)
         
-        if (window.EventBus) {
-            window.EventBus.emit(window.EVENTS.System.TOAST, `🎉 目標達成：${ms.title}`);
+        if (window.SQ.EventBus) {
+            window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, `🎉 目標達成：${ms.title}`);
         }
     },
 
     // 3. [新增] 領取獎勵並歸檔 (Claim & Archive)
     claimReward: function(id) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const ms = gs.milestones.find(m => m.id === id);
         
         if (!ms) return { success: false, msg: "找不到目標" };
@@ -107,8 +109,8 @@ window.AchEngine = {
         gs.gold = (gs.gold || 0) + reward.gold;
         
         // ✅ [Bug 4 修復] 改用 StatsEngine 增加經驗值，確保會觸發升級檢查與 UI 更新
-        if (window.StatsEngine && window.StatsEngine.addPlayerExp) {
-            window.StatsEngine.addPlayerExp(reward.exp);
+        if (window.SQ.Engine.Stats && window.SQ.Engine.Stats.addPlayerExp) {
+            window.SQ.Engine.Stats.addPlayerExp(reward.exp);
         } else {
             gs.exp = (gs.exp || 0) + reward.exp;
         }
@@ -136,7 +138,7 @@ window.AchEngine = {
     },
 
     createMilestone: function(data) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if (!gs.milestones) gs.milestones = [];
 
         const config = this._getTierConfig(data.tier);
@@ -166,7 +168,7 @@ window.AchEngine = {
 
     // [新增] 5. 更新現有目標
     updateMilestone: function(data) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if (!gs.milestones) return;
 
         const ms = gs.milestones.find(m => m.id === data.id);
@@ -196,7 +198,7 @@ window.AchEngine = {
     },
 
     deleteMilestone: function(id) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if(gs.milestones) {
             gs.milestones = gs.milestones.filter(m => m.id !== id);
             this._saveAndNotify();
@@ -205,7 +207,7 @@ window.AchEngine = {
 
     // View Helper: 統一輸出接口
     getSortedAchievements: function() {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         // 這裡將 milestones (玩家自訂) 與 achievements (系統成就) 視為同一種資料格式輸出
         // 但為了區分邏輯，我們之後在 View 層可以用 .type 或 .isSystem 來過濾
         const list = [
@@ -223,6 +225,7 @@ window.AchEngine = {
 
     _saveAndNotify: function() {
         if (window.App && window.App.saveData) App.saveData();
-        if (window.EventBus) window.EventBus.emit(window.EVENTS.Ach.UPDATED);
+        if (window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.Ach.UPDATED);
     }
 };
+window.AchEngine = window.SQ.Engine.Ach;

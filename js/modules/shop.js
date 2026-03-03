@@ -1,10 +1,11 @@
 /* js/modules/shop.js - V35.8 (Daily Reset & Inventory Logic) */
-
-window.ShopEngine = {
+window.SQ = window.SQ || {};
+window.SQ.Engine = window.SQ.Engine || {};
+window.SQ.Engine.Shop = {
     init: function() {
 		if (this._initialized) return;
         this._initialized = true;
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if (!gs) return;
         
         if (!gs.shop) gs.shop = { user: [] };
@@ -20,18 +21,18 @@ window.ShopEngine = {
         ];
 
         // 🚨 [修復 C-7] 拔除手動檢查，改為監聽 Core 發出的換日廣播
-        if (window.EventBus && window.EVENTS && window.EVENTS.System.DAILY_RESET) {
-            window.EventBus.on(window.EVENTS.System.DAILY_RESET, () => {
+        if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.System.DAILY_RESET) {
+            window.SQ.EventBus.on(window.SQ.Events.System.DAILY_RESET, () => {
                 this.performDailyReset();
             });
         }
         
-        console.log("🏪 ShopEngine V36.1 Initialized (Listening for Daily Reset)");
+        console.log("🏪 window.SQ.Engine.Shop. V36.1 Initialized (Listening for Daily Reset)");
     },
 	
 	// 恢復精力邏輯 (防止溢出)
     recoverStamina: function(amount, cost) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const totalGem = (gs.freeGem || 0) + (gs.paidGem || 0);
 
         // 1. 檢查鑽石
@@ -50,8 +51,8 @@ window.ShopEngine = {
 
         // 3. 計算當前玩家的 "真實上限"
         // 呼叫 StoryEngine 的公式 (Lv1=30 ... Lv36=100)
-        const currentMax = (window.StoryEngine && StoryEngine.calculateMaxEnergy) 
-                           ? StoryEngine.calculateMaxEnergy() 
+        const currentMax = (window.SQ.Engine.Story.calculateMaxEnergy) 
+                           ? window.SQ.Engine.Story.calculateMaxEnergy() 
                            : 30; // 預設防呆
         
         if (!gs.story) gs.story = { energy: 0 };
@@ -72,7 +73,7 @@ window.ShopEngine = {
 
     // [核心] 跨日重置邏輯
     performDailyReset: function() {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         
         // 安全檢查
         if (!gs || !gs.sysShop) return; 
@@ -113,7 +114,7 @@ window.ShopEngine = {
 
     getShopItems: function(cat) {
         if (!this.systemPrototypes) this.init();
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         
         // 1. 處理系統商品
         const sysItems = this.systemPrototypes.map(proto => {
@@ -138,14 +139,14 @@ window.ShopEngine = {
     },
 
     getStackedBag: function(cat) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         let items = gs.bag || [];
         if (cat && cat !== '全部') items = items.filter(i => i.category === cat);
         return items;
     },
 
     buyItem: function(id, qty) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const items = this.getShopItems('全部');
         const item = items.find(i => i.id === id);
         
@@ -196,7 +197,7 @@ window.ShopEngine = {
     },
 
     uploadItem: function(data) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if (data.id) {
             const idx = gs.shop.user.findIndex(i => i.id === data.id);
             if (idx >= 0) gs.shop.user[idx] = { ...gs.shop.user[idx], ...data };
@@ -205,9 +206,9 @@ window.ShopEngine = {
         }
         if (window.App) App.saveData(); return true;
     },
-    deleteItem: function(id) { const gs = window.GlobalState; gs.shop.user = gs.shop.user.filter(i => i.id !== id); if (window.App) App.saveData(); },
+    deleteItem: function(id) { const gs = window.SQ.State; gs.shop.user = gs.shop.user.filter(i => i.id !== id); if (window.App) App.saveData(); },
     useItem: function(id) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const item = gs.bag.find(i => i.id === id);
 
         if (!item) return { success: false, msg: "背包中找不到物品" };
@@ -237,12 +238,12 @@ window.ShopEngine = {
         this.discardItem(id, 1);
         
         // 3. 通知更新 (主要為了刷新 Stats View 的熱量表)
-        if (window.EventBus) window.EventBus.emit(window.EVENTS.Stats.UPDATED);
+        if (window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
 
         return { success: true, msg: msg };
     },
     discardItem: function(id, qty) {
-        const gs = window.GlobalState; 
+        const gs = window.SQ.State; 
         const idx = gs.bag.findIndex(i => i.id === id);
         if (idx >= 0) { 
             gs.bag[idx].count -= qty; 
@@ -251,7 +252,7 @@ window.ShopEngine = {
         }
     },
     addGem: function(amount) { 
-    const gs = window.GlobalState; 
+    const gs = window.SQ.State; 
     gs.paidGem = (gs.paidGem || 0) + amount; 
     if (window.App) App.saveData();  // ✅
 	}

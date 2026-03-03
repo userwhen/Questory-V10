@@ -15,7 +15,7 @@ window.Assets = window.Assets || {
     },
 
     getCharImgTag: function(className='', style='') {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if (!gs) return ''; 
         
         // ✅ [核心衝突修復] 讓大廳與 HUD 真正讀取「更衣室正在穿的服裝」

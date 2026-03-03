@@ -1,6 +1,8 @@
 /* js/modules/story_generator.js - V83.3 (Logic Fixed: Skeletons Included) */
 
-window.StoryGenerator = {
+window.SQ = window.SQ || {};
+window.SQ.Engine = window.SQ.Engine || {};
+window.SQ.Engine.Generator = {
     // ============================================================
     // 1. 系統核心設定
     // ============================================================
@@ -256,7 +258,7 @@ window.StoryGenerator = {
     // 4. 生成下一層 (Generate)
     // ============================================================
     generate: function(contextTags = [], isStart = false) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         
         // 1. 初始化檢查(修復「劇本失憶」Bug)
         // 只有在「真的沒有劇本鏈結」的時候，才自動補生成。
@@ -646,3 +648,4 @@ window.StoryGenerator = {
     return opts;
 },
 };
+window.StoryGenerator = window.SQ.Engine.Generator;

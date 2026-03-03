@@ -26,7 +26,7 @@ window.DefaultData = {
     story: { energy: 30, tags: [], vars: {}, flags: {}, learning: {}, chain: null, currentNode: null },
     
     // [與 avatar.js 對齊] 紙娃娃系統基礎狀態
-    avatar: { gender: 'm', unlocked: ['suit_novice'], wearing: { suit: 'suit_novice' } }, 
+    avatar: { gender: 'm', unlocked: ['adventurer_m'], wearing: { suit: 'adventurer_m' } }, 
     
     // 商店自訂商品
     shop: { user: [] }, 
@@ -92,7 +92,6 @@ window.GameConfig.Tutorial = {
     step6_end: { dialog: '🎉 新手教學完成！\n\n你可以自由探索了。\n記得每天回來完成任務喔！', btn: '開始冒險' },
     restartConfirm: "重看教學？(不會重置角色進度)"
 };
-
-// 確保其他模組不會因為找不到 GlobalState 報錯的初始化安全鎖
-if(!window.GlobalState) window.GlobalState = {};
-if(!window.TempState) window.TempState = {};
+window.SQ = window.SQ || {};
+window.SQ.Default = window.DefaultData;
+window.SQ.Config = window.GameConfig;

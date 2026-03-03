@@ -1,5 +1,5 @@
 // 2. 事件總線 (Event Bus)
-window.EventBus = {
+window.SQ = window.SQ || {}; window.SQ.EventBus = {
     listeners: {},
 
     on: function(event, callback) {
@@ -25,5 +25,5 @@ window.EventBus = {
         });
     }
 };
-
+window.SQ.EventBus = window.SQ.EventBus;
 console.log("🧠 EventBus (神經網絡) 就緒");

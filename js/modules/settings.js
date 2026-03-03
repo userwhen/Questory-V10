@@ -1,5 +1,7 @@
 /* js/modules/settings.js - V35.0 Fixed (Unlock Sync) */
-window.SettingsEngine = {
+window.SQ = window.SQ || {};
+window.SQ.Engine = window.SQ.Engine || {};
+window.SQ.Engine.Settings = {
     // 商店商品定義
     shopItems: [
         { 
@@ -18,7 +20,7 @@ window.SettingsEngine = {
 
     // 1. 應用設定變更
     applySettings: function(newSettings) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if (!gs.settings) gs.settings = {};
         
         if (newSettings.mode === 'learning') {
@@ -32,15 +34,15 @@ window.SettingsEngine = {
         
         if (window.App) App.saveData();
         
-        EventBus.emit(window.EVENTS.Settings.UPDATED);
-        EventBus.emit(window.EVENTS.System.TOAST, "✅ 設定已儲存");
+        window.SQ.EventBus.emit(window.SQ.Events.Settings.UPDATED);
+        window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, "✅ 設定已儲存");
         
         return gs.settings.mode === 'basic' ? 'stats' : 'main';
     },
 
     // 2. [修復] 儲存卡路里目標並解鎖功能
     saveCalTarget: function(val) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         if (!gs.settings) gs.settings = {};
         if (!gs.unlocks) gs.unlocks = {}; // 確保 unlocks 存在
         
@@ -56,23 +58,23 @@ window.SettingsEngine = {
         if (window.App) App.saveData();
         
         // 通知更新
-        if (window.EventBus) {
-            EventBus.emit(window.EVENTS.Settings.UPDATED);
-            EventBus.emit(window.EVENTS.System.TOAST, `✅ 目標已更新: ${numVal} Kcal (功能已啟用)`);
+        if (window.SQ.EventBus) {
+            window.SQ.EventBus.emit(window.SQ.Events.Settings.UPDATED);
+            window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, `✅ 目標已更新: ${numVal} Kcal (功能已啟用)`);
             // 強制刷新 Stats 頁面以顯示熱量表
-            EventBus.emit(window.EVENTS.Stats.UPDATED);
+            window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
         }
     },
 
     // 3. 購買模式
     buyMode: function(itemId) {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const item = this.shopItems.find(i => i.id === itemId);
         if (!item) return;
 
         const totalGem = (gs.freeGem || 0) + (gs.paidGem || 0);
         if (totalGem < item.price) {
-            EventBus.emit(window.EVENTS.System.TOAST, "❌ 鑽石不足");
+            window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, "❌ 鑽石不足");
             return;
         }
         
@@ -89,13 +91,13 @@ window.SettingsEngine = {
         gs.unlocks[itemId] = true;
         
         if (window.App) App.saveData();
-        EventBus.emit(window.EVENTS.Settings.UPDATED);
-        EventBus.emit(window.EVENTS.System.TOAST, `🎉 已解鎖 ${item.name}`);
+        window.SQ.EventBus.emit(window.SQ.Events.Settings.UPDATED);
+        window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, `🎉 已解鎖 ${item.name}`);
     },
 
     // 在 SettingsEngine 內新增/修改
 downloadSaveFile: function() {
-        const gs = window.GlobalState;
+        const gs = window.SQ.State;
         const json = JSON.stringify(gs, null, 2); // 美化格式
         const blob = new Blob([json], {type: "application/json"});
         const url = URL.createObjectURL(blob);
@@ -141,3 +143,4 @@ downloadSaveFile: function() {
         location.reload(); // 重新整理頁面
     },
 };
+window.SettingsEngine = window.SQ.Engine.Settings;

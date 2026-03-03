@@ -1,7 +1,7 @@
 /* js/event_types.js - V43.0 Centralized Event Dictionary */
 
 // 1. 定義所有事件常數 (Event Constants)
-window.EVENTS = {
+window.SQ = window.SQ || {}; window.SQ.Events = {
     System: {
         INIT: 'sys:init',
         NAVIGATE: 'sys:navigate',       // 頁面切換
@@ -67,3 +67,5 @@ window.EVENTS = {
         UPDATED: 'avatar:updated'
     }
 };
+
+window.SQ.Events = window.SQ.Events;
