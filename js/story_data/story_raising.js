@@ -278,9 +278,11 @@
             type: 'end', id: 'raise_shared_end',
             reqTags: ['raising'],
             dialogue: [{ text: { zh: "無論未來的路有多長，這段時光都將成為你們最寶貴的財富。" } }],
-            options: [{ label: "結束劇本", action: "finish_chain", rewards: { gold: 50 } }]
-        }
-    );
+options: [{ label: "結束劇本", action: "finish_chain", rewards: { gold: 50 } }]
+    }
+); // 🌟 1. 關閉大陣列
 
-    console.log("🌱 養成劇本已載入 (V8 雙模式終極版：壓力箱庭 + 經典養成)");
+DB.templates.push(DB.createHubTemplate('raising', 5));
+
+    console.log("🌱 養成劇本已載入...");
 })();

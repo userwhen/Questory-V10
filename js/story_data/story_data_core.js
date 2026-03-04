@@ -3,6 +3,57 @@
     window.FragmentDB = window.FragmentDB || { fragments: {}, templates: [] };
     const DB = window.FragmentDB;
 
+    // 🌟 [Step 5 新增] 通用 HUB 選項生成器
+    DB.getHubOptions = function(theme) {
+        // 預設的選項文字
+        let opt1 = "🔍 仔細搜查當前房間 (耗時 1)";
+        let opt2 = "🗺️ 推開未知的門 (耗時 1)";
+
+        // 根據不同主題微調文字，增加沉浸感
+        if (theme === 'adventure') {
+            opt1 = "🔍 仔細搜刮當前房間 (耗時 1)";
+            opt2 = "🗺️ 推開未知的門深入地城 (耗時 1)";
+        } else if (theme === 'horror') {
+            opt2 = "🏃 趕快離開，推開新門 (耗時 1)";
+        }
+
+        return [
+            { 
+                label: opt1, 
+                action: "advance_chain", 
+                rewards: { varOps: [{key: 'time_left', val: 1, op: '-'}] } 
+            },
+            { 
+                label: opt2, 
+                action: "map_explore_new", 
+                rewards: { varOps: [{key: 'time_left', val: 1, op: '-'}] } 
+            }
+        ];
+    };
+	// 🌟【升級版】全自訂 HUB 工廠函數（V8.2）
+	DB.createHubTemplate = function(theme, time = 5, custom = {}) {
+		const defaultText = `{env_weather}的時刻，你身處於{env_building}之中。{env_pack_visual}`;
+		const defaultBrief = `📍 ${theme.toUpperCase()} HUB — 剩餘時間：{time_left}　狀態：{#tags}`;
+
+		return {
+			id: `hub_${theme}_generic`,
+			type: 'start',
+			isHub: true,
+			reqTags: [theme],
+			
+			// 優先使用自訂文字，沒有才用預設
+			dialogue: custom.dialogue || [{ text: { zh: custom.text || defaultText } }],
+			
+			briefText: custom.briefText || defaultBrief,
+			
+			onEnter: custom.onEnter || { 
+				varOps: [{ key: 'time_left', val: time, op: 'set' }] 
+			},
+			
+			// 允許完全自訂 options，或用主題預設
+			options: custom.options || DB.getHubOptions(theme)
+		};
+	};
     // 👇 👇 👇 🌟 [新增] 全域多國語言字典 (i18n)
     window.I18N_DICT = {
         // 系統狀態標籤 (Tags)
@@ -217,18 +268,6 @@
             // 🏘️ 通用路人 (Civilian - 補底用)
             { val: "{trait_prefix}村民", tag: ["human", "civilian"] }, { val: "{trait_prefix}商人", tag: ["human", "civilian"] },
             { val: "{trait_prefix}老人", tag: ["human", "civilian"] }, { val: "{trait_prefix}酒館老闆", tag: ["human", "civilian"] }
-        ],
-
-        // 🏷️【4. 實體前綴修飾 (Identity Modifier)】- 帶「的」，只能加在名詞前
-        // ------------------------------------------------------------
-        identity_modifier: [ 
-            { val: "" }, { val: "年輕的", tag: ["romance", "raising"] }, { val: "年邁的" }, 
-            { val: "成熟的", tag: ["romance"] }, { val: "蒼老的", tag: ["ancient", "horror"] }, 
-            { val: "不朽的", tag: ["ancient", "magic"] }, { val: "新生的", tag: ["mutant", "raising"] },
-            { val: "神祕的", tag: ["mystery"] }, { val: "落魄的", tag: ["poor"] }, 
-            { val: "身穿制服的", tag: ["sci-fi", "raising"] }, { val: "腐敗的", tag: ["horror", "undead"] },
-            { val: "異化的", tag: ["horror", "sci-fi"] }, { val: "氣質高雅的", tag: ["romance", "rich"] }, 
-            { val: "滿身傷痕的", tag: ["combat", "survivor"] }
         ],
 
         // 🏷️【4. 實體前綴修飾 (Identity Modifier)】- 帶「的」，只能加在名詞前

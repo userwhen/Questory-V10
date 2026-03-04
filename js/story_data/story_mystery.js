@@ -54,7 +54,7 @@
                 { text: { zh: "{victim}倒在血泊中。你有 3 小時的時間搜查現場。" } },
                 { text: { zh: "這場案件的真兇，就在嫌疑犯A與嫌疑犯B之中..." } } 
             ],
-            options: hubOptions
+            options: DB.getHubOptions('mystery')
         },
         // --- 🔍 箱庭：找到關鍵凶器 ---
         {
@@ -70,7 +70,7 @@
                 { 
                     label: "收起凶器", action: "node_next", 
                     rewards: { tags: ['has_weapon'], varOps: [{key: 'exp', val: 10, op: '+'}] }, 
-                    nextScene: { dialogue: [{ text: { zh: "你將證據妥善保管。請決定下一步行動：" } }], options: hubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "你將證據妥善保管。請決定下一步行動：" } }], options: DB.getHubOptions('mystery') }
                 }
             ]
         },
@@ -86,7 +86,7 @@
                 {
                     label: "重新整理思緒", action: "node_next",
                     rewards: { varOps: [{key: 'tension', val: 15, op: '+'}] },
-                    nextScene: { dialogue: [{ text: { zh: "白白浪費了時間。請決定下一步行動：" } }], options: hubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "白白浪費了時間。請決定下一步行動：" } }], options: DB.getHubOptions('mystery') }
                 }
             ]
         },
@@ -224,8 +224,10 @@
                 { text: { zh: "案件正式落幕了。隨著警笛聲遠去，這座{env_building}重新恢復了寧靜。" } }
             ],
             options: [{ label: "結束劇本", action: "finish_chain" }]
-        }
-    );
+    }
+); // 🌟 1. 關閉大陣列
+
+DB.templates.push(DB.createHubTemplate('mystery', 5));
 
     console.log("🕵️‍♂️ 懸疑偵探劇本已載入 (V8 雙模式融合終極版)");
 })();

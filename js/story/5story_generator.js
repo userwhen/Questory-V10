@@ -315,7 +315,7 @@ window.SQ.Engine.Generator = {
         if (template.id) {
             chain.history.push(template.id);
             // 🌟 [修改] 確保只記錄最近的 2 次 (原本是 5 次，依你需求精準改為 2 次)
-            if (chain.history.length > 2) chain.history.shift();
+            if (chain.history.length > 10) chain.history.shift(); // HUB 迴圈專用
         }
         // 8. 填充內容 (Fill Content) 並收集動態標籤
         // 將 chain.tags 傳遞進去，如果抽到 {core_identity} 等帶有 tag 的詞，就會被塞進 chain.tags

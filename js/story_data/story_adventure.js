@@ -47,17 +47,17 @@
                 { 
                     label: "握緊重劍 (戰士)", action: "node_next", 
                     rewards: { tags: ['class_warrior'], varOps: [{key:'str', val:10, op:'+'}] }, 
-                    nextScene: { dialogue: [{ text: { zh: "沉重的劍身給了你安全感。你準備好深入地城了。" } }], options: advHubOptions } 
+                    nextScene: { dialogue: [{ text: { zh: "沉重的劍身給了你安全感。你準備好深入地城了。" } }], options: DB.getHubOptions('adventure') } 
                 },
                 { 
                     label: "詠唱咒文 (法師)", action: "node_next", 
                     rewards: { tags: ['class_mage'], varOps: [{key:'int', val:10, op:'+'}] }, 
-                    nextScene: { dialogue: [{ text: { zh: "元素在你指尖跳動。你準備好深入地城了。" } }], options: advHubOptions } 
+                    nextScene: { dialogue: [{ text: { zh: "元素在你指尖跳動。你準備好深入地城了。" } }], options: DB.getHubOptions('adventure') } 
                 },
                 { 
                     label: "隱入黑暗 (刺客)", action: "node_next", 
                     rewards: { tags: ['class_rogue'], varOps: [{key:'agi', val:10, op:'+'}] }, 
-                    nextScene: { dialogue: [{ text: { zh: "你與陰影融為一體。你準備好深入地城了。" } }], options: advHubOptions } 
+                    nextScene: { dialogue: [{ text: { zh: "你與陰影融為一體。你準備好深入地城了。" } }], options: DB.getHubOptions('adventure') } 
                 }
             ]
         },
@@ -75,7 +75,7 @@
             options: [
                 {
                     label: "包紮傷口，繼續前進", action: "node_next",
-                    nextScene: { dialogue: [{ text: { zh: "白白浪費了寶貴的時間與體力... 請決定下一步：" } }], options: advHubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "白白浪費了寶貴的時間與體力... 請決定下一步：" } }], options: DB.getHubOptions('adventure') }
                 }
             ]
         },
@@ -92,7 +92,7 @@
                 { 
                     label: "收下筆記 (獲得情報)", action: "node_next", 
                     rewards: { tags: ['boss_weakness'], varOps: [{key: 'exp', val: 20, op: '+'}] },
-                    nextScene: { dialogue: [{ text: { zh: "這份情報絕對能在決戰中派上用場！" } }], options: advHubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "這份情報絕對能在決戰中派上用場！" } }], options: DB.getHubOptions('adventure') }
                 }
             ]
         },
@@ -103,13 +103,13 @@
             reqTags: ['adventure', 'is_hub_mode'], excludeTags: ['legendary_weapon'],
             dialogue: [
                 { text: { zh: "你解開了一個複雜的機關，牆壁緩緩打開，露出了一個散發著神聖光芒的祭壇。" } },
-                { text: { zh: "祭壇中央插著一把【{bonus_legendary}武器】。這股力量足以撼動天地！" } }
+                { text: { zh: "祭壇中央插著一把【{start_bonus}}武器】。這股力量足以撼動天地！" } }
             ],
             options: [
                 { 
                     label: "拔出武器！(力量暴增)", action: "node_next", 
                     rewards: { tags: ['legendary_weapon'], varOps: [{key: 'str', val: 15, op: '+'}] },
-                    nextScene: { dialogue: [{ text: { zh: "強大的魔力湧入你的體內！你感覺自己無所不能。" } }], options: advHubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "強大的魔力湧入你的體內！你感覺自己無所不能。" } }], options: DB.getHubOptions('adventure') }
                 }
             ]
         },
@@ -125,8 +125,8 @@
             options: [
                 { 
                     label: "翻滾閃避 (AGI檢定)", check: { stat: 'AGI', val: 6 }, action: "node_next", 
-                    nextScene: { dialogue: [{ text: { zh: "你有驚無險地躲過了毒箭，但弄出了不小的聲響。" } }], rewards: { varOps: [{key:'tension', val:15, op:'+'}] }, options: advHubOptions },
-                    failScene: { dialogue: [{ text: { zh: "你被毒箭擦傷了，不僅損血，還引發了地城的警報！" } }], rewards: { varOps: [{key:'hp', val:10, op:'-'}, {key:'tension', val:25, op:'+'}] }, options: advHubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "你有驚無險地躲過了毒箭，但弄出了不小的聲響。" } }], rewards: { varOps: [{key:'tension', val:15, op:'+'}] }, options: DB.getHubOptions('adventure') },
+                    failScene: { dialogue: [{ text: { zh: "你被毒箭擦傷了，不僅損血，還引發了地城的警報！" } }], rewards: { varOps: [{key:'hp', val:10, op:'-'}, {key:'tension', val:25, op:'+'}] }, options: DB.getHubOptions('adventure') }
                 }
             ]
         },
@@ -156,7 +156,7 @@
                     label: "沒有底牌，只能硬剛！(高難度STR檢定)", excludeTags: ['boss_weakness', 'legendary_weapon'], 
                     style: "danger", check: { stat: 'STR', val: 15 }, action: "node_next",
                     nextScene: { dialogue: [{ text: { zh: "憑藉著超越極限的意志與運氣，你在血泊中奇蹟般地戰勝了對方！" } }], rewards: { tags: ['hub_win'] }, options: [{ label: "迎向結局", action: "advance_chain" }] },
-                    failScene: { dialogue: [{ text: { zh: "準備不足的你，在絕對的力量面前宛如螻蟻。你的視野逐漸被黑暗吞沒...\n【結局：無名的屍骸】" } }], options: [{ label: "結束", action: "finish_chain" }] }
+                    failScene: { dialogue: [{ text: { zh: "準備不足的你，在絕對的力量面前宛如螻蟻。你的視野逐漸被黑暗吞沒...\n【結局：無名的屍骸】" } }], options: [{ label: "眼前一黑", action: "advance_chain" }] }
                 }
             ]
         },
@@ -172,6 +172,18 @@
             ],
             options: [{ label: "滿載而歸", action: "finish_chain", rewards: { title: "地城征服者", gold: 1000 } }]
         },
+		{
+			type: 'end', id: 'adv_hub_end_defeat', 
+			// 🌟 當玩家是冒險箱庭模式，且「沒有」hub_win 標籤時，就會進來這裡
+			reqTags: ['adventure', 'is_hub_mode'],
+			excludeTags: ['hub_win'], 
+			dialogue: [
+				{ text: { zh: "你倒在血泊中，聽著首領震耳欲聾的咆哮聲逐漸遠去。" } },
+				{ text: { zh: "又一名勇敢但不幸的冒險者，成為了這座地城的養分。" } },
+				{ text: { zh: "【結局：無名的屍骸】" } }
+			],
+			options: [{ label: "重新來過", action: "finish_chain" }]
+		},
 
 
         // ========================================================================
@@ -254,10 +266,12 @@
             dialogue: [
                 { text: { zh: "看著倒下的【{boss}】，你長長地吐出了一口氣。你的名字將被吟遊詩人永遠傳唱。" } }
             ],
-            options: [{ label: "滿載而歸", action: "finish_chain", rewards: { title: "傳奇英雄", gold: 500 } }]
-        }
+		options: [{ label: "滿載而歸", action: "finish_chain", rewards: { title: "傳奇英雄", gold: 500 } }]
+			}
+		); // 🌟 1. 先在這裡把上方的大陣列關閉！
 
-    );
+		// 🌟 2. 獨立推播通用 HUB 模板
+		DB.templates.push(DB.createHubTemplate('adventure', 5));
 
-    console.log("⚔️ 冒險劇本已載入 (V8 雙模式終極版：地城箱庭 + 史詩線性)");
-})();
+			console.log("⚔️ 冒險劇本已載入...");
+		})();

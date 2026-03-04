@@ -33,18 +33,19 @@
             type: 'start', id: 'hor_hub_start',
             reqTags: ['horror', 'is_hub_mode'],
             onEnter: { 
-                varOps: [
-                    { key: 'tension', val: 20, op: 'set', msg: "⚠️ 恐懼開始蔓延..." },
-                    { key: 'time_left', val: 3, op: 'set', msg: "⏳ 距離黎明還剩 3 小時" }
-                ] 
-            },
+				varOps: [
+					{ key: 'tension', val: 20, op: 'set', msg: "⚠️ 恐懼開始蔓延..." },
+					{ key: 'time_left', val: 3, op: 'set', msg: "⏳ 距離黎明還剩 3 小時" },
+					{ key: 'haunt_level', val: 0, op: 'set' } // 🌟 [新增] 初始化作祟值
+				] 
+			},
             dialogue: [
                 { text: { zh: "你不該來這裡的。" } },
                 { text: { zh: "在{env_weather}的夜晚，你的車拋錨在了半路。這棟廢棄的{env_building}是你唯一的避難所。" } },
                 { text: { zh: "但大門在你身後死死鎖上。黑暗中傳來了令人毛骨悚然的{env_sound}。" } },
                 { text: { zh: "你必須在這裡撐過 3 個小時，直到天亮..." } }
             ],
-            options: horrorHubOptions
+            options: DB.getHubOptions('horror')
         },
 
         // --- 🔍 箱庭：染血的置物櫃 ---
@@ -60,12 +61,12 @@
                 { 
                     label: "強忍嘔吐感搜身 (LUK檢定)", check: { stat: 'LUK', val: 6 }, action: "node_next", 
                     rewards: { gold: 30, varOps: [{key: 'tension', val: 10, op: '+'}] },
-                    nextScene: { dialogue: [{ text: { zh: "你摸到了一些有用的物資，但這畫面會在你腦海裡盤旋很久。" } }], options: horrorHubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "你摸到了一些有用的物資，但這畫面會在你腦海裡盤旋很久。" } }], options: DB.getHubOptions('horror') }
                 },
                 { 
                     label: "嚇得跌坐在地連連後退", action: "node_next", 
                     rewards: { varOps: [{key: 'tension', val: 20, op: '+'}] },
-                    nextScene: { dialogue: [{ text: { zh: "你狼狽地爬起來，心跳快得像是要炸開。" } }], options: horrorHubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "你狼狽地爬起來，心跳快得像是要炸開。" } }], options: DB.getHubOptions('horror') }
                 }
             ]
         },
@@ -85,18 +86,18 @@
                     nextScene: { 
                         dialogue: [{ text: { zh: "你強忍恐懼勻速前進。過了一陣子，背後的重量消失了，那東西放過了你。" } }],
                         rewards: { varOps: [{key:'tension', val: 10, op: '-'}] }, // 恐懼下降
-                        options: horrorHubOptions 
+                        options: DB.getHubOptions('horror') 
                     }, 
                     failScene: { 
                         dialogue: [{ text: { zh: "恐懼讓你崩潰，你忍不住瘋狂拍打自己的背！那刺骨的寒意瞬間鑽進了你的骨髓！" } }],
                         rewards: { varOps: [{key:'tension', val: 30, op: '+'}, {key:'hp', val: 10, op: '-'}] },
-                        options: horrorHubOptions
+                        options: DB.getHubOptions('horror')
                     } 
                 },
                 { 
                     label: "猛然回頭！", action: "node_next", 
                     rewards: { varOps: [{key:'tension', val: 25, op: '+'}] },
-                    nextScene: { dialogue: [{ text: { zh: "背後什麼都沒有！但那股寒意卻深深烙印在你的神經裡。" } }], options: horrorHubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "背後什麼都沒有！但那股寒意卻深深烙印在你的神經裡。" } }], options: DB.getHubOptions('horror') }
                 }
             ]
         },
@@ -114,13 +115,13 @@
                 { 
                     label: "試圖制止對方 (STR檢定)", check: { stat: 'STR', val: 6 }, action: "node_next",
                     rewards: { tags: ['met_survivor'] },
-                    nextScene: { dialogue: [{ text: { zh: "你成功奪下玻璃，對方昏死了過去。你稍微感到了一絲心安。" } }], rewards: { varOps: [{key:'tension', val:10, op:'-'}] }, options: horrorHubOptions },
-                    failScene: { dialogue: [{ text: { zh: "對方力氣大得驚人，推開你後衝進了黑暗中..." } }], rewards: { varOps: [{key:'tension', val:10, op:'+'}] }, options: horrorHubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "你成功奪下玻璃，對方昏死了過去。你稍微感到了一絲心安。" } }], rewards: { varOps: [{key:'tension', val:10, op:'-'}] }, options: DB.getHubOptions('horror') },
+                    failScene: { dialogue: [{ text: { zh: "對方力氣大得驚人，推開你後衝進了黑暗中..." } }], rewards: { varOps: [{key:'tension', val:10, op:'+'}] }, options: DB.getHubOptions('horror') }
                 },
                 { 
                     label: "對方沒救了，轉身離開", action: "node_next", 
                     rewards: { varOps: [{key:'tension', val: 15, op: '+'}] },
-                    nextScene: { dialogue: [{ text: { zh: "你冷酷地拋下了對方。慘叫聲在背後迴盪。" } }], options: horrorHubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "你冷酷地拋下了對方。慘叫聲在背後迴盪。" } }], options: DB.getHubOptions('horror') }
                 }
             ]
         },
@@ -149,11 +150,13 @@
                         options: [{ label: "眼前一黑", action: "advance_chain" }] 
                     }
                 },
-                { 
-                    label: "使用神聖力量驅逐！", condition: { tags: ['bonus_holy'] }, action: "node_next", 
-                    rewards: { exp: 200 },
-                    nextScene: { dialogue: [{ text: { zh: "聖光爆發，怪物發出淒厲慘叫化為灰燼！" } }], options: [{ label: "完美生還", action: "advance_chain" }]} 
-                }
+                { label: "求助倖存者，使用護身符驅逐！", 
+					  condition: { tags: ['met_survivor'] }, 
+					  action: "node_next", 
+					  rewards: { exp: 200 },
+					  nextScene: { dialogue: [{ text: { zh: "倖存者顫抖著遞給你一個十字架。聖光爆發，怪物化為灰燼！" } }], 
+						options: [{ label: "完美生還", action: "advance_chain" }] }
+					}
             ] 
         },
 
@@ -285,9 +288,11 @@
                 { text: { zh: "人群的喧囂聲讓你感到一陣恍惚。你以為你逃掉了。" } },
                 { text: { zh: "但當你低頭看時，發現自己的腳踝上，多了一個青紫色的手印，而且...還在發燙。" } }
             ],
-            options: [{ label: "這只是一個開始...", action: "finish_chain", rewards: { title: "生還者", gold: 30 } }]
-        }
-    );
+options: [{ label: "這只是一個開始...", action: "finish_chain", rewards: { title: "生還者", gold: 30 } }]
+    }
+); // 🌟 1. 補上消失的括號與分號，關閉大陣列！
 
-    console.log("👻 恐怖驚悚劇本已載入 (V8 雙模式融合終極版)");
+DB.templates.push(DB.createHubTemplate('horror', 4));
+
+    console.log("👻 恐怖驚悚劇本已載入...");
 })();

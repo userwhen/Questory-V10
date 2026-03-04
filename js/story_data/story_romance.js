@@ -43,7 +43,7 @@
                 { text: { zh: "【{lover}】的正牌伴侶【{rival}】即將在 3 天後回國。" } },
                 { text: { zh: "這 3 天，是你最後的機會。是要鞏固感情、蒐集對方的把柄，還是默默退出？" } } 
             ],
-            options: romanceHubOptions
+            options: DB.getHubOptions('romance')
         },
 
         // --- 🔍 箱庭事件 1：公司探班 (高風險高回報) ---
@@ -60,12 +60,12 @@
                 { 
                     label: "委屈地低下頭 (博取同情)", action: "node_next", 
                     rewards: { varOps: [{key: 'favor', val: 20, op: '+'}] }, 
-                    nextScene: { dialogue: [{ text: { zh: "看著你委屈的樣子，對方心軟了，將你緊緊抱入懷中。" } }], options: romanceHubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "看著你委屈的樣子，對方心軟了，將你緊緊抱入懷中。" } }], options: DB.getHubOptions('romance') }
                 },
                 { 
                     label: "趁機翻看桌上的文件", action: "node_next", 
                     rewards: { tags: ['has_leverage'], varOps: [{key: 'tension', val: 20, op: '+'}] }, 
-                    nextScene: { dialogue: [{ text: { zh: "你趁對方倒水時，偷偷拍下了對方的商業機密。這是一張危險的底牌。" } }], options: romanceHubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "你趁對方倒水時，偷偷拍下了對方的商業機密。這是一張危險的底牌。" } }], options: DB.getHubOptions('romance') }
                 }
             ]
         },
@@ -83,7 +83,7 @@
                 {
                     label: "默默忍受這份孤獨", action: "node_next",
                     rewards: { varOps: [{key: 'dignity', val: 10, op: '+'}] }, // 找回一絲尊嚴
-                    nextScene: { dialogue: [{ text: { zh: "你嘆了口氣，結帳離開。或許這就是見不得光的代價。" } }], options: romanceHubOptions }
+                    nextScene: { dialogue: [{ text: { zh: "你嘆了口氣，結帳離開。或許這就是見不得光的代價。" } }], options: DB.getHubOptions('romance') }
                 }
             ]
         },
@@ -234,8 +234,10 @@
                 { text: { zh: "無論經歷了多少波折，這段感情最終還是畫下了句點。未來的路，還很長。" } }
             ],
             options: [{ label: "結束劇本", action: "finish_chain" }]
-        }
-    );
+    }
+); // 🌟 1. 關閉大陣列
 
-    console.log("💖 戀愛劇本 (V8 雙模式終極版：不倫箱庭 + 經典線性) 已載入");
+DB.templates.push(DB.createHubTemplate('romance', 4));
+
+    console.log("💖 戀愛劇本已載入...");
 })();

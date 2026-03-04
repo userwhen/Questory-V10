@@ -212,6 +212,16 @@ window.SQ.Engine.Story = {
     window.SQ.Temp.currentSceneNode = activeNode;
     window.SQ.Temp.storyCard = activeNode;
     
+	// 【雙態 HUB】首次完整描述，重訪只顯示 briefText
+	if (activeNode.isHub) {
+		const flagKey = `visited_${activeNode.id}`;
+		if (gs.story.flags[flagKey]) {
+			// 已造訪過 → 切換簡略版
+			activeNode.text = activeNode.briefText || activeNode.text;
+		} else {
+			gs.story.flags[flagKey] = true; // 標記已訪
+		}
+	}
     // [關鍵修正] 這裡會呼叫 _processText -> _resolveDynamicText
     // 因為 activeNode.text 還是原始的 "{time_left}" 字串，所以這裡會解析出最新的數字
     let processedText = this._processText(activeNode.text);
@@ -224,18 +234,17 @@ window.SQ.Engine.Story = {
             label: this._resolveDynamicText(opt.label),
             action: opt.action || 'node_next'
         }));
-	// 👇 👇 👇 貼上這段：將地圖資訊安插在文本末端與選項中
-    if (activeNode.type && (activeNode.type === 'univ_filler' || activeNode.type.includes('mid') || activeNode.type.includes('adv'))) {
-        if (window.SQ.Engine.Map && window.SQ.Engine.Map.map.length > 0) {
-            options = window.SQ.Engine.Map.injectMapOptions(options);
-        }
-    }
+	//只在 HUB 節點才注入完整地圖移動按鈕
+	if (activeNode.isHub && window.SQ.Engine.Map && window.SQ.Engine.Map.map.length > 0) {
+		options = window.SQ.Engine.Map.injectMapOptions(options);
+	}
 
-    if (options.length === 0 && !node.noDefaultExit) {
-        options.push({ label: "離開", action: "finish_chain", style: "primary" });
-    }
-
-    if (options.length === 0 && !node.noDefaultExit) {
+	// 【新增】記錄當前 HUB，供退回使用
+	if (activeNode.isHub) {
+		window.SQ.Temp.lastHubNode = { ...activeNode }; // 淺拷貝即可
+	}
+	
+	if (options.length === 0 && !node.noDefaultExit) {
     options.push({ label: "離開", action: "finish_chain", style: "primary" });}
 	
     window.SQ.Temp.storyQueue = processedText;
@@ -326,9 +335,15 @@ window.SQ.Engine.Story = {
             
             window.SQ.Temp.deferredHtml = (window.SQ.Temp.deferredHtml || "") + inlineHtml;
 
-            this.advanceChain(); 
-            if(window.App) App.saveData();
-            return;
+            if (opt.action === 'map_explore_new') {
+				this.advanceChain();
+			} else {
+				// map_move_to 或未來 map_return_hub → 重播最後的 HUB
+				const hubNode = window.SQ.Temp.lastHubNode;
+				if (hubNode) this.playSceneNode(hubNode);
+			}
+			if(window.App) App.saveData();
+			return;
         }
         if (opt.action === 'answer_quiz') {
             this.handleQuizResult(opt.wordId, opt.isCorrect);
@@ -450,6 +465,7 @@ window.SQ.Engine.Story = {
         gs.story.savedChain = null;
         window.SQ.Temp.currentSceneNode = null;
         window.SQ.Temp.storyCard = null;
+		window.SQ.Temp.lastHubNode = null;
         
         if (gs.story) {
             gs.story.tags = []; 
@@ -1056,6 +1072,7 @@ window.SQ.Engine.Story = {
     gs.story.savedChain = null;
     window.SQ.Temp.currentSceneNode = null; 
     window.SQ.Temp.storyCard = null;
+	window.SQ.Temp.lastHubNode = null;
     
     // 2. 【關鍵】徹底清空區域變數與標籤 (這部分不會影響 gs.gold 與 gs.exp)
     if (gs.story) {
