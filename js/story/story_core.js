@@ -94,15 +94,18 @@ window.SQ.Engine.Story = {
         return textArr.map(t => {
             let resolvedText = this._resolveDynamicText(t);
 
+            // ✅ 先進行語法展開 (擴充文本)
             if (window.StoryGenerator && window.FragmentDB) {
                 const gs = window.SQ.State;
-                const memory = (gs && gs.story && gs.story.chain && gs.story.chain.memory)
-                    ? gs.story.chain.memory : {};
+                const memory = (gs && gs.story && gs.story.chain && gs.story.chain.memory) ? gs.story.chain.memory : {};
                 resolvedText = window.SQ.Engine.Generator._expandGrammar(resolvedText, window.FragmentDB, memory);
             }
 
+            // ✅ 展開完畢後，再進行換行與標點符號的修正 (解決換行失效問題)
             if (typeof resolvedText === 'string') {
                 resolvedText = resolvedText
+                    .replace(/\n/g, '<br>')
+                    .replace(/<br><br><br>/g, '<br><br>')
                     .replace(/的\s*的/g, '的')
                     .replace(/的(?=[，。！、？]|$)/g, '')
                     .replace(/^(的|與|和)/, '')
@@ -137,15 +140,25 @@ window.SQ.Engine.Story = {
     },
 
     _formatText: function(text) {
-        if (/^[\(（].*[\)）]$/.test(text)) {
+        // 旁白括號處理
+        if (/^[\(（].*[\)）]$/.test(text.trim())) {
             return `<div class="story-narrative" style="color: var(--text-ghost);">${text}</div>`;
         }
-        if (text.includes("<b>你</b>：") || text.startsWith("你：")) {
-            return `<div class="story-dialogue" style="color: var(--color-gold);">${text}</div>`;
+
+        // ✅ 智慧分離：把冒號前後拆開，只讓「對話內容」變色，名字不變色
+        if (text.includes("：")) {
+            let colonIdx = text.indexOf("：");
+            let speakerPart = text.substring(0, colonIdx + 1); // 包含名字與冒號
+            let dialoguePart = text.substring(colonIdx + 1);   // 只有對話內容
+
+            if (speakerPart.includes("你")) {
+                return `<div class="story-dialogue">${speakerPart}<span style="color: var(--color-gold);">${dialoguePart}</span></div>`;
+            } else if (dialoguePart.includes("「") || speakerPart.includes("<b>")) {
+                return `<div class="story-dialogue">${speakerPart}<span style="color: var(--color-info-soft);">${dialoguePart}</span></div>`;
+            }
         }
-        if (text.includes("：") && text.includes("「")) {
-            return `<div class="story-dialogue" style="color: var(--color-info-soft);">${text}</div>`;
-        }
+
+        // 預設動作文本
         return `<div class="story-action">${text}</div>`;
     },
 
@@ -163,8 +176,15 @@ window.SQ.Engine.Story = {
 
             const txt     = d.text[lang] || d.text['zh'] || (typeof d.text === 'string' ? d.text : '');
             const speaker = d.speaker;
-            const rawText = (speaker === '旁白' || !speaker) ? `${txt}` : `<b>${speaker}</b>：「${txt}」`;
-            return this._formatText(rawText);
+
+            if (speaker === '旁白' || !speaker) {
+                return this._formatText(`${txt}`);
+            } else {
+                // ✅ 智慧判斷引號：如果原句已經包含「」或雙引號，就不外加引號
+                let hasQuotes = txt.includes('「') || txt.includes('"') || txt.includes('“');
+                let rawText = hasQuotes ? `<b>${speaker}</b>：${txt}` : `<b>${speaker}</b>：「${txt}」`;
+                return this._formatText(rawText);
+            }
         });
 
         this.playSceneNode({ ...node, text: textQueue, dialogue: null });

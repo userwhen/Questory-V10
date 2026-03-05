@@ -13,7 +13,16 @@ Object.assign(window.SQ.Engine.Story, {
     // 🗺️ [SECTION 2] FLOW & NAVIGATION
     // ============================================================
     playSceneNode: function(node) {
-        if (!node) { this.drawAndPlay(); return; }
+        // ✅ 修復突然結束：如果沒有節點，判斷是該結束劇本還是抽新卡
+        if (!node) { 
+            const gs = window.SQ.State;
+            if (gs.story && gs.story.chain) {
+                this.finishChain();
+            } else {
+                this.drawAndPlay();
+            }
+            return; 
+        }
 
         let activeNode = { ...node };
 
@@ -279,7 +288,7 @@ Object.assign(window.SQ.Engine.Story, {
         window.SQ.Temp.storyCard        = null;
         window.SQ.Temp.lastHubNode      = null; // ✅ HUB 記憶清理
 
-        if (gs.story) { gs.story.tags = []; gs.story.vars = {}; }
+        if (gs.story) { gs.story.tags = []; gs.story.vars = {}; gs.story.flags = {}; }
 
         window.SQ.Temp.isProcessing = false;
         window.SQ.Temp.lockInput    = false;
@@ -296,6 +305,12 @@ Object.assign(window.SQ.Engine.Story, {
         const gs = window.SQ.State;
         if (window.SQ.Engine.Map) window.SQ.Engine.Map.init();
         if (!gs.story.skeletonHistory) gs.story.skeletonHistory = [];
+		// ✅ 清除標籤污染：在啟動新劇本前，徹底清空上一局的殘留狀態
+        if (gs.story) {
+            gs.story.tags = [];
+            gs.story.vars = {};
+            gs.story.flags = {};
+        }
 
         if (window.StoryGenerator && window.SQ.Engine.Generator.initChain) {
             const availableModes = Object.keys(window.SQ.Engine.Generator.skeletons);
@@ -339,8 +354,9 @@ Object.assign(window.SQ.Engine.Story, {
 
         if (gs.story) {
             gs.story.tags = [];
-            gs.story.vars = {};
-            console.log("🧹 區域變數與標籤已清空");
+			gs.story.vars = {};
+			gs.story.flags = {};
+			console.log("🧹 區域變數、標籤與 flags 已清空");
         }
 
         if (window.SQ.View.Story) window.SQ.View.Story.renderIdle();

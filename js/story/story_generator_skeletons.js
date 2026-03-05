@@ -33,7 +33,10 @@ window.SQ.Engine.Generator = {
 
         if (flow.isSequential) {
             // 線性模式（戀愛、養成）
-            finalFlow.push('middle', 'middle', 'adv');
+            let min = flow.minMiddle || 3;
+			let max = flow.maxMiddle || 4;
+			let middleCount = min + Math.floor(Math.random() * (max - min + 1));
+			for (let i = 0; i < middleCount; i++) finalFlow.push('middle');
         } else {
             // 箱庭模式（懸疑、恐怖、冒險）
             let min = flow.minMiddle || 3;
@@ -53,7 +56,6 @@ window.SQ.Engine.Generator = {
         player_trait: "global_player_trait",
         world_vibe:   "global_world_vibe",
         env_building: "env_building",
-        play_mode:    "global_play_mode"
     },
 
     // ============================================================
@@ -61,65 +63,98 @@ window.SQ.Engine.Generator = {
     // 新增類型：在這裡加一個 key，其他引擎邏輯自動支援
     // ============================================================
     skeletons: {
-        'mystery': {
-            tensionName: "暴露度",
-            seeds: {
-                weather:       "env_weather",
-                atmosphere:    "env_atmosphere",
-                true_culprit:  "core_identity",     // 開局鎖死兇手
-                murder_weapon: "combo_item_simple"  // 開局鎖死凶器
-            },
-            actors: [
-                { key: 'detective', pool: 'core_identity', tags: ['human', 'mystery'] },
-                { key: 'victim',    pool: 'core_identity', tags: ['human', 'mystery'] },
-                { key: 'suspect_A', pool: 'core_identity', tags: ['human', 'mystery'] },
-                { key: 'suspect_B', pool: 'core_identity', tags: ['human', 'mystery'] }
-            ],
-            flow: { isSequential: false, minMiddle: 3, maxMiddle: 3 }
+
+    // ── 偵探懸疑 ──────────────────────────────────────────────
+    'mystery': {
+        tensionName: "暴露度",
+        seeds: {
+            weather:       "env_weather",
+            atmosphere:    "env_atmosphere",
+            true_culprit:  "core_identity",
+            murder_weapon: "combo_item_simple"
         },
-        'horror': {
-            tensionName: "恐懼值",
-            seeds: {
-                weather:    "env_weather",
-                curse_type: "horror_curse_type"
-            },
-            actors: [
-                { key: 'survivor', pool: 'core_identity', tags: ['human'] },
-                { key: 'monster',  pool: 'core_identity', tags: ['monster'] }
-            ],
-            flow: { isSequential: false, minMiddle: 3, maxMiddle: 4 }
-        },
-        'adventure': {
-            tensionName: "危險級別",
-            seeds: {
-                world_state: "adventure_world_state",
-                start_bonus: "adventure_start_bonus"
-            },
-            actors: [
-                { key: 'hero', pool: 'core_identity', tags: ['human'] },
-                { key: 'boss', pool: 'core_identity', tags: ['monster', 'boss'] }
-            ],
-            flow: { isSequential: false, minMiddle: 3, maxMiddle: 5 }
-        },
-        'romance': {
-            tensionName: "流言蜚語",
-            seeds: { meet_location: "romance_meet_location" },
-            actors: [
-                { key: 'lover', pool: 'core_identity', tags: ['human', 'romance'] },
-                { key: 'rival', pool: 'core_identity', tags: ['human', 'romance'] }
-            ],
-            flow: { isSequential: true }
-        },
-        'raising': {
-            tensionName: "壓力值",
-            actors: [
-                { key: 'trainee', pool: 'core_identity', tags: ['is_trainee'] },
-                { key: 'mentor',  pool: 'core_identity', tags: ['human', 'mentor'] },
-                { key: 'rival',   pool: 'core_identity', tags: ['human'] }
-            ],
-            flow: { isSequential: true }
-        }
+        actors: [
+            { key: 'detective', pool: 'core_identity', tags: ['human', 'mystery'] },
+            { key: 'victim',    pool: 'core_identity', tags: ['human', 'mystery'] },
+            { key: 'suspect_A', pool: 'core_identity', tags: ['human', 'mystery'] },
+            { key: 'suspect_B', pool: 'core_identity', tags: ['human', 'mystery'] }
+        ],
+        flow: { isSequential: false, minMiddle: 4, maxMiddle: 5 }
+        //                                         ↑ 原本是 3, 3，增加搜查空間
     },
+
+    // ── 恐怖驚悚 ──────────────────────────────────────────────
+    'horror': {
+        tensionName: "作祟值",              // ↑ 改名，對應 curse_val 變數
+        seeds: {
+            weather:    "env_weather",
+            atmosphere: "env_atmosphere",   // ↑ 新增，開局烤死氣氛
+            curse_type: "horror_curse_type"
+        },
+        actors: [
+            { key: 'survivor', pool: 'core_identity', tags: ['human'] },
+            { key: 'monster',  pool: 'core_identity', tags: ['monster', 'horror'] }
+            //                                                          ↑ 加 horror tag 過濾
+        ],
+        flow: { isSequential: false, minMiddle: 4, maxMiddle: 5 }
+        //                                         ↑ 原本是 3, 4，與偵探對齊，增加鋪墊
+    },
+
+    // ── 冒險奇幻 ──────────────────────────────────────────────
+    'adventure': {
+        tensionName: "危險級別",
+        seeds: {
+            weather:     "env_weather",
+            atmosphere:  "env_atmosphere", // ✅ 補上氣氛
+            world_state: "adventure_world_state",
+            start_bonus: "adventure_start_bonus"
+        },
+        actors: [
+            { key: 'hero', pool: 'core_identity', tags: ['human'] },
+            { key: 'boss', pool: 'core_identity', tags: ['monster', 'boss'] }
+        ],
+        flow: { isSequential: false, minMiddle: 4, maxMiddle: 6 }
+        //                                         ↑ 原本是 3, 5，給更多技能積累時間
+    },
+
+    // ── 戀愛 ──────────────────────────────────────────────────
+    'romance': {
+        tensionName: "流言蜚語",
+        seeds: { 
+            weather:     "env_weather",    // ✅ 補上天氣
+            atmosphere:  "env_atmosphere", // ✅ 補上氣氛
+            meet_location: "romance_meet_location" 
+        },
+        actors: [
+            { key: 'lover', pool: 'core_identity', tags: ['human', 'romance'] },
+            { key: 'rival', pool: 'core_identity', tags: ['human', 'romance'] }
+        ],
+        flow: { isSequential: true }
+    },
+
+    // ── 養成 ──────────────────────────────────────────────────
+    'raising': {
+        tensionName: "壓力值",
+        seeds: { 
+            weather:     "env_weather",    // ✅ 補上天氣
+            atmosphere:  "env_atmosphere"  // ✅ 補上氣氛
+        },
+        actors: [
+            { key: 'trainee', pool: 'core_identity', tags: ['is_trainee'] },
+            { key: 'mentor',  pool: 'core_identity', tags: ['human', 'mentor'] },
+            { key: 'rival',   pool: 'core_identity', tags: ['human'] }
+        ],
+        flow: { isSequential: true }
+    },
+
+    // ── 學習（語言螺旋）──────────────────────────────────────
+    'learning': {
+        tensionName: "壓力值",
+        actors: [],
+        flow: { isSequential: false }
+    }
+	}
 };
 
 window.StoryGenerator = window.SQ.Engine.Generator; // 向下相容別名
+console.log("✅ story_generator_skeletons V85 補丁說明已載入");

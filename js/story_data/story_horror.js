@@ -1,298 +1,777 @@
-/* js/story_data/story_horror.js (V8 雙模式融合終極版：生存箱庭 + 驚悚線性) */
-(function() {
+/* js/story_data/story_horror.js - V1.0
+ * 恐怖懸疑劇本節點
+ *
+ * 核心機制：作祟值（curse_val）
+ *   - 探索中隨機上升，部分事件固定上升
+ *   - curse_val >= 50 → 前兆事件出現，異象開始
+ *   - curse_val >= 80 → tag: risk_high，引擎強制抽高壓節點
+ *   - curse_val = 100 → 強制進入 climax（由 env_building + curse_type 決定遭遇）
+ *
+ * 路線標籤（由開場選項賦予）：
+ *   route_investigate → 主動調查詛咒根源，以知識破解
+ *   route_escape      → 盡快逃出，不管根源
+ *
+ * 與偵探劇本的通用節點（reqTags 只寫 ['horror'] 或 ['mystery', 'horror']）：
+ *   - 部分中段通用節點可以被兩個劇本共同觸發
+ *   - climax 的三槽結構（逃跑/戰鬥/找方法）是通用危機解法框架
+ *
+ * 載入順序：story_data_core → story_mystery → story_horror
+ */
+(function () {
     const DB = window.FragmentDB;
-    if (!DB) {
-        console.error("❌ 錯誤：找不到 FragmentDB，請確認 story_data_core.js 已優先載入。");
-        return;
-    }
-
-    // ==========================================
-    // 🚪 1. 箱庭大廳共用選項 (完美連動時間與生存機制)
-    // ==========================================
-    const horrorHubOptions = [
-        { 
-            label: "🔍 仔細搜查這個房間 (耗時 1)", 
-            action: "advance_chain", 
-            rewards: { varOps: [{key: 'time_left', val: 1, op: '-'}] } 
-        },
-        { 
-            label: "🗺️ 趕快離開，推開新門 (耗時 1)", 
-            action: "map_explore_new", 
-            rewards: { varOps: [{key: 'time_left', val: 1, op: '-'}] } 
-        }
-    ];
+    if (!DB) { console.error("❌ story_horror.js: FragmentDB 未就緒"); return; }
 
     DB.templates = DB.templates || [];
-    DB.templates.push(
-        // ========================================================================
-        // 🟥 【模式 A】生存箱庭模式 (Hub Mode) - 密室逃脫與時間倒數
-        // ========================================================================
-        
-        // --- 🎬 箱庭開場 ---
-        {
-            type: 'start', id: 'hor_hub_start',
-            reqTags: ['horror', 'is_hub_mode'],
-            onEnter: { 
-				varOps: [
-					{ key: 'tension', val: 20, op: 'set', msg: "⚠️ 恐懼開始蔓延..." },
-					{ key: 'time_left', val: 3, op: 'set', msg: "⏳ 距離黎明還剩 3 小時" },
-					{ key: 'haunt_level', val: 0, op: 'set' } // 🌟 [新增] 初始化作祟值
-				] 
-			},
-            dialogue: [
-                { text: { zh: "你不該來這裡的。" } },
-                { text: { zh: "在{env_weather}的夜晚，你的車拋錨在了半路。這棟廢棄的{env_building}是你唯一的避難所。" } },
-                { text: { zh: "但大門在你身後死死鎖上。黑暗中傳來了令人毛骨悚然的{env_sound}。" } },
-                { text: { zh: "你必須在這裡撐過 3 個小時，直到天亮..." } }
-            ],
-            options: DB.getHubOptions('horror')
-        },
 
-        // --- 🔍 箱庭：染血的置物櫃 ---
-        {
-            type: 'middle', id: 'hor_hub_bloody_locker',
-            reqTags: ['horror', 'is_hub_mode'],
-            dialogue: [
-                { text: { zh: "你原本想在{env_room}的{env_feature}尋找物資或急救包。" } },
-                { text: { zh: "當你拉開門的瞬間，一具被折斷四肢、塞成球狀的屍體滾了出來，砸在你的腳邊！" } },
-                { text: { zh: "最可怕的是，屍體的眼睛還在死死盯著你，嘴唇微微抽動。" } }
-            ],
-            options: [
-                { 
-                    label: "強忍嘔吐感搜身 (LUK檢定)", check: { stat: 'LUK', val: 6 }, action: "node_next", 
-                    rewards: { gold: 30, varOps: [{key: 'tension', val: 10, op: '+'}] },
-                    nextScene: { dialogue: [{ text: { zh: "你摸到了一些有用的物資，但這畫面會在你腦海裡盤旋很久。" } }], options: DB.getHubOptions('horror') }
-                },
-                { 
-                    label: "嚇得跌坐在地連連後退", action: "node_next", 
-                    rewards: { varOps: [{key: 'tension', val: 20, op: '+'}] },
-                    nextScene: { dialogue: [{ text: { zh: "你狼狽地爬起來，心跳快得像是要炸開。" } }], options: DB.getHubOptions('horror') }
+    // ============================================================
+    // 🎬 [START] 開場節點 × 3
+    //    設計原則：
+    //      - 三種到達方式（受邀/迷路/主動闖入）
+    //      - 都在開場初始化 curse_val = 0，knowledge = 0
+    //      - 開場選項決定路線標籤
+    // ============================================================
+
+    // START-A：你收到了一封邀請函
+    DB.templates.push({
+        id: 'hor_start_invited',
+        type: 'start',
+        reqTags: ['horror'],
+        onEnter: {
+            varOps: [
+                { key: 'curse_val',  val: 0,  op: 'set' },
+                { key: 'knowledge',  val: 0,  op: 'set' }
+            ]
+        },
+        dialogue: [
+            {
+                text: {
+                    zh: "{weather}的夜晚，你按照邀請函上的指示，來到了這裡——{env_building}。<br><br>寄件人的名字已經模糊，但地址是真實的。<br><br>{env_pack_visual}<br><br>大門虛掩著，彷彿有人在等你。"
                 }
-            ]
-        },
-
-        // --- 🔍 箱庭：無形的威脅 ---
-        {
-            type: 'middle', id: 'hor_hub_invisible',
-            reqTags: ['horror', 'is_hub_mode'],
-            dialogue: [
-                { text: { zh: "{env_pack_sensory}" } },
-                { text: { zh: "你什麼都沒看見，但你的脖子突然感受到了一陣冰冷刺骨的吐息。" } },
-                { text: { zh: "某個看不見的東西，正緊緊貼在你的背後，跟著你的腳步移動。" } }
-            ],
-            options: [
-                { 
-                    label: "裝作沒發現往前走 (VIT檢定)", check: { stat: 'VIT', val: 6 }, action: "node_next", 
-                    nextScene: { 
-                        dialogue: [{ text: { zh: "你強忍恐懼勻速前進。過了一陣子，背後的重量消失了，那東西放過了你。" } }],
-                        rewards: { varOps: [{key:'tension', val: 10, op: '-'}] }, // 恐懼下降
-                        options: DB.getHubOptions('horror') 
-                    }, 
-                    failScene: { 
-                        dialogue: [{ text: { zh: "恐懼讓你崩潰，你忍不住瘋狂拍打自己的背！那刺骨的寒意瞬間鑽進了你的骨髓！" } }],
-                        rewards: { varOps: [{key:'tension', val: 30, op: '+'}, {key:'hp', val: 10, op: '-'}] },
-                        options: DB.getHubOptions('horror')
-                    } 
-                },
-                { 
-                    label: "猛然回頭！", action: "node_next", 
-                    rewards: { varOps: [{key:'tension', val: 25, op: '+'}] },
-                    nextScene: { dialogue: [{ text: { zh: "背後什麼都沒有！但那股寒意卻深深烙印在你的神經裡。" } }], options: DB.getHubOptions('horror') }
+            }
+        ],
+        options: [
+            {
+                label: "推開門進去，找出真相（調查路線）",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["route_investigate"],
+                    varOps: [{ key: 'knowledge', val: 5, op: '+' }]
                 }
-            ]
-        },
-
-        // --- 🔍 箱庭：瘋狂倖存者 ---
-        {
-            type: 'middle', id: 'hor_hub_mad_survivor',
-            reqTags: ['horror', 'is_hub_mode'], excludeTags: ['met_survivor'],
-            dialogue: [
-                { text: { zh: "你在{env_room}遇到了一名{survivor}。對方緊緊抱著頭，渾身發抖。" } },
-                { speaker: "倖存者", text: { zh: "別看牆壁... 牆壁裡有眼睛... 它們會鑽進你的腦子裡！" } },
-                { text: { zh: "對方語無倫次地尖叫著，突然拿起一把碎玻璃，開始狂抓自己的臉。" } }
-            ],
-            options: [
-                { 
-                    label: "試圖制止對方 (STR檢定)", check: { stat: 'STR', val: 6 }, action: "node_next",
-                    rewards: { tags: ['met_survivor'] },
-                    nextScene: { dialogue: [{ text: { zh: "你成功奪下玻璃，對方昏死了過去。你稍微感到了一絲心安。" } }], rewards: { varOps: [{key:'tension', val:10, op:'-'}] }, options: DB.getHubOptions('horror') },
-                    failScene: { dialogue: [{ text: { zh: "對方力氣大得驚人，推開你後衝進了黑暗中..." } }], rewards: { varOps: [{key:'tension', val:10, op:'+'}] }, options: DB.getHubOptions('horror') }
-                },
-                { 
-                    label: "對方沒救了，轉身離開", action: "node_next", 
-                    rewards: { varOps: [{key:'tension', val: 15, op: '+'}] },
-                    nextScene: { dialogue: [{ text: { zh: "你冷酷地拋下了對方。慘叫聲在背後迴盪。" } }], options: DB.getHubOptions('horror') }
+            },
+            {
+                label: "先觀察外部環境，確認退路（逃脫路線）",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["route_escape"],
+                    varOps: [{ key: 'curse_val', val: 5, op: '+' }]
                 }
+            }
+        ]
+    });
+
+    // START-B：你在暴風雨中迷路，闖入了這裡避難
+    DB.templates.push({
+        id: 'hor_start_lost',
+        type: 'start',
+        reqTags: ['horror'],
+        onEnter: {
+            varOps: [
+                { key: 'curse_val',  val: 10, op: 'set' },
+                { key: 'knowledge',  val: 0,  op: 'set' }
             ]
         },
-
-        // --- 🚨 箱庭高潮：黎明前的作祟 (Climax) ---
-        { 
-            type: 'climax', id: 'hor_hub_boss_haunt', 
-            reqTags: ['horror', 'is_hub_mode'],
-            onEnter: { varOps: [{key: 'time_left', val: 0, op: 'set', msg: "🚨 時間歸零！作祟開始！"}] },
-            dialogue: [
-                { text: { zh: "整棟{env_building}的{env_sound}瞬間消失，取而代之的是令人窒息的壓迫感。" } },
-                { text: { zh: "時間到了。一陣陰風吹過，{horror_chase_start}" } }, 
-                { text: { zh: "【{monster}】的作祟正式開始了！你必須活下去！" } }
-            ], 
-            options: [
-                { 
-                    label: "死戰到底！(STR檢定)", check: { stat: 'STR', val: 8 }, action: "node_next", 
-                    rewards: { exp: 100, gold: 50 },
-                    nextScene: { 
-                        dialogue: [{ text: { zh: "你拼盡全力擊退了怪物，第一縷曙光終於照進了窗戶！" } }], 
-                        options: [{ label: "結束這場惡夢", action: "advance_chain" }] 
-                    },
-                    failScene: { 
-                        dialogue: [{ text: { zh: "你敵不過它... 你的意識逐漸模糊..." } }], 
-                        rewards: { varOps: [{key:'hp', val: 50, op: '-'}] }, 
-                        options: [{ label: "眼前一黑", action: "advance_chain" }] 
-                    }
-                },
-                { label: "求助倖存者，使用護身符驅逐！", 
-					  condition: { tags: ['met_survivor'] }, 
-					  action: "node_next", 
-					  rewards: { exp: 200 },
-					  nextScene: { dialogue: [{ text: { zh: "倖存者顫抖著遞給你一個十字架。聖光爆發，怪物化為灰燼！" } }], 
-						options: [{ label: "完美生還", action: "advance_chain" }] }
-					}
-            ] 
-        },
-
-
-        // ========================================================================
-        // 🟦 【模式 B】驚悚線性模式 (Linear Mode) - 經典海龜湯與追擊敘事
-        // ========================================================================
-
-        // --- 🎬 線性開場 ---
-        {
-            type: 'start', id: 'hor_lin_setup',
-            reqTags: ['horror', 'is_linear_mode'],
-            onEnter: { varOps: [{ key: 'tension', val: 10, op: 'set' }] },
-            dialogue: [
-                { text: { zh: "這裡本該是你熟悉的{env_room}，但此刻看起來卻異常陌生。" } },
-                { text: { zh: "{env_pack_visual}，牆角的陰影似乎比平常更深、更濃。" } },
-                { text: { zh: "你停下腳步，總覺得有某種視線正在從{env_feature}的縫隙中窺視著你。" } },
-                { speaker: "旁白", text: { zh: "（耳邊傳來一陣若有似無的竊笑聲，聽起來既像老人，又像嬰兒...）" } }
-            ],
-            options: [
-                { label: "強裝鎮定，忽視聲音", action: "advance_chain" },
-                { label: "檢查聲音來源", action: "advance_chain", rewards: { tags: ['marked_by_curse'], varOps: [{ key: 'tension', val: 15, op: '+' }] } }
-            ]
-        },
-
-        // --- 🔪 線性：樓層殺手 (海龜湯) ---
-        {
-            type: 'middle', id: 'hor_lin_stalk_floor_killer',
-            reqTags: ['horror', 'is_linear_mode'],
-            dialogue: [
-                { text: { zh: "你透過窗戶往下看，街燈下有一個身穿雨衣的{monster}，正用一把{item_physical_state}的斧頭狂砍著地上的血肉。" } },
-                { text: { zh: "突然，對方停下動作，緩緩抬起頭，精準無比地與你對上了視線。" } },
-                { text: { zh: "一樓樓梯間的感應燈亮起... 幾秒後熄滅，接著二樓的燈亮了... 對方正在數著樓層上來找你！" } }
-            ],
-            options: [
-                { 
-                    label: "鎖死房門躲進衣櫃！(AGI檢定)", check: { stat: 'AGI', val: 6 }, action: "node_next", 
-                    nextScene: { 
-                        dialogue: [{ text: { zh: "你剛躲進去，門外就傳來沈重的腳步聲。「叩、叩...」斧頭在門上刮擦著。幾分鐘後，腳步聲終於遠去。" } }],
-                        options: [{ label: "趁機溜出去", action: "advance_chain" }]
-                    }, 
-                    failScene: { 
-                        dialogue: [{ text: { zh: "你轉身的瞬間，「砰！」門板被劈開！一隻滿佈血絲的眼睛從洞口探了進來！" } }],
-                        rewards: { tags: ['risk_high'], varOps: [{key:'tension', val: 20, op: '+'}] },
-                        options: [{ label: "破窗逃跑！", action: "advance_chain" }]
-                    } 
-                },
-                { 
-                    label: "抄起武器，門後埋伏！(STR檢定)", style: "danger", check: { stat: 'STR', val: 7 }, action: "node_next",
-                    nextScene: { dialogue: [{ text: { zh: "門推開的瞬間你狠狠砸了下去！對方摔下樓梯，你趁機狂奔逃離。" } }], options: [{ label: "逃脫", action: "advance_chain" }] },
-                    failScene: { dialogue: [{ text: { zh: "你反被一腳踹飛，斧頭高高舉起..." } }], rewards: { varOps: [{key:'hp', val: 20, op: '-'}] }, options: [{ label: "死命掙扎", action: "advance_chain" }] }
+        dialogue: [
+            {
+                text: {
+                    zh: "{weather}。<br><br>你已經在這片{env_pack_sensory}裡走了太久。<br><br>遠處出現了{env_building}的輪廓——廢棄的，但至少有屋頂。<br><br>你踢開了積滿灰塵的大門。<br><br>就在你關上門的瞬間，你聽到了{env_sound}。<br>來自建築的深處。"
                 }
-            ]
-        },
-
-        // --- 📷 線性：相機鬼影 ---
-        {
-            type: 'middle', id: 'hor_lin_stalk_camera',
-            reqTags: ['horror', 'is_linear_mode'],
-            dialogue: [
-                { text: { zh: "周圍的燈光突然全部熄滅。你掏出手機開啟相機的閃光燈，試圖照亮前方的路。" } },
-                { text: { zh: "螢幕上顯示著前方的空蕩走廊，但當你把鏡頭稍微偏轉時——" } },
-                { text: { zh: "手機螢幕裡，一個高瘦蒼白的人影，就筆直地站在你左肩的正後方！但肉眼卻什麼都沒看見！" } }
-            ],
-            options: [
-                { label: "不回頭，直接轉身揮拳！(STR檢定)", style: "danger", check: { stat: 'STR', val: 6 }, action: "advance_chain" },
-                { label: "死盯著螢幕，倒退著走", action: "advance_chain", rewards: { tags: ['risk_high'], varOps: [{key:'tension', val: 15, op: '+'}] } }
-            ]
-        },
-
-        // --- 🏃 線性：扭曲追跡 ---
-        {
-            type: 'middle', id: 'hor_lin_psych_stalk',
-            reqTags: ['horror', 'is_linear_mode'],
-            dialogue: [
-                { text: { zh: "走廊彷彿沒有盡頭。身後傳來了急促的{env_sound}。" } },
-                { text: { zh: "那聲音極不規律，就像是某種肢體扭曲的怪物，正手腳並用在地上爬行。" } },
-                { speaker: "？？？", text: { zh: "嘻嘻... 找到... 你了..." } }
-            ],
-            options: [
-                { label: "屏住呼吸，躲進死角", style: "primary", check: { stat: 'INT', val: 5 }, action: "advance_chain" },
-                { label: "不要回頭，狂奔！", action: "advance_chain", rewards: { varOps: [{key:'tension', val: 10, op: '+'}] } }
-            ]
-        },
-
-        // --- 🚨 線性高潮：直視恐懼 (Climax) ---
-        {
-            type: 'climax', id: 'hor_lin_climax_look',
-            reqTags: ['horror', 'is_linear_mode'],
-            dialogue: [
-                { text: { zh: "無路可退了。那個【{monster}】就懸掛在天花板上。" } },
-                { text: { zh: "對方的頭顱以詭異的角度轉了180度，死白色的眼珠正死死盯著你。" } },
-                { text: { zh: "所有的本能都在尖叫：絕對不能和對方對視。" } }
-            ],
-            options: [
-                { 
-                    label: "緊閉雙眼，不停祈禱 (LUK檢定)", action: "node_next", check: { stat: 'LUK', val: 5 }, 
-                    nextScene: { 
-                        dialogue: [{ text: { zh: "你感到一股冰冷的氣息貼著臉頰滑過... 但最終，對方似乎對靜止的獵物失去了興趣。" } }],
-                        options: [{ label: "撐過去了", action: "advance_chain" }]
-                    }, 
-                    failScene: { 
-                        dialogue: [{ text: { zh: "你忍不住睜開了一條縫... 一張布滿血絲的臉正貼在你的鼻尖前，露出了裂到耳根的笑容。" } }],
-                        rewards: { varOps: [{key:'tension', val: 50, op: '+'}] },
-                        options: [{ label: "慘叫", action: "advance_chain" }]
-                    } 
-                },
-                { 
-                    label: "用手電筒強光照射對方！", style: "danger", action: "node_next", 
-                    nextScene: { 
-                        dialogue: [
-                            { text: { zh: "光線照亮了對方的全貌——那景象超越了人類理智的極限。" } },
-                            { text: { zh: "你的意識在尖叫中斷線了。\n【結局：精神崩潰】" } }
-                        ],
-                        options: [{ label: "陷入瘋狂", action: "finish_chain" }] 
-                    } 
+            }
+        ],
+        options: [
+            {
+                label: "循著聲音去查（調查路線）",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["route_investigate"],
+                    varOps: [{ key: 'curse_val', val: 5, op: '+' }]
                 }
+            },
+            {
+                label: "找個角落先躲起來，等到天亮（逃脫路線）",
+                action: "advance_chain",
+                rewards: { tags: ["route_escape"] }
+            }
+        ]
+    });
+
+    // START-C：你是來調查這個地方的，你知道這裡有問題
+    DB.templates.push({
+        id: 'hor_start_professional',
+        type: 'start',
+        reqTags: ['horror'],
+        onEnter: {
+            varOps: [
+                { key: 'curse_val',  val: 0,  op: 'set' },
+                { key: 'knowledge',  val: 15, op: 'set' }
             ]
         },
+        dialogue: [
+            {
+                text: {
+                    zh: "你帶著工具箱來到了{env_building}。<br><br>根據你之前蒐集到的資料，這裡有關於{curse_type}的記錄。<br><br>{env_pack_visual}<br><br>這個地方有問題——你早就知道。<br>問題是：它有多嚴重。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "先做好防護，再系統性地調查（調查路線）",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["route_investigate", "has_preparation"],
+                    varOps: [{ key: 'knowledge', val: 10, op: '+' }]
+                }
+            },
+            {
+                label: "這比預期的還要糟，先確認撤退路線（逃脫路線）",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["route_escape", "has_preparation"],
+                    varOps: [{ key: 'knowledge', val: 5, op: '+' }]
+                }
+            }
+        ]
+    });
 
-        // ========================================================================
-        // 🏁 【共用尾聲】 (End)
-        // ========================================================================
-        {
-            type: 'end', id: 'hor_shared_end',
-            reqTags: ['horror'],
-            dialogue: [
-                { text: { zh: "不知道過了多久，周圍終於恢復了死寂。你推開大門，衝進了外面的陽光中。" } },
-                { text: { zh: "人群的喧囂聲讓你感到一陣恍惚。你以為你逃掉了。" } },
-                { text: { zh: "但當你低頭看時，發現自己的腳踝上，多了一個青紫色的手印，而且...還在發燙。" } }
-            ],
-options: [{ label: "這只是一個開始...", action: "finish_chain", rewards: { title: "生還者", gold: 30 } }]
-    }
-); // 🌟 1. 補上消失的括號與分號，關閉大陣列！
 
-DB.templates.push(DB.createHubTemplate('horror', 4));
+    // ============================================================
+    // 🔦 [MIDDLE - 調查路線] 探索節點
+    //    reqTags: ['horror', 'route_investigate']
+    //    設計原則：
+    //      - 知識（knowledge）增加 → 解鎖高潮的「找方法」選項
+    //      - 每個節點都讓作祟值上升一點（探索有代價）
+    //      - 找到的物品用於 climax 的條件判斷
+    // ============================================================
 
-    console.log("👻 恐怖驚悚劇本已載入...");
+    // MIDDLE-調查-A：發現關於詛咒的記錄
+    DB.templates.push({
+        id: 'hor_mid_inv_records',
+        type: 'middle',
+        reqTags: ['horror', 'route_investigate'],
+        excludeTags: ['found_curse_records'],
+        dialogue: [
+            {
+                text: {
+                    zh: "{phrase_find_action}<br><br>在{env_feature}裡，你找到了一疊發黃的記錄。<br><br>翻開第一頁，上面寫著關於{curse_type}的詳細描述。<br>字跡是用力刻上去的，好像寫字的人生怕忘記這些內容。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "仔細研讀（INT 檢定，耗時但收穫多）",
+                check: { stat: 'INT', val: 4 },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["found_curse_records", "knows_weakness"],
+                    varOps: [
+                        { key: 'knowledge', val: 25, op: '+' },
+                        { key: 'curse_val', val: 10, op: '+' }
+                    ],
+                    exp: 20
+                },
+                successText: "你找到了關鍵的一段——破解{curse_type}的方法，就記錄在這裡。"
+            },
+            {
+                label: "快速瀏覽，抓住重點",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["found_curse_records"],
+                    varOps: [
+                        { key: 'knowledge', val: 10, op: '+' },
+                        { key: 'curse_val', val: 5, op: '+' }
+                    ],
+                    exp: 10
+                }
+            }
+        ]
+    });
+
+    // MIDDLE-調查-B：找到關鍵物品（可用於對抗詛咒）
+    DB.templates.push({
+        id: 'hor_mid_inv_sacred_item',
+        type: 'middle',
+        reqTags: ['horror', 'route_investigate'],
+        excludeTags: ['has_sacred_item'],
+        dialogue: [
+            {
+                text: {
+                    zh: "{env_pack_visual}<br><br>{phrase_find_action}<br><br>是{combo_item_desc}<br><br>就算你不完全確定這東西的用途，<br>你的直覺告訴你它和{curse_type}有關。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "帶走它",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["has_sacred_item"],
+                    varOps: [
+                        { key: 'knowledge', val: 15, op: '+' },
+                        { key: 'curse_val', val: 8, op: '+' }
+                    ]
+                }
+            },
+            {
+                label: "先不碰，記下位置再說",
+                action: "advance_chain",
+                rewards: {
+                    varOps: [{ key: 'curse_val', val: 3, op: '+' }]
+                }
+            }
+        ]
+    });
+
+    // MIDDLE-調查-C：箱庭搜查房間（同偵探劇本的核心玩法）
+    DB.templates.push({
+        id: 'hor_mid_inv_hub_room',
+        type: 'middle',
+        reqTags: ['horror', 'route_investigate'],
+        isHub: true,
+        onEnter: {
+            varOps: [{ key: 'search_count', val: 3, op: 'set' }]
+        },
+        dialogue: [
+            {
+                text: {
+                    zh: "你來到了{env_room}。<br><br>{env_pack_visual}<br><br>這裡有幾個地方值得仔細搜查。<br>但每多待一刻，你感覺那股壓迫感就會強一分。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "🔍 搜查{env_feature}（作祟值 +5）",
+                action: "advance_chain",
+                condition: { vars: [{ key: 'search_count', val: 1, op: '>=' }] },
+                rewards: {
+                    varOps: [
+                        { key: 'search_count', val: 1, op: '-' },
+                        { key: 'curse_val',    val: 5, op: '+' }
+                    ]
+                },
+                nextScene: {
+                    dialogue: [{
+                        text: { zh: "你翻動了{env_feature}。<br><br>{combo_item_desc}<br><br>{env_pack_sensory}" }
+                    }],
+                    options: [
+                        {
+                            label: "帶走這個物品",
+                            action: "node_self",
+                            rewards: {
+                                tags: ['has_item_clue'],
+                                varOps: [{ key: 'knowledge', val: 8, op: '+' }]
+                            }
+                        },
+                        { label: "繼續搜查其他地方", action: "node_self" }
+                    ]
+                }
+            },
+            {
+                label: "🕯️ 感應此處的靈力（INT 檢定）",
+                check: { stat: 'INT', val: 5 },
+                action: "advance_chain",
+                condition: {
+                    vars: [{ key: 'search_count', val: 1, op: '>=' }],
+                    excludeTags: ['sensed_room']
+                },
+                rewards: {
+                    tags: ['sensed_room'],
+                    varOps: [
+                        { key: 'search_count', val: 1, op: '-' },
+                        { key: 'knowledge',    val: 20, op: '+' },
+                        { key: 'curse_val',    val: 15, op: '+' }
+                    ]
+                },
+                successText: "你感應到了{curse_type}的中心點——就在{env_feature}之下。"
+            },
+            {
+                label: "🚪 離開這個房間",
+                action: "advance_chain"
+            }
+        ]
+    });
+
+    // MIDDLE-調查-D：遭遇異象（作祟值高時更容易觸發）
+    DB.templates.push({
+        id: 'hor_mid_inv_omen',
+        type: 'middle',
+        reqTags: ['horror', 'route_investigate'],
+        dialogue: [
+            {
+                text: {
+                    zh: "{sentence_event_sudden}<br><br>{env_pack_sensory}<br><br>然後，你看見了——<br>{phrase_danger_appear}<br><br>不對。那不是真實的。<br>或者，你希望那不是真實的。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "強迫自己冷靜，記錄下這個現象（INT 檢定）",
+                check: { stat: 'INT', val: 4 },
+                action: "advance_chain",
+                rewards: {
+                    tags: ['witnessed_omen'],
+                    varOps: [
+                        { key: 'knowledge', val: 15, op: '+' },
+                        { key: 'curse_val', val: 10, op: '+' }
+                    ],
+                    exp: 15
+                },
+                successText: "你把看到的一切記在腦海裡。這些異象本身，就是破解詛咒的線索。"
+            },
+            {
+                label: "轉身離開，裝作沒看見",
+                action: "advance_chain",
+                rewards: {
+                    varOps: [{ key: 'curse_val', val: 20, op: '+' }]
+                }
+            }
+        ]
+    });
+
+
+    // ============================================================
+    // 🏃 [MIDDLE - 逃脫路線] 求生節點
+    //    reqTags: ['horror', 'route_escape']
+    //    設計原則：
+    //      - 確認出口 → 賦予 has_escape_route，決定結局能否成功逃脫
+    //      - 失敗讓 curse_val 快速上升
+    // ============================================================
+
+    // MIDDLE-逃脫-A：尋找出口
+    DB.templates.push({
+        id: 'hor_mid_esc_find_exit',
+        type: 'middle',
+        reqTags: ['horror', 'route_escape'],
+        excludeTags: ['found_exit'],
+        dialogue: [
+            {
+                text: {
+                    zh: "你沿著牆壁摸索著，尋找出口。<br><br>{env_pack_visual}<br><br>這棟建築比你想像的複雜得多。<br>每一扇門打開，裡面都是另一個房間。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "系統性地搜索，標記走過的路（INT 檢定）",
+                check: { stat: 'INT', val: 4 },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["found_exit"],
+                    varOps: [{ key: 'curse_val', val: 5, op: '+' }],
+                    exp: 20
+                },
+                successText: "你找到了一扇通往外部的窗戶。記住這個位置——這是你的退路。"
+            },
+            {
+                label: "憑直覺走，希望能找到出路",
+                action: "advance_chain",
+                rewards: {
+                    varOps: [{ key: 'curse_val', val: 15, op: '+' }]
+                }
+            }
+        ]
+    });
+
+    // MIDDLE-逃脫-B：被詛咒影響，行動受阻
+    DB.templates.push({
+        id: 'hor_mid_esc_impeded',
+        type: 'middle',
+        reqTags: ['horror', 'route_escape'],
+        dialogue: [
+            {
+                text: {
+                    zh: "{phrase_danger_warn}<br><br>你想要移動，但雙腿好像不聽使喚。<br><br>{sentence_tension}<br><br>這個地方不想讓你離開。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "拼命掙扎（VIT 或 STR 檢定）",
+                check: { stat: 'STR', val: 4 },
+                action: "advance_chain",
+                rewards: { exp: 10 },
+                successText: "你強行掙脫了那種莫名的壓迫感，往出口的方向跑去。"
+            },
+            {
+                label: "停下來，讓自己冷靜",
+                action: "advance_chain",
+                rewards: {
+                    varOps: [{ key: 'curse_val', val: 10, op: '+' }]
+                }
+            }
+        ],
+        onFail: {
+            varOps: [{ key: 'curse_val', val: 25, op: '+' }],
+            text: "你沒能掙脫。那股力量把你往回拖，拖向{env_building}的深處。"
+        }
+    });
+
+    // MIDDLE-逃脫-C：高作祟值強制觸發（詛咒開始具象化）
+    DB.templates.push({
+        id: 'hor_mid_esc_manifestation',
+        type: 'middle',
+        reqTags: ['horror', 'route_escape', 'risk_high'],
+        dialogue: [
+            {
+                text: {
+                    zh: "{horror_chase_start}<br><br>{monster}的存在已經不再只是幻覺。<br><br>它出現在你和出口之間。<br><br>{sentence_tension}"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "全力衝刺，從旁邊繞過去（AGI 檢定）",
+                check: { stat: 'AGI', val: 6 },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["evaded_monster"],
+                    varOps: [{ key: 'curse_val', val: -15, op: '+' }],
+                    exp: 30
+                },
+                successText: "你在千鈞一髮之際從它身旁竄過，跌進了下一條走廊。"
+            },
+            {
+                label: "退回原路，找另一條路",
+                action: "advance_chain",
+                rewards: {
+                    varOps: [{ key: 'curse_val', val: 10, op: '+' }]
+                }
+            }
+        ],
+        onFail: {
+            varOps: [{ key: 'curse_val', val: 30, op: '+' }],
+            text: "它抓住了你。你不知道用了什麼力氣掙脫，跌倒在地。<br>現在，情況更糟了。"
+        }
+    });
+
+
+    // ============================================================
+    // 🌐 [MIDDLE - 恐怖通用節點]
+    //    reqTags: ['horror']（不指定路線，任何 horror 劇本都能觸發）
+    //    同時也可以和偵探劇本共用（reqTags: ['horror', 'mystery']）
+    // ============================================================
+
+    // MIDDLE-通用-A：詭異的前兆（作祟值中等時出現）
+    DB.templates.push({
+        id: 'hor_mid_any_omen_low',
+        type: 'middle',
+        reqTags: ['horror'],
+        dialogue: [
+            {
+                text: {
+                    zh: "{env_pack_sensory}<br><br>{sentence_event_sudden}<br><br>沒有人，什麼都沒有。<br>但那種被注視的感覺，並沒有消失。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "繼續前進，不去在意",
+                action: "advance_chain",
+                rewards: { varOps: [{ key: 'curse_val', val: 8, op: '+' }] }
+            },
+            {
+                label: "原地停下，仔細觀察（INT 檢定）",
+                check: { stat: 'INT', val: 3 },
+                action: "advance_chain",
+                rewards: {
+                    varOps: [{ key: 'knowledge', val: 5, op: '+' }, { key: 'curse_val', val: 5, op: '+' }]
+                },
+                successText: "你注意到{env_feature}的位置不太對。好像有什麼東西剛剛移動過。"
+            }
+        ]
+    });
+
+    // MIDDLE-通用-B：發現前人留下的警告（可以是偵探或恐怖劇本的通用場景）
+    DB.templates.push({
+        id: 'hor_mid_any_warning',
+        type: 'middle',
+        reqTags: ['horror','mystery'],
+        excludeTags: ['found_warning'],
+        dialogue: [
+            {
+                text: {
+                    zh: "{env_pack_visual}<br><br>在{env_feature}上，你發現了用{item_physical_state}東西刻下的字：<br><br>「不要在天黑後留在這裡。」<br><br>日期是三年前。<br>不知道那個人後來怎麼了。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "這個警告是認真的，調整計畫",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["found_warning"],
+                    varOps: [{ key: 'knowledge', val: 10, op: '+' }]
+                }
+            },
+            {
+                label: "繼續，別在意這種東西",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["found_warning"],
+                    varOps: [{ key: 'curse_val', val: 12, op: '+' }]
+                }
+            }
+        ]
+    });
+
+    // MIDDLE-通用-C：與其他倖存者遭遇（共用結構，偵探劇本也可觸發）
+    DB.templates.push({
+        id: 'hor_mid_any_survivor_encounter',
+        type: 'middle',
+        reqTags: ['horror','mystery'],
+        excludeTags: ['met_survivor'],
+        dialogue: [
+            {
+                text: {
+                    zh: "{sentence_encounter}<br><br>不是怪物。是一個{identity_modifier}{core_identity}，<br>對方{state_modifier}。<br><br>「你也被困在這裡了嗎？」"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "一起行動",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["met_survivor", "has_ally"],
+                    varOps: [{ key: 'knowledge', val: 8, op: '+' }]
+                }
+            },
+            {
+                label: "謹慎，不完全信任對方",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["met_survivor"],
+                    varOps: [{ key: 'curse_val', val: 3, op: '+' }]
+                }
+            },
+            {
+                label: "讓對方先走，你跟在後面觀察",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["met_survivor"],
+                    varOps: [{ key: 'knowledge', val: 5, op: '+' }, { key: 'curse_val', val: 5, op: '+' }]
+                }
+            }
+        ]
+    });
+
+
+    // ============================================================
+    // ☠️ [CLIMAX] 高潮危機節點 × 2
+    //    三槽通用框架（逃跑 / 戰鬥 / 找方法）
+    //    這個結構可以直接被冒險劇本的 climax 複用
+    // ============================================================
+
+    // CLIMAX-A：詛咒具象化，決戰時刻
+    DB.templates.push({
+        id: 'hor_climax_curse_manifest',
+        type: 'climax',
+        reqTags: ['horror'],
+        dialogue: [
+            {
+                text: {
+                    zh: "作祟值已經到達了臨界點。<br><br>整棟{env_building}開始顫抖。<br><br>{monster}從{env_feature}裡現身——它的形態比任何描述都要更令人絕望。<br><br>{sentence_tension}<br><br>你只有一次機會。"
+                }
+            }
+        ],
+        options: [
+            // 槽一：找方法（需要 knows_weakness + 足夠的知識值）
+            {
+                label: "使用你找到的方法對抗詛咒根源（需要 knows_weakness）",
+                condition: {
+                    tags: ['knows_weakness'],
+                    vars: [{ key: 'knowledge', val: 30, op: '>=' }]
+                },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["used_ritual"],
+                    varOps: [{ key: 'curse_val', val: -50, op: '+' }],
+                    exp: 50
+                },
+                nextScene: {
+                    dialogue: [{
+                        text: {
+                            zh: "你執行了記錄中的儀式。<br><br>{monster}發出了憤怒的低鳴。<br>它的形態開始扭曲、崩解。<br><br>{curse_type}的力量正在撤退。"
+                        }
+                    }],
+                    options: [{ label: "不要停，繼續！", action: "advance_chain" }]
+                }
+            },
+            // 槽二：戰鬥（需要攜帶了神聖物品或武器）
+            {
+                label: "用你找到的物品正面對抗（需要 has_sacred_item）",
+                condition: { tags: ['has_sacred_item'] },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["fought_monster"],
+                    varOps: [{ key: 'curse_val', val: -20, op: '+' }],
+                    exp: 35
+                },
+                nextScene: {
+                    dialogue: [{
+                        text: {
+                            zh: "你舉起了{combo_item_simple}，朝著{monster}猛地擲去。<br><br>它沒有直接消滅對方，但——對方退縮了。<br>就這一瞬間的空隙，已經足夠了。"
+                        }
+                    }],
+                    options: [{ label: "趁現在！", action: "advance_chain" }]
+                }
+            },
+            // 槽三：逃跑（永遠可見，但成功需要 has_escape_route）
+            {
+                label: "全力逃跑（需要提前確認過退路）",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["attempted_escape"],
+                    varOps: [{ key: 'curse_val', val: 10, op: '+' }]
+                }
+            }
+        ]
+    });
+
+    // CLIMAX-B：詛咒的核心浮現（調查路線的特殊高潮）
+    DB.templates.push({
+        id: 'hor_climax_curse_core',
+        type: 'climax',
+        reqTags: ['horror', 'route_investigate'],
+        dialogue: [
+            {
+                text: {
+                    zh: "你找到了。<br><br>在{env_building}的最深處，{curse_type}的根源就在這裡。<br><br>一個{combo_item_desc}<br><br>它就是一切的起點。<br>只要摧毀它，一切就結束了。<br><br>——但靠近它，需要付出代價。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "毀掉它（有充足知識時成功率高）",
+                condition: { vars: [{ key: 'knowledge', val: 25, op: '>=' }] },
+                action: "advance_chain",
+                rewards: { tags: ["destroyed_core"], exp: 60 },
+                nextScene: {
+                    dialogue: [{ text: { zh: "你毫不猶豫地動手，將那個核心砸得粉碎。<br>周圍的空氣瞬間凝固，發出了一陣刺耳的悲鳴。" } }],
+                    options: [{ label: "結束這一切！", action: "advance_chain" }]
+                }
+            },
+            {
+                label: "毀掉它（知識不足，強行嘗試）",
+                action: "advance_chain",
+                rewards: { tags: ["attempted_destroy"], varOps: [{ key: 'curse_val', val: 30, op: '+' }] },
+                nextScene: {
+                    dialogue: [{ text: { zh: "你強行破壞它，但一股恐怖的反噬之力瞬間湧入你的腦海！<br>你的視線開始模糊..." } }],
+                    options: [{ label: "撐住！", action: "advance_chain" }]
+                }
+            },
+            {
+                label: "封印它（需要 has_sacred_item）",
+                condition: { tags: ['has_sacred_item'] },
+                action: "advance_chain",
+                rewards: { tags: ["sealed_core"], varOps: [{ key: 'curse_val', val: -30, op: '+' }], exp: 40 },
+                nextScene: {
+                    dialogue: [{ text: { zh: "你用{combo_item_simple}壓制住了核心的躁動。<br>黑暗的氣息被暫時逼退，周圍安靜了下來。" } }],
+                    options: [{ label: "見證結果...", action: "advance_chain" }]
+                }
+            }
+        ]
+    });
+
+
+    // ============================================================
+    // 🏁 [END] 結局節點 × 5
+    //    由 tags + 數值組合決定觸發哪個
+    // ============================================================
+
+    // END-A：根源淨化（最佳結局）
+    DB.templates.push({
+        id: 'hor_end_purified',
+        type: 'end',
+        reqTags: ['horror'],
+        condition: {
+            tags: ['destroyed_core'],
+            vars: [{ key: 'curse_val', val: 70, op: '<=' }]
+        },
+        dialogue: [
+            {
+                text: {
+                    zh: "{curse_type}的力量，在你親手毀掉那個源頭之後，像潮水一樣退去。<br><br>{env_building}恢復了沉默。<br>這一次，是真正的、乾淨的沉默。<br><br>你走出了大門，黎明的光線讓你不得不瞇起眼睛。<br>————<br>【根源淨化】<br>知識值：{knowledge}"
+                }
+            }
+        ],
+        options: [{ label: "結束冒險", action: "finish_chain", rewards: { exp: 100, gold: 50 } }]
+    });
+
+    // END-B：詛咒封印（有神聖物品，未能完全消滅）
+    DB.templates.push({
+        id: 'hor_end_sealed',
+        type: 'end',
+        reqTags: ['horror'],
+        condition: { tags: ['sealed_core'] },
+        dialogue: [
+            {
+                text: {
+                    zh: "你沒能完全毀掉它，但你用{combo_item_simple}把它封印了。<br><br>這個詛咒不會就此消失。<br>只是，在封印解開之前，它對這個世界的影響會暫時停止。<br><br>你拖著疲憊的身軀走出了{env_building}。<br>————<br>【詛咒封印】<br>知識值：{knowledge}"
+                }
+            }
+        ],
+        options: [{ label: "結束冒險", action: "finish_chain", rewards: { exp: 70, gold: 30 } }]
+    });
+
+    // END-C：成功逃脫（確認過退路，通過高潮的逃跑選項）
+    DB.templates.push({
+        id: 'hor_end_escaped',
+        type: 'end',
+        reqTags: ['horror'],
+        condition: {
+            tags: ['attempted_escape', 'found_exit']
+        },
+        dialogue: [
+            {
+                text: {
+                    zh: "你逃出去了。<br><br>{curse_type}的影響在你越過那道門檻的瞬間，戛然而止。<br><br>你沒有回頭。<br>你不知道那個地方最終會怎樣。<br>你只知道，你活著出來了。<br>————<br>【成功逃脫】"
+                }
+            }
+        ],
+        options: [{ label: "結束冒險", action: "finish_chain", rewards: { exp: 50, gold: 20 } }]
+    });
+
+    // END-D：被詛咒吞噬（作祟值過高，未能完成任何解法）
+    DB.templates.push({
+        id: 'hor_end_consumed',
+        type: 'end',
+        reqTags: ['horror'],
+        condition: {
+            vars: [{ key: 'curse_val', val: 90, op: '>=' }]
+        },
+        dialogue: [
+            {
+                text: {
+                    zh: "你已經說不清楚，自己是在哪個時間點開始迷失的。<br><br>{env_building}還在。你也還在。<br>但「你」這個概念，已經變得越來越模糊。<br><br>{curse_type}找到了一個新的居所。<br>————<br>【被詛咒吞噬】<br>作祟值：{curse_val}"
+                }
+            }
+        ],
+        options: [{ label: "結束冒險", action: "finish_chain", rewards: { exp: 10 } }]
+    });
+
+    // END-E：帶著傷痕離開（什麼都沒解決，但活著出來了）
+    DB.templates.push({
+        id: 'hor_end_escaped_hollow',
+        type: 'end',
+        reqTags: ['horror'],
+        dialogue: [
+            {
+                text: {
+                    zh: "你說不清楚自己是怎麼走出來的。<br><br>只記得跑，記得黑暗，記得{env_pack_sensory}<br><br>天亮了。你還活著。<br>{curse_type}還在那裡，原封不動。<br>————<br>【帶著傷痕離開】"
+                }
+            }
+        ],
+        options: [{ label: "結束冒險", action: "finish_chain", rewards: { exp: 25 } }]
+    });
+
+    console.log("✅ story_horror.js V1.0 已載入（3 開場 × 10 中段 × 2 高潮 × 5 結局）");
 })();

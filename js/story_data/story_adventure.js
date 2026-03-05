@@ -1,277 +1,770 @@
-/* js/story_data/story_adventure.js (V8 雙模式終極版：地城探索箱庭 + 經典史詩線性) */
-(function() {
+/* js/story_data/story_adventure.js - V1.0
+ * 冒險劇本節點
+ *
+ * 核心機制：
+ *   skill_points  → 冒險過程中積累，決定最終能否打敗 BOSS
+ *   puzzle_solved → 解謎成功的標記，解鎖高潮的「知識解法」選項
+ *   boss_weakness → 找到 BOSS 弱點，讓戰鬥成功率大幅提升
+ *
+ * 路線（由開場選擇）：
+ *   route_explorer → 解謎/探索為主，古墓奇兵風格
+ *   route_warrior  → 戰鬥成長為主，打怪練功風格
+ *   （兩條路線的中段節點大量共用，差異在 climax 的決勝判定）
+ *
+ * 與其他劇本的共用節點（reqTags 標記說明）：
+ *   reqTags: ['adventure']              → 只有冒險劇本觸發
+ *   reqTags: ['adventure', 'horror']    → 冒險與恐怖共用
+ *   reqTags: ['adventure', 'mystery']   → 冒險與偵探共用
+ *   reqTags: ['adventure', 'horror', 'mystery'] → 三個劇本都能觸發
+ *
+ * 技能成長與養成劇本的連結：
+ *   skill_points 變數在養成劇本的 climax 同樣被讀取
+ *   因此冒險中練到的技能，可以直接帶進養成模式的最終考驗
+ */
+(function () {
     const DB = window.FragmentDB;
-    if (!DB) {
-        console.error("❌ 錯誤：找不到 FragmentDB，請確認 story_data_core.js 已優先載入。");
-        return;
-    }
-    
-    // ==========================================
-    // 🚪 1. 冒險箱庭共用選項 (地城探索與時間消耗)
-    // ==========================================
-    const advHubOptions = [
-        { 
-            label: "🔍 仔細搜刮當前房間 (耗時 1)", 
-            action: "advance_chain", 
-            rewards: { varOps: [{key: 'time_left', val: 1, op: '-'}] } 
-        },
-        { 
-            label: "🗺️ 推開未知的門深入地城 (耗時 1)", 
-            action: "map_explore_new", 
-            rewards: { varOps: [{key: 'time_left', val: 1, op: '-'}] } 
-        }
-    ];
+    if (!DB) { console.error("❌ story_adventure.js: FragmentDB 未就緒"); return; }
 
     DB.templates = DB.templates || [];
-    DB.templates.push(
-        // ========================================================================
-        // 🟥 【模式 A】地城探索箱庭模式 (Hub Mode) - 尋找弱點與神器
-        // ========================================================================
-        
-        // --- 🎬 箱庭開場與職業選擇 ---
-        {
-            type: 'start', id: 'adv_hub_start_class',
-            reqTags: ['adventure', 'is_hub_mode'], 
-            onEnter: { 
-                varOps: [
-                    {key: 'tension', val: 0, op: 'set', msg: "🛡️ 探索開始"}, 
-                    {key: 'time_left', val: 4, op: 'set', msg: "⏳ 距離【{boss}】甦醒還有 4 小時"}
-                ] 
+
+
+    // ============================================================
+    // 🎬 [START] 開場節點 × 3
+    // ============================================================
+
+    // START-A：探索古蹟（解謎路線導向）
+    DB.templates.push({
+        id: 'adv_start_ruin',
+        type: 'start',
+        reqTags: ['adventure'],
+        onEnter: {
+            varOps: [
+                { key: 'skill_points', val: 0,  op: 'set' },
+                { key: 'puzzle_count', val: 0,  op: 'set' }
+            ]
+        },
+        dialogue: [
+            {
+                text: {
+                    zh: "{weather}的{atmosphere}之中，古老的{env_building}終於出現在你眼前。<br><br>傳說中，{boss}就藏在這裡最深的地方。<br>{world_state}的時代裡，能到達這裡的人已經不多了。<br><br>{env_pack_visual}"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "循著古地圖的指示深入（探索路線）",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["route_explorer"],
+                    varOps: [{ key: 'skill_points', val: 5, op: '+' }]
+                }
             },
-            dialogue: [
-                { text: { zh: "你踏入了這座{env_adj}的{env_building}。" } },
-                { text: { zh: "沉睡在最深處的【{boss}】將在 4 小時後甦醒。你必須在這段時間內盡可能搜刮物資、尋找對方的弱點，或是找出傳說中的武器。" } },
-                { text: { zh: "出發前，你決定依靠什麼力量戰鬥？" } }
-            ],
-            options: [
-                { 
-                    label: "握緊重劍 (戰士)", action: "node_next", 
-                    rewards: { tags: ['class_warrior'], varOps: [{key:'str', val:10, op:'+'}] }, 
-                    nextScene: { dialogue: [{ text: { zh: "沉重的劍身給了你安全感。你準備好深入地城了。" } }], options: DB.getHubOptions('adventure') } 
+            {
+                label: "直接突破，以武力開路（戰士路線）",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["route_warrior"],
+                    varOps: [{ key: 'skill_points', val: 5, op: '+' }]
+                }
+            }
+        ]
+    });
+
+    // START-B：接受委託，深入危地
+    DB.templates.push({
+        id: 'adv_start_quest',
+        type: 'start',
+        reqTags: ['adventure'],
+        onEnter: {
+            varOps: [
+                { key: 'skill_points', val: 5,  op: 'set' },
+                { key: 'puzzle_count', val: 0,  op: 'set' }
+            ]
+        },
+        dialogue: [
+            {
+                text: {
+                    zh: "委託書上只寫了兩件事：目的地，以及報酬。<br><br>你帶著{start_bonus}武器，踏入了{env_building}。<br>據說{boss}已經在這裡盤踞多年，沒有人能將它驅逐。<br><br>也許你是第一個真正有機會的人。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "先偵察地形，再制定策略（探索路線）",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["route_explorer", "has_preparation"],
+                    varOps: [{ key: 'skill_points', val: 8, op: '+' }]
+                }
+            },
+            {
+                label: "直接進去找{boss}（戰士路線）",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["route_warrior"],
+                    varOps: [{ key: 'skill_points', val: 3, op: '+' }]
+                }
+            }
+        ]
+    });
+
+    // START-C：意外發現，被捲入其中
+    DB.templates.push({
+        id: 'adv_start_accidental',
+        type: 'start',
+        reqTags: ['adventure'],
+        onEnter: {
+            varOps: [
+                { key: 'skill_points', val: 0,  op: 'set' },
+                { key: 'puzzle_count', val: 0,  op: 'set' }
+            ]
+        },
+        dialogue: [
+            {
+                text: {
+                    zh: "你本來只是路過。<br><br>但{env_pack_sensory}<br><br>然後是{sentence_event_sudden}<br><br>{env_building}的入口就在你面前，某種東西把你往裡面拉。<br>這不是偶然，你感覺得到。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "跟著感覺走，深入調查（探索路線）",
+                action: "advance_chain",
+                rewards: { tags: ["route_explorer"] }
+            },
+            {
+                label: "直覺告訴你要戰鬥，準備好武器（戰士路線）",
+                action: "advance_chain",
+                rewards: { tags: ["route_warrior"] }
+            }
+        ]
+    });
+
+
+    // ============================================================
+    // 🗺️ [MIDDLE - 探索路線] 解謎與偵察
+    //    reqTags: ['adventure', 'route_explorer']
+    // ============================================================
+
+    // MIDDLE-探索-A：古代謎題（密室逃脫風格）
+    DB.templates.push({
+        id: 'adv_mid_exp_puzzle',
+        type: 'middle',
+        reqTags: ['adventure', 'route_explorer'],
+        excludeTags: ['solved_main_puzzle'],
+        dialogue: [
+            {
+                text: {
+                    zh: "前方的通道被一道石門封死。<br><br>門上刻著複雜的圖案——這是某種謎題。<br><br>{env_pack_visual}<br><br>旁邊的石壁上，隱約有文字：<br>「{world_vibe}的時代裡，強者並非用力量開路，<br>而是用他所知道的去解開束縛。」"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "仔細分析圖案的規律（INT 檢定）",
+                check: { stat: 'INT', val: 5 },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["solved_main_puzzle", "puzzle_solved"],
+                    varOps: [
+                        { key: 'skill_points', val: 20, op: '+' },
+                        { key: 'puzzle_count', val: 1,  op: '+' }
+                    ],
+                    exp: 25
                 },
-                { 
-                    label: "詠唱咒文 (法師)", action: "node_next", 
-                    rewards: { tags: ['class_mage'], varOps: [{key:'int', val:10, op:'+'}] }, 
-                    nextScene: { dialogue: [{ text: { zh: "元素在你指尖跳動。你準備好深入地城了。" } }], options: DB.getHubOptions('adventure') } 
+                successText: "石門緩緩移動。你找到了規律——這個謎題的答案藏在{world_vibe}的歷史典故裡。"
+            },
+            {
+                label: "用蠻力砸開（STR 檢定，但會觸發陷阱）",
+                check: { stat: 'STR', val: 6 },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["solved_main_puzzle"],
+                    varOps: [{ key: 'skill_points', val: 5, op: '+' }]
                 },
-                { 
-                    label: "隱入黑暗 (刺客)", action: "node_next", 
-                    rewards: { tags: ['class_rogue'], varOps: [{key:'agi', val:10, op:'+'}] }, 
-                    nextScene: { dialogue: [{ text: { zh: "你與陰影融為一體。你準備好深入地城了。" } }], options: DB.getHubOptions('adventure') } 
-                }
-            ]
-        },
+                successText: "你砸開了石門，但觸動了某個機關——{sentence_event_sudden}"
+            },
+            {
+                label: "先繞路，找其他線索再回來",
+                action: "advance_chain",
+                rewards: { varOps: [{ key: 'skill_points', val: 3, op: '+' }] }
+            }
+        ]
+    });
 
-        // --- 💥 危險爆炸攔截 (Risk High) - 張力破 80 自動觸發！ ---
-        {
-            type: 'middle', id: 'adv_hub_danger_explode',
-            reqTags: ['adventure', 'is_hub_mode', 'risk_high'], 
-            onEnter: { varOps: [{key: 'tension', val: 50, op: '-', msg: "📉 危險級別重置"}, {key: 'hp', val: 20, op: '-', msg: "🩸 受到重創"}] },
-            dialogue: [
-                { text: { zh: "【高危警告：引來守衛】" } },
-                { text: { zh: "你弄出的動靜太大了！過高的危險級別引來了一隻狂暴的地城守衛。" } },
-                { text: { zh: "你在狹窄的通道裡被對方狠狠伏擊，受了重傷才勉強將其擊殺。" } }
-            ],
-            options: [
-                {
-                    label: "包紮傷口，繼續前進", action: "node_next",
-                    nextScene: { dialogue: [{ text: { zh: "白白浪費了寶貴的時間與體力... 請決定下一步：" } }], options: DB.getHubOptions('adventure') }
+    // MIDDLE-探索-B：發現 BOSS 的弱點記錄
+    DB.templates.push({
+        id: 'adv_mid_exp_weakness',
+        type: 'middle',
+        reqTags: ['adventure', 'route_explorer'],
+        excludeTags: ['boss_weakness'],
+        dialogue: [
+            {
+                text: {
+                    zh: "{phrase_find_action}<br><br>是一份古代的戰鬥記錄。<br>字跡早已模糊，但關鍵的部分你還是讀出來了：<br><br>「{boss}的弱點在於——」<br><br>後面的字被人刻意刮去了一半，但你能推斷出剩下的部分。"
                 }
-            ]
-        },
-
-        // --- 🔍 箱庭 Middle：找到首領弱點 ---
-        {
-            type: 'middle', id: 'adv_hub_find_weakness',
-            reqTags: ['adventure', 'is_hub_mode'], excludeTags: ['boss_weakness'],
-            dialogue: [
-                { text: { zh: "你在{env_feature}發現了一具冒險者的遺骸。他的手裡死死攥著一本筆記。" } },
-                { text: { zh: "你翻開筆記，上面詳細記錄了【{boss}】的攻擊模式與致命弱點！" } }
-            ],
-            options: [
-                { 
-                    label: "收下筆記 (獲得情報)", action: "node_next", 
-                    rewards: { tags: ['boss_weakness'], varOps: [{key: 'exp', val: 20, op: '+'}] },
-                    nextScene: { dialogue: [{ text: { zh: "這份情報絕對能在決戰中派上用場！" } }], options: DB.getHubOptions('adventure') }
-                }
-            ]
-        },
-
-        // --- 🔍 箱庭 Middle：獲得傳說神器 ---
-        {
-            type: 'middle', id: 'adv_hub_find_relic',
-            reqTags: ['adventure', 'is_hub_mode'], excludeTags: ['legendary_weapon'],
-            dialogue: [
-                { text: { zh: "你解開了一個複雜的機關，牆壁緩緩打開，露出了一個散發著神聖光芒的祭壇。" } },
-                { text: { zh: "祭壇中央插著一把【{start_bonus}}武器】。這股力量足以撼動天地！" } }
-            ],
-            options: [
-                { 
-                    label: "拔出武器！(力量暴增)", action: "node_next", 
-                    rewards: { tags: ['legendary_weapon'], varOps: [{key: 'str', val: 15, op: '+'}] },
-                    nextScene: { dialogue: [{ text: { zh: "強大的魔力湧入你的體內！你感覺自己無所不能。" } }], options: DB.getHubOptions('adventure') }
-                }
-            ]
-        },
-
-        // --- 🔍 箱庭 Middle：遭遇陷阱 (加危險度) ---
-        {
-            type: 'middle', id: 'adv_hub_trap',
-            reqTags: ['adventure', 'is_hub_mode'],
-            dialogue: [
-                { text: { zh: "你正走在狹窄的通道中，腳下的地磚突然下陷！" } },
-                { text: { zh: "「喀嚓」一聲，隱藏在{env_feature}的機關被觸發了！" } }
-            ],
-            options: [
-                { 
-                    label: "翻滾閃避 (AGI檢定)", check: { stat: 'AGI', val: 6 }, action: "node_next", 
-                    nextScene: { dialogue: [{ text: { zh: "你有驚無險地躲過了毒箭，但弄出了不小的聲響。" } }], rewards: { varOps: [{key:'tension', val:15, op:'+'}] }, options: DB.getHubOptions('adventure') },
-                    failScene: { dialogue: [{ text: { zh: "你被毒箭擦傷了，不僅損血，還引發了地城的警報！" } }], rewards: { varOps: [{key:'hp', val:10, op:'-'}, {key:'tension', val:25, op:'+'}] }, options: DB.getHubOptions('adventure') }
-                }
-            ]
-        },
-
-        // --- 👑 箱庭高潮：首領決戰 (Climax) ---
-        {
-            type: 'climax', id: 'adv_hub_climax_boss',
-            reqTags: ['adventure', 'is_hub_mode'],
-            onEnter: { varOps: [{key: 'time_left', val: 0, op: 'set', msg: "🚨 時間歸零！首領甦醒！"}] },
-            dialogue: [
-                { text: { zh: "時間到了。大地的震動越來越劇烈，【{boss}】徹底甦醒，擋住了你的去路！" } },
-                { text: { zh: "對方發出了一聲震耳欲聾的咆哮，強大的風壓幾乎讓你站立不穩。" } },
-                { text: { zh: "檢驗你探索成果的時刻到了！" } }
-            ],
-            options: [
-                {
-                    label: "針對弱點致命一擊！(需弱點情報)", condition: { tags: ['boss_weakness'] }, 
-                    action: "node_next", rewards: { tags: ['hub_win'] },
-                    nextScene: { dialogue: [{ text: { zh: "你精準地看穿了對方的破綻！一擊命中要害，不可一世的巨獸轟然倒下！" } }], options: [{ label: "迎向結局", action: "advance_chain" }] }
+            }
+        ],
+        options: [
+            {
+                label: "仔細推斷，補全記錄（INT 檢定）",
+                check: { stat: 'INT', val: 4 },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["boss_weakness"],
+                    varOps: [{ key: 'skill_points', val: 25, op: '+' }],
+                    exp: 20
                 },
-                {
-                    label: "解放神器之力！(需傳說武器)", condition: { tags: ['legendary_weapon'] }, 
-                    action: "node_next", rewards: { tags: ['hub_win'] },
-                    nextScene: { dialogue: [{ text: { zh: "你高舉神器，毀滅性的光芒瞬間吞噬了首領！連同整個房間都被夷為平地！" } }], options: [{ label: "迎向結局", action: "advance_chain" }] }
-                },
-                {
-                    label: "沒有底牌，只能硬剛！(高難度STR檢定)", excludeTags: ['boss_weakness', 'legendary_weapon'], 
-                    style: "danger", check: { stat: 'STR', val: 15 }, action: "node_next",
-                    nextScene: { dialogue: [{ text: { zh: "憑藉著超越極限的意志與運氣，你在血泊中奇蹟般地戰勝了對方！" } }], rewards: { tags: ['hub_win'] }, options: [{ label: "迎向結局", action: "advance_chain" }] },
-                    failScene: { dialogue: [{ text: { zh: "準備不足的你，在絕對的力量面前宛如螻蟻。你的視野逐漸被黑暗吞沒...\n【結局：無名的屍骸】" } }], options: [{ label: "眼前一黑", action: "advance_chain" }] }
+                successText: "你推算出了完整的弱點。面對{boss}時，這將是決定性的優勢。"
+            },
+            {
+                label: "帶走這份記錄，之後再研究",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["has_item_clue"],
+                    varOps: [{ key: 'skill_points', val: 10, op: '+' }]
                 }
-            ]
+            }
+        ]
+    });
+
+    // MIDDLE-探索-C：箱庭探索房間（三劇本通用核心玩法）
+    DB.templates.push({
+        id: 'adv_mid_exp_hub_room',
+        type: 'middle',
+        reqTags: ['adventure', 'route_explorer'],
+        isHub: true,
+        onEnter: {
+            varOps: [{ key: 'search_count', val: 3, op: 'set' }]
         },
-
-        // --- 🎬 箱庭尾聲 (End) ---
-        {
-            type: 'end', id: 'adv_hub_end_victory', 
-            reqTags: ['adventure', 'is_hub_mode', 'hub_win'],
-            dialogue: [
-                { text: { zh: "看著倒下的【{boss}】，你長長地吐出了一口氣。" } },
-                { text: { zh: "你收集了傳說中的戰利品，踏出了這座壓抑的建築。外面的陽光格外刺眼。" } },
-                { text: { zh: "【結局：地城征服者】" } }
-            ],
-            options: [{ label: "滿載而歸", action: "finish_chain", rewards: { title: "地城征服者", gold: 1000 } }]
-        },
-		{
-			type: 'end', id: 'adv_hub_end_defeat', 
-			// 🌟 當玩家是冒險箱庭模式，且「沒有」hub_win 標籤時，就會進來這裡
-			reqTags: ['adventure', 'is_hub_mode'],
-			excludeTags: ['hub_win'], 
-			dialogue: [
-				{ text: { zh: "你倒在血泊中，聽著首領震耳欲聾的咆哮聲逐漸遠去。" } },
-				{ text: { zh: "又一名勇敢但不幸的冒險者，成為了這座地城的養分。" } },
-				{ text: { zh: "【結局：無名的屍骸】" } }
-			],
-			options: [{ label: "重新來過", action: "finish_chain" }]
-		},
-
-
-        // ========================================================================
-        // 🟦 【模式 B】史詩線性模式 (Linear Mode) - 經典職業推進
-        // ========================================================================
-
-        // --- 🎬 線性開場 ---
-        {
-            type: 'start', id: 'adv_lin_start_class',
-            reqTags: ['adventure', 'is_linear_mode'], 
-            onEnter: { varOps: [{key: 'tension', val: 10, op: 'set'}] },
-            dialogue: [
-                { text: { zh: "強烈的暈眩感退去後，你發現自己身處於一座{env_adj}的{env_building}之中。" } },
-                { text: { zh: "天空中懸掛著破碎的月亮，遠處傳來了怪物的嘶吼聲。你必須依靠力量活下去。" } }
-            ],
-            options: [
-                { label: "握緊重劍 (戰士)", action: "advance_chain", rewards: { tags: ['class_warrior'], varOps: [{key:'str', val:10, op:'+'}] } },
-                { label: "詠唱咒文 (法師)", action: "advance_chain", rewards: { tags: ['class_mage'], varOps: [{key:'int', val:10, op:'+'}] } },
-                { label: "隱入黑暗 (刺客)", action: "advance_chain", rewards: { tags: ['class_rogue'], varOps: [{key:'agi', val:10, op:'+'}] } }
-            ]
-        },
-
-        // --- 🛡️ 線性 Middle：遭遇戰與補給 ---
-        {
-            type: 'middle', id: 'adv_lin_mid_ambush',
-            reqTags: ['adventure', 'is_linear_mode'],
-            dialogue: [
-                { text: { zh: "草叢中傳來了急促的沙沙聲。你猛然回頭，正好迎面撞上了一隻【{monster}】！" } }
-            ],
-            options: [
-                { 
-                    label: "正面迎擊 (STR檢定)", check: { stat: 'STR', val: 5 }, action: "advance_chain", 
-                    rewards: { varOps: [{key:'tension', val:10, op:'+'}] }
+        dialogue: [
+            {
+                text: {
+                    zh: "你踏入了{env_room}。<br><br>{env_pack_visual}<br><br>這裡有幾處值得搜查的地方。<br>帶走有用的東西，越多越好。"
                 }
-            ]
-        },
-        {
-            type: 'middle', id: 'adv_lin_mid_camp',
-            reqTags: ['adventure', 'is_linear_mode'],
-            dialogue: [
-                { text: { zh: "在連續的跋涉後，你找到了一處隱蔽的{env_room}，有冒險者留下的營火痕跡。" } }
-            ],
-            options: [
-                { label: "點燃營火休息 (恢復精力)", action: "advance_chain", rewards: { varOps: [{key:'energy', val:20, op:'+'}, {key:'tension', val:10, op:'-'}] } },
-                { label: "搜刮物資離開 (恢復HP與金幣)", action: "advance_chain", rewards: { gold: 30, varOps: [{key:'hp', val:10, op:'+'}] } }
-            ]
-        },
-
-        // --- 👑 線性 Climax：首領決戰 ---
-        {
-            type: 'climax', id: 'adv_lin_climax_boss',
-            reqTags: ['adventure', 'is_linear_mode'], 
-            dialogue: [
-                { text: { zh: "大地的震動越來越劇烈。在最深處，龐大的陰影籠罩了你。" } },
-                { text: { zh: "那是這片區域的霸主——【{boss}】！" } }
-            ],
-            options: [
-                { 
-                    label: "拔劍，正面硬剛！(戰士)", condition: { tags: ['class_warrior'] }, style: "danger", check: { stat: 'STR', val: 8 }, action: "node_next", 
-                    nextScene: { dialogue: [{ text: { zh: "你燃燒了生命力，將劍送入了怪物的心臟！" } }], options: [{ label: "走向勝利", action: "advance_chain" }] }, 
-                    failScene: { dialogue: [{ text: { zh: "實力差距絕望。你的武器折斷了...\n【結局：無名的屍骸】" } }], options: [{ label: "黯然倒下", action: "finish_chain" }] } 
+            }
+        ],
+        options: [
+            {
+                label: "🔍 搜查{env_feature}",
+                action: "advance_chain",
+                condition: { vars: [{ key: 'search_count', val: 1, op: '>=' }] },
+                rewards: {
+                    varOps: [{ key: 'search_count', val: 1, op: '-' }]
                 },
-                { 
-                    label: "釋放禁咒天雷！(法師)", condition: { tags: ['class_mage'] }, style: "danger", check: { stat: 'INT', val: 8 }, action: "node_next", 
-                    nextScene: { dialogue: [{ text: { zh: "毀滅的雷霆貫穿了怪物的身軀！" } }], options: [{ label: "走向勝利", action: "advance_chain" }] }, 
-                    failScene: { dialogue: [{ text: { zh: "咒語被打斷，魔力將你吞噬...\n【結局：魔力反噬】" } }], options: [{ label: "黯然倒下", action: "finish_chain" }] } 
-                },
-                { 
-                    label: "死角暗殺！(刺客)", condition: { tags: ['class_rogue'] }, style: "danger", check: { stat: 'AGI', val: 8 }, action: "node_next", 
-                    nextScene: { dialogue: [{ text: { zh: "你化作殘影，精準切斷了它的咽喉。" } }], options: [{ label: "走向勝利", action: "advance_chain" }] }, 
-                    failScene: { dialogue: [{ text: { zh: "怪物的尾巴將你狠狠掃飛...\n【結局：喋血陰影】" } }], options: [{ label: "黯然倒下", action: "finish_chain" }] } 
+                nextScene: {
+                    dialogue: [{ text: { zh: "你在{env_feature}找到了{combo_item_desc}" } }],
+                    options: [
+                        {
+                            label: "帶走它",
+                            action: "node_self",
+                            rewards: {
+                                tags: ['has_item_clue'],
+                                varOps: [{ key: 'skill_points', val: 8, op: '+' }]
+                            }
+                        },
+                        { label: "繼續搜查", action: "node_self" }
+                    ]
                 }
-            ]
+            },
+            {
+                label: "⚔️ 練習戰鬥動作（STR 或 AGI 檢定）",
+                check: { stat: 'AGI', val: 3 },
+                action: "advance_chain",
+                condition: {
+                    vars: [{ key: 'search_count', val: 1, op: '>=' }],
+                    excludeTags: ['trained_here']
+                },
+                rewards: {
+                    tags: ['trained_here'],
+                    varOps: [
+                        { key: 'search_count',  val: 1,  op: '-' },
+                        { key: 'skill_points',  val: 15, op: '+' }
+                    ],
+                    exp: 15
+                },
+                successText: "你利用這個空間練習了幾組動作。對付{boss}時，這些會用上。"
+            },
+            {
+                label: "🚪 繼續前進",
+                action: "advance_chain"
+            }
+        ]
+    });
+
+
+    // ============================================================
+    // ⚔️ [MIDDLE - 戰士路線] 戰鬥與技能成長
+    //    reqTags: ['adventure', 'route_warrior']
+    // ============================================================
+
+    // MIDDLE-戰士-A：遭遇小怪，練習戰鬥
+    DB.templates.push({
+        id: 'adv_mid_war_skirmish',
+        type: 'middle',
+        reqTags: ['adventure', 'route_warrior'],
+        dialogue: [
+            {
+                text: {
+                    zh: "{phrase_danger_appear}<br><br>不是{boss}，只是它的爪牙。<br>但這正是你需要的——實戰。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "正面迎擊，學習對方的攻擊模式（STR 檢定）",
+                check: { stat: 'STR', val: 4 },
+                action: "advance_chain",
+                rewards: {
+                    varOps: [{ key: 'skill_points', val: 20, op: '+' }],
+                    exp: 20
+                },
+                successText: "你擊退了對方，同時觀察到了{boss}爪牙的弱點。技能在實戰中成長。"
+            },
+            {
+                label: "閃避為主，保存體力（AGI 檢定）",
+                check: { stat: 'AGI', val: 4 },
+                action: "advance_chain",
+                rewards: {
+                    varOps: [{ key: 'skill_points', val: 12, op: '+' }],
+                    exp: 12
+                },
+                successText: "你巧妙地周旋，沒有消耗太多能量。速度就是你的武器。"
+            },
+            {
+                label: "撤退，這一戰划不來",
+                action: "advance_chain",
+                rewards: { varOps: [{ key: 'skill_points', val: 3, op: '+' }] }
+            }
+        ],
+        onFail: {
+            varOps: [{ key: 'skill_points', val: -5, op: '+' }],
+            text: "你被擊退了。傷了點皮肉，但更重要的是——你現在知道對方的力道了。"
+        }
+    });
+
+    // MIDDLE-戰士-B：找到傳說武器或強化裝備
+    DB.templates.push({
+        id: 'adv_mid_war_weapon',
+        type: 'middle',
+        reqTags: ['adventure', 'route_warrior'],
+        excludeTags: ['found_legendary_weapon'],
+        dialogue: [
+            {
+                text: {
+                    zh: "{env_pack_visual}<br><br>就在{env_feature}裡，有一個{combo_item_desc}<br><br>根據{start_bonus}的光芒判斷，這不是普通的東西。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "帶走它",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["found_legendary_weapon"],
+                    varOps: [{ key: 'skill_points', val: 20, op: '+' }]
+                }
+            },
+            {
+                label: "先測試它的威力",
+                check: { stat: 'INT', val: 3 },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["found_legendary_weapon", "knows_weapon_power"],
+                    varOps: [{ key: 'skill_points', val: 30, op: '+' }],
+                    exp: 15
+                },
+                successText: "你了解了這件武器的特性。對付{boss}時，你知道該怎麼用它。"
+            }
+        ]
+    });
+
+    // MIDDLE-戰士-C：遭遇強敵，接近 BOSS 前的最後考驗
+    DB.templates.push({
+        id: 'adv_mid_war_elite',
+        type: 'middle',
+        reqTags: ['adventure', 'route_warrior'],
+        excludeTags: ['fought_elite'],
+        dialogue: [
+            {
+                text: {
+                    zh: "{sentence_encounter}<br><br>這不是一般的敵人。是{boss}的精銳護衛。<br><br>{sentence_tension}"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "全力一戰（STR 或 AGI 擇高，V5 以上才有把握）",
+                check: { stat: 'STR', val: 5 },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["fought_elite"],
+                    varOps: [{ key: 'skill_points', val: 35, op: '+' }],
+                    exp: 35
+                },
+                successText: "你擊倒了護衛。{boss}已經近在眼前，而你比剛才更強了。"
+            },
+            {
+                label: "智取，找弱點偷襲（INT 檢定）",
+                check: { stat: 'INT', val: 5 },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["fought_elite"],
+                    varOps: [{ key: 'skill_points', val: 25, op: '+' }],
+                    exp: 25
+                },
+                successText: "你找到了對方的破綻，一擊必殺。聰明比力量更節省體力。"
+            },
+            {
+                label: "暫時撤退",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["fought_elite"],
+                    varOps: [{ key: 'skill_points', val: 5, op: '+' }]
+                }
+            }
+        ],
+        onFail: {
+            varOps: [{ key: 'skill_points', val: -8, op: '+' }],
+            text: "你被狠狠打退了。但失敗本身就是訓練——你不會在{boss}身上犯同樣的錯。"
+        }
+    });
+
+
+    // ============================================================
+    // 🌐 [MIDDLE - 冒險通用節點]
+    //    部分節點同時標記 horror / mystery，讓三個劇本共用
+    // ============================================================
+
+    // MIDDLE-通用-A：遭遇陷阱（三劇本共用）
+    DB.templates.push({
+        id: 'adv_mid_any_trap',
+        type: 'middle',
+        reqTags: ['adventure', 'horror', 'mystery'], // 🌟 三劇本皆可觸發
+        dialogue: [
+            {
+                text: {
+                    zh: "{env_pack_visual}<br><br>就在你往前踏出一步的時候——<br><br>{sentence_event_sudden}<br><br>陷阱！有人（或某種東西）事先設置了這個。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "快速反應，跳開（AGI 檢定）",
+                check: { stat: 'AGI', val: 4 },
+                action: "advance_chain",
+                rewards: { exp: 10 },
+                successText: "你在觸發的瞬間跳開了。沒有受傷，但心跳還沒停下來。"
+            },
+            {
+                label: "事先偵測到了，繞過去（INT 檢定）",
+                check: { stat: 'INT', val: 3 },
+                action: "advance_chain",
+                rewards: {
+                    varOps: [{ key: 'skill_points', val: 8, op: '+' }],
+                    exp: 15
+                },
+                successText: "你注意到了地板的異常，繞開了陷阱。對方低估了你的觀察力。"
+            },
+            {
+                label: "硬著頭皮衝過去（沒有結果保證）",
+                action: "advance_chain",
+                rewards: { exp: 5 }
+            }
+        ]
+    });
+
+    // MIDDLE-通用-B：神秘商人（三劇本共用）
+    DB.templates.push({
+        id: 'adv_mid_any_merchant',
+        type: 'middle',
+        reqTags: ['adventure', 'horror', 'mystery'], // 🌟 三劇本皆可觸發
+        excludeTags: ['met_merchant'],
+        dialogue: [
+            {
+                text: {
+                    zh: "{sentence_encounter}<br><br>不是敵人。是一個{identity_modifier}商人，神情{state_modifier}。<br><br>「我在這裡等了很久了，」他說，<br>「等一個需要我的東西的人。」"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "購買補給（金幣 -30，回復能量）",
+                condition: { vars: [{ key: 'gold', val: 30, op: '>=' }] },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["met_merchant"],
+                    varOps: [
+                        { key: 'gold',         val: -30, op: '+' },
+                        { key: 'skill_points', val: 10,  op: '+' }
+                    ]
+                }
+            },
+            {
+                label: "詢問這裡的情報",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["met_merchant"],
+                    varOps: [{ key: 'skill_points', val: 12, op: '+' }]
+                }
+            },
+            {
+                label: "不信任對方，繼續前進",
+                action: "advance_chain",
+                rewards: { tags: ["met_merchant"] }
+            }
+        ]
+    });
+
+    // MIDDLE-通用-C：環境謎題（冒險/恐怖共用）
+    DB.templates.push({
+        id: 'adv_mid_any_env_puzzle',
+        type: 'middle',
+        reqTags: ['adventure', 'horror'], // 🌟 冒險與恐怖共用
+        excludeTags: ['solved_env_puzzle'],
+        dialogue: [
+            {
+                text: {
+                    zh: "通道的另一端，{env_feature}擋住了去路。<br><br>{env_pack_visual}<br><br>這不是隨機的，這是設計過的。<br>有規律，有邏輯——只要你能找到它。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "花時間解開謎題（INT 檢定）",
+                check: { stat: 'INT', val: 4 },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["solved_env_puzzle", "puzzle_solved"],
+                    varOps: [
+                        { key: 'skill_points', val: 15, op: '+' },
+                        { key: 'puzzle_count', val: 1,  op: '+' }
+                    ],
+                    exp: 20
+                },
+                successText: "你解開了。這種地方的謎題，往往隱藏著更重要的答案。"
+            },
+            {
+                label: "找其他方法繞過去",
+                action: "advance_chain",
+                rewards: { varOps: [{ key: 'skill_points', val: 3, op: '+' }] }
+            }
+        ]
+    });
+
+    // MIDDLE-通用-D：隊友或 NPC 的協助（冒險/偵探共用）
+    DB.templates.push({
+        id: 'adv_mid_any_npc_help',
+        type: 'middle',
+        reqTags: ['adventure', 'mystery'], // 🌟 冒險與偵探共用
+        excludeTags: ['received_npc_help'],
+        dialogue: [
+            {
+                text: {
+                    zh: "你在{env_room}裡遇到了{combo_person_appearance}。<br><br>對方{state_modifier}，但看起來知道一些你不知道的事。<br><br>「你是來找{boss}的嗎？」對方壓低聲音問道。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "「對，你知道什麼？」",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["received_npc_help"],
+                    varOps: [{ key: 'skill_points', val: 15, op: '+' }]
+                }
+            },
+            {
+                label: "謹慎回應，先觀察對方",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["received_npc_help"],
+                    varOps: [{ key: 'skill_points', val: 8, op: '+' }]
+                }
+            }
+        ]
+    });
+
+
+    // ============================================================
+    // 🐉 [CLIMAX] 高潮節點 × 2
+    //    同樣使用三槽通用框架（逃跑 / 戰鬥 / 知識解法）
+    // ============================================================
+
+    // CLIMAX-A：與 BOSS 正面對決
+    DB.templates.push({
+        id: 'adv_climax_boss_fight',
+        type: 'climax',
+        reqTags: ['adventure'],
+        dialogue: [
+            {
+                text: {
+                    zh: "終於。<br><br>{boss}就在眼前。<br><br>{sentence_tension}<br><br>你在冒險中積累的一切，在這一刻都有了意義。<br>你只有一次機會——用對的方式。"
+                }
+            }
+        ],
+        options: [
+            // 槽一：維持原樣（已有 nextScene）
+            // 槽二：戰鬥
+            {
+                label: "用你在旅途中磨練的實力正面一戰",
+                condition: { vars: [{ key: 'skill_points', val: 50, op: '>=' }] },
+                action: "advance_chain",
+                rewards: { tags: ["fought_boss"], varOps: [{ key: 'skill_points', val: -20, op: '+' }], exp: 45 },
+                nextScene: {
+                    dialogue: [{ text: { zh: "你迎頭而上，與{boss}的力量正面衝撞。<br>巨大的衝擊力讓周圍的{env_feature}紛紛碎裂！" } }],
+                    options: [{ label: "分出勝負！", action: "advance_chain" }]
+                }
+            },
+            // 槽三：傳說武器
+            {
+                label: "祭出傳說武器（需要 found_legendary_weapon）",
+                condition: { tags: ['found_legendary_weapon'] },
+                action: "advance_chain",
+                rewards: { tags: ["used_legendary_weapon"], exp: 40 },
+                nextScene: {
+                    dialogue: [{ text: { zh: "武器爆發出刺眼的光芒，{boss}發出了痛苦的咆哮。<br>這就是終結它的時刻！" } }],
+                    options: [{ label: "給予最後一擊！", action: "advance_chain" }]
+                }
+            },
+            // 槽四：逃跑
+            {
+                label: "這一次不是時候，撤退",
+                action: "advance_chain",
+                rewards: { tags: ["fled_boss"] },
+                nextScene: {
+                    dialogue: [{ text: { zh: "你抓準空隙，轉身就跑。<br>身後的咆哮聲震耳欲聾，但你沒有回頭。" } }],
+                    options: [{ label: "逃出生天...", action: "advance_chain" }]
+                }
+            }
+        ]
+    });
+
+    // CLIMAX-B：最終謎題（探索路線特殊高潮）
+    DB.templates.push({
+        id: 'adv_climax_final_puzzle',
+        type: 'climax',
+        reqTags: ['adventure', 'route_explorer'],
+        condition: {
+            vars: [{ key: 'puzzle_count', val: 2, op: '>=' }]
         },
+        dialogue: [
+            {
+                text: {
+                    zh: "{boss}的真正封印，不是靠武力能打開的。<br><br>整個{env_building}就是一道謎題。<br>你一路走來解開的每一個謎，都是最後答案的一部分。<br><br>現在——把它們拼在一起。"
+                }
+            }
+        ],
+        options: [
+            {
+                label: "用你收集的所有線索，解開最終封印（需要 puzzle_count >= 2）",
+                condition: { vars: [{ key: 'puzzle_count', val: 2, op: '>=' }] },
+                action: "advance_chain",
+                rewards: {
+                    tags: ["solved_final_puzzle"],
+                    exp: 80
+                }
+            },
+            {
+                label: "線索還不夠，只能強行突破",
+                action: "advance_chain",
+                rewards: {
+                    tags: ["forced_final"],
+                    varOps: [{ key: 'skill_points', val: -15, op: '+' }]
+                }
+            }
+        ]
+    });
 
-        // --- 🎬 線性尾聲 (End) ---
-        {
-            type: 'end', id: 'adv_lin_end_victory',
-            reqTags: ['adventure', 'is_linear_mode'],
-            dialogue: [
-                { text: { zh: "看著倒下的【{boss}】，你長長地吐出了一口氣。你的名字將被吟遊詩人永遠傳唱。" } }
-            ],
-		options: [{ label: "滿載而歸", action: "finish_chain", rewards: { title: "傳奇英雄", gold: 500 } }]
-			}
-		); // 🌟 1. 先在這裡把上方的大陣列關閉！
 
-		// 🌟 2. 獨立推播通用 HUB 模板
-		DB.templates.push(DB.createHubTemplate('adventure', 5));
+    // ============================================================
+    // 🏆 [END] 結局節點 × 5
+    // ============================================================
 
-			console.log("⚔️ 冒險劇本已載入...");
-		})();
+    // END-A：完美勝利（弱點攻擊或最終謎題解開）
+    DB.templates.push({
+        id: 'adv_end_perfect',
+        type: 'end',
+        reqTags: ['adventure'],
+        condition: {
+            tags: ['used_weakness']
+        },
+        dialogue: [
+            {
+                text: {
+                    zh: "{boss}倒下了。<br><br>不是靠蠻力，而是靠你一路積累的知識和準備。<br><br>{env_building}的詛咒（或守衛）隨著它的倒下煙消雲散。<br>————<br>【完美勝利】<br>技能值：{skill_points}"
+                }
+            }
+        ],
+        options: [{ label: "結束冒險", action: "finish_chain", rewards: { exp: 120, gold: 80 } }]
+    });
+
+    // END-B：謎題通關（解謎路線，解開最終封印）
+    DB.templates.push({
+        id: 'adv_end_puzzle_clear',
+        type: 'end',
+        reqTags: ['adventure'],
+        condition: { tags: ['solved_final_puzzle'] },
+        dialogue: [
+            {
+                text: {
+                    zh: "封印解開的瞬間，{boss}發出了一聲長嘯。<br><br>然後——沉默。<br><br>它不是被消滅，而是被釋放了。<br>古代的束縛解除了，這個地方也終於可以安息。<br>————<br>【謎題通關】<br>解謎次數：{puzzle_count}"
+                }
+            }
+        ],
+        options: [{ label: "結束冒險", action: "finish_chain", rewards: { exp: 100, gold: 60 } }]
+    });
+
+    // END-C：硬打勝利（靠技能積累強行打過）
+    DB.templates.push({
+        id: 'adv_end_brute_win',
+        type: 'end',
+        reqTags: ['adventure'],
+        condition: {
+            tags: ['fought_boss'],
+            vars: [{ key: 'skill_points', val: 30, op: '>=' }]
+        },
+        dialogue: [
+            {
+                text: {
+                    zh: "你沒有弱點，沒有傳說武器。<br>你只有一路積累下來的實力。<br><br>那就夠了。<br><br>{boss}最終敗在了你的鍛鍊之下。<br>————<br>【實力碾壓】<br>技能值：{skill_points}"
+                }
+            }
+        ],
+        options: [{ label: "結束冒險", action: "finish_chain", rewards: { exp: 80, gold: 40 } }]
+    });
+
+    // END-D：撤退，留待下次（逃跑選項）
+    DB.templates.push({
+        id: 'adv_end_retreat',
+        type: 'end',
+        reqTags: ['adventure'],
+        condition: { tags: ['fled_boss'] },
+        dialogue: [
+            {
+                text: {
+                    zh: "你撤退了。<br><br>{boss}沒有追出來——也許它知道，你只是還沒準備好。<br><br>下一次，你會帶著更完整的準備回來。<br>————<br>【撤退，留待下次】<br>技能值：{skill_points}"
+                }
+            }
+        ],
+        options: [{ label: "結束冒險", action: "finish_chain", rewards: { exp: 30, gold: 10 } }]
+    });
+
+    // END-E：通用結局（什麼條件都不符合時的保底）
+    DB.templates.push({
+        id: 'adv_end_generic',
+        type: 'end',
+        reqTags: ['adventure'],
+        // 沒有 condition → 作為 fallback 使用
+        dialogue: [
+            {
+                text: {
+                    zh: "冒險結束了。<br><br>你不確定自己是贏了還是輸了。<br>但你在這裡學到的東西，帶走了。<br>————<br>技能值：{skill_points}"
+                }
+            }
+        ],
+        options: [{ label: "結束冒險", action: "finish_chain", rewards: { exp: 40 } }]
+    });
+
+    console.log("✅ story_adventure.js V1.0 已載入（3 開場 × 11 中段 × 2 高潮 × 5 結局）");
+})();

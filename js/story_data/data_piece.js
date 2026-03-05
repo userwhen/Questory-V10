@@ -22,7 +22,56 @@
             ]
         }, config || {});
     }
+	// ── 工廠函數 1：NPC 遭遇 ──────────────────────────────────
+    DB.createEncounterNode = function(theme, npcKey, custom = {}) {
+        return {
+            id: `encounter_${theme}_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+            type: 'middle',
+            reqTags: [theme],
+            dialogue: [{ text: { zh: custom.text || `{sentence_encounter}<br><br>{${npcKey}}{state_modifier}。` } }],
+            options: [
+                { label: custom.talkLabel || "上前搭話", action: "advance_chain", rewards: { varOps: [{ key: 'trust', val: 5, op: '+' }] } },
+                { label: "保持距離，繼續觀察", action: "advance_chain", rewards: { tags: ['cautious'] } }
+            ]
+        };
+    };
 
+    // ── 工廠函數 2：高壓危機節點 ──────────────────────────────
+    DB.createCrisisNode = function(theme, custom = {}) {
+        return {
+            id: `crisis_${theme}_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+            type: 'middle',
+            reqTags: [theme, 'risk_high'],
+            dialogue: [{ text: { zh: custom.text || "{phrase_danger_warn}<br>{sentence_tension}" } }],
+            options: [
+                { 
+                    label: custom.fightLabel || "正面應對（檢定）", 
+                    check: { stat: custom.stat || 'STR', val: custom.checkVal || 8 }, 
+                    action: "advance_chain", 
+                    rewards: { exp: 25 }, 
+                    failNextTags: ['risk_high'] 
+                },
+                { label: custom.fleeLabel || "先撤退！", action: "advance_chain", rewards: { energy: -5 } }
+            ]
+        };
+    };
+
+    // ── 工廠函數 3：通用結局生成 ──────────────────────────────
+    DB.createEndNode = function(theme, id, conditionTags, conditionVars, dialogueText, rewardConfig = {}) {
+        const node = {
+            id: id,
+            type: 'end',
+            reqTags: [theme],
+            dialogue: [{ text: { zh: dialogueText } }],
+            options: [{ label: "結束冒險", action: "finish_chain", rewards: rewardConfig }]
+        };
+        if (conditionTags || conditionVars) {
+            node.condition = {};
+            if (conditionTags && conditionTags.length > 0) node.condition.tags = conditionTags;
+            if (conditionVars && conditionVars.length > 0) node.condition.vars = conditionVars;
+        }
+        return node;
+    };
     DB.templates = DB.templates || [];
 
     DB.templates.push(

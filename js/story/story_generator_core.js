@@ -1,7 +1,11 @@
-/* js/modules/story_generator_core.js - V84.0 (獨立模組)
- * 職責：劇本鏈初始化（initChain）、下一層生成（generate）、
- *        文法展開器（_expandGrammar）、模板填充（fillTemplate）
- * 依賴：story_generator_skeletons.js (主物件必須已存在)
+/* js/modules/story_generator_core.js - V85.0 (情境感知升級版)
+ * 核心升級：加入 pickByContext 情境感知選擇器
+ *   - _expandGrammar 現在根據當前 tags 加權選詞，而非純隨機
+ *   - 同主題 tag 越多的詞條，被選中機率越高
+ *   - 不符合 reqTags 的詞條直接過濾掉（不會出現在錯誤氣氛的場景）
+ *   - 其他邏輯完全不變，向下相容
+ *
+ * 依賴：story_generator_skeletons.js
  * 載入順序：story_generator_skeletons → story_generator_core → story_generator_filters
  */
 window.SQ = window.SQ || {};
@@ -9,6 +13,49 @@ window.SQ.Engine = window.SQ.Engine || {};
 window.SQ.Engine.Generator = window.SQ.Engine.Generator || {};
 
 Object.assign(window.SQ.Engine.Generator, {
+
+    // ============================================================
+    // 🌟 [新增] 情境感知選擇器 (pickByContext)
+    // 用途：從詞庫中根據當前 contextTags 加權選出最合適的詞條
+    // 原理：
+    //   1. 過濾掉有 reqTags 但不符合當前情境的詞條
+    //   2. 計算每個詞條與當前 tags 的匹配數，匹配越多權重越高
+    //   3. 用加權隨機選出結果（保留隨機性，但偏向主題）
+    // ============================================================
+    pickByContext: function(fragmentKey, contextTags, db) {
+        const pool = (db || window.FragmentDB).fragments[fragmentKey];
+        if (!pool || pool.length === 0) return null;
+
+        const ctx = Array.isArray(contextTags) ? contextTags : [];
+
+        // Step 1: 過濾不符合 reqTags 的詞條
+        const eligible = pool.filter(entry => {
+            if (!entry.reqTags) return true;
+            const req = Array.isArray(entry.reqTags) ? entry.reqTags : [entry.reqTags];
+            return req.some(t => ctx.includes(t));
+        });
+
+        const finalPool = eligible.length > 0 ? eligible : pool;
+
+        // Step 2: 計算加權
+        // 基礎權重 = 1，每多一個與 contextTags 匹配的 tag，權重 +2
+        const weighted = finalPool.map(entry => {
+            const entryTags = [];
+            if (entry.tag)  entryTags.push(...(Array.isArray(entry.tag)  ? entry.tag  : [entry.tag]));
+            if (entry.tags) entryTags.push(...(Array.isArray(entry.tags) ? entry.tags : [entry.tags]));
+            const matchCount = entryTags.filter(t => ctx.includes(t)).length;
+            return { entry, weight: 1 + matchCount * 2 };
+        });
+
+        // Step 3: 加權隨機
+        const total = weighted.reduce((sum, x) => sum + x.weight, 0);
+        let r = Math.random() * total;
+        for (const { entry, weight } of weighted) {
+            r -= weight;
+            if (r <= 0) return entry;
+        }
+        return weighted[weighted.length - 1].entry;
+    },
 
     // ============================================================
     // 3. 啟動新冒險 (initChain)
@@ -176,7 +223,7 @@ Object.assign(window.SQ.Engine.Generator, {
 
         if (template.id) {
             chain.history.push(template.id);
-            if (chain.history.length > 10) chain.history.shift(); // HUB 迴圈：最近 10 筆
+            if (chain.history.length > 10) chain.history.shift();
         }
 
         const filledData = this.fillTemplate(template, lang, chain.memory, chain.tags);
@@ -202,14 +249,22 @@ Object.assign(window.SQ.Engine.Generator, {
     },
 
     // ============================================================
-    // 5. 文法展開器（_expandGrammar）
+    // 5. 文法展開器（_expandGrammar）- V85 情境感知升級版
+    // 
+    // 改動說明：
+    //   - 原版：從詞庫中純隨機抽取
+    //   - 新版：呼叫 pickByContext，根據 collectedTags 加權選取
+    //   - 效果：horror 場景下 {env_sound} 大概率出「淒厲的尖叫聲」
+    //           mystery 場景下 {env_room} 大概率出「書房」「密室」
+    //           romance 場景下 {env_sound} 大概率出「遠處傳來的鐘聲」
+    //   - 向下相容：collectedTags 為空時退化為純隨機（行為不變）
     // ============================================================
     _expandGrammar: function(text, db, memory, depth = 0, collectedTags = null) {
         if (!text) return "";
         if (depth > 10) return text;
 
         return text.replace(/{(\w+)}/g, (match, key) => {
-            // 優先：記憶庫
+            // 優先：記憶庫（烤死的值不受情境影響，保持一致性）
             if (memory && memory[key]) {
                 let val = memory[key];
                 if (typeof val === 'string' && val.includes('{')) {
@@ -218,24 +273,25 @@ Object.assign(window.SQ.Engine.Generator, {
                 return val;
             }
 
-            // 次優：詞庫碎片
+            // 次優：詞庫碎片（情境感知加權選取）
             if (db.fragments[key]) {
-                const list = db.fragments[key];
-                if (list.length > 0) {
-                    const pick = list[Math.floor(Math.random() * list.length)];
-                    let val    = pick.val.zh || pick.val;
+                // 🌟 核心改動：改為呼叫 pickByContext 進行加權選取
+                const pick = this.pickByContext(key, collectedTags || [], db);
+                if (!pick) return match;
 
-                    // 標籤注入
-                    if (collectedTags) {
-                        if (pick.tag)  Array.isArray(pick.tag)  ? collectedTags.push(...pick.tag)  : collectedTags.push(pick.tag);
-                        if (pick.tags) Array.isArray(pick.tags) ? collectedTags.push(...pick.tags) : collectedTags.push(pick.tags);
-                    }
+                let val = (pick.val && typeof pick.val === 'object') ? (pick.val.zh || pick.val) : pick.val;
+                if (!val) return match;
 
-                    if (val.includes('{')) {
-                        return this._expandGrammar(val, db, memory, depth + 1, collectedTags);
-                    }
-                    return val;
+                // 標籤注入（與原版相同）
+                if (collectedTags) {
+                    if (pick.tag)  Array.isArray(pick.tag)  ? collectedTags.push(...pick.tag)  : collectedTags.push(pick.tag);
+                    if (pick.tags) Array.isArray(pick.tags) ? collectedTags.push(...pick.tags) : collectedTags.push(pick.tags);
                 }
+
+                if (typeof val === 'string' && val.includes('{')) {
+                    return this._expandGrammar(val, db, memory, depth + 1, collectedTags);
+                }
+                return val;
             }
             return match;
         });

@@ -101,12 +101,6 @@
         
         // 🌟【1. 動態種子庫 (Dynamic Seeds)】- 供 story_generator.js 引擎開局抽取
         // ------------------------------------------------------------
-		global_play_mode: [
-            { val: "【箱庭探索】", tag: "is_hub_mode" },
-            { val: "【線性敘事】", tag: "is_linear_mode" },
-            // 你可以多放幾個 is_linear_mode 讓一般劇情的機率高一點，例如 2:1
-            { val: "【線性敘事】", tag: "is_linear_mode" } 
-        ],
         global_player_trait: [
             { val: "幸運的", tag: "trait_lucky" }, { val: "倒楣的", tag: "trait_unlucky" },
             { val: "富有的", tag: "trait_rich" }, { val: "貧窮的", tag: "trait_poor" },
@@ -190,7 +184,17 @@
             { val: "臥室", tag: ["room", "romance"] }, { val: "書房", tag: ["room", "mystery"] }, 
             { val: "密室", tag: ["room", "mystery"] }, { val: "儲藏室", tag: ["room"] }, 
             { val: "牢房", tag: ["room", "horror"] }, { val: "控制室", tag: ["room", "sci-fi"] }, 
-            { val: "祭壇室", tag: ["room", "magic", "horror"] }, { val: "實驗室", tag: ["room", "sci-fi", "raising"] }
+            { val: "祭壇室", tag: ["room", "magic", "horror"] }, { val: "實驗室", tag: ["room", "sci-fi", "raising"] },
+			{ val: "廚房",     tag: ["room", "mystery", "alibi"] },
+			{ val: "二樓陽台", tag: ["room", "mystery", "alibi"] },
+			{ val: "溫室",     tag: ["room", "mystery", "romance", "alibi"] },
+			{ val: "僕人房",   tag: ["room", "mystery", "alibi"] },
+			{ val: "中庭",     tag: ["room", "mystery", "alibi"] },
+			{ val: "化妝室",   tag: ["room", "mystery", "romance", "alibi"] },
+			{ val: "地下酒窖", tag: ["room", "mystery", "alibi", "horror"] },
+			{ val: "閣樓",     tag: ["room", "mystery", "horror", "alibi"] },
+			{ val: "管家室",   tag: ["room", "mystery", "alibi"] },
+			{ val: "彈藥庫",   tag: ["room", "mystery", "combat"] },
         ],
 
         // 🌟【新增：性格與階級前綴 (Trait Prefix)】- 取代原本寫死的組合
@@ -305,7 +309,16 @@
         verb_equip: [ 
             { val: "把玩著" }, { val: "緊緊握著", tag: ["combat", "horror"] }, 
             { val: "死死盯著", tag: ["horror"] }, { val: "小心隱藏著", tag: ["mystery"] }, 
-            { val: "輕輕撫摸著", tag: ["romance"] }, { val: "高高舉起", tag: ["combat"] }
+            { val: "輕輕撫摸著", tag: ["romance"] }, { val: "高高舉起", tag: ["combat"] },
+			{ val: "急忙清理著",     tag: ["mystery", "horror"] },    // 兇手洗手？
+			{ val: "偷偷保養著",     tag: ["mystery"] },               // 武器？
+			{ val: "整理著",         tag: ["mystery", "alibi"] },      // 不在場證明：整理房間
+			{ val: "尋找遺失的",     tag: ["mystery", "alibi"] },      // 不在場證明：找東西
+			{ val: "悄悄燒毀著",     tag: ["mystery", "horror"] },     // 銷毀證據
+			{ val: "顫抖著翻閱",     tag: ["mystery", "horror"] },     // 找線索
+			{ val: "仔細擦拭著",     tag: ["mystery", "combat"] },     // 擦武器
+			{ val: "切著",           tag: ["mystery", "alibi"] },      // 廚房：切菜
+			{ val: "倒著",           tag: ["mystery", "alibi"] },      // 廚房：倒酒
         ],
 
         // ⚔️【6. 物品組件 (Item Parts)】- 同樣補上標籤！
@@ -316,14 +329,31 @@
             { val: "戒指", tag: ["item", "romance", "magic"] }, { val: "護符", tag: ["item", "magic", "horror"] }, 
             { val: "信件", tag: ["item", "mystery", "romance"] }, { val: "藥瓶", tag: ["item", "sci-fi", "horror"] }, 
             { val: "寶石", tag: ["item", "valuable", "magic"] }, { val: "長劍", tag: ["item", "weapon", "adventure"] },
-            { val: "訓練木劍", tag: ["item", "weapon", "raising"] }, { val: "不明祭品", tag: ["item", "horror", "magic"] }
+            { val: "訓練木劍", tag: ["item", "weapon", "raising"] }, { val: "不明祭品", tag: ["item", "horror", "magic"] },
+			{ val: "手帕",         tag: ["item", "mystery", "clue"] },
+			{ val: "安眠藥瓶",     tag: ["item", "mystery", "horror", "clue"] },
+			{ val: "破碎的酒杯",   tag: ["item", "mystery", "clue"] },
+			{ val: "燒了一半的信", tag: ["item", "mystery", "clue"] },
+			{ val: "血跡斑斑的手套", tag: ["item", "mystery", "horror", "clue"] },
+			{ val: "遺囑副本",     tag: ["item", "mystery", "clue"] },
+			{ val: "密碼鎖記事本", tag: ["item", "mystery", "clue"] },
+			{ val: "奇怪的藥粉",   tag: ["item", "mystery", "horror", "clue"] },
+			{ val: "帶有香水味的手帕", tag: ["item", "mystery", "romance", "clue", "fake_clue"] },
+			{ val: "寫著數字的紙條", tag: ["item", "mystery", "clue", "fake_clue"] },
+			{ val: "沾著泥土的鞋底", tag: ["item", "mystery", "clue", "fake_clue"] },
+			{ val: "不明來源的鑰匙", tag: ["item", "mystery", "clue"] },
         ],
         item_physical_state: [
             { val: "" }, { val: "黃銅製的" }, { val: "純銀的", tag: ["magic"] }, 
             { val: "生鏽的", tag: ["horror", "ancient"] }, { val: "皮革製的" }, 
             { val: "骨製的", tag: ["horror", "ancient"] }, { val: "破碎的" }, 
             { val: "染血的", tag: ["horror", "combat"] }, { val: "精緻的", tag: ["romance", "rich"] }, 
-            { val: "被嚴重腐蝕的", tag: ["horror", "sci-fi"] }, { val: "溫熱的", tag: ["romance", "magic"] }
+            { val: "被嚴重腐蝕的", tag: ["horror", "sci-fi"] }, { val: "溫熱的", tag: ["romance", "magic"] },
+			{ val: "沾著泥土的",       tag: ["mystery", "horror"] },
+			{ val: "帶有神祕香味的",   tag: ["mystery", "romance"] },
+			{ val: "燒了一半的",       tag: ["mystery", "horror"] },
+			{ val: "密封在信封裡的",   tag: ["mystery"] },
+			{ val: "帶著名字刻印的",   tag: ["mystery", "romance"] },
         ],
         item_power_clause: [
             { val: "它似乎能封印靈魂", tag: ["magic", "horror"] }, 
@@ -367,7 +397,9 @@
         atom_manner: [ 
             { val: "驚恐地" }, { val: "奮不顧身地" }, { val: "張牙舞爪地" }, 
             { val: "冷靜地" }, { val: "絕望地" }, { val: "狂笑著" }, 
-            { val: "猛然" }, { val: "悄悄地" }, { val: "警戒地" }, { val: "溫柔地" }
+            { val: "猛然" }, { val: "悄悄地" }, { val: "警戒地" }, { val: "溫柔地" },
+			{ val: "平靜地" }, { val: "冷冷地" }, { val: "猶豫地" }, 
+			{ val: "低聲" }, { val: "突然" }, { val: "若無其事地" }
         ],
         
 	// ============================================================
@@ -436,6 +468,145 @@
         { val: "空氣中瀰漫著危險又極具張力的氣息。" },
         { val: "你屏住呼吸，連大氣都不敢喘一聲。" }
     ],
+	// B. 偵探專用新詞庫（全新 key，直接加進 DB.fragments 裡）
+	alibi_action: [
+    { val: "{verb_equip}那個{item_core}",tag: ["mystery"] },
+    { val: "忙著{verb_equip}幾樣東西",tag: ["mystery"] },
+    { val: "{verb_equip}一瓶{item_core}",tag: ["mystery"] },
+	],
+	alibi_claim: [
+    { val: "你胡說！案發當時我明明在{env_room}，{verb_equip}那個{item_core}！",tag: ["mystery"] },
+    { val: "這是誣陷！我一直待在{env_room}，根本沒有離開過！",tag: ["mystery"] },
+    { val: "你有什麼證據！？那時候我正在{env_room}{verb_equip}東西，有人親眼看見！",tag: ["mystery"] },
+    { val: "你不過是在猜測！我當時在{env_room}，而且我可以證明！",tag: ["mystery"] },
+	],
+	culprit_exposed: [
+    { val: "那...那個...！（{true_culprit}的眼神開始躲閃）" },
+    { val: "不...不可能！這東西怎麼會在你手上！？" },
+    { val: "（{true_culprit}臉色瞬間蒼白，嘴唇輕顫）...我...我可以解釋..." },
+    { val: "住嘴！你...你根本不知道你在說什麼！" },
+	],
+	// 🔍 嫌疑人反擊台詞（玩家出示假線索時）
+	culprit_counter: [
+		{ val: "就這個？哈。這只能說明你毫無頭緒。",tag: ["mystery"] },
+		{ val: "{true_culprit}冷冷一笑：「{item_core}？這和我有什麼關係？」",tag: ["mystery"] },
+		{ val: "你是在開玩笑嗎？這種程度的『證物』連警察都說服不了，更別說我了。", tag: ["mystery"] },
+	],
+
+	// 🔍 圍觀者反應（公信度高時）
+	crowd_trust: [
+		{ val: "「確實...這說不過去。」有人低聲說道。" },
+		{ val: "周圍的人開始交頭接耳，氣氛明顯轉向。" },
+		{ val: "「你繼續說！」一個聲音從人群中喊出。" },
+	],
+
+	// 🔍 圍觀者懷疑（公信度低時）
+	crowd_doubt: [
+		{ val: "「這人是不是瘋了？」有人小聲嘀咕。" },
+		{ val: "周圍的人投來懷疑的眼神，氣氛越來越對你不利。" },
+		{ val: "「你才是兇手吧？」有人突然指向你。" },
+	],
+
+	// 🔍 生存者路線：躲藏時的心理獨白
+	survivor_hiding: [
+		{ val: "你屏住呼吸，蜷縮在{env_feature}後面，聽著外面的動靜。",tag: ["survivor", "horror"] },
+		{ val: "心跳聲大到你以為對方一定能聽見。腳步聲...停了。",tag: ["survivor", "horror"] },
+		{ val: "你用雙手捂住嘴，防止自己因為恐懼而發出聲音。",tag: ["survivor", "horror"] },
+		{ val: "幾秒鐘的沉默，比幾個小時還要漫長。",tag: ["survivor", "horror"] },
+	],
+
+	// 🔍 生存者路線：目擊偵探行動的旁觀台詞
+	survivor_witness: [
+		{ val: "從縫隙中，你看到那個自告奮勇的傢伙正在搜查什麼...",tag: ["survivor", "mystery"] },
+		{ val: "你沒有插手的能力，只能看著事情在你眼前發展。",tag: ["survivor"] },
+		{ val: "他似乎找到了什麼——你看到他臉上露出了複雜的表情。",tag: ["survivor", "mystery"] },
+	],
+	clue_physical: [
+    { val: "一根染血的髮夾", tag: ["mystery", "evidence"] },
+    { val: "撕破的遺書碎片", tag: ["mystery", "evidence"] },
+    { val: "上了鎖的日記", tag: ["mystery", "evidence"] },
+    { val: "被人動過的毒藥瓶", tag: ["mystery", "evidence", "horror"] },
+    { val: "被偽造的帳目", tag: ["mystery", "evidence", "motive_money"] }
+	],
+	clue_testimony: [
+		{ val: "那天晚上我聽到了爭吵聲", tag: ["mystery"] },
+		{ val: "有人深夜進出過那個房間", tag: ["mystery"] },
+		{ val: "死者生前說過他很害怕某個人", tag: ["mystery"] }
+	],
+	deduction_sentence: [
+		{ val: "根據{alibi_claim}，{suspect_A}的時間線對不上。" },
+		{ val: "如果{suspect_B}說的是真話，那{murder_weapon}就不可能在那個地方。" },
+		{ val: "只有知道暗道位置的人，才能做到這件事。" }
+	],
+
+	// ── 恐怖劇本需要 ─────────────────────────────────────────
+	horror_sound: [
+		{ val: "低沉的哭泣聲", tag: ["horror", "ghost"] },
+		{ val: "指甲劃過牆壁的聲音", tag: ["horror", "creepy"] },
+		{ val: "不規律的心跳聲", tag: ["horror", "curse_god"] },
+		{ val: "用你不認識的語言低語", tag: ["horror", "ancient"] },
+		{ val: "孩子的笑聲，但背後沒有人", tag: ["horror", "ghost", "creepy"] }
+	],
+	horror_vision: [
+		{ val: "牆上出現了會移動的影子" },
+		{ val: "鏡子裡的自己慢了半秒才動" },
+		{ val: "你看見有人站在窗外，但那是三樓" },
+		{ val: "桌上的蠟燭同時熄滅了" }
+	],
+	curse_symptom: [
+		{ val: "你的手指開始顫抖，停不下來", tag: ["cursed"] },
+		{ val: "你忘記了自己剛才在做什麼", tag: ["cursed", "sanity"] },
+		{ val: "你聽見了有人在叫你的名字", tag: ["cursed", "ghost"] }
+	],
+
+	// ── 冒險劇本需要 ─────────────────────────────────────────
+	battle_result_win: [
+		{ val: "對方轟然倒地，戰鬥結束。", tag: ["combat"] },
+		{ val: "{boss}發出最後的嘶吼，消失在黑暗中。", tag: ["combat", "boss"] },
+		{ val: "你勉強撐了下來，身上帶著幾道新傷。", tag: ["combat", "survivor"] }
+	],
+	battle_result_lose: [
+		{ val: "你力竭倒地，失去了意識。", tag: ["combat"] },
+		{ val: "對方把你逼到了角落，你無路可退。", tag: ["combat", "risk_high"] }
+	],
+	loot_desc: [
+		{ val: "一枚嵌著紅寶石的戒指", tag: ["adventure", "magic"] },
+		{ val: "沾滿黑血的古老地圖", tag: ["adventure", "ancient"] },
+		{ val: "精心偽裝過的密道入口", tag: ["adventure", "mystery"] }
+	],
+
+	// ── 戀愛劇本需要 ─────────────────────────────────────────
+	env_light: [
+		{ val: "昏黃的燈光", tag: ["romance"] },
+		{ val: "月光", tag: ["romance", "mystery"] },
+		{ val: "餘暉", tag: ["romance"] },
+		{ val: "搖曳的燭光", tag: ["romance", "horror"] }
+	],
+	// （romance 劇本大量用了 {env_light}，但 data_core 裡沒有這個 key）
+	lover_action: [
+		{ val: "輕輕地嘆了口氣", tag: ["romance"] },
+		{ val: "把視線移開，假裝在看窗外", tag: ["romance"] },
+		{ val: "用指尖輕輕碰了一下你的袖口", tag: ["romance"] },
+		{ val: "沉默了很久，才開口", tag: ["romance"] }
+	],
+	rival_action: [
+		{ val: "表情沒有變，但眼神變了", tag: ["romance"] },
+		{ val: "突然走到你旁邊，壓低聲音說話", tag: ["romance"] },
+		{ val: "若無其事地笑了笑", tag: ["romance"] }
+	],
+
+	// ── 養成劇本需要 ─────────────────────────────────────────
+	training_result: [
+		{ val: "勉強完成了任務，但還有很大的進步空間", tag: ["raising"] },
+		{ val: "超出了{mentor}的預期，對方難得誇了你一句", tag: ["raising", "mentor"] },
+		{ val: "失敗了，但你清楚知道下次要怎麼改", tag: ["raising"] }
+	],
+	mentor_remark: [
+		{ val: "「還不夠快。」", tag: ["raising", "mentor"] },
+		{ val: "「方向對了，但力道不足。」", tag: ["raising", "mentor"] },
+		{ val: "「這次做得不錯。繼續。」", tag: ["raising", "mentor"] },
+		{ val: "「如果你昨天有練習，現在就不會出錯。」", tag: ["raising", "mentor"] }
+	],
 
     // ============================================================
     // 🎬 [Layer 3] 動態句型庫 (Dynamic Phrase Library) - V5 電影級過場
@@ -454,11 +625,19 @@
 
     phrase_danger_warn: [
         { val: "{sentence_event_sudden}" },
-        { val: "{sentence_tension}{sentence_event_sudden}" }
+        { val: "{sentence_tension}{sentence_event_sudden}" },
+		{ val: "門把突然被緩緩轉動，有人正在外面...",tag: ["mystery", "horror", "survivor"] },
+		{ val: "走廊上的腳步聲越來越近，然後停在了你的門前。", tag: ["mystery", "horror", "survivor"] },
+		{ val: "燈光突然熄滅，整個房間陷入黑暗。",tag: ["mystery", "horror", "survivor"] },
+		{ val: "你的名字被某人以極低的聲音呼喚著。",tag: ["mystery", "horror", "survivor"] },
+		{ val: "窗外映出一個黑影，緩慢地移動著。",tag: ["mystery", "horror", "survivor"] },
     ],
     phrase_danger_appear: [
         { val: "{sentence_encounter}" },
-        { val: "前方的陰影中，緩緩走出了一個身影... 是{combo_person_appearance}！" }
+        { val: "前方的陰影中，緩緩走出了一個身影... 是{combo_person_appearance}！" },{ val: "你感覺到床底有某種東西正在蠕動。",tag: ["horror", "survivor"] },
+		{ val: "衣櫃的門從裡面被猛地推開，一個身影衝了出來！",tag: ["horror", "mystery", "survivor"] },
+		{ val: "鏡子裡的倒影...與你的動作不同步。",tag: ["horror", "mystery"] },
+		{ val: "你轉身，那人已經站在你身後不到一步的距離，手中持著某物。", tag: ["horror", "mystery", "survivor"] },
     ],
 
     phrase_find_action: [
@@ -495,8 +674,54 @@
         { val: "你下意識地握緊了拳頭，思考著對策。" },
         { val: "周圍彷彿安靜了下來，只剩下你們兩人的對峙。" },
         { val: "你感覺到背後冒出了一層冷汗。" }
-    ]
+    ],
+	// ── 全新複合動態句型 (Phase 6) ──────────────────────────────
+        time_aware_desc: [
+            { val: "這已經不是你第一次在這條走廊上徘徊了。" },
+            { val: "你覺得時間越來越少，空氣變得稀薄。" },
+            { val: "某種感覺告訴你，終點就在不遠處。" }
+        ],
+        env_full_desc: [
+            { val: "{env_pack_visual}<br>{env_pack_sensory}<br>你停下腳步，感覺到{sentence_tension}" },
+            { val: "在{env_weather}的氣氛下，{env_pack_visual}讓整個場景多了幾分{atmosphere}的色彩。" }
+        ],
+
+        // ── 恐怖與戰鬥補充詞庫 ──────────────────────────────
+        horror_sound: [
+            { val: "低沉的哭泣聲", tag: ["horror", "ghost"] },
+            { val: "指甲劃過牆壁的聲音", tag: ["horror", "creepy"] },
+            { val: "不規律的心跳聲", tag: ["horror", "curse_god"] },
+            { val: "孩子的笑聲，但背後沒有人", tag: ["horror", "ghost", "creepy"] }
+        ],
+        horror_vision: [
+            { val: "牆上出現了會移動的影子" },
+            { val: "你看見有人站在窗外，但這裡是三樓" },
+            { val: "桌上的蠟燭同時熄滅了" }
+        ],
+        battle_result_win: [
+            { val: "對方轟然倒地，戰鬥結束。", tag: ["combat"] },
+            { val: "{boss}發出最後的嘶吼，消失在黑暗中。", tag: ["combat", "boss"] }
+        ],
+
+        // ── 戀愛與養成補充詞庫 ──────────────────────────────
+        lover_action: [
+            { val: "輕輕地嘆了口氣", tag: ["romance"] },
+            { val: "把視線移開，假裝在看窗外", tag: ["romance"] },
+            { val: "用指尖輕輕碰了一下你的袖口", tag: ["romance"] }
+        ],
+        rival_action: [
+            { val: "表情沒有變，但眼神變了", tag: ["romance"] },
+            { val: "若無其事地笑了笑", tag: ["romance"] }
+        ],
+        training_result: [
+            { val: "勉強完成了任務，但還有很大的進步空間", tag: ["raising"] },
+            { val: "超出了{mentor}的預期，對方難得誇了你一句", tag: ["raising", "mentor"] }
+        ],
+        mentor_remark: [
+            { val: "「方向對了，但力道不足。」", tag: ["raising", "mentor"] },
+            { val: "「這次做得不錯。繼續。」", tag: ["raising", "mentor"] }
+        ],
 });
 
-    console.log("✅ 核心資料庫已啟動 (V5 動態詞庫與全網格化完成)");
+console.log("✅ story_data_core_mystery_patch.js 已載入（偵探詞庫擴充包）");
 })();
