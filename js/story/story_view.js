@@ -47,6 +47,7 @@ window.SQ.View.Story = {
 
         const tagDrawerHtml = `<div id="tag-drawer-container"></div>`;
 
+
         container.innerHTML = `<div style="display:flex; flex-direction:column; height:100%; width:100%; position:relative;"><div style="flex-shrink:0; height:60px; background:var(--bg-nav); border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; padding:0 10px; box-shadow:0 2px 10px rgba(0,0,0,0.3); z-index:20;">${topBarContent}</div><div style="flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column;">${textBody}${tagDrawerHtml}</div>${actionsArea}</div>`;
         
         this.refresh();
@@ -63,10 +64,14 @@ window.SQ.View.Story = {
         const currentMax = (window.StoryEngine && typeof window.SQ.Engine.Story.calculateMaxEnergy === 'function') ? window.SQ.Engine.Story.calculateMaxEnergy() : 100;
         const energy = Math.floor(gs.story?.energy || 0);
         const currentLang = (gs.settings && gs.settings.targetLang) ? gs.settings.targetLang : 'mix';
-        const langOpts = [{value:'mix',label:'Mix'}, {value:'zh',label:'ZH'}, {value:'jp',label:'JP'}, {value:'en',label:'EN'}];
+        const langOpts = [{value:'mix',label:'Mix'}, {value:'zh',label:'ZH'}, {value:'jp',label:'JP'}, {value:'kr',label:'KR'}, {value:'en',label:'EN'}];
+		// ✅ 判斷玩家是否在商店購買了解鎖項目 (id: 'learning')
+        const hasLearning = gs.unlocks && (Array.isArray(gs.unlocks) ? gs.unlocks.includes('learning') : gs.unlocks['learning']);
         
-        // 改用 data-change 綁定 setStoryLang
-        const langSelector = `<div style="transform: scale(0.9);">${ui.atom.inputBase({type:'select', val:currentLang, action:"setStoryLang", id:"story-lang-select", options:langOpts, style:'padding:4px 8px; font-size:0.85rem;'})}</div>`;
+        // ✅ 如果有買，才顯示選單；沒買就留空
+        const langSelector = hasLearning 
+            ? `<div style="transform: scale(0.9);">${ui.atom.inputBase({type:'select', val:currentLang, action:"setStoryLang", id:"story-lang-select", options:langOpts, style:'padding:4px 8px; font-size:0.85rem;'})}</div>` 
+            : '';
 		
         const devBtnHtml = window.SQ.Temp.isDebugActive ? ui.atom.buttonBase({ label: '📝', theme: 'danger', size: 'sm', style: 'padding:2px 8px; margin-right:2px;', action: 'openLiveStoryEditor' }) : '';
         const btnStamina = ui.atom.buttonBase({ label: '+', theme: 'correct', size: 'sm', style: 'padding:0 6px; height:20px; line-height:1; margin-left:4px;', action: 'renderStaminaShop' });

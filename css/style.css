@@ -329,6 +329,9 @@ html, body {
 
 .u-toast { position: fixed; left: 50%; bottom: calc(var(--nav-h) + 14px + var(--safe-bottom)); transform: translateX(-50%) translateY(8px); z-index: var(--z-toast); background: var(--bg-hud); color: var(--text-on-dark); padding: 10px 20px; border-radius: var(--radius-full); font-size: 0.88rem; font-weight: 600; pointer-events: none; opacity: 0; transition: opacity var(--t-base), transform var(--t-base) var(--ease-bounce); box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,0.1); max-width: 80%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .u-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+body:has(#page-story:not([style*="display: none"])) .u-toast {
+    bottom: calc(220px + var(--safe-bottom)) !important;
+}
 
 /* ==========================================================================
    7. 動畫庫（Animations）

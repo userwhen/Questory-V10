@@ -1,7 +1,7 @@
-/* js/modules/story_flow.js - V79.0 (獨立模組)
+/* js/modules/story_flow.js - V80.0 (終極修復版)
  * 職責：流程與節點控制（播放場景、選項點擊、鏈進退、探索、打字機）
+ * 包含：Next Reveal 解析無縫接合、多段對話打字機修復、清空舊標籤防污染
  * 依賴：story_core.js, story_state.js, story_map.js, story_generator.js
- * 載入順序：story_core → story_state → story_flow → story_generator → story_controller
  */
 window.SQ = window.SQ || {};
 window.SQ.Engine = window.SQ.Engine || {};
@@ -46,17 +46,22 @@ Object.assign(window.SQ.Engine.Story, {
                 gs.story.flags[flagKey] = true;
             }
         }
-		// 【同步 chain tags → story.tags】
-		const gs = window.SQ.State;
-		if (gs.story.chain && gs.story.chain.tags) {
-			if (!gs.story.tags) gs.story.tags = [];
-			gs.story.tags = [...new Set([...gs.story.chain.tags, ...gs.story.tags])];
-		}
 
-		// 觸發進入事件
-		if (activeNode.onEnter) {
-			this._distributeRewards(activeNode.onEnter);
-		}
+        // 【同步 chain tags → story.tags】
+        const gs = window.SQ.State;
+        if (gs.story.chain && gs.story.chain.tags) {
+            if (!gs.story.tags) gs.story.tags = [];
+            gs.story.tags = [...new Set([...gs.story.chain.tags, ...gs.story.tags])];
+        }
+		// ✅ 核心機制：如果玩家已購買學習模式，將 learning 標籤常駐，啟動語言事件！
+        if (gs.unlocks && (Array.isArray(gs.unlocks) ? gs.unlocks.includes('learning') : gs.unlocks['learning'])) {
+            if (!gs.story.tags) gs.story.tags = [];
+            if (!gs.story.tags.includes('learning')) gs.story.tags.push('learning');
+        }
+        // 觸發進入事件
+        if (activeNode.onEnter) {
+            this._distributeRewards(activeNode.onEnter);
+        }
 
         // 註冊子場景
         if (activeNode.options) {
@@ -80,11 +85,18 @@ Object.assign(window.SQ.Engine.Story, {
         // 處理選項（條件過濾）
         let options = (activeNode.options || [])
             .filter(opt => this._checkCondition(opt.condition))
-            .map(opt => ({
-                ...opt,
-                label:  this._resolveDynamicText(opt.label),
-                action: opt.action || 'node_next'
-            }));
+            .map(opt => {
+                // 🌟 [新增] 攔截 label 並判斷是否為多語言物件
+                let rawLabel = opt.label;
+                if (typeof rawLabel === 'object' && rawLabel !== null) {
+                    rawLabel = this.resolveLabel ? this.resolveLabel(rawLabel) : (rawLabel.zh || "");
+                }
+                return {
+                    ...opt,
+                    label:  this._resolveDynamicText ? this._resolveDynamicText(rawLabel) : rawLabel,
+                    action: opt.action || 'node_next'
+                };
+            });
 
         // 地圖按鈕注入：只有 isHub 節點才顯示完整地圖按鈕
         if (activeNode.isHub) {
@@ -112,7 +124,7 @@ Object.assign(window.SQ.Engine.Story, {
     },
 
     // ============================================================
-    // 🖱️ SELECT OPTION
+    // 🖱️ SELECT OPTION (包含 Next Reveal 完美接合)
     // ============================================================
     selectOption: function(idx) {
         if (window.SQ.Temp.isProcessing) {
@@ -147,11 +159,19 @@ Object.assign(window.SQ.Engine.Story, {
 
             window.SQ.Temp.isProcessing = false;
 
+            // ✅ 完美接合 1：攔截解析頁面的「繼續」按鈕
+            if (opt.action === '_next_reveal_continue') {
+                const cb = window.SQ.Temp._revealCallback;
+                window.SQ.Temp._revealCallback = null;
+                if (cb) cb();
+                return;
+            }
+
             // --- 地圖行為分流 ---
             if (opt.action.startsWith('map_')) {
-				if (opt.rewards) {
-					this._distributeRewards(opt.rewards);
-				}
+                if (opt.rewards) {
+                    this._distributeRewards(opt.rewards);
+                }
                 let transitionText = window.SQ.Engine.Map.handleMapAction(opt.action, opt.targetId);
                 if (window.SQ.View.Story && window.SQ.View.Story.updateTopBar) window.SQ.View.Story.updateTopBar();
 
@@ -179,11 +199,9 @@ Object.assign(window.SQ.Engine.Story, {
 
                 window.SQ.Temp.deferredHtml = (window.SQ.Temp.deferredHtml || "") + inlineHtml;
 
-                // ✅ 行為分流：開新門 → 推進劇情 / 退回 → 重播 HUB
                 if (opt.action === 'map_explore_new') {
                     this.advanceChain();
                 } else {
-                    // map_move_to 或 map_return_hub → 重播最後的 HUB，不推進劇情
                     const hubNode = window.SQ.Temp.lastHubNode;
                     if (hubNode) this.playSceneNode(hubNode);
                 }
@@ -210,22 +228,40 @@ Object.assign(window.SQ.Engine.Story, {
 
             if (passed && opt.rewards) this._distributeRewards(opt.rewards);
 
+            // ✅ 完美接合 2：邏輯分流與 Next Reveal 解析處理
             if (opt.action === 'node_next') {
                 this._handleNodeJump(opt, passed);
             } else if (opt.action === 'investigate') {
                 if (opt.result) this.playSceneNode({ ...window.SQ.Temp.currentSceneNode, text: [opt.result], options: ts.storyOptions });
                 else this.playSceneNode(window.SQ.Temp.currentSceneNode);
             } else if (opt.action === 'advance_chain') {
-                const tags = passed ? (opt.nextTags || []) : (opt.failNextTags || []);
-                this.advanceChain(tags);
-            } else if (opt.action === 'finish_chain') {
-                let hasEndingScene = passed
-                    ? (opt.nextScene || opt.nextSceneId)
-                    : (opt.failScene || opt.failSceneId);
-                if (hasEndingScene) {
-                    this._handleNodeJump(opt, passed);
+                const executeAdvance = () => {
+                    let hasEndingScene = passed ? (opt.nextScene || opt.nextSceneId) : (opt.failScene || opt.failSceneId);
+                    if (hasEndingScene) {
+                        this._handleNodeJump(opt, passed);
+                    } else {
+                        const tags = passed ? (opt.nextTags || []) : (opt.failNextTags || []);
+                        this.advanceChain(tags);
+                    }
+                };
+                if (window.SQ.Engine.Story.hasNextReveal && window.SQ.Engine.Story.hasNextReveal(opt)) {
+                    window.SQ.Engine.Story.showNextReveal(opt.next, executeAdvance);
                 } else {
-                    this.finishChain();
+                    executeAdvance();
+                }
+            } else if (opt.action === 'finish_chain') {
+                const executeFinish = () => {
+                    let hasEndingScene = passed ? (opt.nextScene || opt.nextSceneId) : (opt.failScene || opt.failSceneId);
+                    if (hasEndingScene) {
+                        this._handleNodeJump(opt, passed);
+                    } else {
+                        this.finishChain();
+                    }
+                };
+                if (window.SQ.Engine.Story.hasNextReveal && window.SQ.Engine.Story.hasNextReveal(opt)) {
+                    window.SQ.Engine.Story.showNextReveal(opt.next, executeFinish);
+                } else {
+                    executeFinish();
                 }
             } else {
                 this.finishChain();
@@ -286,8 +322,9 @@ Object.assign(window.SQ.Engine.Story, {
         gs.story.savedChain   = null;
         window.SQ.Temp.currentSceneNode = null;
         window.SQ.Temp.storyCard        = null;
-        window.SQ.Temp.lastHubNode      = null; // ✅ HUB 記憶清理
+        window.SQ.Temp.lastHubNode      = null;
 
+        // ✅ 清除標籤防污染
         if (gs.story) { gs.story.tags = []; gs.story.vars = {}; gs.story.flags = {}; }
 
         window.SQ.Temp.isProcessing = false;
@@ -305,7 +342,8 @@ Object.assign(window.SQ.Engine.Story, {
         const gs = window.SQ.State;
         if (window.SQ.Engine.Map) window.SQ.Engine.Map.init();
         if (!gs.story.skeletonHistory) gs.story.skeletonHistory = [];
-		// ✅ 清除標籤污染：在啟動新劇本前，徹底清空上一局的殘留狀態
+        
+        // ✅ 清除標籤污染：在啟動新劇本前，徹底清空上一局的殘留狀態
         if (gs.story) {
             gs.story.tags = [];
             gs.story.vars = {};
@@ -350,13 +388,13 @@ Object.assign(window.SQ.Engine.Story, {
         gs.story.savedChain  = null;
         window.SQ.Temp.currentSceneNode = null;
         window.SQ.Temp.storyCard        = null;
-        window.SQ.Temp.lastHubNode      = null; // ✅ HUB 記憶清理
+        window.SQ.Temp.lastHubNode      = null;
 
         if (gs.story) {
             gs.story.tags = [];
-			gs.story.vars = {};
-			gs.story.flags = {};
-			console.log("🧹 區域變數、標籤與 flags 已清空");
+            gs.story.vars = {};
+            gs.story.flags = {};
+            console.log("🧹 區域變數、標籤與 flags 已清空");
         }
 
         if (window.SQ.View.Story) window.SQ.View.Story.renderIdle();
@@ -430,7 +468,12 @@ Object.assign(window.SQ.Engine.Story, {
             window.SQ.Temp.lockInput = true;
             setTimeout(() => { window.SQ.Temp.lockInput = false; }, 300);
         } else {
-            if (window.SQ.Temp.isWaitingInput) this.playNextChunk();
+            // ✅ 完美接合 3：支援多段對話點擊
+            if (window.SQ.Temp.isWaitingInput) {
+                this.playNextChunk();
+            } else if (window.SQ.Temp._dialogueNextCallback) {
+                window.SQ.Temp._dialogueNextCallback();
+            }
         }
     },
 
@@ -447,7 +490,11 @@ Object.assign(window.SQ.Engine.Story, {
 
         if (ts.storyStep >= ts.storyQueue.length) {
             ts.isWaitingInput = false;
-            if (window.SQ.View.Story) window.SQ.View.Story.showOptions(ts.storyOptions);
+            
+            // ✅ 完美接合 4：防止舊選項在對話中途提早跳出
+            if (!ts._dialogueNextCallback) {
+                if (window.SQ.View.Story) window.SQ.View.Story.showOptions(ts.storyOptions);
+            }
         }
     },
 });

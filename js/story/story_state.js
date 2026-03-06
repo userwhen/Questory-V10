@@ -220,7 +220,17 @@ Object.assign(window.SQ.Engine.Story, {
     },
 
     _sanitizeNodeForSave: function(node) {
-        const safe = { id: node.id, text: node.text, type: node.type, rewards: node.rewards };
+        const safe = { 
+            id: node.id, 
+            type: node.type, 
+            text: node.text, 
+            dialogue: node.dialogue, // ✅ 補上這行！確保對話陣列有被存檔
+            briefText: node.briefText, 
+            isHub: node.isHub, 
+            noDefaultExit: node.noDefaultExit, 
+            onEnter: node.onEnter, 
+            rewards: node.rewards 
+        };
         if (node.options) {
             safe.options = node.options.map(opt => {
                 const safeOpt = { ...opt };

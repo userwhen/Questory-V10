@@ -64,7 +64,7 @@ window.SQ.Controller.Story = {
 
         window.SQ.EventBus.on(E.Action.SET_LANG, (lang) => {
             if (window.StoryEngine) window.SQ.Engine.Story.setLang(lang);
-            const label = { 'zh': '中文', 'en': 'English', 'jp': '日本語', 'mix': '混合' };
+            const label = { 'zh': '中文', 'en': 'English', 'jp': '日本語', 'kr': '韓文', 'mix': '混合' };
             if (E.System && E.System.TOAST) window.SQ.EventBus.emit(E.System.TOAST, `🌐 語言已切換為 ${label[lang] || lang}`);
         });
 

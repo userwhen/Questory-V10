@@ -721,6 +721,48 @@
             { val: "「方向對了，但力道不足。」", tag: ["raising", "mentor"] },
             { val: "「這次做得不錯。繼續。」", tag: ["raising", "mentor"] }
         ],
+		jp_warning: [
+			{ val: "危ない！ここは開けないで", tag: ["learning", "adventure", "jp"] },
+			{ val: "逃げろ！今すぐここを出ろ！", tag: ["learning", "horror", "jp"] },
+			{ val: "触れるな、呪われるぞ", tag: ["learning", "horror", "jp"] },
+			{ val: "前へ進め、後ろを見るな", tag: ["learning", "adventure", "jp"] },
+			{ val: "右は危険、左へ進め", tag: ["learning", "adventure", "jp"] },
+			{ val: "後ろの石板を押せ、早く！", tag: ["learning", "adventure", "jp", "risk_high"] },
+		],
+		kr_warning: [
+			{ val: "뒤를 보지 마라！", tag: ["learning", "horror", "kr"] },
+			{ val: "도망쳐！빨리！", tag: ["learning", "horror", "kr"] },
+			{ val: "조심해！위험해！", tag: ["learning", "horror", "kr"] },
+			{ val: "왼쪽으로 가！", tag: ["learning", "adventure", "kr"] },
+			{ val: "절대 포기하지 마라", tag: ["learning", "raising", "kr"] },
+			{ val: "지금 당장 도망쳐！", tag: ["learning", "horror", "kr", "risk_high"] },
+		],
+		jp_clue: [
+			{ val: "彼が撃たれた", tag: ["learning", "mystery", "jp"] },
+			{ val: "彼女を脅した", tag: ["learning", "mystery", "jp"] },
+			{ val: "鍵はここだ", tag: ["learning", "mystery", "jp"] },
+			{ val: "私が書かされた", tag: ["learning", "mystery", "jp"] },
+			{ val: "祭壇で儀式を行え", tag: ["learning", "adventure", "jp"] },
+			{ val: "前の扉を開けよ", tag: ["learning", "adventure", "jp"] },
+		],
+		jp_intimate: [
+			{ val: "ねえ、今夜会えない？", tag: ["learning", "romance", "jp"] },
+			{ val: "昨日はありがとうね。また会いたい", tag: ["learning", "romance", "jp"] },
+			{ val: "もう、心配しすぎだよ", tag: ["learning", "romance", "jp"] },
+			{ val: "そんな顔しないでよ", tag: ["learning", "romance", "jp"] },
+		],
+		kr_intimate: [
+			{ val: "야, 오늘 밤에 만나", tag: ["learning", "romance", "kr"] },
+			{ val: "어제 정말 재미있었어. 또 만나자", tag: ["learning", "romance", "kr"] },
+			{ val: "내가 네 생각만 해", tag: ["learning", "romance", "kr"] },
+			{ val: "지금도 네 생각하고 있어", tag: ["learning", "romance", "kr"] },
+		],
+		bilingual_mix: [
+			{ val: "뒤를 봐라——そして前へ逃げろ", tag: ["learning", "mix", "risk_high"] },
+			{ val: "조심해、危険だ！", tag: ["learning", "mix", "horror"] },
+			{ val: "逃げろ！빨리！", tag: ["learning", "mix", "horror"] },
+			{ val: "있었어——でも今はいない", tag: ["learning", "mix", "mystery"] },
+		],
 });
 
 console.log("✅ story_data_core_mystery_patch.js 已載入（偵探詞庫擴充包）");
