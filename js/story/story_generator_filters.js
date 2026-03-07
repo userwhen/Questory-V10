@@ -28,7 +28,10 @@ Object.assign(window.SQ.Engine.Generator, {
             type.includes('end') || type.includes('start');
 
         let candidates = db.templates.filter(t => t.type === type);
-
+		candidates = candidates.filter(t => {
+            if (!t.reqTags || t.reqTags.length === 0) return true;
+            return t.reqTags.every(tag => currentTags.includes(tag));
+        });
         candidates = this._filterByTheme(candidates, chain);
         candidates = this._filterByTags(candidates, currentTags, isDangerState);
         candidates = this._filterByStats(candidates, currentStats, currentTags); // 🌟 傳入 currentTags

@@ -127,7 +127,8 @@ window.SQ.Engine.Generator = {
         },
         actors: [
             { key: 'lover', pool: 'core_identity', tags: ['human', 'romance'] },
-            { key: 'rival', pool: 'core_identity', tags: ['human', 'romance'] }
+            { key: 'rival', pool: 'core_identity', tags: ['human', 'romance'] },
+			{ key: 'mentor',  pool: 'core_identity', tags: ['human', 'mentor'] },
         ],
         flow: { isSequential: true }
     },

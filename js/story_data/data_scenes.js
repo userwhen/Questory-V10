@@ -157,10 +157,11 @@ function register(scene) {
                 action: "node_next",
                 nextScene: {
                     text: [
-                        "你在腦海中快速推演：",
-                        "1. 若【啦啦隊長】是真兇 (說謊)：她說班長說謊(代表班長實話)、她說不良少年無辜(代表不良是真兇)。真兇只有一個，出現雙兇矛盾！啦啦隊長不可能是真兇。",
-                        "2. 若【不良少年】是真兇 (說謊)：他說班長是真兇。這代表同時有兩個真兇，矛盾！不良少年也不是真兇。",
-                        "結論非常清晰了... 唯一能在邏輯上自洽的騙子是..."
+                        "你在腦海中快速推演三個人的供詞：",
+                        "1. 若【啦啦隊長】是真兇（她說謊）：她說「不良少年無辜」是謊言，代表不良少年其實有罪。但不良少年已自承是幫兇並非主謀，不可能同時又是另一個真兇——真兇只有一人，矛盾！啦啦隊長不是真兇。",
+                        "2. 若【不良少年】是真兇（他說謊）：他說「班長才是拿鋸子的人」是謊言，代表班長是無辜的。但班長卻說「啦啦隊長幹的」——若班長說的是實話，那真兇又變成啦啦隊長。與第 1 條矛盾！不良少年也不是真兇。",
+                        "3. 若【班長】是真兇（他說謊）：他說「是啦啦隊長幹的」是謊言，啦啦隊長無辜。啦啦隊長說「不良少年無辜」是實話，不良少年無辜。不良少年說「班長才是真兇」是實話，指向班長。——完美自洽。",
+                        "結論清晰：說謊的只有班長。"
                     ],
                     options: [{ label: "我知道誰在說謊了", action: "node_next", nextSceneId: 'campus_broadcast_hub' }]
                 }
@@ -250,7 +251,7 @@ register({
     text: [
         "備註欄寫著紅字：『必須親手交付，絕不能帶回。』",
         "時間是晚上 11:58。還有兩分鐘。",
-        "那個{atom_smell}的味道，似乎就是從門縫裡飄出來的..."
+        "那股腐敗的甜膩氣味，似乎就是從門縫裡飄出來的..."
     ],
     options: [
         // 補上 action: "node_next"
@@ -377,13 +378,8 @@ register({
 // --- 發展：死亡博弈 ---
 register({
     id: 'confessional_interrogation',
-    text: [
-        "【第二章：死亡倒數】",
-        "恐懼像冰水一樣澆透了全身。喉嚨開始發緊——是心理作用？還是毒藥生效了？",
-        "你衝過去揪住她的衣領，但她眼神鋒利，毫無懼色。"
-    ],
     dialogue: [
-		{text:"【第二章：死亡倒數】"},
+        {text:"【第二章：死亡倒數】"},
         {text:"恐懼像冰水一樣澆透了全身。喉嚨開始發緊——是心理作用？還是毒藥生效了？"},
         {text:"你衝過去揪住她的衣領，但她眼神鋒利，毫無懼色。"},
         { speaker: "女人", text: "這是一個考驗。如果您是真的神父，上帝會拯救您。" },
@@ -422,6 +418,7 @@ register({
         // 選項 B: 真結局 (需要智力檢定或觀察)
         { 
             label: "等等...這邏輯不對 (INT檢定)", 
+            action: "node_next",
             check: { stat: 'INT', val: 7 },
             nextSceneId: 'confessional_end_true',
             failScene: { text: "你的大腦一片混亂，無法思考細節...", options: [{label:"只能拼了！(轉向戰鬥)", action:"node_next", nextSceneId:'confessional_end_action'}]}
@@ -460,8 +457,9 @@ register({
     dialogue: [
                 { text: { zh: "你猛地踢開告解室的門，一把扯下聖壇下的地毯，露出了一個通風口。" } },
                 { text: { zh: "你冷冷地看著驚恐的女人。" } },
-                { speaker: "你", text: { zh: "根本沒有毒酒。如果是氰化物，我早就死了。" } },
-                { speaker: "你", text: { zh: "我的手指發麻是因為發燒淋雨。你編故事只是為了讓我替你擋住門外的人！" } },
+                { speaker: "你", text: { zh: "根本沒有毒酒。" } },
+                { speaker: "你", text: { zh: "我是詐欺犯，我懂氰化物。高濃度氰化物的致死時間不超過五分鐘，根本不需要等一小時。你說的一小時只是為了讓我乖乖配合你演這場戲！" } },
+                { speaker: "你", text: { zh: "我手指發麻是因為淋雨發燒，不是中毒。你需要的不是赦免——你需要有人替你擋住門外那些人！" } },
                 { speaker: "女人", text: { zh: "你..." } }
             ],
     options: [
@@ -491,11 +489,14 @@ register({
 register({
     id: 'confessional_end_action',
     dialogue: [
+                { text: { zh: "「相信我。」你看著她。「我不是神父，你也清楚。但他們來者不善，我們現在是同一條船上的。」" } },
+                { text: { zh: "她遲疑了兩秒，然後點頭。" } },
                 { text: { zh: "你利用教堂的地形，推倒了雕像，並點燃了聖油。" } },
-                { text: { zh: "當入侵者闖入時，你展開了一場血腥的搏鬥。" } },
-                { text: { zh: "經歷了一番苦戰，雖然你受了重傷，但仍成功殺死了對方。" } },
+                { text: { zh: "當入侵者闖入時，你們兩個人聯手，展開了一場混亂的搏鬥。" } },
+                { text: { zh: "你受了重傷，但他們付出了更大的代價。" } },
                 { speaker: "你", text: { zh: "呼...呼...解藥...給我..." } },
-                { speaker: "女人", text: { zh: "（哭著拿出藥瓶）對不起。" } }
+                { speaker: "女人", text: { zh: "（沉默片刻，從包包裡掏出一個藥瓶）...我從來沒有下毒。酒裡什麼都沒有。對不起，我撒謊了。" } },
+                { text: { zh: "你把藥瓶扔到一邊，苦笑著靠在聖壇上。原來那只是一場把你當棋子的謊言——但你還是選擇了賭一把。" } }
             ],
     options: [
         {
@@ -503,9 +504,10 @@ register({
             action: "node_next",
             nextScene: {
                 dialogue: [
-                            { text: { zh: "腹痛瞬間加劇，如同火燒。" } },
-                            { text: { zh: "女人後退一步：「酒裡真的有毒，但那是除草劑。根本沒有解藥。」" } },
-                            { text: { zh: "女人拿走了屍體上的車鑰匙離開了。你靠在聖壇上，看著窗外的第一縷晨光。" } },
+                            { text: { zh: "你舉起那瓶藥水，然後放下了。" } },
+                            { text: { zh: "「算了。」" } },
+                            { text: { zh: "女人拿起她的包包，在門口停頓了一下。「謝謝你。」她消失在晨光中。" } },
+                            { text: { zh: "你靠在聖壇上，看著窗外的第一縷晨光。什麼都沒有——沒有解藥，沒有酬勞，沒有答案。" } },
                             { speaker: "你", text: { zh: "至少……這場雨停了。" } }
                         ],
                 options: [{ 
@@ -716,8 +718,9 @@ register({
     register({
         id: 'spy_calculate_ending',
         dialogue: [
-            { text: "「直升機到了，快走！」伊芙拉著你衝上頂樓停機坪。" },
-            { text: "任務結束了。現在，是檢視成果的時候..." }
+            { text: "任務結束了。" },
+            { text: "伊芙已在頂樓停機坪等著你。她看到你出現，鬆了口氣——或者，沉默地別開臉。" },
+            { text: "現在，是檢視成果的時候..." }
         ],
         options: [
             // 結局 S：資料拿滿 + 伊芙好感度滿 (完美特務)
@@ -824,7 +827,7 @@ register({
     text: [
         "【序章：囚鳥】",
         "頭痛欲裂。你緩緩睜開眼，發現自己躺在冰冷潮濕的石板地上。",
-        "空氣中瀰漫著陳年紅酒與{atom_smell}混合的腥味",
+        "空氣中瀰漫著陳年紅酒與血腥氣息混合的腥味",
 		"遠處傳來雷聲，彷彿是這座深宅大院的低吼。",
         "其實你是被召回家族的私生子，本該參加今晚的家主壽宴，此刻卻身陷囹圄。"
     ],
@@ -930,13 +933,11 @@ register({
                     action: "node_next", 
                     nextScene: { 
                         dialogue: [
-                            { text: { zh: "你心裡不斷的回憶起老湯姆對你的好，" } },
-                            { text: { zh: "暗自在心裡發誓，等到你復仇成功後，" } },
-                            { text: { zh: "一定會回來替你報仇。" } },
-                            { text: { zh: "吱呀一聲，你藉著黃銅鑰匙開啟了上鎖的門。" } }
+                            { text: { zh: "你把鑰匙插入鎖孔的瞬間，老湯姆的臉在腦海中閃過。" } },
+                            { text: { zh: "你在心裡發了個誓：等這一切結束，一定回來替他討回公道。" } },
+                            { text: { zh: "吱呀一聲，鏽蝕的門鎖在黃銅鑰匙的帶動下緩緩讓步，沉重的木門豁然而開。" } }
                         ],
-                        // 拿完鑰匙後，回到地窖首頁 (因為已經有了 has_key，所以這個選項會消失)
-                        options: [{ label: "返回", action: "node_next", nextSceneId: 'rose_hallway' }]
+                        options: [{ label: "衝出地窖", action: "node_next", nextSceneId: 'rose_hallway' }]
                     }
                 },
     ]
@@ -971,7 +972,7 @@ register({
         {
             label: "🔔 午夜鐘聲響起 (前往結局)",
             style: "danger",
-            condition: { var: { key: 'time_left', val: 0, op: '<=' } },
+            condition: { vars: [{ key: 'time_left', val: 0, op: '<=' }] },
             action: "node_next",
             nextSceneId: 'rose_climax'
         },
@@ -979,20 +980,20 @@ register({
         // [B] 社交 (增加具體情境)
         {
             label: "🍷 融入貴族圈子 (威望+10 / 耗時)",
-            condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: { 
                 text: "你端起一杯紅酒，掩飾住嘴角的冷笑，走向了家族的旁支長老們。\n你若無其事地提起了大少爺最近在賭場的巨額虧損，以及幾筆不明的賬目。\n\n長老們的臉色變了。謠言像病毒一樣在宴會廳擴散。", 
-                onEnter: { varOps: [{key:'prestige', val:10, op:'+'}] },
-                options: [{label:"深藏功與名，退回人群", action:"node_next", nextSceneId:'rose_hub'}] 
+                rewards: { varOps: [{key:'prestige', val:10, op:'+'}] },
+                options: [{label:"深藏功與名，退回人群", action:"node_next", nextSceneId:'rose_hub0'}] 
             }
         },
 
         // [C] 管家線
         {
             label: "🌹 尋找那位年輕管家",
-            condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             nextSceneId: 'rose_butler_interaction'
         },
@@ -1000,28 +1001,28 @@ register({
         // [D] 對峙線
         {
             label: "⚔️ 主動走向大少爺 (INT檢定 / 耗時)",
-            condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             nextSceneId: 'rose_brother_fight'
         },
-		{
-        label: "🍃 前往露台 (休息/偷聽)",
-        condition: { var: { key: 'time_left', val: 1, op: '>=' } },
-        action: "node_next",
-        nextSceneId: 'rose_terrace' // 指向擴充一
-    },
-    {
-        label: "📚 進入圖書室 (探索)",
-        condition: { var: { key: 'time_left', val: 1, op: '>=' } },
-        action: "node_next",
-        nextSceneId: 'rose_library' // 指向擴充二
-    },
-    {
-        label: "🎲 去偏廳賭一把 (賺錢)",
-        condition: { var: { key: 'time_left', val: 1, op: '>=' } },
-        action: "node_next",
-        nextSceneId: 'rose_gamble' // 指向擴充三
-    },
+        {
+            label: "🍃 前往露台 (休息/偷聽)",
+            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
+            action: "node_next",
+            nextSceneId: 'rose_terrace'
+        },
+        {
+            label: "📚 進入圖書室 (探索)",
+            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
+            action: "node_next",
+            nextSceneId: 'rose_library'
+        },
+        {
+            label: "🎲 去偏廳賭一把 (賺錢)",
+            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
+            action: "node_next",
+            nextSceneId: 'rose_gamble'
+        },
         // [E] 晉見家主
         {
             label: "🐉 強闖家主書房 (需威望50)",
@@ -1038,7 +1039,7 @@ register({
         {
             label: "🐉 強闖家主書房 (🔒 威望不足)",
             style: "disabled",
-            condition: { var: { key: 'prestige', val: 50, op: '<' } },
+            condition: { vars: [{ key: 'prestige', val: 50, op: '<' }] },
             action: "locked",
             msg: "門口的保鏢冷冷地看著你：「私生子沒有資格進去。」"
         }
@@ -1051,7 +1052,6 @@ register({
     id: 'rose_hub',
     text: [
         "【宴會廳】",
-
         "⏳ 距離審判還有： {time_left} 時辰",
         "📊 當前局勢：威望 {prestige} | 理智 {sanity} | 金幣 {gold} | 💕管家好感 {favor_butler}"
     ],
@@ -1060,20 +1060,20 @@ register({
         {
             label: "🔔 午夜鐘聲響起 (前往結局)",
             style: "danger",
-            condition: { var: { key: 'time_left', val: 0, op: '<=' } },
+            condition: { vars: [{ key: 'time_left', val: 0, op: '<=' }] },
             action: "node_next",
             nextSceneId: 'rose_climax'
         },
 
-        // [B] 社交 (增加具體情境)
+        // [B] 社交
         {
             label: "🍷 融入貴族圈子 (威望+10 / 耗時)",
-            condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: { 
                 text: "你端起一杯紅酒，掩飾住嘴角的冷笑，走向了家族的旁支長老們。\n你若無其事地提起了大少爺最近在賭場的巨額虧損，以及幾筆不明的賬目。\n\n長老們的臉色變了。謠言像病毒一樣在宴會廳擴散。", 
-                onEnter: { varOps: [{key:'prestige', val:10, op:'+'}] },
+                rewards: { varOps: [{key:'prestige', val:10, op:'+'}] },
                 options: [{label:"深藏功與名，退回人群", action:"node_next", nextSceneId:'rose_hub'}] 
             }
         },
@@ -1081,7 +1081,7 @@ register({
         // [C] 管家線
         {
             label: "🌹 尋找那位年輕管家",
-            condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             nextSceneId: 'rose_butler_interaction'
         },
@@ -1089,28 +1089,28 @@ register({
         // [D] 對峙線
         {
             label: "⚔️ 主動走向大少爺 (INT檢定 / 耗時)",
-            condition: { var: { key: 'time_left', val: 1, op: '>=' } },
+            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             nextSceneId: 'rose_brother_fight'
         },
-		{
-        label: "🍃 前往露台 (休息/偷聽)",
-        condition: { var: { key: 'time_left', val: 1, op: '>=' } },
-        action: "node_next",
-        nextSceneId: 'rose_terrace' // 指向擴充一
-    },
-    {
-        label: "📚 進入圖書室 (探索)",
-        condition: { var: { key: 'time_left', val: 1, op: '>=' } },
-        action: "node_next",
-        nextSceneId: 'rose_library' // 指向擴充二
-    },
-    {
-        label: "🎲 去偏廳賭一把 (賺錢)",
-        condition: { var: { key: 'time_left', val: 1, op: '>=' } },
-        action: "node_next",
-        nextSceneId: 'rose_gamble' // 指向擴充三
-    },
+        {
+            label: "🍃 前往露台 (休息/偷聽)",
+            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
+            action: "node_next",
+            nextSceneId: 'rose_terrace'
+        },
+        {
+            label: "📚 進入圖書室 (探索)",
+            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
+            action: "node_next",
+            nextSceneId: 'rose_library'
+        },
+        {
+            label: "🎲 去偏廳賭一把 (賺錢)",
+            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
+            action: "node_next",
+            nextSceneId: 'rose_gamble'
+        },
         // [E] 晉見家主
         {
             label: "🐉 強闖家主書房 (需威望50)",
@@ -1127,7 +1127,7 @@ register({
         {
             label: "🐉 強闖家主書房 (🔒 威望不足)",
             style: "disabled",
-            condition: { var: { key: 'prestige', val: 50, op: '<' } },
+            condition: { vars: [{ key: 'prestige', val: 50, op: '<' }] },
             action: "locked",
             msg: "門口的保鏢冷冷地看著你：「私生子沒有資格進去。」"
         }
@@ -1171,7 +1171,7 @@ register({
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: { 
                 text: "你接過手帕，指尖故意在他掌心輕輕劃過。塞巴斯的動作停滯了一瞬，呼吸亂了半拍。\n\n你靠近他，在他耳邊輕笑：「比起這些虛偽的貴族，我更願意信任你，塞巴斯。」\n\n他低下頭，掩飾住泛紅的耳根：「……我不討厭您的信任，少爺。」", 
-                onEnter: { varOps: [{key:'favor_butler', val:20, op:'+'}] }, // 好感增加
+                rewards: { varOps: [{key:'favor_butler', val:20, op:'+'}] },
                 options: [{label:"曖昧的氛圍恰到好處", action:"node_next", nextSceneId:'rose_hub'}] 
             },
             failScene: {
@@ -1183,7 +1183,7 @@ register({
         // 密道線：增加緊張感
         {
             label: "🤝 「如果我失敗了...」 (需好感 40)",
-            condition: { var: { key: 'favor_butler', val: 40, op: '>=' } },
+            condition: { vars: [{ key: 'favor_butler', val: 40, op: '>=' }] },
             action: "node_next",
             rewards: { 
                 tags: ['secret_passage'],
@@ -1228,12 +1228,12 @@ register({
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: { 
                 text: "你沒有生氣，反而優雅地舉杯，聲音不大卻清晰地傳遍全場：\n\n「大哥，您看起來很緊張？是因為賭場的債主追得太緊，還是因為……您給父親準備的『壽禮』見不得光？」\n\n大少爺的臉色瞬間煞白。周圍的賓客開始竊竊私語，懷疑的種子已經種下。", 
-                onEnter: { varOps: [{key:'prestige', val:20, op:'+'}] },
+                rewards: { varOps: [{key:'prestige', val:20, op:'+'}] },
                 options: [{label:"微笑著看著他落荒而逃", action:"node_next", nextSceneId:'rose_hub'}] 
             },
             failScene: {
                 text: "你試圖反駁，但在大少爺強大的氣場下結結巴巴。他無情地打斷了你，並嘲笑你的出身。\n賓客們發出刺耳的哄笑聲，你的顏面掃地。",
-                onEnter: { varOps: [{key:'prestige', val:10, op:'-'}] },
+                rewards: { varOps: [{key:'prestige', val:10, op:'-'}] },
                 options: [{label:"狼狽地退回角落", action:"node_next", nextSceneId:'rose_hub'}]
             }
         }
@@ -1294,10 +1294,11 @@ register({
             label: "👑 舉起家主信物，反殺！",
             style: "primary",
             condition: { hasTag: 'heir_approved' },
-            action: "finish_chain",
+            action: "node_next",
             nextScene: { 
                 text: "面對指控，你沒有慌張。你緩緩舉起右手，那枚翡翠扳指在燈光下散發著寒光。\n\n「家主信物在此！誰敢造次？」你厲聲喝道，氣勢壓倒了全場。\n隨即，你甩出了大少爺購買砒霜的證據。\n\n局勢瞬間逆轉。衛兵們遲疑片刻，將劍鋒轉向了臉色慘白的大少爺。\n你坐在了那張沾血的椅子上，俯瞰著被拖走的大哥。你贏了，但你的心也和這扳指一樣冰冷了。\n\n【結局：血色權杖】\n(達成條件：獲得家主認可)",
-                rewards: { gold: 200,  title: "豪門家主" }
+                rewards: { gold: 200, title: "豪門家主" },
+                options: [{label: "就此翻篇", action: "finish_chain"}]
             }
         },
         
@@ -1305,11 +1306,12 @@ register({
         {
             label: "🌹 與塞巴斯殺出重圍",
             style: "danger",
-            condition: { var: { key: 'favor_butler', val: 50, op: '>=' } },
-            action: "finish_chain",
+            condition: { vars: [{ key: 'favor_butler', val: 50, op: '>=' }] },
+            action: "node_next",
             nextScene: { 
                 text: "「動手！」你大喊一聲。\n\n燈光突然熄滅——是塞巴斯切斷了電源。黑暗中，槍聲響起，精準地擊倒了靠近你的衛兵。\n一隻溫暖的手抓住了你：「少爺，這邊！」\n\n火光與混亂中，你們跳上了停在後門的汽車。你回頭看了一眼燃燒的莊園，那裡埋葬了你的過去，但身邊的人，是你的未來。\n\n【結局：亂世鴛鴦】\n(達成條件：管家好感 > 50)",
-                rewards: { gold: 120,  title: "私奔貴族" }
+                rewards: { gold: 120, title: "私奔貴族" },
+                options: [{label: "消失在夜色裡", action: "finish_chain"}]
             }
         },
 
@@ -1317,20 +1319,22 @@ register({
         {
             label: "🏃‍♂️ 鑽入密道逃跑",
             condition: { hasTag: 'secret_passage' },
-            action: "finish_chain",
+            action: "node_next",
             nextScene: {
                 text: "你深知大勢已去，趁著眾人混亂之際，滾進了壁爐後的暗門。\n\n你在潮濕的密道中狂奔，身後是衛兵的追殺聲。當你爬出下水道，看著黎明升起，你發現自己雖然一無所有，但至少還活著。\n復仇的火種，還未熄滅。\n\n【結局：流亡者】\n(達成條件：發現密道)",
-                rewards: { gold: 50 }
+                rewards: { gold: 50 },
+                options: [{label: "在黎明中重新出發", action: "finish_chain"}]
             }
         },
 
         // 結局 D: 悲劇
         {
             label: "無力辯解...",
-            action: "finish_chain",
+            action: "node_next",
             nextScene: { 
                 text: "你試圖張嘴辯解，但憤怒的人群淹沒了你的聲音。\n「殺死弒父兇手！」\n\n在混亂的暴力中，你的意識逐漸模糊。你失敗了，成為了家族鬥爭中又一個無名的犧牲品。\n\n【結局：無名之鬼】",
-                rewards: { energy: -20 }
+                rewards: { energy: -20 },
+                options: [{label: "就此沉入黑暗", action: "finish_chain"}]
             }
         }
     ]
@@ -1352,7 +1356,7 @@ register({
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: {
                 text: "你屏住呼吸，聽到長老低聲說道：\n「老爺子的遺囑藏在『那幅畫』後面...就是畫著『獨眼巨人』的那幅。」\n(獲得情報：遺囑位置)",
-                onEnter: { tags: ['info_will_location'] }, // 獲得情報標籤
+                rewards: { tags: ['info_will_location'] },
                 options: [{label: "記在心裡，返回宴會", action: "node_next", nextSceneId: 'rose_hub'}]
             },
             failScene: {
@@ -1367,7 +1371,7 @@ register({
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: {
                 text: "你看著遠處的燈塔，深吸了一口冰冷的空氣。\n混亂的思緒逐漸清晰，恐懼感也消退了不少。",
-                onEnter: { varOps: [{key:'sanity', val:10, op:'+'}] },
+                rewards: { varOps: [{key:'sanity', val:10, op:'+'}] },
                 options: [{label: "精神飽滿地返回", action: "node_next", nextSceneId: 'rose_hub'}]
             }
         },
@@ -1390,7 +1394,7 @@ register({
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: {
                 text: "在一本厚重的《家族建築史》夾層中，你發現了一張發黃的藍圖。\n上面標記著廚房壁爐後方有一條通往河邊的走私密道。\n(獲得標籤：逃生密道)",
-                onEnter: { tags: ['secret_passage'] },
+                rewards: { tags: ['secret_passage'] },
                 options: [{label: "收好圖紙", action: "node_next", nextSceneId: 'rose_hub'}]
             },
             failScene: {
@@ -1401,16 +1405,12 @@ register({
         },
         // 選項 B: 閱讀戰術書 (提升能力)
         {
-            label: "📚 閱讀《權力博弈論》 (INT +1)",
+            label: "📚 閱讀《權力博弈論》 (威望+5)",
             action: "node_next",
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: {
                 text: "你閱讀了關於談判與施壓的章節，感覺對人心的掌控力提升了。",
-                onEnter: { 
-                    // 這裡假設您的系統有直接加屬性的功能，如果沒有，可以用變數模擬
-                    // 或是直接給予威望
-                     varOps: [{key:'prestige', val:5, op:'+'}]
-                },
+                rewards: { varOps: [{key:'prestige', val:5, op:'+'}] },
                 options: [{label: "合上書本", action: "node_next", nextSceneId: 'rose_hub'}]
             }
         },
@@ -1427,7 +1427,7 @@ register({
         // 選項 A: 參與賭局
         {
             label: "🎲 加入牌局 (金幣 -10 / LUK檢定)",
-            condition: { var: { key: 'gold', val: 10, op: '>=' } },
+            condition: { vars: [{ key: 'gold', val: 10, op: '>=' }] },
             check: { stat: 'LUK', val: 5 }, // 運氣檢定
             rewards: { 
                 gold: -10, // 入場費
@@ -1435,12 +1435,12 @@ register({
             },
             nextScene: {
                 text: "你的運氣好得驚人！連續幾把同花順讓其他人看得目瞪口呆。\n你面前的籌碼堆成了小山。\n(金幣 +50)",
-                onEnter: { gold: 50, varOps: [{key:'prestige', val:5, op:'+'}] },
+                rewards: { gold: 50, varOps: [{key:'prestige', val:5, op:'+'}] },
                 options: [{label: "見好就收", action: "node_next", nextSceneId: 'rose_hub'}]
             },
             failScene: {
                 text: "今晚幸運女神沒有站在你這邊。\n你輸光了手裡的籌碼，還被旁人嘲笑了一番。",
-                onEnter: { varOps: [{key:'sanity', val:5, op:'-'}] },
+                rewards: { varOps: [{key:'sanity', val:5, op:'-'}] },
                 options: [{label: "灰溜溜地離開", action: "node_next", nextSceneId: 'rose_hub'}]
             }
         },
@@ -1451,7 +1451,7 @@ register({
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: {
                 text: "你的手指靈活地換了底牌。沒有人發現破綻。\n你大殺四方，贏走了桌上所有的錢！\n(金幣 +100)",
-                onEnter: { gold: 100 },
+                rewards: { gold: 100 },
                 options: [{label: "趕緊溜走", action: "node_next", nextSceneId: 'rose_hub'}]
             },
             failScene: {
@@ -1484,7 +1484,7 @@ register({
         ],
         options: [
             { 
-                label: "當場發作，質問他 (信任-10 / 壓力-10)", 
+                label: "當場發作，質問他 (信任-10 / 情緒宣洩)", 
                 action: "node_next", 
                 rewards: { varOps: [{ key: 'md_trust', val: 10, op: '-' }, { key: 'md_stress', val: 10, op: '-' }] },
                 nextScene: {

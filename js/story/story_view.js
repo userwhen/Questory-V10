@@ -26,15 +26,15 @@ window.SQ.View.Story = {
         const textBody = `
             <div id="story-text-box" data-action="clickStoryScreen"
                  style="
-                    flex: 1; min-height: 0; padding: 15px 20px 20px 20px; overflow-y: auto; 
-                    color: var(--text-on-dark); font-size: 1.15rem; line-height: 1.6; padding-bottom: 40px;
-                    white-space: pre-wrap; cursor: pointer; position: relative; scroll-behavior: smooth;
-                 ">
-                <div id="story-content"></div>
-                <span id="story-cursor" style="display:none; color:var(--color-gold); font-weight:bold; margin-left:5px; animation:blink 1s infinite;">▼</span>
-                <style>@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }</style>
-            </div>`;
-
+                    flex: 1; min-height: 0; 
+                    padding: 10px 20px 40px 20px; 
+                    overflow-y: auto; 
+                    color: var(--text-on-dark); font-size: 1.15rem; line-height: 1.6; 
+                    cursor: pointer; position: relative; scroll-behavior: smooth;
+                 "><div id="story-content"></div><span id="story-cursor" style="display:none; color:var(--color-gold); font-weight:bold; margin-left:5px; animation:blink 1s infinite;">▼</span></div>
+            <style>@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }</style>
+        `;
+		
         const actionsArea = `
             <div id="story-actions" style="
                 width: 100%; flex-shrink: 0; background: var(--bg-hud); 

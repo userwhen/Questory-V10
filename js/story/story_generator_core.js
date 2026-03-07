@@ -261,9 +261,16 @@ Object.assign(window.SQ.Engine.Generator, {
     // ============================================================
     _expandGrammar: function(text, db, memory, depth = 0, collectedTags = null) {
         if (!text) return "";
-        if (depth > 10) return text;
+        if (depth > 10) return text; // 這裡的 depth 是防無限迴圈的層數，不是遊戲天數
+
+        // 🌟 抓取當前遊戲的真實推進天數/步數
+        const gs = window.SQ.State;
+        const chainDepth = (gs && gs.story && gs.story.chain && gs.story.chain.depth) ? gs.story.chain.depth : 1;
 
         return text.replace(/{(\w+)}/g, (match, key) => {
+            // 🌟 系統內建變數攔截
+            if (key === 'depth') return chainDepth;
+
             // 優先：記憶庫（烤死的值不受情境影響，保持一致性）
             if (memory && memory[key]) {
                 let val = memory[key];
@@ -275,14 +282,13 @@ Object.assign(window.SQ.Engine.Generator, {
 
             // 次優：詞庫碎片（情境感知加權選取）
             if (db.fragments[key]) {
-                // 🌟 核心改動：改為呼叫 pickByContext 進行加權選取
                 const pick = this.pickByContext(key, collectedTags || [], db);
                 if (!pick) return match;
 
                 let val = (pick.val && typeof pick.val === 'object') ? (pick.val.zh || pick.val) : pick.val;
                 if (!val) return match;
 
-                // 標籤注入（與原版相同）
+                // 標籤注入
                 if (collectedTags) {
                     if (pick.tag)  Array.isArray(pick.tag)  ? collectedTags.push(...pick.tag)  : collectedTags.push(pick.tag);
                     if (pick.tags) Array.isArray(pick.tags) ? collectedTags.push(...pick.tags) : collectedTags.push(pick.tags);
