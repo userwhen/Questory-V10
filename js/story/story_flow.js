@@ -505,6 +505,9 @@ Object.assign(window.SQ.Engine.Story, {
         const memory  = (gs.story && gs.story.chain && gs.story.chain.memory) || {};
         const vars    = (gs.story && gs.story.vars)  || {};
         const db      = (window.FragmentDB && window.FragmentDB.fragments) || {};
+        
+        // 🌟 抓取當前遊戲的真實推進天數/步數
+        const chainDepth = (gs.story && gs.story.chain && gs.story.chain.depth) ? gs.story.chain.depth : 1;
 
         // 防無限迴圈
         let safety = 0;
@@ -512,7 +515,10 @@ Object.assign(window.SQ.Engine.Story, {
 
         while (/{[^{}]+}/.test(str) && safety++ < MAX) {
             str = str.replace(/{([^{}]+)}/g, (match, key) => {
-                // 1. story.vars 中的數值（如 {time_left}、{prestige}）
+                // 🌟 系統內建變數攔截
+                if (key === 'depth') return chainDepth;
+
+                // 1. story.vars 中的數值
                 if (vars[key] !== undefined) return vars[key];
 
                 // 2. chain.memory 中的固定值
@@ -524,7 +530,7 @@ Object.assign(window.SQ.Engine.Story, {
                     return pool[Math.floor(Math.random() * pool.length)].val;
                 }
 
-                // 找不到：原樣保留，避免無限迴圈
+                // 找不到：原樣保留
                 return match;
             });
         }
