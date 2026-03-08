@@ -59,7 +59,11 @@
         ],
         options: [
             {
-                label: "站出來：我來找出真相（偵探路線）",
+                label: {
+                    zh: "站出來，我來查清楚",
+                    jp: "立ち上がり私が調べる",
+                    kr: "나서서 내가 조사하겠다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_detective"],
@@ -67,7 +71,11 @@
                 }
             },
             {
-                label: "這太危險了，先找個地方躲（生存路線）",
+                label: {
+                    zh: "太危險了，先找地方躲",
+                    jp: "危険すぎる。隠れ場所を探す",
+                    kr: "너무 위험해. 숨을 곳을 찾다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_survivor"],
@@ -102,7 +110,11 @@
         ],
         options: [
             {
-                label: "接受這個任務，開始調查（偵探路線）",
+                label: {
+                    zh: "接下任務，開始調查",
+                    jp: "任務を受け調査を始める",
+                    kr: "임무를 받고 조사를 시작하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_detective"],
@@ -110,7 +122,11 @@
                 }
             },
             {
-                label: "這封信可能是陷阱，先觀察情況（生存路線）",
+                label: {
+                    zh: "可能是陷阱，先觀察",
+                    jp: "罠かもしれない。まず観察する",
+                    kr: "함정일 수도 있다. 먼저 관찰하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_survivor"]
@@ -144,7 +160,11 @@
         ],
         options: [
             {
-                label: "大聲呼救，把所有人都叫來（偵探路線）",
+                label: {
+                    zh: "大聲呼救，引人過來",
+                    jp: "大声で助けを呼び人を集める",
+                    kr: "큰 소리로 도움을 청해 사람을 모으다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_detective", "witnessed_culprit"],
@@ -152,7 +172,11 @@
                 }
             },
             {
-                label: "裝作什麼都沒看見，趕快逃（生存路線）",
+                label: {
+                    zh: "裝作沒看見，趕快跑",
+                    jp: "何も見ていないふりをして逃げる",
+                    kr: "못 본 척하고 빨리 도망치다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_survivor", "witnessed_culprit"],
@@ -189,7 +213,11 @@
         ],
         options: [
             {
-                label: "仔細蒐集物證（INT 檢定）",
+                label: {
+                    zh: "戴上手套，逐寸勘查",
+                    jp: "手袋をはめ、一寸ずつ調べる",
+                    kr: "장갑을 끼고 한 치씩 조사하다"
+                },
                 check: { stat: 'INT', val: 5 },
                 action: "advance_chain",
                 rewards: {
@@ -200,7 +228,11 @@
                 successText: "你找到了一個關鍵細節：{combo_item_desc}<br>這能直接證明兇手的身份。"
             },
             {
-                label: "快速掃視現場（無檢定，可能錯過細節）",
+                label: {
+                    zh: "快速掃視，可能有遺漏",
+                    jp: "素早く見回す。見落とすかも",
+                    kr: "빠르게 훑어보다. 놓칠 수도 있어"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["searched_scene", "has_fake_clue"],
@@ -225,7 +257,11 @@
         ],
         options: [
             {
-                label: "強硬逼問（STR 或 INT 擇高檢定）",
+                label: {
+                    zh: "往前一步，眼神不退讓",
+                    jp: "一歩踏み出し、視線で圧力をかける",
+                    kr: "한 걸음 앞으로 나서며 눈빛으로 압박하다"
+                },
                 check: { stat: 'INT', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -236,7 +272,11 @@
                 successText: "{suspect_A}終於鬆口，透露了一個你之前不知道的細節。"
             },
             {
-                label: "好聲好氣地套話（AGI 或 LUK 檢定）",
+                label: {
+                    zh: "換個坐姿，放鬆語氣問",
+                    jp: "座り直して、力を抜いた声で聞く",
+                    kr: "자세를 바꾸며 힘 뺀 목소리로 묻다"
+                },
                 check: { stat: 'LUK', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -247,7 +287,11 @@
                 successText: "對方警戒心稍稍降低，說了幾句含糊的話，但或許有用。"
             },
             {
-                label: "放棄，繼續搜查別的地方",
+                label: {
+                    zh: "放棄，去找別的線索",
+                    jp: "諦めて別の手がかりを探す",
+                    kr: "포기하고 다른 단서를 찾다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["interrogated_witness"],
@@ -272,7 +316,11 @@
         ],
         options: [
             {
-                label: "進去搜查（有被發現的風險）",
+                label: {
+                    zh: "冒險進去，可能被發現",
+                    jp: "リスクを冒して中へ入る",
+                    kr: "위험을 감수하고 안으로 들어가다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["found_secret_room", "has_true_evidence"],
@@ -284,7 +332,11 @@
                 }
             },
             {
-                label: "記下位置，先不驚動對方",
+                label: {
+                    zh: "記下位置，先不驚動",
+                    jp: "位置を記録し相手を刺激しない",
+                    kr: "위치를 기록하고 자극하지 않다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["found_secret_room"],
@@ -313,7 +365,11 @@
         ],
         options: [
             {
-                label: "🔍 搜查角落（可能找到證物）",
+                label: {
+                    zh: "搜查角落，也許有發現",
+                    jp: "隅を調べる。証拠があるかも",
+                    kr: "구석을 조사하다. 증거가 있을지도"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'search_count', val: 1, op: '>=' }] },
                 rewards: {
@@ -326,7 +382,11 @@
                     }],
                     options: [
                         {
-                            label: "收進口袋（可能是關鍵證物）",
+                            label: {
+                                zh: "可能是關鍵，收進口袋",
+                                jp: "重要かもしれない。ポケットへ",
+                                kr: "중요할지도. 주머니에 넣다"
+                            },
                             action: "node_self",  // 回到當前 HUB
                             rewards: {
                                 tags: ['has_item_clue'],
@@ -338,7 +398,11 @@
                 }
             },
             {
-                label: "🔍 翻查文件（需要 INT 檢定）",
+                label: {
+                    zh: "翻開文件夾，從頭掃",
+                    jp: "ファイルを開き、最初から目を通す",
+                    kr: "파일을 펼쳐 처음부터 훑어보다"
+                },
                 check: { stat: 'INT', val: 4 },
                 action: "advance_chain",
                 condition: {
@@ -385,7 +449,11 @@
                 }
             },
             {
-                label: "直接問對方有沒有看到什麼",
+                label: {
+                    zh: "直接問，有沒有看到",
+                    jp: "直接聞く。何か見たか",
+                    kr: "직접 묻다. 뭔가 봤냐고"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["helped_npc"],
@@ -419,14 +487,22 @@
         ],
         options: [
             {
-                label: "屏住呼吸，一動不動（AGI 檢定）",
+                label: {
+                    zh: "屏住呼吸，石化般靜止",
+                    jp: "息を止め、石になったように動かない",
+                    kr: "숨을 참고 돌처럼 굳어버리다"
+                },
                 check: { stat: 'AGI', val: 4 },
                 action: "advance_chain",
                 rewards: { exp: 10 },
                 successText: "腳步聲漸漸遠去。你暫時安全了。"
             },
             {
-                label: "悄悄換個更安全的藏身處",
+                label: {
+                    zh: "悄悄移到更安全的地方",
+                    jp: "そっと安全な隠れ場所に移る",
+                    kr: "살짝 더 안전한 곳으로 이동하다"
+                },
                 action: "advance_chain",
                 rewards: { varOps: [{ key: 'tension', val: 8, op: '+' }] }
             }
@@ -451,7 +527,11 @@
         ],
         options: [
             {
-                label: "完全靜止，等待對方離開（LUK 檢定）",
+                label: {
+                    zh: "縮成最小，把存在感抹掉",
+                    jp: "できる限り小さくなり、気配を消す",
+                    kr: "최대한 작아지며 존재감을 지우다"
+                },
                 check: { stat: 'LUK', val: 5 },
                 action: "advance_chain",
                 rewards: { exp: 15 },
@@ -483,12 +563,20 @@
         ],
         options: [
             {
-                label: "繼續躲著，這不關我的事",
+                label: {
+                    zh: "繼續躲，這不關我事",
+                    jp: "隠れ続ける。関係ない",
+                    kr: "계속 숨다. 내 일이 아니야"
+                },
                 action: "advance_chain",
                 rewards: { varOps: [{ key: 'tension', val: 5, op: '+' }] }
             },
             {
-                label: "出去幫忙（暴露自己，但可能改變結局）",
+                label: {
+                    zh: "出去幫忙，暴露自己",
+                    jp: "出て助ける。自分が露出する",
+                    kr: "나가서 돕다. 자신이 노출된다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_detective", "survivor_helped"],
@@ -515,7 +603,11 @@
         ],
         options: [
             {
-                label: "全力衝刺，尋找出口（AGI 檢定）",
+                label: {
+                    zh: "腳跟一蹬，全速衝出去",
+                    jp: "踵で床を蹴り、全速で飛び出す",
+                    kr: "뒤꿈치로 바닥을 박차고 전속력으로 뛰어나가다"
+                },
                 check: { stat: 'AGI', val: 6 },
                 action: "advance_chain",
                 rewards: {
@@ -526,7 +618,11 @@
                 successText: "你成功甩開了對方，藏進了一個更安全的角落。"
             },
             {
-                label: "大聲呼救，把其他人引過來",
+                label: {
+                    zh: "大聲呼救，引人過來",
+                    jp: "大声で叫び人を引き寄せる",
+                    kr: "큰 소리로 외쳐 사람을 끌어오다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_detective", "blew_cover"],
@@ -564,7 +660,11 @@
         ],
         options: [
             {
-                label: "保持冷靜，判斷聲音來源",
+                label: {
+                    zh: "閉眼，用耳朵定位",
+                    jp: "目を閉じ、耳で位置を特定する",
+                    kr: "눈을 감고 귀로 위치를 파악하다"
+                },
                 action: "advance_chain",
                 check: { stat: 'INT', val: 3 },
                 rewards: {
@@ -603,7 +703,11 @@
                 }
             },
             {
-                label: "這看起來太刻意了，不碰（INT 檢定）",
+                label: {
+                    zh: "停手，擺得太刻意了",
+                    jp: "手を止める——わざとらしい",
+                    kr: "손을 멈추다——너무 작위적이야"
+                },
                 check: { stat: 'INT', val: 6 },
                 action: "advance_chain",
                 rewards: {
@@ -629,7 +733,11 @@
         ],
         options: [
             {
-                label: "介入，強行讓他們冷靜（STR 或 INT 檢定）",
+                label: {
+                    zh: "站到中間，聲音壓下去",
+                    jp: "二人の間に割り込み、声で制圧する",
+                    kr: "두 사람 사이에 끼어들어 목소리로 제압하다"
+                },
                 check: { stat: 'INT', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -682,7 +790,11 @@
         options: [
             // 選項1：出示真正的證物（需要 has_true_evidence 標籤）
             {
-                label: "出示決定性證物（需要已找到真證物）",
+                label: {
+                    zh: "拿出決定性證物",
+                    jp: "決定的な証拠を提示する",
+                    kr: "결정적인 증거를 제시하다"
+                },
                 condition: { tags: ['has_true_evidence'] },
                 action: "advance_chain",
                 rewards: {
@@ -707,7 +819,11 @@
             },
             // 選項2：出示假線索（有 has_fake_clue 但沒有 has_true_evidence 時）
             {
-                label: "出示找到的物品（你不確定這是否有用）",
+                label: {
+                    zh: "拿出物品，不確定有用",
+                    jp: "物を出す。役に立つか不明",
+                    kr: "물건을 꺼내다. 쓸모 있을지 모르겠어"
+                },
                 condition: {
                     tags: ['has_fake_clue'],
                     excludeTags: ['has_true_evidence', 'presented_true_evidence']
@@ -735,7 +851,11 @@
             },
             // 選項3：沒有證物，用邏輯推理
             {
-                label: "用你觀察到的一切，邏輯推斷",
+                label: {
+                    zh: "用觀察到的一切推理",
+                    jp: "観察したすべてで論理的に推理する",
+                    kr: "관찰한 모든 것으로 논리적으로 추리하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     varOps: [{ key: 'tension', val: 10, op: '+' }]
@@ -786,7 +906,11 @@
             },
             // ✅ 補上過場緩衝
             {
-                label: "直接攤牌：「我把你找到的東西都藏起來了」",
+                label: {
+                    zh: "攤牌：我把你的東西藏了",
+                    jp: "打ち明ける：見つけた物を隠した",
+                    kr: "털어놓다：찾은 걸 내가 숨겼어"
+                },
                 condition: { tags: ['has_item_clue'] },
                 action: "advance_chain",
                 rewards: {

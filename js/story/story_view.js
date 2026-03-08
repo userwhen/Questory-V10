@@ -164,8 +164,30 @@ window.SQ.View.Story = {
         const container = document.getElementById('story-actions'); if (!container) return;
         if (!options || options.length === 0) return container.innerHTML = '<div style="color:var(--text-ghost); text-align:center;">(沒有可用選項)</div>';
         container.style.opacity = '1';
-        container.innerHTML = options.map((btn, idx) => ui.atom.buttonBase({ label: btn.label, theme: btn.style || 'normal', action: 'makeStoryChoice', actionVal: idx, style: 'width:100%; max-width:400px; margin:0 auto; padding:12px; font-size:1rem; text-align:center;' })).join('');
-        const wrap = document.getElementById('story-text-box'); if(wrap) wrap.scrollTop = wrap.scrollHeight;
+        // 1. 取得當前設定的語言 (若為 mix 混合模式，預設選項顯示中文)
+        const gs = window.SQ.State;
+        const currentLang = (gs && gs.settings && gs.settings.targetLang) ? gs.settings.targetLang : 'zh';
+        const langToUse = currentLang === 'mix' ? 'zh' : currentLang;
+
+        // 2. 重新組合按鈕 HTML
+        container.innerHTML = options.map((btn, idx) => {
+            // 解析 label (相容舊版字串與新版多語系物件)
+            let displayLabel = btn.label;
+            if (typeof btn.label === 'object' && btn.label !== null) {
+                displayLabel = btn.label[langToUse] || btn.label['zh'] || Object.values(btn.label)[0] || "未命名選項";
+            }
+
+            return ui.atom.buttonBase({ 
+                label: displayLabel, 
+                theme: btn.style || 'normal', 
+                action: 'makeStoryChoice', 
+                actionVal: idx, 
+                style: 'width:100%; max-width:400px; margin:0 auto; padding:12px; font-size:1rem; text-align:center;' 
+            });
+        }).join('');
+
+        const wrap = document.getElementById('story-text-box'); 
+        if(wrap) wrap.scrollTop = wrap.scrollHeight;
     },
 
     renderIdle: function() {

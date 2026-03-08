@@ -147,13 +147,6 @@ window.SQ.Engine.Generator = {
         ],
         flow: { isSequential: true }
     },
-
-    // ── 學習（語言螺旋）──────────────────────────────────────
-    'learning': {
-        tensionName: "壓力值",
-        actors: [],
-        flow: { isSequential: false }
-    }
 	}
 };
 

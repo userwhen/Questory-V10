@@ -14,7 +14,11 @@
             options: [
                 { label: "繼續前進", action: "advance_chain" },
                 { 
-                    label: "仔細調查 (INT檢定)", 
+                    label: {
+                        zh: "仔細調查",
+                        jp: "じっくり調べる",
+                        kr: "자세히 조사하다"
+                    },
                     check: { stat: 'INT', val: 5 }, 
                     action: "advance_chain", 
                     rewards: { exp: 15, gold: 5 }
@@ -164,7 +168,11 @@
                 }
             },
             {
-                label: "淺眠，保持警覺（INT）",
+                label: {
+                    zh: "淺眠，保持警覺",
+                    jp: "浅く眠り警戒を保つ",
+                    kr: "얕게 자며 경계를 유지하다"
+                },
                 check: { stat: 'INT', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -204,7 +212,11 @@
                 rewards: { energy: 15, exp: 5 }
             },
             {
-                label: "仔細環顧，也許有東西（INT）",
+                label: {
+                    zh: "仔細環顧，也許有收穫",
+                    jp: "じっくり見回す。何かあるかも",
+                    kr: "자세히 둘러보다. 뭔가 있을지도"
+                },
                 check: { stat: 'INT', val: 3 },
                 action: "advance_chain",
                 rewards: {
@@ -249,7 +261,11 @@
                 }
             },
             {
-                label: "只取需要的，留給後來的人",
+                label: {
+                    zh: "只取需要的，留給後人",
+                    jp: "必要なものだけ取り後の人のために残す",
+                    kr: "필요한 것만 가져가고 후인을 위해 남기다"
+                },
                 action: "advance_chain",
                 rewards: {
                     energy: 12,
@@ -296,7 +312,11 @@
                 }
             },
             {
-                label: "先確認周圍安全（INT）",
+                label: {
+                    zh: "先確認周圍安全",
+                    jp: "まず周囲の安全を確認する",
+                    kr: "먼저 주변 안전을 확인하다"
+                },
                 check: { stat: 'INT', val: 5 },
                 action: "advance_chain",
                 rewards: {
@@ -360,7 +380,11 @@
                 }
             },
             {
-                label: "這是陷阱——先觀察（INT）",
+                label: {
+                    zh: "這是陷阱，先觀察",
+                    jp: "罠だ——まず観察する",
+                    kr: "함정이야——먼저 관찰하다"
+                },
                 check: { stat: 'INT', val: 6 },
                 action: "advance_chain",
                 rewards: {
@@ -425,7 +449,11 @@
                 }
             },
             {
-                label: "接受，但詢問對方來歷（INT）",
+                label: {
+                    zh: "接受，但先問來歷",
+                    jp: "受け取るが先に素性を聞く",
+                    kr: "받되 먼저 출처를 묻다"
+                },
                 check: { stat: 'INT', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -475,7 +503,11 @@
                 rewards: { exp: 5, tags: ["cautious"] }
             },
             {
-                label: "用金幣解決一切（花費 20）",
+                label: {
+                    zh: "花金幣解決一切",
+                    jp: "金貨で全て解決する",
+                    kr: "금화로 모두 해결하다"
+                },
                 condition: { vars: [{ key: 'gold', val: 20, op: '>=' }] },
                 action: "advance_chain",
                 rewards: {
@@ -518,7 +550,11 @@
                 rewards: { exp: 8, energy: -3 }
             },
             {
-                label: "嘗試拆除機關（INT）",
+                label: {
+                    zh: "嘗試拆除機關",
+                    jp: "罠を解除しようとする",
+                    kr: "함정을 해제하려 하다"
+                },
                 check: { stat: 'INT', val: 6 },
                 action: "advance_chain",
                 rewards: {
@@ -532,7 +568,11 @@
                 }
             },
             {
-                label: "硬闖，賭自己夠快（AGI）",
+                label: {
+                    zh: "硬闖，賭自己夠快",
+                    jp: "強行突破。速さに賭ける",
+                    kr: "강행 돌파. 속도에 걸다"
+                },
                 check: { stat: 'AGI', val: 7 },
                 action: "advance_chain",
                 rewards: {
@@ -563,7 +603,11 @@
         }],
         options: [
             {
-                label: "立刻衝刺，快速脫離（AGI）",
+                label: {
+                    zh: "立刻衝刺，快速脫離",
+                    jp: "即座に走り出し素早く離脱する",
+                    kr: "즉시 전력질주로 빠르게 이탈하다"
+                },
                 check: { stat: 'AGI', val: 5 },
                 action: "advance_chain",
                 rewards: {
@@ -576,7 +620,11 @@
                 }
             },
             {
-                label: "原地趴倒，降低暴露面積",
+                label: {
+                    zh: "趴倒，降低暴露面積",
+                    jp: "伏せて被弾面積を減らす",
+                    kr: "엎드려 피탄 면적을 줄이다"
+                },
                 check: { stat: 'STR', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -683,7 +731,11 @@
                 }
             },
             {
-                label: "沿著腳印追蹤（INT）",
+                label: {
+                    zh: "沿著腳印追蹤",
+                    jp: "足跡をたどって追跡する",
+                    kr: "발자국을 따라 추적하다"
+                },
                 check: { stat: 'INT', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -736,7 +788,11 @@
                 }
             },
             {
-                label: "拿一半就好，留下另一半",
+                label: {
+                    zh: "拿一半，留下另一半",
+                    jp: "半分取って残りは置く",
+                    kr: "절반만 가져가고 나머지는 두다"
+                },
                 action: "advance_chain",
                 rewards: {
                     gold: 25,
@@ -777,7 +833,11 @@
         }],
         options: [
             {
-                label: "賭（花 20 金幣，LCK 檢定）",
+                label: {
+                    zh: "賭一把，花20金幣",
+                    jp: "賭ける。金貨20枚",
+                    kr: "도박. 금화 20개"
+                },
                 check: { stat: 'LCK', val: 5 },
                 condition: { vars: [{ key: 'gold', val: 20, op: '>=' }] },
                 action: "advance_chain",
@@ -788,7 +848,11 @@
                 }
             },
             {
-                label: "賭（花 20 金幣，但輸了）",
+                label: {
+                    zh: "賭一把，但輸了",
+                    jp: "賭けたが負けた",
+                    kr: "도박했지만 졌다"
+                },
                 check: { stat: 'LCK', val: 5 },
                 condition: { vars: [{ key: 'gold', val: 20, op: '>=' }] },
                 action: "advance_chain",
@@ -983,7 +1047,11 @@
                 }
             },
             {
-                label: "搜查這個角落（INT）",
+                label: {
+                    zh: "搜查這個角落",
+                    jp: "この隅を調べる",
+                    kr: "이 구석을 조사하다"
+                },
                 check: { stat: 'INT', val: 5 },
                 action: "advance_chain",
                 rewards: {

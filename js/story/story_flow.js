@@ -77,14 +77,27 @@ Object.assign(window.SQ.Engine.Story, {
 
         let processedText = this._processText(activeNode.text);
 
-        // 處理選項（條件過濾）
+        // 取得當前語言設定
+        const gsLang = window.SQ.State;
+        const currentLang = (gsLang.settings && gsLang.settings.targetLang && gsLang.settings.targetLang !== 'mix') ? gsLang.settings.targetLang : 'zh';
+
+        // 處理選項（條件過濾 + 語系解析 + 變數替換）
         let options = (activeNode.options || [])
             .filter(opt => this._checkCondition(opt.condition))
-            .map(opt => ({
-                ...opt,
-                label:  this._resolveDynamicText(opt.label),
-                action: opt.action || 'node_next'
-            }));
+            .map(opt => {
+                // 1. 拆解多語系物件，取得純字串
+                let labelStr = opt.label;
+                if (typeof labelStr === 'object' && labelStr !== null) {
+                    labelStr = labelStr[currentLang] || labelStr['zh'] || Object.values(labelStr)[0] || "未命名";
+                }
+                
+                // 2. 送入引擎替換 {lover} 等變數
+                return {
+                    ...opt,
+                    label:  this._resolveDynamicText(labelStr),
+                    action: opt.action || 'node_next'
+                };
+            });
 
         // 地圖按鈕注入：只有 isHub 節點才顯示完整地圖按鈕
         if (activeNode.isHub) {
@@ -592,13 +605,26 @@ Object.assign(window.SQ.Engine.Story, {
             gs.story.tags = [...new Set([...gs.story.chain.tags, ...gs.story.tags])];
         }
 
+        // 取得當前語言設定
+        const gsLang = window.SQ.State;
+        const currentLang = (gsLang.settings && gsLang.settings.targetLang && gsLang.settings.targetLang !== 'mix') ? gsLang.settings.targetLang : 'zh';
+
         let options = (node.options || [])
             .filter(opt => this._checkCondition(opt.condition))
-            .map(opt => ({
-                ...opt,
-                label:  this._resolveDynamicText(opt.label),
-                action: opt.action || 'node_next'
-            }));
+            .map(opt => {
+                // 1. 拆解多語系物件，取得純字串
+                let labelStr = opt.label;
+                if (typeof labelStr === 'object' && labelStr !== null) {
+                    labelStr = labelStr[currentLang] || labelStr['zh'] || Object.values(labelStr)[0] || "未命名";
+                }
+                
+                // 2. 送入引擎替換 {lover} 等變數
+                return {
+                    ...opt,
+                    label:  this._resolveDynamicText(labelStr),
+                    action: opt.action || 'node_next'
+                };
+            });
 
         if (options.length === 0 && !node.noDefaultExit) {
             options.push({ label: "繼續", action: "finish_chain", style: "primary" });

@@ -31,7 +31,11 @@ function register(scene) {
             { label: "🚪 檢查電子門", action: "node_next", nextSceneId: 'campus_archive_door' },
             { label: "🗄️ 翻找舊辦公桌", action: "node_next", nextSceneId: 'campus_archive_desk' },
             { 
-                label: "💳 刷入【沾血的學生證】", 
+                label: {
+                    zh: "刷入沾血的學生證",
+                    jp: "血染めの学生証を入れる",
+                    kr: "피 묻은 학생증을 넣다"
+                },
                 condition: { tags: ['campus_has_id'] }, 
                 style: "primary",
                 action: "node_next", 
@@ -52,7 +56,11 @@ function register(scene) {
         text: "強化玻璃製成的電子門，沒有把手。旁邊的感應器閃爍著紅燈。",
         options: [
             { 
-                label: "拿滅火器砸門 (STR 7 檢定)", 
+                label: {
+                    zh: "拿滅火器砸門",
+                    jp: "消火器でドアを叩き割る",
+                    kr: "소화기로 문을 내리치다"
+                },
                 check: { stat: 'STR', val: 7 }, 
                 action: "node_next",
                 nextScene: { 
@@ -118,7 +126,11 @@ function register(scene) {
                 }
             },
             { 
-                label: "💡 還原真相 (需集齊線索)", 
+                label: {
+                    zh: "還原真相",
+                    jp: "真相を再現する",
+                    kr: "진상을 재현하다"
+                },
                 condition: { tags: ['campus_clue_branch', 'campus_clue_diary'] },
                 style: "primary", action: "node_next", 
                 nextScene: {
@@ -206,7 +218,11 @@ function register(scene) {
                 } 
             },
             { 
-                label: "引爆 啦啦隊長 的炸彈", 
+                label: {
+                    zh: "引爆啦啦隊長的炸彈",
+                    jp: "チアリーダーの爆弾を起爆する",
+                    kr: "치어리더의 폭탄을 폭발시키다"
+                },
                 action: "node_next", 
                 nextScene: { 
                     dialogue: [
@@ -219,7 +235,11 @@ function register(scene) {
                 } 
             },
             { 
-                label: "引爆 不良少年 的炸彈", 
+                label: {
+                    zh: "引爆不良少年的炸彈",
+                    jp: "不良少年の爆弾を起爆する",
+                    kr: "불량소년의 폭탄을 폭발시키다"
+                },
                 action: "node_next", 
                 nextScene: { 
                     dialogue: [
@@ -389,7 +409,11 @@ register({
     ],
     options: [
         { 
-            label: "只能聽她說了... (剩餘30分鐘)", 
+            label: {
+                zh: "只能聽她說了",
+                jp: "彼女の話を聞くしかない",
+                kr: "그녀의 말을 들을 수밖에 없다"
+            },
             action: "node_next", 
             nextSceneId: 'confessional_truth' 
         }
@@ -417,7 +441,11 @@ register({
         },
         // 選項 B: 真結局 (需要智力檢定或觀察)
         { 
-            label: "等等...這邏輯不對 (INT檢定)", 
+            label: {
+                zh: "等等——這邏輯不對",
+                jp: "待って——この論理はおかしい",
+                kr: "잠깐——이 논리는 이상해"
+            },
             action: "node_next",
             check: { stat: 'INT', val: 7 },
             nextSceneId: 'confessional_end_true',
@@ -425,7 +453,11 @@ register({
         },
         // 選項 C: 戰鬥結局 (模擬中毒視角)
         { 
-            label: "相信..她...聯手..反..殺...", 
+            label: {
+                zh: "相信她，聯手反殺",
+                jp: "彼女を信じ共に反撃する",
+                kr: "그녀를 믿고 함께 반격하다"
+            },
             action: "node_next", 
             nextSceneId: 'confessional_end_action' 
         }
@@ -444,7 +476,11 @@ register({
             ],
     options: [
         { 
-            label: "意識陷入黑暗... (結局)", 
+            label: {
+                zh: "意識陷入黑暗",
+                jp: "意識が暗闇に落ちる",
+                kr: "의식이 어둠 속으로 빠져들다"
+            },
             action: "finish_chain", 
             rewards: { removeTags: ['poisoned'] } 
         }
@@ -476,7 +512,11 @@ register({
                     { speaker: "你", text: "這世上沒有神，只有為了活下去而編造謊言的惡魔。阿門。" }
                 ],
                 options: [{ 
-                    label: "逃出生天 (True End)", 
+                    label: {
+                        zh: "逃出生天",
+                        jp: "生き延びて逃げ出す",
+                        kr: "살아서 탈출하다"
+                    },
                     action: "finish_chain", 
                     rewards: { gold: 50,removeTags: ['poisoned'] } 
                 }]
@@ -511,7 +551,11 @@ register({
                             { speaker: "你", text: { zh: "至少……這場雨停了。" } }
                         ],
                 options: [{ 
-                    label: "在晨光中閉上眼 (Normal End)", 
+                    label: {
+                        zh: "在晨光中閉上眼",
+                        jp: "朝の光の中で目を閉じる",
+                        kr: "아침 빛 속에서 눈을 감다"
+                    },
                     action: "finish_chain", 
                     rewards: { removeTags: ['poisoned'] } 
                 }]
@@ -569,7 +613,11 @@ register({
             },
             // 🛑 優先級 2: 時間耗盡 (強制結算)
             {
-                label: "⏳ 時間耗盡，準備撤退！",
+                label: {
+                    zh: "時間耗盡，準備撤退",
+                    jp: "時間切れ。撤退を準備する",
+                    kr: "시간 소진. 철수 준비"
+                },
                 condition: { 
                     vars: [
                         { key: 'time_left', val: 1, op: '<' },
@@ -584,7 +632,11 @@ register({
             // 🛠️ 行動 A：駭客入侵 (推進度，增警報)
             // ==================
             { 
-                label: "💻 植入木馬 (耗時1 / 進度+20 / 警報+25)", 
+                label: {
+                    zh: "植入木馬",
+                    jp: "トロイの木馬を植え込む",
+                    kr: "트로이 목마를 심다"
+                },
                 condition: { 
                     vars: [
                         { key: 'time_left', val: 1, op: '>=' },
@@ -606,7 +658,11 @@ register({
                 } 
             },
             { 
-                label: "🔥 暴力破解 (耗時1 / 進度+40 / 警報+50)", 
+                label: {
+                    zh: "暴力破解",
+                    jp: "ブルートフォース攻撃",
+                    kr: "무차별 대입 공격"
+                },
                 style: "danger",
                 condition: { 
                     vars: [
@@ -633,7 +689,11 @@ register({
             // 💖 行動 B：戀人互動 (降警報，增好感)
             // ==================
             { 
-                label: "💬 拜託伊芙掩護 (耗時1 / 警報-30 / 好感+10)", 
+                label: {
+                    zh: "拜託伊芙掩護",
+                    jp: "イヴに援護を頼む",
+                    kr: "이브에게 엄호를 부탁하다"
+                },
                 condition: { 
                     vars: [
                         { key: 'time_left', val: 1, op: '>=' },
@@ -654,7 +714,11 @@ register({
                 } 
             },
             { 
-                label: "💋 將她拉入懷中 (耗時2 / 警報-50 / 好感+30)", 
+                label: {
+                    zh: "將她拉入懷中",
+                    jp: "彼女を引き寄せ抱きしめる",
+                    kr: "그녀를 품으로 끌어당기다"
+                },
                 condition: { 
                     vars: [
                         { key: 'time_left', val: 2, op: '>=' },
@@ -683,7 +747,11 @@ register({
             // 🚪 提前撤退
             // ==================
             {
-                label: "🚪 主動撤退 (進入結算)",
+                label: {
+                    zh: "主動撤退",
+                    jp: "自ら撤退する",
+                    kr: "스스로 철수하다"
+                },
                 condition: { 
                     vars: [
                         { key: 'time_left', val: 1, op: '>=' },
@@ -725,7 +793,11 @@ register({
         options: [
             // 結局 S：資料拿滿 + 伊芙好感度滿 (完美特務)
             {
-                label: "查看成果 (需要 進度100% + 好感40+)",
+                label: {
+                    zh: "查看成果【完美路線】",
+                    jp: "成果を確認【完璧ルート】",
+                    kr: "성과 확인【완벽 루트】"
+                },
                 condition: { 
                     vars: [
                         { key: 'hack_progress', val: 100, op: '>=' },
@@ -746,7 +818,11 @@ register({
             },
             // 結局 A：資料拿滿，但忽略了伊芙 (冷血間諜)
             {
-                label: "查看成果 (需要 進度100%)",
+                label: {
+                    zh: "查看成果【任務完成】",
+                    jp: "成果を確認【任務完了】",
+                    kr: "성과 확인【임무 완료】"
+                },
                 condition: { 
                     vars: [
                         { key: 'hack_progress', val: 100, op: '>=' },
@@ -767,7 +843,11 @@ register({
             },
             // 結局 B：資料沒拿滿，但贏得伊芙的心 (愛美人不愛江山)
             {
-                label: "查看成果 (需要 好感40+)",
+                label: {
+                    zh: "查看成果【關係線】",
+                    jp: "成果を確認【関係ルート】",
+                    kr: "성과 확인【관계 루트】"
+                },
                 condition: { 
                     vars: [
                         { key: 'hack_progress', val: 100, op: '<' },
@@ -787,7 +867,11 @@ register({
             },
             // 結局 C：任務失敗，且好感度不足 (一事無成)
             {
-                label: "查看成果 (一事無成)",
+                label: {
+                    zh: "查看成果【一事無成】",
+                    jp: "成果を確認【何も成せず】",
+                    kr: "성과 확인【아무것도 못 함】"
+                },
                 condition: { 
                     vars: [
                         { key: 'hack_progress', val: 100, op: '<' },
@@ -881,7 +965,11 @@ register({
             options: [
                 // [A] 搜查屍體
                 { 
-                    label: "💀 檢查那具白骨 (SAN -5)", 
+                    label: {
+                        zh: "檢查那具白骨",
+                        jp: "白骨を調べる",
+                        kr: "백골을 조사하다"
+                    },
                     // 條件：沒有 has_key 標籤時才出現
                     condition: { noTag: 'has_key' },
                     action: "node_next", 
@@ -905,7 +993,11 @@ register({
                 
                 // [B] 暴力破門 
                 { 
-                    label: "💪 用身體撞開木門 (STR > 8)", 
+                    label: {
+                        zh: "用身體撞開木門",
+                        jp: "体で木のドアを撞き破る",
+                        kr: "몸으로 나무문을 박살 내다"
+                    },
                     check: { stat: 'STR', val: 8 }, 
                     action: "node_next", // 記得加上 action
                     nextScene: { 
@@ -970,7 +1062,11 @@ register({
     options: [
         // [A] 結局判定
         {
-            label: "🔔 午夜鐘聲響起 (前往結局)",
+            label: {
+                zh: "午夜鐘聲響起",
+                jp: "真夜中の鐘が鳴り響く",
+                kr: "자정의 종소리가 울리다"
+            },
             style: "danger",
             condition: { vars: [{ key: 'time_left', val: 0, op: '<=' }] },
             action: "node_next",
@@ -979,7 +1075,11 @@ register({
 
         // [B] 社交 (增加具體情境)
         {
-            label: "🍷 融入貴族圈子 (威望+10 / 耗時)",
+            label: {
+                zh: "融入貴族圈子",
+                jp: "貴族の輪に溶け込む",
+                kr: "귀족 무리에 섞이다"
+            },
             condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
@@ -1000,32 +1100,52 @@ register({
 
         // [D] 對峙線
         {
-            label: "⚔️ 主動走向大少爺 (INT檢定 / 耗時)",
+            label: {
+                zh: "主動走向大少爺",
+                jp: "坊ちゃんに自ら近づく",
+                kr: "도련님에게 스스로 다가가다"
+            },
             condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             nextSceneId: 'rose_brother_fight'
         },
         {
-            label: "🍃 前往露台 (休息/偷聽)",
+            label: {
+                zh: "前往露台",
+                jp: "テラスに向かう",
+                kr: "테라스로 향하다"
+            },
             condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             nextSceneId: 'rose_terrace'
         },
         {
-            label: "📚 進入圖書室 (探索)",
+            label: {
+                zh: "進入圖書室",
+                jp: "書斎に入る",
+                kr: "서재로 들어가다"
+            },
             condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             nextSceneId: 'rose_library'
         },
         {
-            label: "🎲 去偏廳賭一把 (賺錢)",
+            label: {
+                zh: "去偏廳賭一把",
+                jp: "副間でギャンブルする",
+                kr: "별실에서 도박하다"
+            },
             condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             nextSceneId: 'rose_gamble'
         },
         // [E] 晉見家主
         {
-            label: "🐉 強闖家主書房 (需威望50)",
+            label: {
+                zh: "強闖家主書房",
+                jp: "当主の書斎に強引に入る",
+                kr: "가주 서재에 강제로 들어가다"
+            },
             style: "primary",
             condition: { 
                 vars: [
@@ -1037,7 +1157,11 @@ register({
             nextSceneId: 'rose_master_meet'
         },
         {
-            label: "🐉 強闖家主書房 (🔒 威望不足)",
+            label: {
+                zh: "強闖書房【威望不足】",
+                jp: "書斎に強引に入る【威信不足】",
+                kr: "서재 강제 침입【위신 부족】"
+            },
             style: "disabled",
             condition: { vars: [{ key: 'prestige', val: 50, op: '<' }] },
             action: "locked",
@@ -1058,7 +1182,11 @@ register({
     options: [
         // [A] 結局判定
         {
-            label: "🔔 午夜鐘聲響起 (前往結局)",
+            label: {
+                zh: "午夜鐘聲響起",
+                jp: "真夜中の鐘が鳴り響く",
+                kr: "자정의 종소리가 울리다"
+            },
             style: "danger",
             condition: { vars: [{ key: 'time_left', val: 0, op: '<=' }] },
             action: "node_next",
@@ -1067,7 +1195,11 @@ register({
 
         // [B] 社交
         {
-            label: "🍷 融入貴族圈子 (威望+10 / 耗時)",
+            label: {
+                zh: "融入貴族圈子",
+                jp: "貴族の輪に溶け込む",
+                kr: "귀족 무리에 섞이다"
+            },
             condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
@@ -1088,32 +1220,52 @@ register({
 
         // [D] 對峙線
         {
-            label: "⚔️ 主動走向大少爺 (INT檢定 / 耗時)",
+            label: {
+                zh: "主動走向大少爺",
+                jp: "坊ちゃんに自ら近づく",
+                kr: "도련님에게 스스로 다가가다"
+            },
             condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             nextSceneId: 'rose_brother_fight'
         },
         {
-            label: "🍃 前往露台 (休息/偷聽)",
+            label: {
+                zh: "前往露台",
+                jp: "テラスに向かう",
+                kr: "테라스로 향하다"
+            },
             condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             nextSceneId: 'rose_terrace'
         },
         {
-            label: "📚 進入圖書室 (探索)",
+            label: {
+                zh: "進入圖書室",
+                jp: "書斎に入る",
+                kr: "서재로 들어가다"
+            },
             condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             nextSceneId: 'rose_library'
         },
         {
-            label: "🎲 去偏廳賭一把 (賺錢)",
+            label: {
+                zh: "去偏廳賭一把",
+                jp: "副間でギャンブルする",
+                kr: "별실에서 도박하다"
+            },
             condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
             action: "node_next",
             nextSceneId: 'rose_gamble'
         },
         // [E] 晉見家主
         {
-            label: "🐉 強闖家主書房 (需威望50)",
+            label: {
+                zh: "強闖家主書房",
+                jp: "当主の書斎に強引に入る",
+                kr: "가주 서재에 강제로 들어가다"
+            },
             style: "primary",
             condition: { 
                 vars: [
@@ -1125,7 +1277,11 @@ register({
             nextSceneId: 'rose_master_meet'
         },
         {
-            label: "🐉 強闖家主書房 (🔒 威望不足)",
+            label: {
+                zh: "強闖書房【威望不足】",
+                jp: "書斎強闖【威信不足】",
+                kr: "서재 강제 침입【위신 부족】"
+            },
             style: "disabled",
             condition: { vars: [{ key: 'prestige', val: 50, op: '<' }] },
             action: "locked",
@@ -1147,7 +1303,11 @@ register({
     options: [
         // 交易線：變得更貪婪
         {
-            label: "💰 「我要買大少爺的命」 (金幣-30)",
+            label: {
+                zh: "「我要買大少爺的命」",
+                jp: "「坊ちゃんの命を買う」",
+                kr: "「도련님의 목숨을 사겠다」"
+            },
             condition: { 
                 noTag: 'evidence_poison',
                 var: { key: 'gold', val: 30, op: '>=' }
@@ -1166,7 +1326,11 @@ register({
         
         // 戀愛線：增加肢體接觸描寫
         {
-            label: "💕 接過手帕，觸碰指尖 (CHR > 6)",
+            label: {
+                zh: "接過手帕，觸碰指尖",
+                jp: "ハンカチを受け取り指先に触れる",
+                kr: "손수건을 받으며 손가락 끝에 닿다"
+            },
             check: { stat: 'CHR', val: 6 },
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: { 
@@ -1182,7 +1346,11 @@ register({
 
         // 密道線：增加緊張感
         {
-            label: "🤝 「如果我失敗了...」 (需好感 40)",
+            label: {
+                zh: "「如果我失敗了……」",
+                jp: "「もし失敗したら……」",
+                kr: "「만약 내가 실패한다면……」"
+            },
             condition: { vars: [{ key: 'favor_butler', val: 40, op: '>=' }] },
             action: "node_next",
             rewards: { 
@@ -1212,7 +1380,11 @@ register({
     ],
     options: [
         {
-            label: "💢 忍氣吞聲 (SAN -20)",
+            label: {
+                zh: "忍氣吞聲",
+                jp: "怒りをこらえる",
+                kr: "울분을 삼키다"
+            },
             action: "node_next",
             rewards: { 
                 varOps: [{key:'sanity', val:20, op:'-'}, {key:'time_left', val:1, op:'-'}] 
@@ -1223,7 +1395,11 @@ register({
             }
         },
         {
-            label: "🧠 智慧反擊 (INT > 7)",
+            label: {
+                zh: "智慧反擊",
+                jp: "知恵で反撃する",
+                kr: "지혜로 반격하다"
+            },
             check: { stat: 'INT', val: 7 },
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: { 
@@ -1251,7 +1427,11 @@ register({
     ],
     options: [
         {
-            label: "📄 呈上大少爺買毒的證據",
+            label: {
+                zh: "呈上大少爺買毒的證據",
+                jp: "坊ちゃんの毒購入の証拠を提出する",
+                kr: "도련님이 독을 산 증거를 제출하다"
+            },
             condition: { hasTag: 'evidence_poison' },
             action: "node_next",
             rewards: { 
@@ -1291,7 +1471,11 @@ register({
     options: [
         // 結局 A: 權力的頂峰
         {
-            label: "👑 舉起家主信物，反殺！",
+            label: {
+                zh: "舉起信物，反殺！",
+                jp: "家主の証を掲げ反撃する",
+                kr: "가주의 신표를 들어 반격하다"
+            },
             style: "primary",
             condition: { hasTag: 'heir_approved' },
             action: "node_next",
@@ -1317,7 +1501,11 @@ register({
 
         // 結局 C: 苟且偷生
         {
-            label: "🏃‍♂️ 鑽入密道逃跑",
+            label: {
+                zh: "鑽入密道逃跑",
+                jp: "隠し通路に滑り込み逃げる",
+                kr: "비밀 통로로 파고들어 도망치다"
+            },
             condition: { hasTag: 'secret_passage' },
             action: "node_next",
             nextScene: {
@@ -1351,7 +1539,11 @@ register({
     options: [
         // 選項 A: 偷聽 (獲得情報)
         {
-            label: "👂 躲在陰影處偷聽 (INT檢定)",
+            label: {
+                zh: "躲在陰影處偷聽",
+                jp: "陰に潜んで盗み聞きする",
+                kr: "그늘에 숨어 엿듣다"
+            },
             check: { stat: 'INT', val: 6 },
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: {
@@ -1366,7 +1558,11 @@ register({
         },
         // 選項 B: 休息 (恢復 SAN)
         {
-            label: "🚬 獨自吹風冷靜 (SAN +10)",
+            label: {
+                zh: "獨自吹風冷靜",
+                jp: "一人で風に当たり落ち着く",
+                kr: "혼자 바람을 맞으며 진정하다"
+            },
             action: "node_next",
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: {
@@ -1388,7 +1584,11 @@ register({
     options: [
         // 選項 A: 尋找地圖 (替代管家線的密道獲取方式)
         {
-            label: "🔍 翻找建築圖紙 (INT > 7)",
+            label: {
+                zh: "翻找建築圖紙",
+                jp: "建築図面を探し出す",
+                kr: "건축 도면을 뒤져 찾다"
+            },
             condition: { noTag: 'secret_passage' }, // 只有沒地圖時才顯示
             check: { stat: 'INT', val: 7 },
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
@@ -1405,7 +1605,11 @@ register({
         },
         // 選項 B: 閱讀戰術書 (提升能力)
         {
-            label: "📚 閱讀《權力博弈論》 (威望+5)",
+            label: {
+                zh: "閱讀《權力博弈論》",
+                jp: "『権力の駆け引き』を読む",
+                kr: "《권력 게임론》을 읽다"
+            },
             action: "node_next",
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: {
@@ -1426,7 +1630,11 @@ register({
     options: [
         // 選項 A: 參與賭局
         {
-            label: "🎲 加入牌局 (金幣 -10 / LUK檢定)",
+            label: {
+                zh: "加入牌局",
+                jp: "カードゲームに加わる",
+                kr: "카드 게임에 참가하다"
+            },
             condition: { vars: [{ key: 'gold', val: 10, op: '>=' }] },
             check: { stat: 'LUK', val: 5 }, // 運氣檢定
             rewards: { 
@@ -1446,7 +1654,11 @@ register({
         },
         // 選項 B: 出千 (高風險)
         {
-            label: "🃏 嘗試出千 (AGI > 8)",
+            label: {
+                zh: "嘗試出千",
+                jp: "イカサマを試みる",
+                kr: "속임수를 시도하다"
+            },
             check: { stat: 'AGI', val: 8 },
             rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
             nextScene: {
@@ -1484,7 +1696,11 @@ register({
         ],
         options: [
             { 
-                label: "當場發作，質問他 (信任-10 / 情緒宣洩)", 
+                label: {
+                    zh: "當場發作，質問他",
+                    jp: "その場で爆発し問い詰める",
+                    kr: "그 자리에서 폭발해 따지다"
+                },
                 action: "node_next", 
                 rewards: { varOps: [{ key: 'md_trust', val: 10, op: '-' }, { key: 'md_stress', val: 10, op: '-' }] },
                 nextScene: {
@@ -1497,7 +1713,11 @@ register({
                 } 
             },
             { 
-                label: "溫柔微笑，偷偷記下 (氣場+10 / 壓力+20)", 
+                label: {
+                    zh: "溫柔微笑，偷偷記下",
+                    jp: "優しく微笑みながらそっとメモする",
+                    kr: "부드럽게 웃으며 몰래 메모하다"
+                },
                 action: "node_next", 
                 rewards: { varOps: [{ key: 'md_rep', val: 10, op: '+' }, { key: 'md_stress', val: 20, op: '+' }] },
                 nextScene: {
@@ -1509,7 +1729,11 @@ register({
                 } 
             },
             { 
-                label: "假裝沒事，暗中備份行車紀錄器 (鐵證+1 / 壓力+10)", 
+                label: {
+                    zh: "假裝沒事，暗中備份記錄",
+                    jp: "平静を装いこっそりバックアップ",
+                    kr: "아무렇지 않은 척 몰래 백업하다"
+                },
                 style: "primary",
                 action: "node_next", 
                 rewards: { varOps: [{ key: 'md_evidence', val: 1, op: '+' }, { key: 'md_stress', val: 10, op: '+' }] },
@@ -1556,7 +1780,11 @@ register({
             },
             // ✅ 正常應對
             {
-                label: "冷笑一聲，反客為主 (氣場+20)",
+                label: {
+                    zh: "冷笑，反客為主",
+                    jp: "冷笑して主導権を奪う",
+                    kr: "냉소하며 주도권을 빼앗다"
+                },
                 condition: { vars: [{ key: 'md_stress', val: 30, op: '<' }] },
                 action: "node_next",
                 rewards: { varOps: [{ key: 'md_rep', val: 20, op: '+' }, { key: 'md_trust', val: 10, op: '+' }] },
@@ -1570,7 +1798,11 @@ register({
                 }
             },
             {
-                label: "調出茶水間監視器！(需鐵證+1)",
+                label: {
+                    zh: "調出茶水間監視器",
+                    jp: "給湯室の監視カメラを引き出す",
+                    kr: "주방 CCTV를 끌어내다"
+                },
                 style: "primary",
                 condition: { 
                     vars: [
@@ -1619,7 +1851,11 @@ register({
         options: [
             // 🌟 結局 S：鐵證如山 (完美反殺)
             {
-                label: "甩出鐵證！(需 鐵證>=2 且 氣場>=60)",
+                label: {
+                    zh: "甩出鐵證！",
+                    jp: "鉄の証拠を叩きつける",
+                    kr: "철통 증거를 내던지다"
+                },
                 condition: { 
                     vars: [
                         { key: 'md_evidence', val: 2, op: '>=' },
@@ -1640,7 +1876,11 @@ register({
             },
             // 🌟 結局 A：獨自美麗 (踢走渣男)
             {
-                label: "冷靜提分手 (需 氣場>=70)",
+                label: {
+                    zh: "冷靜提分手",
+                    jp: "冷静に別れを告げる",
+                    kr: "냉정하게 이별을 고하다"
+                },
                 condition: { 
                     vars: [{ key: 'md_rep', val: 70, op: '>=' }]
                 },
@@ -1658,7 +1898,11 @@ register({
             },
             // 🌟 結局 B：隱忍保位 (傳統正宮)
             {
-                label: "安撫董事會 (需 信任>=50)",
+                label: {
+                    zh: "安撫董事會",
+                    jp: "取締役会をなだめる",
+                    kr: "이사회를 달래다"
+                },
                 condition: { 
                     vars: [{ key: 'md_trust', val: 50, op: '>=' }]
                 },
@@ -1676,7 +1920,11 @@ register({
             },
             // 💀 結局 C：淨身出戶 (失敗)
             {
-                label: "崩潰大哭 (信任不足 / 鐵證不足)",
+                label: {
+                    zh: "崩潰大哭",
+                    jp: "崩れ落ちて泣き崩れる",
+                    kr: "무너져 엉엉 울다"
+                },
                 condition: { 
                     vars: [
                         { key: 'md_evidence', val: 2, op: '<' },

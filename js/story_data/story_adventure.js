@@ -52,7 +52,11 @@
         ],
         options: [
             {
-                label: "循著古地圖的指示深入（探索路線）",
+                label: {
+                    zh: "按地圖指示，深入走",
+                    jp: "地図の指示に従い進む",
+                    kr: "지도의 지시에 따라 깊이 들어가다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_explorer"],
@@ -60,7 +64,11 @@
                 }
             },
             {
-                label: "直接突破，以武力開路（戰士路線）",
+                label: {
+                    zh: "以武力直接突破",
+                    jp: "武力で突き進む",
+                    kr: "무력으로 직접 돌파하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_warrior"],
@@ -90,7 +98,11 @@
         ],
         options: [
             {
-                label: "先偵察地形，再制定策略（探索路線）",
+                label: {
+                    zh: "先偵察地形，再動手",
+                    jp: "地形を偵察してから動く",
+                    kr: "지형을 정찰한 후 행동하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_explorer", "has_preparation"],
@@ -98,7 +110,11 @@
                 }
             },
             {
-                label: "直接進去找{boss}（戰士路線）",
+                label: {
+                    zh: "直接找{boss}",
+                    jp: "直接入って{boss}を探す",
+                    kr: "바로 들어가 {boss}를 찾다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_warrior"],
@@ -128,12 +144,20 @@
         ],
         options: [
             {
-                label: "跟著感覺走，深入調查（探索路線）",
+                label: {
+                    zh: "跟著感覺，繼續深入",
+                    jp: "感覚に従い深く進む",
+                    kr: "감각을 따라 깊이 들어가다"
+                },
                 action: "advance_chain",
                 rewards: { tags: ["route_explorer"] }
             },
             {
-                label: "直覺告訴你要戰鬥，準備好武器（戰士路線）",
+                label: {
+                    zh: "直覺要你戰，備好武器",
+                    jp: "直感が戦えという。武器を構える",
+                    kr: "직감이 싸우라 한다. 무기를 준비하다"
+                },
                 action: "advance_chain",
                 rewards: { tags: ["route_warrior"] }
             }
@@ -161,7 +185,11 @@
         ],
         options: [
             {
-                label: "仔細分析圖案的規律（INT 檢定）",
+                label: {
+                    zh: "蹲下，從頭到尾摸一遍",
+                    jp: "しゃがんで端から端まで触れていく",
+                    kr: "쪼그려 앉아 처음부터 끝까지 더듬다"
+                },
                 check: { stat: 'INT', val: 5 },
                 action: "advance_chain",
                 rewards: {
@@ -172,10 +200,14 @@
                     ],
                     exp: 25
                 },
-                successText: "石門緩緩移動。你找到了規律——這個謎題的答案藏在{world_vibe}的歷史典故裡。"
+                successText: "石門緩緩移動。你找到了規律——這個謎題的答案藏在{world_vibe}的歷史典故裡。\n此舉會觸發陷阱，代價不小。\nSTR 或 AGI 需達 V5，勝算才穩。"
             },
             {
-                label: "用蠻力砸開（STR 檢定，但會觸發陷阱）",
+                label: {
+                    zh: "退三步，衝肩猛撞",
+                    jp: "三歩下がり、肩で体当たりする",
+                    kr: "세 걸음 물러서 어깨로 세게 들이받다"
+                },
                 check: { stat: 'STR', val: 6 },
                 action: "advance_chain",
                 rewards: {
@@ -185,7 +217,11 @@
                 successText: "你砸開了石門，但觸動了某個機關——{sentence_event_sudden}"
             },
             {
-                label: "先繞路，找其他線索再回來",
+                label: {
+                    zh: "先繞開，找線索再回來",
+                    jp: "迂回して手がかりを探す",
+                    kr: "우회해서 단서를 찾고 돌아오다"
+                },
                 action: "advance_chain",
                 rewards: { varOps: [{ key: 'skill_points', val: 3, op: '+' }] }
             }
@@ -207,7 +243,11 @@
         ],
         options: [
             {
-                label: "仔細推斷，補全記錄（INT 檢定）",
+                label: {
+                    zh: "瞇起眼，在腦中填補空白",
+                    jp: "目を細め、頭の中で空白を補う",
+                    kr: "눈을 가늘게 뜨고 머릿속으로 공백을 채우다"
+                },
                 check: { stat: 'INT', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -218,7 +258,11 @@
                 successText: "你推算出了完整的弱點。面對{boss}時，這將是決定性的優勢。"
             },
             {
-                label: "帶走這份記錄，之後再研究",
+                label: {
+                    zh: "帶走記錄，之後再查",
+                    jp: "記録を持ち帰り後で調べる",
+                    kr: "기록을 가져가 나중에 조사하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["has_item_clue"],
@@ -246,7 +290,11 @@
         ],
         options: [
             {
-                label: "🔍 搜查{env_feature}",
+                label: {
+                    zh: "搜查{env_feature}",
+                    jp: "{env_feature}を調べる",
+                    kr: "{env_feature}을 조사하다"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'search_count', val: 1, op: '>=' }] },
                 rewards: {
@@ -268,7 +316,11 @@
                 }
             },
             {
-                label: "⚔️ 練習戰鬥動作（STR 或 AGI 檢定）",
+                label: {
+                    zh: "找開闊處，反覆走架",
+                    jp: "開けた場所を探し、型を繰り返す",
+                    kr: "넓은 곳을 찾아 자세를 반복하다"
+                },
                 check: { stat: 'AGI', val: 3 },
                 action: "advance_chain",
                 condition: {
@@ -312,7 +364,11 @@
         ],
         options: [
             {
-                label: "正面迎擊，學習對方的攻擊模式（STR 檢定）",
+                label: {
+                    zh: "迎上去，以戰養戰",
+                    jp: "向かっていき、戦いながら学ぶ",
+                    kr: "맞서 나가며 싸우면서 배우다"
+                },
                 check: { stat: 'STR', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -322,7 +378,11 @@
                 successText: "你擊退了對方，同時觀察到了{boss}爪牙的弱點。技能在實戰中成長。"
             },
             {
-                label: "閃避為主，保存體力（AGI 檢定）",
+                label: {
+                    zh: "持續移動，以逸待勞",
+                    jp: "動き続け、力を温存する",
+                    kr: "계속 움직이며 체력을 아끼다"
+                },
                 check: { stat: 'AGI', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -366,7 +426,11 @@
                 }
             },
             {
-                label: "先測試它的威力",
+                label: {
+                    zh: "找塊石頭，試試手感",
+                    jp: "石を一つ拾い、試し打ちする",
+                    kr: "돌을 하나 집어 시험 삼아 휘두르다"
+                },
                 check: { stat: 'INT', val: 3 },
                 action: "advance_chain",
                 rewards: {
@@ -394,7 +458,11 @@
         ],
         options: [
             {
-                label: "全力一戰（STR 或 AGI 擇高，V5 以上才有把握）",
+                label: {
+                    zh: "深吸一口氣，主動出擊",
+                    jp: "深呼吸して先手を打つ",
+                    kr: "깊게 숨을 들이쉬고 먼저 공격하다"
+                },
                 check: { stat: 'STR', val: 5 },
                 action: "advance_chain",
                 rewards: {
@@ -405,7 +473,11 @@
                 successText: "你擊倒了護衛。{boss}已經近在眼前，而你比剛才更強了。"
             },
             {
-                label: "智取，找弱點偷襲（INT 檢定）",
+                label: {
+                    zh: "繞到側翼，等待破綻",
+                    jp: "側面に回り、隙を待つ",
+                    kr: "측면으로 돌아 빈틈을 기다리다"
+                },
                 check: { stat: 'INT', val: 5 },
                 action: "advance_chain",
                 rewards: {
@@ -450,14 +522,22 @@
         ],
         options: [
             {
-                label: "快速反應，跳開（AGI 檢定）",
+                label: {
+                    zh: "腳底一麻，身體先行",
+                    jp: "足がしびれる——体が先に動く",
+                    kr: "발바닥이 찌릿하며 몸이 먼저 반응하다"
+                },
                 check: { stat: 'AGI', val: 4 },
                 action: "advance_chain",
                 rewards: { exp: 10 },
                 successText: "你在觸發的瞬間跳開了。沒有受傷，但心跳還沒停下來。"
             },
             {
-                label: "事先偵測到了，繞過去（INT 檢定）",
+                label: {
+                    zh: "一踩就察覺，轉路繞行",
+                    jp: "一歩目で気づき、迂回する",
+                    kr: "첫 발을 내딛는 순간 알아채고 우회하다"
+                },
                 check: { stat: 'INT', val: 3 },
                 action: "advance_chain",
                 rewards: {
@@ -467,7 +547,11 @@
                 successText: "你注意到了地板的異常，繞開了陷阱。對方低估了你的觀察力。"
             },
             {
-                label: "硬著頭皮衝過去（沒有結果保證）",
+                label: {
+                    zh: "硬著頭皮，直接衝",
+                    jp: "覚悟を決め直進する",
+                    kr: "각오를 다지고 직진하다"
+                },
                 action: "advance_chain",
                 rewards: { exp: 5 }
             }
@@ -489,7 +573,11 @@
         ],
         options: [
             {
-                label: "購買補給（金幣 -30，回復能量）",
+                label: {
+                    zh: "花金幣補給，恢復能量",
+                    jp: "金貨を使い補給する",
+                    kr: "금화를 써서 보급하다"
+                },
                 condition: { vars: [{ key: 'gold', val: 30, op: '>=' }] },
                 action: "advance_chain",
                 rewards: {
@@ -531,7 +619,11 @@
         ],
         options: [
             {
-                label: "花時間解開謎題（INT 檢定）",
+                label: {
+                    zh: "坐下來，慢慢拆解邏輯",
+                    jp: "腰を下ろし、論理をゆっくりほどく",
+                    kr: "자리를 잡고 논리를 차근히 풀다"
+                },
                 check: { stat: 'INT', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -607,7 +699,11 @@
             // 槽一：維持原樣（已有 nextScene）
             // 槽二：戰鬥
             {
-                label: "用你在旅途中磨練的實力正面一戰",
+                label: {
+                    zh: "用旅途磨練的實力一戰",
+                    jp: "旅で鍛えた力で正面勝負",
+                    kr: "여정에서 쌓은 실력으로 정면 승부"
+                },
                 condition: { vars: [{ key: 'skill_points', val: 50, op: '>=' }] },
                 action: "advance_chain",
                 rewards: { tags: ["fought_boss"], varOps: [{ key: 'skill_points', val: -20, op: '+' }], exp: 45 },
@@ -618,7 +714,11 @@
             },
             // 槽三：傳說武器
             {
-                label: "祭出傳說武器（需要 found_legendary_weapon）",
+                label: {
+                    zh: "祭出傳說武器",
+                    jp: "伝説の武器を解き放つ",
+                    kr: "전설의 무기를 꺼내다"
+                },
                 condition: { tags: ['found_legendary_weapon'] },
                 action: "advance_chain",
                 rewards: { tags: ["used_legendary_weapon"], exp: 40 },
@@ -657,7 +757,11 @@
         ],
         options: [
             {
-                label: "用你收集的所有線索，解開最終封印（需要 puzzle_count >= 2）",
+                label: {
+                    zh: "用線索解開最終封印",
+                    jp: "手がかりで最終封印を解く",
+                    kr: "단서로 최후의 봉인을 풀다"
+                },
                 condition: { vars: [{ key: 'puzzle_count', val: 2, op: '>=' }] },
                 action: "advance_chain",
                 rewards: {
@@ -666,7 +770,11 @@
                 }
             },
             {
-                label: "線索還不夠，只能強行突破",
+                label: {
+                    zh: "線索不足，強行突破",
+                    jp: "手がかり不足。強引に突破する",
+                    kr: "단서 부족. 강제로 돌파하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["forced_final"],

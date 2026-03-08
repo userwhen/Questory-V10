@@ -54,7 +54,11 @@
         ],
         options: [
             {
-                label: "主動開口，不給自己後悔的機會（直球路線）",
+                label: {
+                    zh: "主動開口，不留後悔",
+                    jp: "自ら口を開き後悔を残さない",
+                    kr: "먼저 말을 걸어 후회를 남기지 않다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_direct"],
@@ -65,7 +69,11 @@
                 }
             },
             {
-                label: "先默默觀察，等待更好的時機（慢熱路線）",
+                label: {
+                    zh: "先靜靜觀察，等時機",
+                    jp: "静かに観察し機会を待つ",
+                    kr: "조용히 관찰하며 기회를 기다리다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_indirect"],
@@ -96,7 +104,11 @@
         ],
         options: [
             {
-                label: "趁著這種感覺還清晰，主動找對方說話（直球路線）",
+                label: {
+                    zh: "感覺還清晰，現在開口",
+                    jp: "感覚が鮮明なうちに話しかける",
+                    kr: "느낌이 생생할 때 먼저 말을 걸다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_direct"],
@@ -104,7 +116,11 @@
                 }
             },
             {
-                label: "繼續假裝什麼都沒變，觀察對方的反應（慢熱路線）",
+                label: {
+                    zh: "假裝沒變，觀察對方",
+                    jp: "何も変わらないふりで相手を観察",
+                    kr: "아무것도 안 변한 척하며 상대를 살피다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_indirect"],
@@ -135,7 +151,11 @@
         ],
         options: [
             {
-                label: "打破沉默，試著找話題（直球路線）",
+                label: {
+                    zh: "打破沉默，開口找話題",
+                    jp: "沈黙を破り話題を探す",
+                    kr: "침묵을 깨고 화제를 찾다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_direct"],
@@ -146,7 +166,11 @@
                 }
             },
             {
-                label: "保持安靜，但讓對方感到你的存在（慢熱路線）",
+                label: {
+                    zh: "安靜著，讓對方感到你",
+                    jp: "静かに、存在を感じさせる",
+                    kr: "조용히 존재감을 느끼게 하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_indirect"],
@@ -178,7 +202,11 @@
         ],
         options: [
             {
-                label: "先了解這裡的環境再說（乙女路線）",
+                label: {
+                    zh: "先了解環境，再說別的",
+                    jp: "まず環境を把握する",
+                    kr: "먼저 환경을 파악하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_otome"],
@@ -186,7 +214,11 @@
                 }
             },
             {
-                label: "主動和{lover}搭話",
+                label: {
+                    zh: "找{lover}說話",
+                    jp: "{lover}に話しかける",
+                    kr: "{lover}에게 말을 걸다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_otome", "route_direct"],
@@ -218,7 +250,11 @@
         ],
         options: [
             {
-                label: "先摸清楚規則和人際關係（晉升路線）",
+                label: {
+                    zh: "先摸清規則和人際",
+                    jp: "まず規則と人間関係を把握する",
+                    kr: "먼저 규칙과 인간관계를 파악하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_consort"],
@@ -226,7 +262,11 @@
                 }
             },
             {
-                label: "直接表現自己，用真心打動{lover}",
+                label: {
+                    zh: "真心打動{lover}",
+                    jp: "素直に見せ真心で{lover}を動かす",
+                    kr: "솔직하게 보여주며 진심으로 {lover}를 움직이다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_consort", "route_direct"],
@@ -261,12 +301,20 @@
         ],
         options: [
             {
-                label: "收集更多證據，確認之後再說（對峙路線）",
+                label: {
+                    zh: "再多收集證據，確認了再說",
+                    jp: "証拠を集めてから確かめる",
+                    kr: "증거를 더 모은 후 확인하다"
+                },
                 action: "advance_chain",
                 rewards: { tags: ["route_confront"] }
             },
             {
-                label: "直接問{lover}，讓對方給你一個解釋",
+                label: {
+                    zh: "問{lover}要說明",
+                    jp: "{lover}に直接聞き説明を求める",
+                    kr: "{lover}에게 직접 물어 설명을 요구하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_confront", "route_direct"],
@@ -304,7 +352,11 @@
         ],
         options: [
             {
-                label: "💫 找{lover}（目前好感：{aff_lover}）",
+                label: {
+                    zh: "找{lover}【好感{aff_lover}】",
+                    jp: "{lover}を訪ねる【好感{aff_lover}】",
+                    kr: "{lover}를 찾아가다【호감{aff_lover}】"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'free_time', val: 1, op: '>=' }] },
                 rewards: {
@@ -332,7 +384,11 @@
                 }
             },
             {
-                label: "⚔️ 找{rival}（目前好感：{aff_rival}）",
+                label: {
+                    zh: "找{rival}♥{aff_rival}",
+                    jp: "{rival}を訪ねる【好感{aff_rival}】",
+                    kr: "{rival}를 찾아가다【호감{aff_rival}】"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'free_time', val: 1, op: '>=' }] },
                 rewards: {
@@ -357,7 +413,11 @@
                 }
             },
             {
-                label: "🌙 找{mentor}（目前好感：{aff_mentor}）",
+                label: {
+                    zh: "找{mentor}♥{aff_mentor}",
+                    jp: "{mentor}を訪ねる【好感{aff_mentor}】",
+                    kr: "{mentor}를 찾아가다【호감{aff_mentor}】"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'free_time', val: 1, op: '>=' }] },
                 rewards: {
@@ -404,7 +464,11 @@
         ],
         options: [
             {
-                label: "站在{lover}那邊",
+                label: {
+                    zh: "站在{lover}那邊",
+                    jp: "{lover}の側に立つ",
+                    kr: "{lover} 편에 서다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["resolved_triangle"],
@@ -416,7 +480,11 @@
                 }
             },
             {
-                label: "站在{rival}那邊（出乎所有人意料）",
+                label: {
+                    zh: "{rival}邊，出人意料",
+                    jp: "{rival}側に立つ。意外な選択",
+                    kr: "{rival} 편에 서다. 의외의 선택"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["resolved_triangle"],
@@ -428,7 +496,11 @@
                 }
             },
             {
-                label: "拒絕選邊，說出你自己的立場",
+                label: {
+                    zh: "不選邊，說出自己立場",
+                    jp: "どちらも選ばず自分の立場を言う",
+                    kr: "어느 쪽도 선택 않고 내 입장을 말하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["resolved_triangle"],
@@ -457,7 +529,11 @@
         ],
         options: [
             {
-                label: "主動說一些你平時不說的話",
+                label: {
+                    zh: "說出平時說不出口的話",
+                    jp: "普段言えない言葉を口にする",
+                    kr: "평소 못 하던 말을 꺼내다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["had_alone_lover"],
@@ -468,7 +544,11 @@
                 }
             },
             {
-                label: "靜靜地在一起，什麼都不說",
+                label: {
+                    zh: "靜靜地在一起，不說話",
+                    jp: "静かに一緒にいて何も言わない",
+                    kr: "조용히 함께 있으며 아무 말도 하지 않다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["had_alone_lover"],
@@ -499,7 +579,11 @@
         ],
         options: [
             {
-                label: "展現你最擅長的，真實的自己",
+                label: {
+                    zh: "展現最真實的自己",
+                    jp: "最も得意な本当の自分を見せる",
+                    kr: "가장 잘하는 진짜 자신을 보여주다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["showcased"],
@@ -510,7 +594,11 @@
                 }
             },
             {
-                label: "展現你認為對方想看到的樣子",
+                label: {
+                    zh: "展現對方想看到的樣子",
+                    jp: "相手が見たい姿を見せる",
+                    kr: "상대가 보고 싶어 하는 모습을 보여주다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["showcased"],
@@ -541,7 +629,11 @@
         ],
         options: [
             {
-                label: "💌 製造和{lover}的獨處機會（好感 +20）",
+                label: {
+                    zh: "製造和{lover}獨處的機會",
+                    jp: "{lover}と二人きりの機会を作る",
+                    kr: "{lover}와 단둘이 있을 기회를 만들다"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'free_time', val: 1, op: '>=' }] },
                 rewards: {
@@ -556,7 +648,11 @@
                 }
             },
             {
-                label: "🛡️ 化解{rival}對你的攻勢（rank +15）",
+                label: {
+                    zh: "化解{rival}對你的攻勢",
+                    jp: "{rival}の攻勢をかわす",
+                    kr: "{rival}의 공세를 무력화하다"
+                },
                 action: "advance_chain",
                 condition: {
                     vars: [{ key: 'free_time', val: 1, op: '>=' }],
@@ -576,7 +672,11 @@
                 }
             },
             {
-                label: "❤️ 用真心說出一句讓{lover}印象深刻的話（好感+15，信任+10）",
+                label: {
+                    zh: "說句讓{lover}記住你的話",
+                    jp: "{lover}の心に残る言葉を言う",
+                    kr: "{lover}의 기억에 남을 말을 하다"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'free_time', val: 1, op: '>=' }] },
                 rewards: {
@@ -613,7 +713,11 @@
         ],
         options: [
             {
-                label: "冷靜回應：「那就讓時間說話。」",
+                label: {
+                    zh: "冷靜：讓時間說話",
+                    jp: "冷静に：時間が証明する",
+                    kr: "냉정하게：시간이 증명할 거야"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["faced_rival_challenge"],
@@ -624,7 +728,11 @@
                 }
             },
             {
-                label: "轉向{lover}，用行動回應",
+                label: {
+                    zh: "{lover}行動回應",
+                    jp: "{lover}に向き直り行動で答える",
+                    kr: "{lover}를 향해 행동으로 답하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["faced_rival_challenge"],
@@ -658,7 +766,11 @@
         ],
         options: [
             {
-                label: "打開來看（evidence_count +1，但 trust -10）",
+                label: {
+                    zh: "打開看，信任可能受損",
+                    jp: "開けて見る。信頼が下がるかも",
+                    kr: "열어보다. 신뢰가 떨어질 수도"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["found_msg_evidence"],
@@ -669,7 +781,11 @@
                 }
             },
             {
-                label: "把手機翻過來，假裝沒看見",
+                label: {
+                    zh: "把手機翻面，裝沒看見",
+                    jp: "スマホを裏返し見なかったふりをする",
+                    kr: "폰을 뒤집어 못 본 척하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["found_msg_evidence"],
@@ -677,7 +793,11 @@
                 }
             },
             {
-                label: "等{lover}回來，直接問",
+                label: {
+                    zh: "{lover}回來直接問",
+                    jp: "{lover}が戻ったら直接聞く",
+                    kr: "{lover}가 돌아오면 직접 묻다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["found_msg_evidence", "asked_directly"],
@@ -708,7 +828,11 @@
         ],
         options: [
             {
-                label: "🔍 查閱{lover}最近的行程（evidence +1）",
+                label: {
+                    zh: "查{lover}最近的行程",
+                    jp: "{lover}の最近の行動を調べる",
+                    kr: "{lover}의 최근 일정을 조사하다"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'search_count', val: 1, op: '>=' }] },
                 rewards: {
@@ -724,7 +848,11 @@
                 }
             },
             {
-                label: "💬 問和{lover}共同認識的人（INT 檢定）",
+                label: {
+                    zh: "轉向共同朋友，側面打聽",
+                    jp: "共通の知人に向き直り、さりげなく聞く",
+                    kr: "공통 지인에게 돌아서 슬쩍 물어보다"
+                },
                 check: { stat: 'INT', val: 3 },
                 action: "advance_chain",
                 condition: {
@@ -741,7 +869,11 @@
                 successText: "對方說漏了一句話。<br>你現在更確定了一件事。"
             },
             {
-                label: "🪞 誠實地問自己：你真的想知道真相嗎？",
+                label: {
+                    zh: "問自己：真想知道嗎",
+                    jp: "自分に問う：本当に知りたいか",
+                    kr: "스스로에게 묻다：정말 알고 싶어"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'search_count', val: 1, op: '>=' }] },
                 rewards: {
@@ -786,7 +918,11 @@
                 }
             },
             {
-                label: "「我沒有什麼好說的。」轉身離開",
+                label: {
+                    zh: "沉默轉身，什麼都不說",
+                    jp: "黙って背を向ける",
+                    kr: "침묵한 채 등을 돌리다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["confronted_rival"],
@@ -794,7 +930,11 @@
                 }
             },
             {
-                label: "問對方：「{lover}知道你來找我嗎？」",
+                label: {
+                    zh: "{lover}知道你來嗎",
+                    jp: "聞く：{lover}は知っているか",
+                    kr: "묻다：{lover}는 알고 있어"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["confronted_rival"],
@@ -838,7 +978,11 @@
                 }
             },
             {
-                label: "說成是「順路」或「偶然」",
+                label: {
+                    zh: "說「順路」或「偶然」",
+                    jp: "「ついで」か「偶然」と言う",
+                    kr: "「가는 길에」 또는 「우연히」라 하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["asked_out"],
@@ -874,7 +1018,11 @@
         ],
         options: [
             {
-                label: "接上對方的話：「那我應該會很可惜。」",
+                label: {
+                    zh: "接話：那我應該會很可惜",
+                    jp: "話を受ける：残念に思うだろう",
+                    kr: "말을 받다：그럼 많이 아쉬울 것 같아"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["had_key_moment"],
@@ -923,7 +1071,11 @@
         ],
         options: [
             {
-                label: "💬 分享你不常說的事情",
+                label: {
+                    zh: "分享平時不說的事",
+                    jp: "普段言わないことを話す",
+                    kr: "평소에 안 하던 이야기를 나누다"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'time_together', val: 1, op: '>=' }] },
                 rewards: {
@@ -938,7 +1090,11 @@
                 }
             },
             {
-                label: "🎭 一起做一件平時不做的事",
+                label: {
+                    zh: "一起做件平時不做的事",
+                    jp: "普段しないことを一緒にする",
+                    kr: "평소에 안 하는 일을 함께 하다"
+                },
                 action: "advance_chain",
                 condition: {
                     vars: [{ key: 'time_together', val: 1, op: '>=' }],
@@ -957,7 +1113,11 @@
                 }
             },
             {
-                label: "🤫 說出你一直沒說的感覺",
+                label: {
+                    zh: "說出一直沒說的感覺",
+                    jp: "ずっと言えなかった気持ちを言う",
+                    kr: "계속 못 했던 감정을 말하다"
+                },
                 action: "advance_chain",
                 condition: {
                     vars: [
@@ -979,7 +1139,11 @@
                 }
             },
             {
-                label: "🚪 就這樣靜靜在一起就好",
+                label: {
+                    zh: "就這樣靜靜在一起就好",
+                    jp: "このまま静かに一緒にいる",
+                    kr: "이대로 조용히 함께 있으면 돼"
+                },
                 action: "advance_chain",
                 rewards: {
                     varOps: [{ key: 'trust', val: 5, op: '+' }]
@@ -1009,7 +1173,11 @@
         ],
         options: [
             {
-                label: "默默做一件讓對方好過一點的事",
+                label: {
+                    zh: "默默做件讓對方好過的事",
+                    jp: "黙って相手が楽になることをする",
+                    kr: "말없이 상대를 편하게 해줄 일을 하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["showed_care"],
@@ -1020,7 +1188,11 @@
                 }
             },
             {
-                label: "找個藉口靠近，但不說明原因",
+                label: {
+                    zh: "找個藉口靠近，不解釋",
+                    jp: "口実を作って近づく。理由は言わない",
+                    kr: "구실 만들어 다가가다. 이유는 말하지 않다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["showed_care"],
@@ -1028,7 +1200,11 @@
                 }
             },
             {
-                label: "這不是你的事，維持距離",
+                label: {
+                    zh: "這不關你事，保持距離",
+                    jp: "自分の事ではない。距離を保つ",
+                    kr: "내 일이 아니야. 거리를 유지하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     varOps: [{ key: 'pressure', val: 5, op: '+' }]
@@ -1052,7 +1228,11 @@
         ],
         options: [
             {
-                label: "認真回答，分享你自己的想法",
+                label: {
+                    zh: "認真回答，說出自己的想法",
+                    jp: "真剣に答え自分の考えを話す",
+                    kr: "진지하게 답하며 자신의 생각을 나누다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["had_honest_moment"],
@@ -1063,7 +1243,11 @@
                 }
             },
             {
-                label: "輕描淡寫地帶過，給對方留空間",
+                label: {
+                    zh: "輕描淡寫，給對方空間",
+                    jp: "さらりと流し相手に空間を与える",
+                    kr: "가볍게 넘기며 상대에게 여유를 주다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["had_honest_moment"],
@@ -1091,7 +1275,11 @@
         ],
         options: [
             {
-                label: "📱 傳一個不知道算不算在意的訊息",
+                label: {
+                    zh: "傳一則算不算在意的訊息",
+                    jp: "気にしているかどうかわからないメッセージを送る",
+                    kr: "신경 쓰는 건지 모를 메시지를 보내다"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'daily_moments', val: 1, op: '>=' }] },
                 rewards: {
@@ -1106,7 +1294,11 @@
                 }
             },
             {
-                label: "👁️ 觀察{lover}對你的態度有沒有不一樣（INT 檢定）",
+                label: {
+                    zh: "不動聲色，留意細節",
+                    jp: "顔色を変えず、細部に目を向ける",
+                    kr: "표정 하나 않고 세세한 부분을 살피다"
+                },
                 check: { stat: 'INT', val: 3 },
                 action: "advance_chain",
                 condition: {
@@ -1123,7 +1315,11 @@
                 successText: "你注意到{lover}在你面前會做的一些小動作。<br>也許對方也在等什麼。"
             },
             {
-                label: "🌙 在某個安靜的夜晚，把想說的話寫下來（但沒有送出）",
+                label: {
+                    zh: "安靜夜晚寫下，沒送出",
+                    jp: "静かな夜に書いたが送らなかった",
+                    kr: "조용한 밤에 적었지만 보내지 않다"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'daily_moments', val: 1, op: '>=' }] },
                 rewards: {
@@ -1165,7 +1361,11 @@
         ],
         options: [
             {
-                label: "直接問{lover}你們的關係",
+                label: {
+                    zh: "直接問{lover}你們是什麼",
+                    jp: "{lover}に直接関係を聞く",
+                    kr: "{lover}에게 직접 관계를 묻다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["handled_interference"],
@@ -1184,7 +1384,11 @@
                 }
             },
             {
-                label: "製造更多和{lover}相處的機會，讓行動代替話語",
+                label: {
+                    zh: "製造和{lover}獨處",
+                    jp: "{lover}との機会を増やし行動で示す",
+                    kr: "{lover}와 함께할 기회를 늘려 행동으로 보여주다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["handled_interference"],
@@ -1212,7 +1416,11 @@
         ],
         options: [
             {
-                label: "主動開口解釋，不讓誤會繼續發酵",
+                label: {
+                    zh: "主動解釋，不讓誤會發酵",
+                    jp: "自ら説明し誤解を放置しない",
+                    kr: "직접 설명하며 오해를 방치하지 않다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["resolved_misunderstanding"],
@@ -1258,7 +1466,11 @@
         ],
         options: [
             {
-                label: "坦誠說出你的感覺，不管結果",
+                label: {
+                    zh: "坦誠說感覺，不管結果",
+                    jp: "素直に気持ちを言う。結果は問わない",
+                    kr: "솔직하게 감정을 말하다. 결과는 상관없어"
+                },
                 action: "advance_chain",
                 rewards: {
                     varOps: [
@@ -1268,7 +1480,11 @@
                 }
             },
             {
-                label: "先保護{lover}不受影響，把自己的感覺放到後面",
+                label: {
+                    zh: "護{lover}，感覺放後",
+                    jp: "まず{lover}を守り自分の気持ちは後",
+                    kr: "먼저 {lover}를 지키고 내 감정은 뒤로"
+                },
                 action: "advance_chain",
                 rewards: {
                     varOps: [
@@ -1307,7 +1523,11 @@
                 }
             },
             {
-                label: "沒有說，但你讓對方感覺到了",
+                label: {
+                    zh: "沒說，對方已感覺到",
+                    jp: "言わなくても相手に伝わった",
+                    kr: "말 안 했지만 상대가 느꼈다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["had_deep_talk"],
@@ -1336,7 +1556,11 @@
         options: [
             // 好感度和信任度都高：雙向確認
             {
-                label: "說出你的感覺，直接而清楚",
+                label: {
+                    zh: "說出感覺，直接而清楚",
+                    jp: "気持ちを直接はっきり言う",
+                    kr: "감정을 직접 명확하게 말하다"
+                },
                 condition: {
                     vars: [
                         { key: 'affection', val: 40, op: '>=' },
@@ -1351,7 +1575,11 @@
             },
             // 好感度高但信任不夠：半表白
             {
-                label: "用行動代替語言，讓對方自己理解",
+                label: {
+                    zh: "用行動代替語言",
+                    jp: "言葉より行動で示す",
+                    kr: "말 대신 행동으로 보여주다"
+                },
                 condition: { vars: [{ key: 'affection', val: 35, op: '>=' }] },
                 action: "advance_chain",
                 rewards: {
@@ -1361,7 +1589,11 @@
             },
             // 信任夠但好感度不足：坦誠說不確定
             {
-                label: "說出你的困惑，讓對方知道你在想什麼",
+                label: {
+                    zh: "說出困惑，讓對方知道",
+                    jp: "困惑を打ち明け相手に伝える",
+                    kr: "혼란을 털어놓고 상대에게 알리다"
+                },
                 condition: { vars: [{ key: 'trust', val: 35, op: '>=' }] },
                 action: "advance_chain",
                 rewards: {
@@ -1395,7 +1627,11 @@
         ],
         options: [
             {
-                label: "「我不管那些。我只知道我不想放棄。」",
+                label: {
+                    zh: "「我不管。我只是不想放棄。」",
+                    jp: "「どうでもいい。諦めたくないだけ」",
+                    kr: "「상관없어. 나는 그냥 포기하기 싫어」"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["chose_to_stay"],
@@ -1403,7 +1639,11 @@
                 }
             },
             {
-                label: "「也許你說得對。但這不是我做得了主的事。」",
+                label: {
+                    zh: "也許你對，但無法決定",
+                    jp: "「正しいかも。でも私には決められない」",
+                    kr: "「맞을 수도 있어. 하지만 내가 결정할 수 없어」"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["confessed"],
@@ -1427,7 +1667,11 @@
         ],
         options: [
             {
-                label: "向{lover}表白（需要 aff_lover >= 40）",
+                label: {
+                    zh: "向{lover}表白",
+                    jp: "{lover}に告白する",
+                    kr: "{lover}에게 고백하다"
+                },
                 condition: { vars: [{ key: 'aff_lover', val: 40, op: '>=' }] },
                 action: "advance_chain",
                 rewards: {
@@ -1436,7 +1680,11 @@
                 }
             },
             {
-                label: "向{rival}表白（需要 aff_rival >= 40，出乎所有人意料）",
+                label: {
+                    zh: "向{rival}表白，出人意料",
+                    jp: "{rival}に告白する。意外な選択",
+                    kr: "{rival}에게 고백하다. 모두를 놀라게"
+                },
                 condition: { vars: [{ key: 'aff_rival', val: 40, op: '>=' }] },
                 action: "advance_chain",
                 rewards: {
@@ -1445,7 +1693,11 @@
                 }
             },
             {
-                label: "向{mentor}表白（需要 aff_mentor >= 40）",
+                label: {
+                    zh: "向{mentor}告白",
+                    jp: "{mentor}に告白する",
+                    kr: "{mentor}에게 고백하다"
+                },
                 condition: { vars: [{ key: 'aff_mentor', val: 40, op: '>=' }] },
                 action: "advance_chain",
                 rewards: {
@@ -1454,7 +1706,11 @@
                 }
             },
             {
-                label: "誰都不選，繼續保持現狀",
+                label: {
+                    zh: "誰都不選，維持現狀",
+                    jp: "誰も選ばず現状を維持する",
+                    kr: "아무도 선택 않고 현상 유지"
+                },
                 action: "advance_chain",
                 rewards: { tags: ["chose_none"] }
             }
@@ -1475,7 +1731,11 @@
         ],
         options: [
             {
-                label: "最後說一句發自內心的話（trust >= 30）",
+                label: {
+                    zh: "最後說一句發自內心的話",
+                    jp: "最後に心からの言葉を言う",
+                    kr: "마지막으로 진심에서 우러난 말을 하다"
+                },
                 condition: { vars: [{ key: 'trust', val: 30, op: '>=' }] },
                 action: "advance_chain",
                 rewards: {
@@ -1484,7 +1744,11 @@
                 }
             },
             {
-                label: "用你積累的資歷和成績說話（rank_points >= 50）",
+                label: {
+                    zh: "用積累的資歷說話",
+                    jp: "積み上げた実績で語る",
+                    kr: "쌓아온 실적으로 말하다"
+                },
                 condition: { vars: [{ key: 'rank_points', val: 50, op: '>=' }] },
                 action: "advance_chain",
                 rewards: {
@@ -1493,7 +1757,11 @@
                 }
             },
             {
-                label: "什麼都不說，讓{lover}自己決定",
+                label: {
+                    zh: "不說，讓{lover}決定",
+                    jp: "何も言わず{lover}に決めさせる",
+                    kr: "아무 말 않고 {lover}가 결정하게 두다"
+                },
                 action: "advance_chain",
                 rewards: { tags: ["waited_consort"] }
             }
@@ -1514,7 +1782,11 @@
         ],
         options: [
             {
-                label: "拿出證據，要{lover}給一個解釋（evidence >= 3）",
+                label: {
+                    zh: "拿出證據，要{lover}解釋",
+                    jp: "証拠を出し{lover}に説明を求める",
+                    kr: "증거를 내밀며 {lover}에게 설명을 요구하다"
+                },
                 condition: { vars: [{ key: 'evidence_count', val: 3, op: '>=' }] },
                 action: "advance_chain",
                 rewards: {
@@ -1523,7 +1795,11 @@
                 }
             },
             {
-                label: "不用證據，只說出你的感受",
+                label: {
+                    zh: "不用證據，只說感受",
+                    jp: "証拠なしで気持ちだけを言う",
+                    kr: "증거 없이 감정만 말하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["said_feelings"],
@@ -1531,7 +1807,11 @@
                 }
             },
             {
-                label: "問{lover}：「你愛我嗎？」",
+                label: {
+                    zh: "{lover}：愛我嗎",
+                    jp: "{lover}に聞く：愛してるか",
+                    kr: "{lover}에게 묻다：나를 사랑해"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["asked_directly", "said_feelings"],

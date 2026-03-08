@@ -59,7 +59,11 @@
         ],
         options: [
             {
-                label: "「請多指教。」低頭拜師（技能提升路線）",
+                label: {
+                    zh: "低頭：「請多指教。」",
+                    jp: "頭を下げる：「よろしくお願いします」",
+                    kr: "고개를 숙이다：「잘 부탁드립니다」"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_skill_test", "has_ally"],
@@ -67,7 +71,11 @@
                 }
             },
             {
-                label: "「我會用成績說話。」自行摸索（自立路線）",
+                label: {
+                    zh: "「成績說話。」自行",
+                    jp: "「結果で示す」独自に模索する",
+                    kr: "「결과로 증명하겠어」 혼자 길을 찾다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_skill_test"],
@@ -98,7 +106,11 @@
         ],
         options: [
             {
-                label: "先觀察規則，了解這裡的生態（晉升路線）",
+                label: {
+                    zh: "先觀察規則和生態",
+                    jp: "まず規則と生態を観察する",
+                    kr: "먼저 규칙과 생태를 관찰하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_climb"],
@@ -106,7 +118,11 @@
                 }
             },
             {
-                label: "主動找{mentor}表現自己（技能提升路線）",
+                label: {
+                    zh: "找{mentor}展現自己",
+                    jp: "{mentor}に自ら近づき自分を見せる",
+                    kr: "{mentor}에게 먼저 다가가 자신을 보여주다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_skill_test"],
@@ -140,7 +156,11 @@
         ],
         options: [
             {
-                label: "拼命訓練，用實力堵住悠悠眾口（技能提升路線）",
+                label: {
+                    zh: "拼命訓練，用實力堵嘴",
+                    jp: "必死に訓練し実力で黙らせる",
+                    kr: "필사적으로 훈련하며 실력으로 입을 막다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_skill_test", "has_mentor_push"],
@@ -151,7 +171,11 @@
                 }
             },
             {
-                label: "搞清楚這裡的人際關係，找到盟友（晉升路線）",
+                label: {
+                    zh: "搞清人際關係，找盟友",
+                    jp: "人間関係を把握し味方を探す",
+                    kr: "인간관계를 파악하고 동료를 찾다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_climb"],
@@ -181,7 +205,11 @@
         ],
         options: [
             {
-                label: "咬牙堅持，做到{mentor}滿意為止（VIT 檢定）",
+                label: {
+                    zh: "握緊拳頭，再來一遍",
+                    jp: "拳を握り締め、もう一度繰り返す",
+                    kr: "주먹을 꽉 쥐고 한 번 더 반복하다"
+                },
                 check: { stat: 'VIT', val: 3 },
                 action: "advance_chain",
                 rewards: {
@@ -191,10 +219,14 @@
                     ],
                     exp: 15
                 },
-                successText: "{mentor}點了點頭：「今天可以了。」這是你第一次得到這句話。"
+                successText: "{mentor}點了點頭：「今天可以了。」這是你第一次得到這句話。\n強度是平時三倍，能撐下來進步也是三倍。"
             },
             {
-                label: "先休息一下，保留體力應對之後的訓練",
+                label: {
+                    zh: "先休息，保留體力",
+                    jp: "まず休み体力を温存する",
+                    kr: "먼저 쉬며 체력을 아끼다"
+                },
                 action: "advance_chain",
                 rewards: {
                     varOps: [
@@ -225,7 +257,11 @@
         ],
         options: [
             {
-                label: "報名，拼一把（STR + VIT 雙重檢定）",
+                label: {
+                    zh: "舉手，不給自己留退路",
+                    jp: "手を挙げ、退路を断つ",
+                    kr: "손을 들고 퇴로를 끊다"
+                },
                 check: { stat: 'VIT', val: 5 },
                 action: "advance_chain",
                 rewards: {
@@ -239,7 +275,11 @@
                 successText: "你撐過來了。{rival}中途放棄了，但你沒有。{mentor}第一次正眼看你。"
             },
             {
-                label: "不報名，用平時的節奏穩健進步",
+                label: {
+                    zh: "不報名，穩健進步就好",
+                    jp: "参加しない。着実に進歩する",
+                    kr: "참가 안 해. 착실히 발전하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["done_intensive"],
@@ -274,7 +314,11 @@
         ],
         options: [
             {
-                label: "🏋️ 加練弱點（技能 +18）",
+                label: {
+                    zh: "加練弱點",
+                    jp: "弱点を集中的に鍛える",
+                    kr: "약점을 집중 훈련하다"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'free_time', val: 1, op: '>=' }] },
                 rewards: {
@@ -289,7 +333,11 @@
                 }
             },
             {
-                label: "🤝 和{rival}聊聊，建立關係（rank +12）",
+                label: {
+                    zh: "和{rival}聊聊，建立關係",
+                    jp: "{rival}と話し関係を作る",
+                    kr: "{rival}와 이야기하며 관계를 쌓다"
+                },
                 action: "advance_chain",
                 condition: {
                     vars: [{ key: 'free_time', val: 1, op: '>=' }],
@@ -308,7 +356,11 @@
                 }
             },
             {
-                label: "📖 研讀理論，補強知識（技能 +12，下次 INT 檢定加成）",
+                label: {
+                    zh: "研讀理論，補強知識",
+                    jp: "理論を学び知識を補強する",
+                    kr: "이론을 공부하며 지식을 보강하다"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'free_time', val: 1, op: '>=' }] },
                 rewards: {
@@ -324,7 +376,11 @@
                 }
             },
             {
-                label: "🚪 結束自由時間，繼續正規訓練",
+                label: {
+                    zh: "結束自由時間，回歸正規",
+                    jp: "自由時間を終え正規訓練へ",
+                    kr: "자유 시간 끝내고 정규 훈련으로"
+                },
                 action: "advance_chain"
             }
         ]
@@ -350,7 +406,11 @@
         ],
         options: [
             {
-                label: "接下來，認真做好（INT 或 AGI 檢定）",
+                label: {
+                    zh: "接過任務，不說廢話",
+                    jp: "仕事を受け取り、余計な言葉は言わない",
+                    kr: "임무를 받아들이고 쓸데없는 말은 하지 않다"
+                },
                 check: { stat: 'INT', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -364,7 +424,11 @@
                 successText: "你把任務做得比任何人預期的都好。上面的人開始注意到你的名字。"
             },
             {
-                label: "接下但找人分攤風險（建立聯盟）",
+                label: {
+                    zh: "接下，但找人分攤風險",
+                    jp: "受けるが誰かとリスクを分担する",
+                    kr: "받되 누군가와 위험을 나누다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["completed_task"],
@@ -403,7 +467,11 @@
         ],
         options: [
             {
-                label: "坦誠說出自己目前的不足，以及改進計畫",
+                label: {
+                    zh: "坦誠說不足，提出改進計畫",
+                    jp: "不足を認め改善計画を話す",
+                    kr: "부족함을 인정하고 개선 계획을 말하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["had_audience", "has_ally"],
@@ -419,7 +487,11 @@
                 }
             },
             {
-                label: "說{rival}的壞話（高風險）",
+                label: {
+                    zh: "{rival}壞話，高風險",
+                    jp: "{rival}の悪口を言う。高リスク",
+                    kr: "{rival} 험담하다. 고위험"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["had_audience"],
@@ -450,7 +522,11 @@
         ],
         options: [
             {
-                label: "🤝 拜訪有影響力的人，打好關係（rank +15）",
+                label: {
+                    zh: "拜訪有影響力的人",
+                    jp: "影響力のある人物を訪ねる",
+                    kr: "영향력 있는 사람을 방문하다"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'free_time', val: 1, op: '>=' }] },
                 rewards: {
@@ -465,7 +541,11 @@
                 }
             },
             {
-                label: "🕵️ 收集情報，了解誰是盟友誰是威脅（rank +10）",
+                label: {
+                    zh: "收集情報，分清盟友與威脅",
+                    jp: "情報を集め味方と脅威を把握する",
+                    kr: "정보를 모아 동료와 위협을 파악하다"
+                },
                 action: "advance_chain",
                 condition: {
                     vars: [{ key: 'free_time', val: 1, op: '>=' }],
@@ -485,7 +565,11 @@
                 }
             },
             {
-                label: "💪 偷偷練習技能，提升自己（技能 +10）",
+                label: {
+                    zh: "偷偷練習，悄悄提升自己",
+                    jp: "こっそり練習し自分を高める",
+                    kr: "몰래 연습하며 조용히 성장하다"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'free_time', val: 1, op: '>=' }] },
                 rewards: {
@@ -500,7 +584,11 @@
                 }
             },
             {
-                label: "🚪 結束空檔，回去工作",
+                label: {
+                    zh: "結束空檔，回去工作",
+                    jp: "空き時間を終え仕事に戻る",
+                    kr: "여유 시간 끝내고 일로 돌아가다"
+                },
                 action: "advance_chain"
             }
         ]
@@ -538,7 +626,11 @@
                 }
             },
             {
-                label: "提出公開比較，讓大家評判",
+                label: {
+                    zh: "開口，要求當場比較",
+                    jp: "口を開き、その場での比較を要求する",
+                    kr: "입을 열어 그 자리에서의 비교를 요청하다"
+                },
                 check: { stat: 'INT', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -551,7 +643,11 @@
                 successText: "你的表現讓所有人重新評估你。{rival}的臉色不太好看。"
             },
             {
-                label: "忍下來，先專注在自己身上",
+                label: {
+                    zh: "忍下去，先專注自己",
+                    jp: "堪えて自分に集中する",
+                    kr: "참고 자신에게 집중하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["handled_rival"],
@@ -576,7 +672,11 @@
         ],
         options: [
             {
-                label: "抓住機會，全力以赴（LUK 或 INT 檢定）",
+                label: {
+                    zh: "上前一步，把機會接住",
+                    jp: "一歩前に出て、機会を掴み取る",
+                    kr: "한 걸음 앞으로 나서 기회를 잡다"
+                },
                 check: { stat: 'LUK', val: 3 },
                 action: "advance_chain",
                 rewards: {
@@ -614,7 +714,11 @@
         ],
         options: [
             {
-                label: "找{mentor}坦誠說明目前的狀態",
+                label: {
+                    zh: "找{mentor}，坦誠說明狀態",
+                    jp: "{mentor}を訪ね現状を正直に話す",
+                    kr: "{mentor}를 찾아가 솔직하게 상태를 말하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     varOps: [
@@ -624,7 +728,11 @@
                 }
             },
             {
-                label: "繼續硬撐（VIT 檢定）",
+                label: {
+                    zh: "牙關死咬，一步一步走",
+                    jp: "奥歯を食いしばり、一歩一歩進む",
+                    kr: "이를 꽉 물고 한 걸음 한 걸음 나아가다"
+                },
                 check: { stat: 'VIT', val: 6 },
                 action: "advance_chain",
                 rewards: {
@@ -660,7 +768,11 @@
         ],
         options: [
             {
-                label: "坦誠說出你的困惑與動力",
+                label: {
+                    zh: "坦誠說困惑，也說動力",
+                    jp: "困惑と動機を素直に話す",
+                    kr: "혼란과 동기를 솔직하게 말하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["formed_bond", "has_ally"],
@@ -671,7 +783,11 @@
                 }
             },
             {
-                label: "保持距離，維持專業關係",
+                label: {
+                    zh: "保持距離，維持專業",
+                    jp: "距離を保ち専門的な関係を維持する",
+                    kr: "거리를 유지하며 전문적 관계를 지키다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["formed_bond"],
@@ -711,7 +827,11 @@
             },
             // 有貴人支持
             {
-                label: "發揮穩定，靠{mentor}的指點補足不足",
+                label: {
+                    zh: "靠{mentor}補不足",
+                    jp: "安定して{mentor}の指導で補う",
+                    kr: "안정적으로 하고 {mentor}의 조언으로 보완하다"
+                },
                 condition: { tags: ['has_ally'] },
                 action: "advance_chain",
                 rewards: {
@@ -721,7 +841,11 @@
             },
             // 技能不足，硬撐
             {
-                label: "你知道自己還不夠，但你不打算放棄",
+                label: {
+                    zh: "知道還不夠，但不放棄",
+                    jp: "まだ不十分とわかっていても諦めない",
+                    kr: "아직 부족한 걸 알아도 포기하지 않다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["attempted_test"],
@@ -745,7 +869,11 @@
         ],
         options: [
             {
-                label: "拿出你一路積累的成果和人脈",
+                label: {
+                    zh: "拿出積累的成果和人脈",
+                    jp: "積み上げた成果と人脈を見せる",
+                    kr: "쌓아온 성과와 인맥을 내보이다"
+                },
                 condition: {
                     tags: ['key_achievement'],
                     vars: [{ key: 'rank_points', val: 50, op: '>=' }]
@@ -757,7 +885,11 @@
                 }
             },
             {
-                label: "有{mentor}的背書支持",
+                label: {
+                    zh: "{mentor}的背書",
+                    jp: "{mentor}の後ろ盾がある",
+                    kr: "{mentor}의 보증이 있다"
+                },
                 condition: { tags: ['has_ally', 'key_achievement'] },
                 action: "advance_chain",
                 rewards: {
@@ -766,7 +898,11 @@
                 }
             },
             {
-                label: "你的資歷還不足，但你提出了未來的計畫",
+                label: {
+                    zh: "資歷不足，提未來計畫",
+                    jp: "経験不足だが未来の計画を提示する",
+                    kr: "경력이 부족하지만 미래 계획을 제시하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["attempted_promotion"],

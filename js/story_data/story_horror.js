@@ -51,7 +51,11 @@
         ],
         options: [
             {
-                label: "推開門進去，找出真相（調查路線）",
+                label: {
+                    zh: "推門，進去查清楚",
+                    jp: "扉を押し、中へ",
+                    kr: "문을 밀고 들어가 조사하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_investigate"],
@@ -59,7 +63,11 @@
                 }
             },
             {
-                label: "先觀察外部環境，確認退路（逃脫路線）",
+                label: {
+                    zh: "退後一步，先看退路",
+                    jp: "一歩引いて退路を確認",
+                    kr: "한 발 물러서 퇴로를 확인하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_escape"],
@@ -89,7 +97,11 @@
         ],
         options: [
             {
-                label: "循著聲音去查（調查路線）",
+                label: {
+                    zh: "循著聲音走過去",
+                    jp: "音をたどって進む",
+                    kr: "소리를 따라 걸어가다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_investigate"],
@@ -97,7 +109,11 @@
                 }
             },
             {
-                label: "找個角落先躲起來，等到天亮（逃脫路線）",
+                label: {
+                    zh: "找暗處蹲下，等天亮",
+                    jp: "暗がりに身を潜め夜明けを待つ",
+                    kr: "어둠 속에 웅크려 날이 밝길 기다리다"
+                },
                 action: "advance_chain",
                 rewards: { tags: ["route_escape"] }
             }
@@ -124,7 +140,11 @@
         ],
         options: [
             {
-                label: "先做好防護，再系統性地調查（調查路線）",
+                label: {
+                    zh: "先護好自己，再動手查",
+                    jp: "身を守ってから調べる",
+                    kr: "자신을 지킨 후 조사하다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_investigate", "has_preparation"],
@@ -132,7 +152,11 @@
                 }
             },
             {
-                label: "這比預期的還要糟，先確認撤退路線（逃脫路線）",
+                label: {
+                    zh: "比預期的糟，先找出路",
+                    jp: "予想より悪い。まず出口を",
+                    kr: "예상보다 나쁘다. 먼저 출구를 찾다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["route_escape", "has_preparation"],
@@ -167,7 +191,11 @@
         ],
         options: [
             {
-                label: "仔細研讀（INT 檢定，耗時但收穫多）",
+                label: {
+                    zh: "俯身細讀，逐行記下",
+                    jp: "身を乗り出し一行ずつ読む",
+                    kr: "몸을 숙여 한 줄씩 읽다"
+                },
                 check: { stat: 'INT', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -248,7 +276,11 @@
         ],
         options: [
             {
-                label: "🔍 搜查{env_feature}（作祟值 +5）",
+                label: {
+                    zh: "搜查{env_feature}",
+                    jp: "{env_feature}を調べる",
+                    kr: "{env_feature}을 조사하다"
+                },
                 action: "advance_chain",
                 condition: { vars: [{ key: 'search_count', val: 1, op: '>=' }] },
                 rewards: {
@@ -275,7 +307,11 @@
                 }
             },
             {
-                label: "🕯️ 感應此處的靈力（INT 檢定）",
+                label: {
+                    zh: "屏息，感受空間的重量",
+                    jp: "息を止め、空間の重さを感じる",
+                    kr: "숨을 죽이고 공간의 무게를 느끼다"
+                },
                 check: { stat: 'INT', val: 5 },
                 action: "advance_chain",
                 condition: {
@@ -313,7 +349,11 @@
         ],
         options: [
             {
-                label: "強迫自己冷靜，記錄下這個現象（INT 檢定）",
+                label: {
+                    zh: "咬緊牙關，掏出筆記本",
+                    jp: "奥歯を噛み、ノートを取り出す",
+                    kr: "이를 악물고 노트를 꺼내다"
+                },
                 check: { stat: 'INT', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -360,7 +400,11 @@
         ],
         options: [
             {
-                label: "系統性地搜索，標記走過的路（INT 檢定）",
+                label: {
+                    zh: "在牆上劃記號，找規律",
+                    jp: "壁に印をつけ、規則性を探す",
+                    kr: "벽에 표시하며 규칙을 찾다"
+                },
                 check: { stat: 'INT', val: 4 },
                 action: "advance_chain",
                 rewards: {
@@ -371,7 +415,11 @@
                 successText: "你找到了一扇通往外部的窗戶。記住這個位置——這是你的退路。"
             },
             {
-                label: "憑直覺走，希望能找到出路",
+                label: {
+                    zh: "憑直覺，往前走",
+                    jp: "直感を頼りに進む",
+                    kr: "직감을 믿고 앞으로 걷다"
+                },
                 action: "advance_chain",
                 rewards: {
                     varOps: [{ key: 'curse_val', val: 15, op: '+' }]
@@ -394,7 +442,11 @@
         ],
         options: [
             {
-                label: "拼命掙扎（VIT 或 STR 檢定）",
+                label: {
+                    zh: "全身繃緊，暴力掙開",
+                    jp: "全身を張り詰め、強引に抜け出す",
+                    kr: "온몸을 긴장시켜 억지로 빠져나오다"
+                },
                 check: { stat: 'STR', val: 4 },
                 action: "advance_chain",
                 rewards: { exp: 10 },
@@ -428,7 +480,11 @@
         ],
         options: [
             {
-                label: "全力衝刺，從旁邊繞過去（AGI 檢定）",
+                label: {
+                    zh: "壓低重心，全力繞行",
+                    jp: "重心を下げ全力で迂回する",
+                    kr: "무게중심을 낮춰 전력으로 우회하다"
+                },
                 check: { stat: 'AGI', val: 6 },
                 action: "advance_chain",
                 rewards: {
@@ -478,7 +534,11 @@
                 rewards: { varOps: [{ key: 'curse_val', val: 8, op: '+' }] }
             },
             {
-                label: "原地停下，仔細觀察（INT 檢定）",
+                label: {
+                    zh: "腳步一頓，屏氣凝視",
+                    jp: "足を止め、息を殺して凝視する",
+                    kr: "발을 멈추고 숨을 죽여 응시하다"
+                },
                 check: { stat: 'INT', val: 3 },
                 action: "advance_chain",
                 rewards: {
@@ -504,7 +564,11 @@
         ],
         options: [
             {
-                label: "這個警告是認真的，調整計畫",
+                label: {
+                    zh: "這是真的警告，重新想",
+                    jp: "本物の警告だ。計画を見直す",
+                    kr: "진짜 경고야. 계획을 다시 세우다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["found_warning"],
@@ -553,7 +617,11 @@
                 }
             },
             {
-                label: "讓對方先走，你跟在後面觀察",
+                label: {
+                    zh: "讓對方先走，你壓後",
+                    jp: "相手を先に行かせ後に続く",
+                    kr: "상대를 먼저 보내고 뒤를 따르다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["met_survivor"],
@@ -585,7 +653,11 @@
         options: [
             // 槽一：找方法（需要 knows_weakness + 足夠的知識值）
             {
-                label: "使用你找到的方法對抗詛咒根源（需要 knows_weakness）",
+                label: {
+                    zh: "用找到的方法對抗根源",
+                    jp: "見つけた方法で根源に立ち向かう",
+                    kr: "찾아낸 방법으로 근원에 맞서다"
+                },
                 condition: {
                     tags: ['knows_weakness'],
                     vars: [{ key: 'knowledge', val: 30, op: '>=' }]
@@ -607,7 +679,11 @@
             },
             // 槽二：戰鬥（需要攜帶了神聖物品或武器）
             {
-                label: "用你找到的物品正面對抗（需要 has_sacred_item）",
+                label: {
+                    zh: "持物正面迎擊",
+                    jp: "物を持って正面から挑む",
+                    kr: "물건을 들고 정면으로 맞서다"
+                },
                 condition: { tags: ['has_sacred_item'] },
                 action: "advance_chain",
                 rewards: {
@@ -626,7 +702,11 @@
             },
             // 槽三：逃跑（永遠可見，但成功需要 has_escape_route）
             {
-                label: "全力逃跑（需要提前確認過退路）",
+                label: {
+                    zh: "全力跑，退路已確認",
+                    jp: "全力で逃げる。退路は確認済み",
+                    kr: "전력 질주. 퇴로는 이미 확인했다"
+                },
                 action: "advance_chain",
                 rewards: {
                     tags: ["attempted_escape"],
@@ -650,7 +730,11 @@
         ],
         options: [
             {
-                label: "毀掉它（有充足知識時成功率高）",
+                label: {
+                    zh: "親手毀掉它",
+                    jp: "自ら破壊する",
+                    kr: "직접 부수다"
+                },
                 condition: { vars: [{ key: 'knowledge', val: 25, op: '>=' }] },
                 action: "advance_chain",
                 rewards: { tags: ["destroyed_core"], exp: 60 },
@@ -660,7 +744,11 @@
                 }
             },
             {
-                label: "毀掉它（知識不足，強行嘗試）",
+                label: {
+                    zh: "知識不足，強行毀掉它",
+                    jp: "知識不足のまま強引に破壊する",
+                    kr: "지식이 부족하지만 억지로 부수다"
+                },
                 action: "advance_chain",
                 rewards: { tags: ["attempted_destroy"], varOps: [{ key: 'curse_val', val: 30, op: '+' }] },
                 nextScene: {
@@ -669,7 +757,11 @@
                 }
             },
             {
-                label: "封印它（需要 has_sacred_item）",
+                label: {
+                    zh: "用聖物將它封印",
+                    jp: "聖なる物で封じる",
+                    kr: "성물로 봉인하다"
+                },
                 condition: { tags: ['has_sacred_item'] },
                 action: "advance_chain",
                 rewards: { tags: ["sealed_core"], varOps: [{ key: 'curse_val', val: -30, op: '+' }], exp: 40 },
