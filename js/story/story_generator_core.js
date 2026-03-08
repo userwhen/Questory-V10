@@ -281,7 +281,6 @@ Object.assign(window.SQ.Engine.Generator, {
             }
 
             // 次優：詞庫碎片（情境感知加權選取）
-            // 次優：詞庫碎片（情境感知加權選取）
             if (db.fragments[key]) {
                 const pick = this.pickByContext(key, collectedTags || [], db);
                 if (!pick) return match;
@@ -296,14 +295,8 @@ Object.assign(window.SQ.Engine.Generator, {
                 }
 
                 if (typeof val === 'string' && val.includes('{')) {
-                    // ✅ 修改這裡：用 val 接收遞迴展開的結果
+                    // 這裡會把 depth + 1，代表進入了底層詞彙（如形容詞）的展開
                     val = this._expandGrammar(val, db, memory, depth + 1, collectedTags);
-                }
-
-                // 🌟 核心修復：將動態抽出來的詞彙「鎖死」進記憶庫
-                // 這樣同一個場景或同一局裡面，{stranger} 就永遠是同一個人了！
-                if (memory) {
-                    memory[key] = val;
                 }
 
                 return val;

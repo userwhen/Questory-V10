@@ -20,18 +20,20 @@ window.SQ.Controller.Task = {
             },
             
             submitTask: () => {
-                const temp = window.SQ.Temp.editingTask;
-                if (!temp || !temp.title) return window.SQ.Actions.toast("⚠️ 標題必填");
-                if (temp.id) {
-                    window.SQ.Engine.Task.updateTask(temp);
-                    window.SQ.Actions.toast("✅ 已更新");
-                } else {
-                    window.SQ.Engine.Task.addTask(temp);
-                    window.SQ.Actions.toast("✅ 已新增");
-                }
-                if(window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('overlay');
-            },
-
+			const temp = window.SQ.Temp.editingTask;
+			if (!temp || !temp.title) return window.SQ.Actions.toast("⚠️ 標題必填");
+			if (temp.id) {
+				window.SQ.Engine.Task.updateTask(temp);
+				window.SQ.Actions.toast("✅ 已更新");
+			} else {
+				window.SQ.Engine.Task.addTask(temp);
+				window.SQ.Actions.toast("✅ 已新增");
+			}
+			
+			window.SQ.Temp.editingTask = null; // ✅ 加上這行！清空殘留狀態
+			
+			if(window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('overlay');
+			},
             deleteTask: (id) => {
                 const doDelete = () => {
                     window.SQ.Engine.Task.deleteTask(id);

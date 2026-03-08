@@ -48,10 +48,6 @@ Object.assign(window.SQ.Engine.Story, {
         }
 		// 【同步 chain tags → story.tags】
 		const gs = window.SQ.State;
-		if (gs.story.chain && gs.story.chain.tags) {
-			if (!gs.story.tags) gs.story.tags = [];
-			gs.story.tags = [...new Set([...gs.story.chain.tags, ...gs.story.tags])];
-		}
 
 		// 觸發進入事件
 		if (activeNode.onEnter) {
@@ -598,13 +594,7 @@ Object.assign(window.SQ.Engine.Story, {
                 if (opt.failScene && !opt.failSceneId) opt.failSceneId = opt.failScene.id;
             });
         }
-
-        // 同步 chain tags
-        if (gs.story.chain && gs.story.chain.tags) {
-            if (!gs.story.tags) gs.story.tags = [];
-            gs.story.tags = [...new Set([...gs.story.chain.tags, ...gs.story.tags])];
-        }
-
+		
         // 取得當前語言設定
         const gsLang = window.SQ.State;
         const currentLang = (gsLang.settings && gsLang.settings.targetLang && gsLang.settings.targetLang !== 'mix') ? gsLang.settings.targetLang : 'zh';

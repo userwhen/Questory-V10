@@ -27,7 +27,7 @@ window.SQ.View.Story = {
             <div id="story-text-box" data-action="clickStoryScreen"
                  style="
                     flex: 1; min-height: 0; 
-                    padding: 10px 20px 40px 20px; 
+                    padding: 30px 20px 40px 20px; 
                     overflow-y: auto; 
                     color: var(--text-on-dark); font-size: 1.15rem; line-height: 1.6; 
                     cursor: pointer; position: relative; scroll-behavior: smooth;
@@ -85,35 +85,89 @@ window.SQ.View.Story = {
     },
 
     updateDrawer: function() {
-        const container = document.getElementById('tag-drawer-container');
-        if (!container) return;
+    const container = document.getElementById('tag-drawer-container');
+    if (!container) return;
 
-        const gs = window.SQ.State;
-        const myTags = gs.story?.tags || [];
-        const myVars = gs.story?.vars || {};
+    const gs       = window.SQ.State;
+    const myTags   = gs.story?.tags || [];
+    const tagDict  = (window.FragmentDB && window.FragmentDB.tagDict) ? window.FragmentDB.tagDict : {};
 
-        const roomName = window.SQ.Engine.Map && window.SQ.Engine.Map.currentRoom ? window.SQ.Engine.Map.currentRoom.name : '未知區域';
-        const pathStr = window.SQ.Engine.Map && window.SQ.Engine.Map.map ? window.SQ.Engine.Map.map.map(r => r.id === window.SQ.Engine.Map.currentRoom.id ? `📍[${r.name}]` : `🚪[${r.name}]`).join(" ─ ") : "📍 無紀錄";
+    // 語言判斷：learning模式才用jp/kr，否則一律zh
+    const rawLang  = gs.settings && gs.settings.targetLang ? gs.settings.targetLang : 'zh';
+    const isLearning = gs.settings && gs.settings.learningMode;
+    const langToUse  = (isLearning && rawLang !== 'mix' && rawLang !== 'zh') ? rawLang : 'zh';
 
-        let statusHtml = `<div style="margin-bottom: 15px;"><div style="font-size: 1.1rem; font-weight: bold; color: var(--color-gold); margin-bottom: 8px;">📍 ${roomName}</div><div style="font-size: 0.85rem; color: var(--text-ghost); margin-bottom: 10px; line-height: 1.5;">🗺️ 路徑: ${pathStr}</div><div style="display: flex; flex-wrap: wrap; gap: 10px;">`;
-        for (let [k, v] of Object.entries(myVars)) {
-            let displayKey = (k === 'tension' && gs.story.chain && gs.story.chain.tensionName) ? gs.story.chain.tensionName : (window.t_tag ? window.t_tag(k) : k);
-            statusHtml += `<div style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; font-size: 0.9rem;">${displayKey}: <span style="color:var(--color-info);">${v}</span></div>`;
-        }
-		statusHtml += `</div></div>`;
+    // 過濾規則
+    const hiddenPrefixes = ['struct_', 'route_', 'env_', 'learning', 'vibe_', 'trait_', 'meet_', 'goal_', 'train_', 'world_', 'motive_', 'curse_', 'bonus_'];
+    const coreThemes     = ['mystery', 'horror', 'romance', 'adventure', 'raising'];
 
-        const tagStyles = { 'loc': { color: '--color-gold-dark', bg: '--color-gold-soft' }, 'status': { color: '--color-info', bg: '--color-info-soft' }, 'warn': { color: '--color-danger', bg: '--color-danger-soft' }, 'info': { color: '--color-correct', bg: '--color-correct-soft' } };
-        let tagsHtml = myTags.length > 0 ? myTags.map(t => {
-            const rawLabel = typeof t === 'string' ? t : t.label; const type = typeof t === 'string' ? 'info' : t.type;
-            const style = tagStyles[type] || tagStyles['info'];
-            return ui.atom.badgeBase({ text: window.t_tag ? window.t_tag(rawLabel) : rawLabel, style: `color:var(${style.color}); background:var(${style.bg}); border-color:var(${style.color});` });
-        }).join('') : '<div style="color:var(--text-ghost); font-size: 0.9rem;">尚無標籤</div>';
+    const playerTags = myTags.filter(t => {
+        const label = typeof t === 'string' ? t : t.label;
+        if (!label) return false;
+        if (coreThemes.includes(label)) return false;
+        if (hiddenPrefixes.some(p => label.startsWith(p))) return false;
+        return true;
+    });
 
-        const drawerInnerHtml = `<div style="display: flex; flex-direction: column; height: 100%; color:var(--text-on-dark);"><div style="flex-shrink: 0; padding-bottom: 8px; border-bottom: 1px dashed rgba(255,255,255,0.2); margin-bottom: 10px;"><div style="font-size: 1.1rem; font-weight: bold; color: var(--color-gold-soft);">📊 當前狀態</div></div>${statusHtml}<div style="flex-shrink: 0; padding-bottom: 8px; border-bottom: 1px dashed rgba(255,255,255,0.2); margin-top: 10px; margin-bottom: 10px;"><div style="font-size: 1.1rem; font-weight: bold; color: var(--color-gold-soft);">🏷️ 標籤紀錄</div></div><div style="flex: 1; overflow-y: auto; padding-bottom: 20px; display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start;">${tagsHtml}</div></div>`;
+    // 位置與路徑
+    const map         = window.SQ.Engine.Map;
+    const currentRoom = map && map.currentRoom;
+    const roomName    = currentRoom ? currentRoom.name : '未知區域';
+    const pathStr     = (map && map.map)
+        ? map.map.map(r => r.id === currentRoom?.id ? `📍[${r.name}]` : `🚪[${r.name}]`).join(' ─ ')
+        : '📍 無紀錄';
 
-        // 改用 toggleStoryDrawer 接口
-        container.innerHTML = ui.composer.drawer({ isOpen: window.SQ.Temp.isTagDrawerOpen || false, contentHtml: drawerInnerHtml, toggleAction: "toggleStoryDrawer", height: '320px', handleIconOpen: '▼', handleIconClose: '▲', variant: 'story' });
-    },
+    const statusHtml = `
+        <div style="margin-bottom:15px;">
+            <div style="font-size:1.1rem;font-weight:bold;color:var(--color-gold);margin-bottom:8px;">📍 ${roomName}</div>
+            <div style="font-size:0.85rem;color:var(--text-ghost);line-height:1.5;">🗺️ ${pathStr}</div>
+        </div>`;
+
+    // TAG 樣式對照
+    const tagStyles = {
+        'loc'   : { color: '--color-gold-dark',    bg: '--color-gold-soft' },
+        'status': { color: '--color-info',         bg: '--color-info-soft' },
+        'warn'  : { color: '--color-danger',       bg: '--color-danger-soft' },
+        'info'  : { color: '--color-correct',      bg: '--color-correct-soft' }
+    };
+
+    const tagsHtml = playerTags.length > 0
+        ? playerTags.map(t => {
+            const rawLabel   = typeof t === 'string' ? t : t.label;
+            const config     = tagDict[rawLabel] || { zh: rawLabel, type: 'info' };
+            const displayLabel = config[langToUse] || config['zh'] || rawLabel;
+            const style      = tagStyles[config.type || 'info'] || tagStyles.info;
+            return ui.atom.badgeBase({
+                text: displayLabel,
+                style: `color:var(${style.color});background:var(${style.bg});border-color:var(${style.color});`
+            });
+        }).join('')
+        : '<div style="color:var(--text-ghost);font-size:0.9rem;">尚無特殊狀態或道具</div>';
+
+    const drawerInnerHtml = `
+        <div style="display:flex;flex-direction:column;height:100%;color:var(--text-on-dark);">
+            <div style="flex-shrink:0;padding-bottom:8px;border-bottom:1px dashed rgba(255,255,255,0.2);margin-bottom:10px;">
+                <div style="font-size:1.1rem;font-weight:bold;color:var(--color-gold-soft);">📊 當前位置</div>
+            </div>
+            ${statusHtml}
+            <div style="flex-shrink:0;padding-bottom:8px;border-bottom:1px dashed rgba(255,255,255,0.2);margin-top:10px;margin-bottom:10px;">
+                <div style="font-size:1.1rem;font-weight:bold;color:var(--color-gold-soft);">🏷️ 已獲標籤</div>
+            </div>
+            <div style="flex:1;overflow-y:auto;padding-bottom:20px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;">
+                ${tagsHtml}
+            </div>
+        </div>`;
+
+    container.innerHTML = ui.composer.drawer({
+        isOpen:          window.SQ.Temp.isTagDrawerOpen || false,
+        contentHtml:     drawerInnerHtml,
+        toggleAction:    "toggleStoryDrawer",
+        height:          '320px',
+        handleIconOpen:  '▼',
+        handleIconClose: '▲',
+        variant:         'story'
+    });
+},
 
     clearScreen: function() {
     // 💡 保留第一行這句就好！這就是完美的清理邏輯
@@ -161,45 +215,109 @@ window.SQ.View.Story = {
     appendInlineCheckResult: function(attrKey, total, isSuccess) { window.SQ.Temp.deferredHtml = (window.SQ.Temp.deferredHtml || "") + `<span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.95rem;">🎲 檢定 ${attrKey} (擲出 ${total})........ </span><span style="font-weight:bold; color:${isSuccess ? 'var(--color-correct)' : 'var(--color-danger)'};">${isSuccess ? '成功 ✅' : '失敗 ❌'}</span><br><br>`; },
 
     showOptions: function(options) {
-        const container = document.getElementById('story-actions'); if (!container) return;
-        if (!options || options.length === 0) return container.innerHTML = '<div style="color:var(--text-ghost); text-align:center;">(沒有可用選項)</div>';
-        container.style.opacity = '1';
-        // 1. 取得當前設定的語言 (若為 mix 混合模式，預設選項顯示中文)
-        const gs = window.SQ.State;
-        const currentLang = (gs && gs.settings && gs.settings.targetLang) ? gs.settings.targetLang : 'zh';
-        const langToUse = currentLang === 'mix' ? 'zh' : currentLang;
+    const container = document.getElementById('story-actions');
+    if (!container) return;
+    if (!options || options.length === 0) {
+        return container.innerHTML = '<div style="color:var(--text-ghost); text-align:center;">(沒有可用選項)</div>';
+    }
 
-        // 2. 重新組合按鈕 HTML
-        container.innerHTML = options.map((btn, idx) => {
-            // 解析 label (相容舊版字串與新版多語系物件)
-            let displayLabel = btn.label;
-            if (typeof btn.label === 'object' && btn.label !== null) {
-                displayLabel = btn.label[langToUse] || btn.label['zh'] || Object.values(btn.label)[0] || "未命名選項";
-            }
+    container.style.opacity = '1';
+    const gs = window.SQ.State;
+    const langToUse = (gs.settings && gs.settings.targetLang && gs.settings.targetLang !== 'mix')
+        ? gs.settings.targetLang : 'zh';
+    const myVars = (gs && gs.story && gs.story.vars) ? gs.story.vars : {};
 
-            return ui.atom.buttonBase({ 
-                label: displayLabel, 
-                theme: btn.style || 'normal', 
-                action: 'makeStoryChoice', 
-                actionVal: idx, 
-                style: 'width:100%; max-width:400px; margin:0 auto; padding:12px; font-size:1rem; text-align:center;' 
-            });
+    // ── 清除舊狀態列 ──────────────────────────────────────────
+    const oldBar = document.getElementById('story-status-bar');
+    if (oldBar) oldBar.remove();
+
+    // ── 建立狀態列，插在對話框容器和 story-actions 之間 ───────
+    const varKeys = Object.keys(myVars);
+    if (varKeys.length > 0) {
+        const i18n  = window.I18N_DICT || {};
+        const chain = gs.story && gs.story.chain;
+
+        const items = varKeys.map(k => {
+            let name = i18n[k] && i18n[k][langToUse] ? i18n[k][langToUse]
+                     : i18n[k] && i18n[k]['zh']      ? i18n[k]['zh']
+                     : k;
+            if (k === 'tension' && chain && chain.tensionName) name = chain.tensionName;
+            if (k.startsWith('affection_')) name = langToUse==='jp' ? '好感度' : langToUse==='kr' ? '호감도' : '好感度';
+            if (k.startsWith('clue_'))      name = langToUse==='jp' ? '手がかり' : langToUse==='kr' ? '단서' : '線索';
+
+            return `<span style="display:inline-flex;align-items:center;` +
+                   `background:rgba(0,0,0,0.55);padding:3px 10px;border-radius:10px;` +
+                   `font-size:0.82rem;border:1px solid rgba(255,255,255,0.12);white-space:nowrap;">` +
+                   `<span style="color:var(--text-muted);margin-right:5px;">${name}</span>` +
+                   `<span style="font-weight:bold;color:var(--color-gold);">${myVars[k]}</span></span>`;
         }).join('');
 
-        const wrap = document.getElementById('story-text-box'); 
-        if(wrap) wrap.scrollTop = wrap.scrollHeight;
-    },
+        const bar = document.createElement('div');
+        bar.id = 'story-status-bar';
+        bar.style.cssText = [
+            'display:flex',
+            'flex-wrap:wrap',
+            'justify-content:center',
+            'align-items:center',
+            'gap:6px',
+            'padding:8px 52px 8px 10px',
+            'background:rgba(0,0,0,0.25)',
+            'border-top:1px solid rgba(255,255,255,0.07)',
+            'flex-shrink:0',
+            'min-height:38px'
+        ].join(';');
+        bar.innerHTML = items;
+
+        // 🌟 只做這一行，不移動任何其他元素
+        container.parentNode.insertBefore(bar, container);
+    }
+
+    // ── 按鈕區 ────────────────────────────────────────────────
+    const buttonsHtml = options.map((btn, idx) => {
+        let displayLabel = btn.label;
+        if (typeof btn.label === 'object' && btn.label !== null) {
+            displayLabel = btn.label[langToUse] || btn.label['zh'] || Object.values(btn.label)[0] || "未命名選項";
+        }
+        if (typeof displayLabel === 'string') {
+            displayLabel = displayLabel.replace(/\{([^}]+)\}/g, (m, key) =>
+                myVars[key] !== undefined ? myVars[key] : m);
+        }
+        return ui.atom.buttonBase({
+            label: displayLabel,
+            theme: btn.style || 'normal',
+            action: 'makeStoryChoice',
+            actionVal: idx,
+            style: 'width:100%;max-width:400px;margin:0 auto;padding:12px;font-size:1rem;text-align:center;'
+        });
+    }).join('');
+
+    container.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;width:100%;align-items:center;">${buttonsHtml}</div>`;
+
+    const wrap = document.getElementById('story-text-box');
+    if (wrap) wrap.scrollTop = wrap.scrollHeight;
+},
 
     renderIdle: function() {
-        this.clearScreen(); const box = document.getElementById('story-content'); const actBox = document.getElementById('story-actions'); const gs = window.SQ.State;
-        if ((window.SQ.Temp.currentSceneNode) || (gs.story && (gs.story.currentNode || gs.story.chain))) {
-            if(box) box.innerHTML = `<div style="text-align:center; padding-top:40px; color:var(--color-gold);">⚠️ 檢測到未完成的冒險</div>`;
-            if(actBox) actBox.innerHTML = ui.atom.buttonBase({ label: "▶ 繼續冒險", theme: 'correct', action: 'resumeStory', style: 'width:100%; max-width:400px; margin:0 auto 10px; padding:14px; font-size:1.1rem;' }) + ui.atom.buttonBase({ label: "🗑️ 放棄並重新開始", theme: 'danger', action: 'abandonStory', style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1.1rem;' });
-        } else {
-            if(box) box.innerHTML = `<div style="text-align:center; padding-top:40px; color:var(--text-muted);">準備好開始新的旅程了嗎？</div>`;
-            if(actBox) actBox.innerHTML = ui.atom.buttonBase({ label: "🔍 開始探索 (5⚡)", theme: 'correct', action: 'exploreStory', style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1.1rem;' });
-        }
-    },
+    this.clearScreen();
+    const box = document.getElementById('story-content');
+    const actBox = document.getElementById('story-actions');
+    const gs = window.SQ.State;
+
+    // 🌟 清除狀態列
+    const oldBar = document.getElementById('story-status-bar');
+    if (oldBar) oldBar.remove();
+
+    if ((window.SQ.Temp.currentSceneNode) || (gs.story && (gs.story.currentNode || gs.story.chain))) {
+        if(box) box.innerHTML = `<div style="text-align:center; padding-top:40px; color:var(--color-gold);">⚠️ 檢測到未完成的冒險</div>`;
+        if(actBox) actBox.innerHTML = 
+            ui.atom.buttonBase({ label: "▶ 繼續冒險", theme: 'correct', action: 'resumeStory', style: 'width:100%; max-width:400px; margin:0 auto 10px; padding:14px; font-size:1.1rem;' }) + 
+            ui.atom.buttonBase({ label: "🗑️ 放棄並重新開始", theme: 'danger', action: 'abandonStory', style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1.1rem;' });
+    } else {
+        if(box) box.innerHTML = `<div style="text-align:center; padding-top:40px; color:var(--text-muted);">準備好開始新的旅程了嗎？</div>`;
+        if(actBox) actBox.innerHTML = 
+            ui.atom.buttonBase({ label: "🔍 開始探索 (5⚡)", theme: 'correct', action: 'exploreStory', style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1.1rem;' });
+    }
+},
 
     disableOptions: function() { const container = document.getElementById('story-actions'); if (!container) return; container.querySelectorAll('button').forEach((btn) => { btn.disabled = true; btn.style.pointerEvents = 'none'; }); },
 
