@@ -28,25 +28,48 @@ window.SQ.Controller.Stats = {
                 }
             },
             saveSkill: () => {
-                const data = window.SQ.Temp.editingSkill;
-                if (!data || !data.name) returnwindow.SQ.Actions.toast("⚠️ 請輸入技能名稱");
+                let data = window.SQ.Temp.editingSkill || {};
+                
+                // 👈 終極防呆：只在「活躍的視窗」裡尋找輸入框，避開隱藏的舊 DOM
+                const activeModal = document.querySelector('.modal-overlay.active, .modal-panel.active') || document;
+                const inputs = activeModal.querySelectorAll('input, textarea');
+                
+                inputs.forEach(input => {
+                    const placeholder = input.placeholder || '';
+                    const val = input.value.trim();
+                    // 模糊比對，不管你的 UI 框架把 ID 命名成什麼都能抓到
+                    if (placeholder.includes('名稱') || input.id.includes('name')) data.name = val;
+                    if (placeholder.includes('圖標') || input.id.includes('icon')) data.icon = val;
+                    if (placeholder.includes('描述') || input.id.includes('desc')) data.desc = val;
+                });
 
-                const result = window.SQ.Engine.Stats.saveSkill(data.name, data.parent, data.editId);
-                if (result.success) {
+                if (!data.name || data.name === '[object Object]') {
+                    return window.SQ.Actions.toast("⚠️ 請正確輸入技能名稱");
+                }
+
+                const result = window.SQ.Engine.Stats.saveSkill(data);
+
+                if (result && result.success) {
                    window.SQ.Actions.closeModal('overlay');
                    window.SQ.Actions.toast("✅ 技能已儲存");
+                   window.SQ.Audio?.play('save'); 
                 } else {
-                   window.SQ.Actions.toast(`❌ ${result.msg}`);
+                   window.SQ.Actions.toast(`❌ ${result ? result.msg : '儲存失敗'}`);
+                   window.SQ.Audio?.feedback('taskUndo'); 
                 }
             },
+
             deleteSkill: (name) => {
                 const doDelete = () => {
                     window.SQ.Engine.Stats.deleteSkill(name);
-                   window.SQ.Actions.closeModal('overlay');
-                   window.SQ.Actions.toast("🗑️ 技能已刪除");
+                    window.SQ.Actions.closeModal('overlay');
+                    window.SQ.Actions.toast("🗑️ 技能已刪除");
+                    window.SQ.Audio?.play('delete');
                 };
-                if(window.sys && sys.confirm) {
-                    sys.confirm(`確定要刪除技能 [${name}] 嗎？`, doDelete);
+                
+                // 👈 修正：確保 sys 前面都有加 window.
+                if(window.sys && window.sys.confirm) {
+                    window.sys.confirm(`確定要刪除技能 [${name}] 嗎？`, doDelete);
                 } else if(confirm(`確定要刪除技能 [${name}] 嗎？`)) {
                     doDelete();
                 }
@@ -109,7 +132,10 @@ window.SQ.Controller.Stats = {
             }
         };
         window.SQ.EventBus.on(E.Stats.UPDATED, refreshStats);
-        window.SQ.EventBus.on(E.Stats.LEVEL_UP, refreshStats);
+        window.SQ.EventBus.on(E.Stats.LEVEL_UP, () => {
+		window.SQ.Audio?.feedback('levelUp'); // 👈 新增這行 (升級音效)
+		refreshStats();
+	});
 
         console.log("✅ StatsController V45.0 Loaded (Auto-Init Active).");
     }

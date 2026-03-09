@@ -53,6 +53,7 @@ window.SQ.Router = {
         }
 
         console.log(`[Router] Go -> ${cleanId}`);
+		window.SQ.Audio?.play('navigate');
 
         // 2. 處理頁面顯示/隱藏
         // 遍歷 Config 中所有定義的頁面 ID

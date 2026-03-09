@@ -25,9 +25,11 @@ window.SQ.Controller.Task = {
 			if (temp.id) {
 				window.SQ.Engine.Task.updateTask(temp);
 				window.SQ.Actions.toast("✅ 已更新");
+				window.SQ.Audio?.play('save'); // 👈 新增這行 (儲存音效)
 			} else {
 				window.SQ.Engine.Task.addTask(temp);
 				window.SQ.Actions.toast("✅ 已新增");
+				window.SQ.Audio?.play('save'); // 👈 新增這行 (新增音效)
 			}
 			
 			window.SQ.Temp.editingTask = null; // ✅ 加上這行！清空殘留狀態
@@ -37,6 +39,7 @@ window.SQ.Controller.Task = {
             deleteTask: (id) => {
                 const doDelete = () => {
                     window.SQ.Engine.Task.deleteTask(id);
+					window.SQ.Audio?.play('delete');
                     if(window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('overlay');
                     window.SQ.Actions.toast('🗑️ 已刪除');
                 };
@@ -44,10 +47,19 @@ window.SQ.Controller.Task = {
                 else if(confirm('確定刪除？')) doDelete();
             },
 
-            toggleTask: function(id) { window.SQ.Engine.Task.resolveTask(id); },
+            toggleTask: function(id) { 
+				window.SQ.Engine.Task.resolveTask(id);
+				window.SQ.Audio?.feedback('taskComplete'); // 👈 修正並新增這行
+			},
             resolveTask: (id) => { window.SQ.Engine.Task.resolveTask(id); },
-            incrementTask: (id) => { window.SQ.Engine.Task.incrementTask(id); },
-            toggleSubtask: (taskId, subIdx) => window.SQ.Engine.Task.toggleSubtask(taskId, subIdx),
+            incrementTask: (id) => { 
+				window.SQ.Engine.Task.incrementTask(id); 
+				window.SQ.Audio?.feedback('click'); // 👈 新增這行 (輕巧點擊音)
+			},
+            toggleSubtask: (taskId, subIdx) => {
+				window.SQ.Engine.Task.toggleSubtask(taskId, subIdx);
+				window.SQ.Audio?.feedback('toggle_on'); // 👈 新增這行 (開關音效)
+			},
 
             copyTask: (id) => {
                 const t = window.SQ.State.tasks.find(x => x.id === id);

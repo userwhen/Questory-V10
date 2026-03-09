@@ -46,7 +46,16 @@ window.SQ.View.Shop = {
         ui.modal.render('📦 物品詳情', ui.composer.centeredModalBody({icon: item.icon||'📦', title: item.name, desc: item.desc || '無描述', extraHtml: `<div style="margin:20px 0; padding:15px; background:var(--bg-box); border-radius:var(--radius-md); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center;">${ui.composer.qtySelector({ idPrefix: 'use-qty', qty: 1, action: 'updateUseQty' })}<div style="margin-top:10px; text-align:center; color:var(--text-ghost); font-weight:normal; font-size:0.9rem;">剩餘: ${item.count}</div></div>`}), `<div style="display:flex; gap:10px; width:100%;">${ui.atom.buttonBase({ label:'🗑️ 丟棄', theme:'danger', style:'flex:1;', action:'useItem', actionVal:'true' })}${ui.atom.buttonBase({ label:'✨ 使用', theme:'correct', style:'flex:2;', action:'useItem', actionVal:'false' })}</div>`, 'panel');
     },
     renderStaminaShop: function() {
-        const gridHtml = `<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; width:100%;">` + [{ name: '小瓶精力藥水', icon: '🧪', recover: 30, price: 10, desc: '回復 30 點精力' },{ name: '中瓶精力藥水', icon: '⚗️', recover: 60, price: 20, desc: '回復 60 點精力' },{ name: '大瓶精力藥水', icon: '💉', recover: 100, price: 30, desc: '精力完全恢復' }].map(p => ui.composer.cardVertical({ title: p.name, subTitle: `<div style="color:var(--color-danger); font-weight:bold;">💎 ${p.price}</div>`, iconHtml: `<div style="font-size:3.5rem; margin-bottom:5px; filter:drop-shadow(var(--shadow-sm));">${p.icon}</div>`, actionBtnHtml: ui.atom.buttonBase({ label: '購買', theme: 'correct', size: 'sm', style: 'width:100%;', action: `buyStamina`, actionId: p.recover, actionVal: p.price }) })).join('') + `</div>`;
-        ui.modal.render('⚡ 精力補給站', `<div style="text-align:center; padding:10px;"><p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:20px;">持有鑽石: <span style="color:var(--color-info); font-weight:bold;">💎 ${(window.SQ.State.freeGem || 0) + (window.SQ.State.paidGem || 0)}</span></p>${gridHtml}</div>`, null, 'overlay');
+        // 👈 改為 display: flex; flex-wrap: wrap; 讓卡片自動換行適應螢幕
+        const gridHtml = `<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; width:100%; box-sizing:border-box;">` + 
+        [{ name: '精力藥水小', icon: '🧪', recover: 30, price: 10, desc: '回復 30 點精力' },
+         { name: '精力藥水中', icon: '⚗️', recover: 60, price: 20, desc: '回復 60 點精力' },
+         { name: '精力藥水大', icon: '💉', recover: 100, price: 30, desc: '精力完全恢復' }].map(p => 
+            `<div style="flex:1; min-width:90px; max-width:130px;">` + // 限制每張卡片的最小/最大寬度
+            ui.composer.cardVertical({ title: p.name, subTitle: `<div style="color:var(--color-danger); font-weight:bold;">💎 ${p.price}</div>`, iconHtml: `<div style="font-size:3rem; margin-bottom:5px; filter:drop-shadow(var(--shadow-sm));">${p.icon}</div>`, actionBtnHtml: ui.atom.buttonBase({ label: '購買', theme: 'correct', size: 'sm', style: 'width:100%;', action: `buyStamina`, actionId: p.recover, actionVal: p.price }) }) + 
+            `</div>`
+        ).join('') + `</div>`;
+        
+        ui.modal.render('⚡ 精力補給站', `<div style="text-align:center; padding:5px;"><p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:15px;">持有鑽石: <span style="color:var(--color-info); font-weight:bold;">💎 ${(window.SQ.State.freeGem || 0) + (window.SQ.State.paidGem || 0)}</span></p>${gridHtml}</div>`, null, 'overlay');
     }
 };

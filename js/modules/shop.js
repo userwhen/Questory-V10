@@ -14,10 +14,13 @@ window.SQ.Engine.Shop = {
 
         // [修改] 為蘋果加入 val: 50 (卡路里數值)
         this.systemPrototypes = [
-            { id: 'sys_apple', name: '蘋果', price: 10, currency: 'gold', maxQty: 99, category: '熱量', val: 50, icon: '🍎', desc: '回復少量熱量 (50kcal)', type: 'daily' },
-            { id: 'sys_potion', name: '精力藥水', price: 50, currency: 'gem', maxQty: 10, category: '其他', icon: '🧪', desc: '回復精力 (需鑽石)', type: 'daily' },
-            { id: 'sys_sword', name: '鐵劍', price: 500, currency: 'gold', maxQty: 1, category: '金錢', icon: '🗡️', desc: '新手冒險者的好夥伴', type: 'once' },
-            { id: 'sys_clock', name: '懷錶', price: 200, currency: 'gold', maxQty: 5, category: '時間', icon: '⏱️', desc: '掌控時間的道具', type: 'daily' }
+            { id: 'sys_food', name: '飽餐一頓', price: 250, currency: 'gold', maxQty: 99, category: '熱量', val: 250, icon: '🍱', desc: '回復 250kcal 熱量', type: 'daily' },
+            { id: 'sys_relax', name: '休閒時光', price: 250, currency: 'gold', maxQty: 99, category: '時間', val: 15, icon: '🎮', desc: '15分鐘的休閒時間', type: 'daily' },
+            { id: 'sys_money', name: '小錢袋', price: 250, currency: 'gold', maxQty: 99, category: '金錢', val: 250, icon: '💰', desc: '獲得 250 金幣', type: 'daily' },
+            { id: 'sys_ticket', name: '放鬆券', price: 250, currency: 'gold', maxQty: 99, category: '其他', val: 0, icon: '🎫', desc: '可以做一件讓自己放鬆的事情', type: 'daily' },
+            { id: 'sys_stamina_s', name: '精力藥水小', price: 10, currency: 'gem', maxQty: 99, category: '其他', val: 30, icon: '🧪', desc: '回復 30 點精力', type: 'daily' },
+            { id: 'sys_stamina_m', name: '精力藥水中', price: 20, currency: 'gem', maxQty: 99, category: '其他', val: 60, icon: '⚗️', desc: '回復 60 點精力', type: 'daily' },
+            { id: 'sys_stamina_l', name: '精力藥水大', price: 30, currency: 'gem', maxQty: 99, category: '其他', val: 100, icon: '💉', desc: '精力完全恢復', type: 'daily' }
         ];
 
         // 🚨 [修復 C-7] 拔除手動檢查，改為監聽 Core 發出的換日廣播
@@ -214,32 +217,59 @@ window.SQ.Engine.Shop = {
         if (!item) return { success: false, msg: "背包中找不到物品" };
 
         let msg = "已使用";
+        const val = parseInt(item.val || 0);
 
-        // 1. 卡路里物品處理 (類別為'熱量'，且有 val 數值)
-        if (item.category === '熱量') {
-            const calories = parseInt(item.val || 0);
-
-            if (calories > 0) {
-                // 初始化熱量紀錄
-                if (!gs.cal) gs.cal = { today: 0, logs: [] };
-
-                gs.cal.today += calories;
-
-                // 寫入日誌
-                const timeStr = new Date().toTimeString().substring(0, 5);
-                gs.cal.logs.unshift(`${timeStr} ${item.name} +${calories}`);
-                if (gs.cal.logs.length > 30) gs.cal.logs.pop();
-
-                msg = `😋 攝取了 ${calories} Kcal`;
+        // 根據不同類別，觸發不同真實效果
+        if (item.category === '熱量' && val > 0) {
+            if (!gs.cal) gs.cal = { today: 0, logs: [] };
+            gs.cal.today += val;
+            gs.cal.logs.unshift(`${new Date().toTimeString().substring(0, 5)} ${item.name} +${val}`);
+            if (gs.cal.logs.length > 30) gs.cal.logs.pop();
+            msg = `😋 攝取了 ${val} Kcal`;
+            if (window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
+        }
+        else if (item.category === '金錢' && val > 0) {
+            gs.gold = (gs.gold || 0) + val;
+            msg = `💰 獲得了 ${val} 金幣`;
+            if (window.SQ.View.Main && window.view.updateHUD) window.view.updateHUD(gs);
+        }
+        else if (item.category === '時間') {
+            // 👈 雙重保險：如果背包裡的舊道具沒有 val，就去商店原型裡抓最新的 val
+            let currentVal = item.val;
+            if (currentVal === undefined) {
+                // 去系統商品或自訂商品裡找找看
+                const proto = this.systemPrototypes.find(p => p.id === item.id) || 
+                              gs.shop.user.find(u => u.id === item.id);
+                if (proto) currentVal = proto.val;
+            }
+            const minutes = parseInt(currentVal || 15); // 如果都找不到，最後才預設 15
+            if (window.SQ.Timer) {
+                if (window.SQ.Actions && window.SQ.Actions.closeModal) {
+                    window.SQ.Actions.closeModal('panel');
+                    window.SQ.Actions.closeModal('overlay');
+                }
+                setTimeout(() => {
+                    window.SQ.Timer.open({
+                        defaultMode: 'countdown',
+                        defaultMinutes: minutes // 正確傳遞分鐘數
+                    });
+                }, 300);
+            }
+            msg = `⏱️ 開啟 ${minutes} 分鐘計時器`;
+        }
+        else if (item.category === '其他') {
+            if (item.id.includes('stamina')) {
+                // 呼叫恢復精力邏輯，cost 為 0 因為是從背包使用的
+                const res = this.recoverStamina(val, 0); 
+                msg = `⚡ 恢復了 ${val} 點精力`;
+                if (window.SQ.View.Main && window.view.updateHUD) window.view.updateHUD(gs);
+            } else {
+                msg = `🎫 使用了${item.name}，好好放鬆一下吧！`;
             }
         }
 
-        // 2. 消耗物品
+        // 消耗物品
         this.discardItem(id, 1);
-        
-        // 3. 通知更新 (主要為了刷新 Stats View 的熱量表)
-        if (window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
-
         return { success: true, msg: msg };
     },
     discardItem: function(id, qty) {

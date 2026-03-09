@@ -31,7 +31,24 @@ window.DefaultData = {
     // 商店自訂商品
     shop: { user: [] }, 
     
-    settings: { mode: 'adventurer', calMode: false, calMax: 2000, strictMode: false },
+    settings: {
+    mode: 'adventurer',
+    calMode: false,
+    calMax: 2000,
+    strictMode: false,
+    // 通知
+    notificationEnabled: false,
+    notifyDailyHour: 9,
+    notifyDailyMinute: 0,
+    notifyStreakHour: 21,
+    notifyStreakMinute: 0,
+    notifyDeadline: true,
+    // 音效
+    soundEnabled: true,
+    musicEnabled: false,
+    vibrationEnabled: true,
+    volume: 0.7
+	},
     unlocks: { basic: true, feature_cal: false, feature_strict: false },
     cal: { today: 0, logs: [] },
     taskCats: ['每日', '運動', '工作', '待辦', '願望']

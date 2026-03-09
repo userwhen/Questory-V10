@@ -29,69 +29,91 @@ window.SQ.Controller.Shop = {
             openPayment: () => { if(window.SQ.View.Shop) window.SQ.View.Shop.renderPayment(); },
             
             // --- 購買邏輯 ---
-            updateBuyQty: (delta) => {
+            updateBuyQty: (arg1, arg2) => {
+                const deltaStr = String((arg2 !== undefined) ? arg2 : arg1);
                 let qty = window.SQ.Temp.buyQty || 1;
-                const max = window.SQ.Temp.buyMax || 999;
+                const max = window.SQ.Temp.buyMax || 99; // 防呆上限 99
                 
-                if (delta === 'min') qty = 1;
-                else if (delta === 'max') qty = max;
-                else qty += delta;
-
+                if (deltaStr === 'min') qty = 1;
+                else if (deltaStr === 'max') qty = max;
+                else qty += parseInt(deltaStr.replace('+', ''), 10) || 0; 
+                
                 if (qty < 1) qty = 1;
                 if (qty > max) qty = max;
-                
                 window.SQ.Temp.buyQty = qty;
                 
-                const qtyDisplay = document.getElementById('buy-qty-display');
+                // 👈 暴力網羅所有可能的 ID 名稱
+                const display = document.getElementById('buy-qty') || 
+                                document.getElementById('buy-qty-val') || 
+                                document.getElementById('buy-qty-display');
+                
+                if (display) {
+                    if (display.tagName === 'INPUT') display.value = qty;
+                    else display.innerText = qty;
+                }
+                
                 const priceDisplay = document.getElementById('buy-total-price');
                 const items = window.SQ.Engine.Shop.getShopItems('全部');
                 const item = items.find(i => i.id === window.SQ.Temp.buyTargetId);
-                
-                if (qtyDisplay) qtyDisplay.innerText = qty;
                 if (item && priceDisplay) priceDisplay.innerText = item.price * qty;
+
+                window.SQ.Audio?.play('click'); 
             },
 
             confirmBuy: () => {
                 const id = window.SQ.Temp.buyTargetId;
                 const qty = window.SQ.Temp.buyQty || 1;
                 const result = window.SQ.Engine.Shop.buyItem(id, qty);
-                if (result.success) {
-                    if(window.SQ.Actions.toast)window.SQ.Actions.toast(`🎉 購買成功！`);
-                    window.SQ.Actions.closeModal('overlay');
+				if (result.success) {
+					if(window.SQ.Actions.toast)window.SQ.Actions.toast(`🎉 購買成功！`);
+					window.SQ.Audio?.feedback('purchase'); // 👈 新增這行 (購買成功音效)
+					window.SQ.Actions.closeModal('overlay');
                     window.SQ.View.Shop.render();
                     if (window.SQ.View.Main && view.updateHUD) view.updateHUD(window.SQ.State);
-                } else {
-                    if(window.SQ.Actions.toast)window.SQ.Actions.toast(`❌ ${result.msg}`);
-                }
+				} else {
+					if(window.SQ.Actions.toast)window.SQ.Actions.toast(`❌ ${result.msg}`);
+					window.SQ.Audio?.feedback('taskUndo'); // 👈 新增這行 (購買失敗音效)
+				}
             },
-			
+
 			// --- 使用與丟棄物品 ---
-            updateUseQty: (delta) => {
+            updateUseQty: (arg1, arg2) => {
+                const deltaStr = String((arg2 !== undefined) ? arg2 : arg1);
                 let qty = window.SQ.Temp.useQty || 1;
                 const max = window.SQ.Temp.useMax || 1; 
                 
-                if (delta === 'min') qty = 1;
-                else if (delta === 'max') qty = max;
-                else qty += delta;
+                if (deltaStr === 'min') qty = 1;
+                else if (deltaStr === 'max') qty = max;
+                else qty += parseInt(deltaStr.replace('+', ''), 10) || 0; 
                 
                 if (qty < 1) qty = 1;
                 if (qty > max) qty = max;
-                
                 window.SQ.Temp.useQty = qty;
                 
-                const qtyDisplay = document.getElementById('use-qty-display');
-                if (qtyDisplay) qtyDisplay.innerText = qty;
+                const display = document.getElementById('use-qty') || 
+                                document.getElementById('use-qty-val') || 
+                                document.getElementById('use-qty-display');
+                if (display) {
+                    if (display.tagName === 'INPUT') display.value = qty;
+                    else display.innerText = qty;
+                }
+                
+                window.SQ.Audio?.play('click'); 
             },
 
             useItem: (isDiscard) => {
                 const id = window.SQ.Temp.useTargetId;
-                if (isDiscard) {
-                    window.SQ.Engine.Shop.discardItem(id, 1);
-                    if(window.SQ.Actions.toast)window.SQ.Actions.toast('🗑️ 已丟棄 1 個');
-                } else {
-                    const res = window.SQ.Engine.Shop.useItem(id);
-                    if(window.SQ.Actions.toast)window.SQ.Actions.toast(res.success ? (res.msg || '✅ 使用成功') : '❌ 無法使用');
-                }
+				if (isDiscard) {
+					window.SQ.Engine.Shop.discardItem(id, 1);
+					if(window.SQ.Actions.toast)window.SQ.Actions.toast('🗑️ 已丟棄 1 個');
+					window.SQ.Audio?.play('delete'); // 👈 新增：丟棄物品音效
+				} else {
+					const res = window.SQ.Engine.Shop.useItem(id);
+					if(window.SQ.Actions.toast)window.SQ.Actions.toast(res.success ? (res.msg || '✅ 使用成功') : '❌ 無法使用');
+					// 👈 新增：依照成功或失敗給予不同音效
+					if (res.success) window.SQ.Audio?.feedback('achievement'); // 或用一個代表魔法/喝藥水的專屬音效
+					else window.SQ.Audio?.feedback('taskUndo');
+				}
                 window.SQ.Actions.closeModal('panel');
                 window.SQ.View.Shop.render(); 
                 if (window.SQ.View.Main && view.updateHUD) view.updateHUD(window.SQ.State);

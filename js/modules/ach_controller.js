@@ -55,12 +55,14 @@ window.SQ.Controller.Ach = {
             // C. 領取獎勵
             claimReward: (id) => {
                 const result = window.SQ.Engine.Ach.claimReward(id);
-                if (result.success) {
-                    const r = result.reward;
-                    window.SQ.Actions.toast(`🎉 領取成功！ +${r.gold}💰 +${r.exp}✨`);
-                } else {
-                    window.SQ.Actions.toast(`❌ ${result.msg}`);
-                }
+				if (result.success) {
+					const r = result.reward;
+					window.SQ.Actions.toast(`🎉 領取成功！ +${r.gold}💰 +${r.exp}✨`);
+					window.SQ.Audio?.feedback('achievement'); // 👈 新增這行 (成就達成音效)
+				} else {
+					window.SQ.Actions.toast(`❌ ${result.msg}`);
+					window.SQ.Audio?.feedback('taskUndo'); // 👈 新增這行 (領取失敗音效)
+				}
             },
 
             // D. 刪除
@@ -84,6 +86,7 @@ window.SQ.Controller.Ach = {
                         window.SQ.Engine.Ach._saveAndNotify();
                     }
                     window.SQ.Actions.toast("✅ 今日簽到成功！");
+					window.SQ.Audio?.feedback('taskComplete');
                 }
             }
         });

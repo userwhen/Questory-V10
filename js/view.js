@@ -194,7 +194,6 @@ ui.smart = {
         if (t.type === 'count') {
             subtaskHtml = `<div style="margin-top:8px; border-top:1px dashed var(--border); padding-top:8px; display:flex; justify-content:space-between; align-items:center; cursor:default;" data-stop="true"><span style="font-weight:bold; color:var(--color-gold-dark);">目前進度: ${t.curr} / ${t.target}</span><button class="u-btn u-btn-sm u-btn-correct" data-action="incrementTask" data-id="${t.id}">+1 次數</button></div>`;
         } else if (t.subs && t.subs.length > 0) {
-            // [移除 onmouseover/onmouseout] 改用 pure CSS class (需確保 style.css 裡有支援，或者單純移除 hover 效果保證安全)
             subtaskHtml = `<div style="margin-top:8px; border-top:1px dashed var(--border); padding-top:8px; cursor:default;" data-stop="true">` + t.subs.map((sub, idx) => `<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer; padding:6px 4px; border-radius:4px; transition:background 0.2s;" data-action="toggleSubtask" data-id="${t.id}" data-val="${idx}"><div class="chk ${sub.done?'checked':''}" style="width:18px; height:18px; border:1px solid ${sub.done?'var(--color-correct)':'var(--text-ghost)'}; border-radius:4px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${sub.done ? '<span style="color:#fff; font-size:12px; font-weight:bold;">✓</span>' : ''}</div><div style="font-size:0.9rem; ${sub.done?'text-decoration:line-through; opacity:0.5;':''} flex:1; user-select:none;">${sub.text}</div></div>`).join('') + `</div>`;
         }
 
@@ -202,7 +201,23 @@ ui.smart = {
         const dateDisplay = dateValue ? `<div style="text-align:right; font-size:0.8rem; opacity:0.6; margin-top:8px;">📅 ${dateValue}</div>` : '';
         const isExpanded = window.SQ.Temp && window.SQ.Temp.expandedTaskId === t.id;
         
-        return `<div class="task-card ${t.done?'status-done':''}" data-action="toggleCardExpand" data-id="${t.id}"><div class="task-main-row"> ${leftHtml}<div class="task-content">${titleRow}${progressRow}</div><div>${rightHtml}</div></div><div id="expand-${t.id}" style="${isExpanded?'display:block;':'display:none;'} padding-top:10px; margin-top:10px; font-size:0.9rem; border-top:1px dashed var(--border); opacity:0.8; padding-left: 36px;">${t.desc ? `<div style="margin-bottom:8px; line-height:1.4;">${t.desc}</div>` : ''} ${subtaskHtml}${dateDisplay}</div></div>`;
+        // 2. 定義展開後的完整標題 HTML (可換行)
+        const expandedTitleHtml = `<div style="margin-bottom:8px; font-size:1rem; font-weight:bold; color:var(--text); white-space:normal; word-break:break-word; line-height:1.4;">📖 ${t.title}</div>`;
+
+        // 3. 套用新的 return 結構
+        return `<div class="task-card ${t.done?'status-done':''}" data-action="toggleCardExpand" data-id="${t.id}">
+            <div class="task-main-row"> 
+                ${leftHtml}
+                <div class="task-content">${titleRow}${progressRow}</div>
+                <div>${rightHtml}</div>
+            </div>
+            <div id="expand-${t.id}" style="${isExpanded?'display:block;':'display:none;'} padding-top:10px; margin-top:10px; font-size:0.9rem; border-top:1px dashed var(--border); padding-left: 36px;">
+                ${expandedTitleHtml}
+                ${t.desc ? `<div style="margin-bottom:8px; line-height:1.4; opacity:0.8;">${t.desc}</div>` : ''} 
+                ${subtaskHtml}
+                ${dateDisplay}
+            </div>
+        </div>`;
     },
 
     shopItem: (item, editBtnHtml = '') => {

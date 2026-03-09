@@ -108,13 +108,18 @@ window.App = {
         
         if (window.SQ.Core.checkDailyReset) window.SQ.Core.checkDailyReset();
 
-        setTimeout(() => {
-            if (window.SQ.Actions?.navigate) {
-                if (window.Router) window.Router.init();
-                window.SQ.Actions.navigate('main');
+		// ── 新增：音效與通知系統初始化 ──
+		if (window.SQ.Audio) window.SQ.Audio.init();
+		if (window.SQ.Notification) window.SQ.Notification.init();
+		// ── 新增結束 ──
+
+		setTimeout(() => {
+			if (window.SQ.Actions?.navigate) {
+				if (window.Router) window.Router.init();
+				window.SQ.Actions.navigate('main');
 				if (window.SQ.Actions.checkTutorial) window.SQ.Actions.checkTutorial();
-            }
-        }, 100);
+			}
+		}, 100);
     },
 
     saveData: function() {
