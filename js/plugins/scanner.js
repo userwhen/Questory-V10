@@ -1,21 +1,36 @@
-/* www/js/modules/scanner.js - V1.0 */
+/* www/js/modules/scanner.js - V2.0 */
 /* 條碼掃描 + Open Food Facts 查詢 */
-/* 需要: @capacitor-community/barcode-scanner */
+/* 使用: @capacitor-community/barcode-scanner (最新版 API) */
 window.SQ = window.SQ || {};
 window.SQ.Scanner = {
 
     // ── 主流程：掃描 → 查詢 → 回傳結果 ──────────────────
     scan: async function() {
+        // Pro 功能鎖
+        if (window.SQ.Sub) {
+            const check = window.SQ.Sub.canUseScanner();
+            if (!check.ok) {
+                window.SQ.Sub.showUpgradePrompt(check.reason);
+                return null;
+            }
+        }
+
         // 非 Capacitor 環境：顯示手動輸入條碼的備用介面
-        if (!window.Capacitor || !Capacitor.Plugins?.BarcodeScanner) {
+        if (!window.Capacitor) {
+            return this._manualFallback();
+        }
+
+        // ✅ [修正] 最新版 API 改為從 Capacitor.Plugins 取得，且方法名稱已更新
+        const BSC = Capacitor.Plugins?.BarcodeScanner;
+        if (!BSC) {
             return this._manualFallback();
         }
 
         try {
-            const { BarcodeScanner } = Capacitor.Plugins;
+            // ✅ [修正] 最新版權限 API: checkPermission (singular) + force 參數
+            // @capacitor-community/barcode-scanner 仍使用 checkPermission({ force })
+            const status = await BSC.checkPermission({ force: true });
 
-            // 確認相機權限
-            const status = await BarcodeScanner.checkPermission({ force: true });
             if (!status.granted) {
                 window.SQ.Actions?.toast('❌ 需要相機權限才能掃描');
                 return null;
@@ -23,13 +38,13 @@ window.SQ.Scanner = {
 
             // 準備掃描：隱藏 app 背景讓相機可見
             document.body.classList.add('sq-scanner-active');
-            BarcodeScanner.hideBackground();
+            BSC.hideBackground();
 
-            const result = await BarcodeScanner.startScan();
+            const result = await BSC.startScan();
 
             // 還原 app 背景
             document.body.classList.remove('sq-scanner-active');
-            BarcodeScanner.showBackground();
+            BSC.showBackground();
 
             if (!result.hasContent) {
                 window.SQ.Actions?.toast('⚠️ 未能讀取條碼');
@@ -42,6 +57,8 @@ window.SQ.Scanner = {
 
         } catch (e) {
             document.body.classList.remove('sq-scanner-active');
+            // 嘗試還原背景
+            try { Capacitor.Plugins?.BarcodeScanner?.showBackground(); } catch(_) {}
             console.error('[Scanner]', e);
             window.SQ.Actions?.toast('❌ 掃描失敗，請手動輸入');
             return null;
@@ -49,45 +66,73 @@ window.SQ.Scanner = {
     },
 
     // ── Open Food Facts API 查詢 ─────────────────────────
+    // ✅ [修正] 查詢策略：
+    //   1. 先查 world (全球庫)
+    //   2. 若無結果，改查 tw (台灣庫) 補漏
+    //   3. 兩個 energy 欄位都嘗試，避免漏掉
     _lookupBarcode: async function(barcode) {
-        const url = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
-        try {
-            const res  = await fetch(url, { signal: AbortSignal.timeout(8000) });
-            const data = await res.json();
+        // 策略：先查全球庫，再查台灣庫
+        const endpoints = [
+            `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`,
+            `https://tw.openfoodfacts.org/api/v0/product/${barcode}.json`
+        ];
 
-            if (data.status !== 1 || !data.product) {
-                return { found: false, barcode };
+        for (const url of endpoints) {
+            try {
+                const res = await fetch(url, {
+                    signal: AbortSignal.timeout(8000),
+                    headers: {
+                        // ✅ 告知 OFF 我們是哪個 App（建議做法，避免被限流）
+                        'User-Agent': 'Questory/1.0 (Android; questory@example.com)'
+                    }
+                });
+                const data = await res.json();
+
+                if (data.status !== 1 || !data.product) continue; // 這個 endpoint 找不到，試下一個
+
+                const p = data.product;
+                const nutriments = p.nutriments || {};
+
+                // ✅ [修正] 完整的卡路里欄位優先序（OFF 資料不統一，要多試）
+                const kcalPer100 =
+                    nutriments['energy-kcal_100g']          ||  // 標準欄位
+                    nutriments['energy-kcal']               ||  // 備用
+                    (nutriments['energy_100g']
+                        ? Math.round(nutriments['energy_100g'] / 4.184)
+                        : null)                             ||  // 從 kJ 換算
+                    (nutriments['energy-kj_100g']
+                        ? Math.round(nutriments['energy-kj_100g'] / 4.184)
+                        : null)                             ||  // kJ 另一個欄位
+                    null;
+
+                const brand   = p.brands ? p.brands.split(',')[0].trim() : '';
+                const rawName =
+                    p.product_name_zh ||
+                    p.product_name_tw ||
+                    p.product_name_zh_TW ||
+                    p.product_name ||
+                    '';
+                const name = (brand && rawName)
+                    ? `${brand} ${rawName}`
+                    : (rawName || brand || '未知商品');
+
+                return {
+                    found:   true,
+                    barcode,
+                    name:    name.trim().slice(0, 30),
+                    kcal:    kcalPer100 ? Math.round(kcalPer100) : null,
+                    brand,
+                    serving: p.serving_size || null,
+                };
+
+            } catch (e) {
+                console.warn('[Scanner] lookup failed for', url, e);
+                // 繼續嘗試下一個 endpoint
             }
-
-            const p      = data.product;
-            const nutriments = p.nutriments || {};
-
-            // 優先用每 100g 數值（台灣標示慣例），其次用 per_serving
-            const kcalPer100 = nutriments['energy-kcal_100g']
-                            || nutriments['energy-kcal']
-                            || Math.round((nutriments['energy_100g'] || 0) / 4.184);
-
-            // 品牌 + 名稱組合
-            const brand   = p.brands || '';
-            const rawName = p.product_name_zh
-                         || p.product_name_tw
-                         || p.product_name
-                         || '';
-            const name = brand && rawName ? `${brand} ${rawName}` : (rawName || brand || '未知商品');
-
-            return {
-                found:   true,
-                barcode,
-                name:    name.trim().slice(0, 30), // 最多30字
-                kcal:    kcalPer100 ? Math.round(kcalPer100) : null,
-                brand,
-                serving: p.serving_size || null,
-            };
-
-        } catch (e) {
-            console.error('[Scanner] lookup failed', e);
-            return { found: false, barcode, error: '網路錯誤' };
         }
+
+        // 兩個 endpoint 都失敗
+        return { found: false, barcode, error: '找不到商品或網路錯誤' };
     },
 
     // ── 非 App 環境的備用介面（手動輸入條碼號碼）────────

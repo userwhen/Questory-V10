@@ -1,4 +1,4 @@
-/* js/modules/settings_view.js - V55.0 */
+/* js/modules/settings_view.js - V56.0 */
 window.SQ = window.SQ || {};
 window.SQ.View = window.SQ.View || {};
 window.SQ.View.Settings = {
@@ -141,6 +141,52 @@ window.SQ.View.Settings = {
         // ── 組合主體 ───────────────────────────────────────
         const bodyHtml = `
 
+        <!-- 0. Pro 訂閱狀態 -->
+        ${(() => {
+            const isPro = window.SQ.Sub?.isProOrTrial() || false;
+            const inTrial = window.SQ.Sub?.isInTrial() || false;
+            const expiry = window.SQ.Sub?.expiryLabel() || '';
+            if (isPro) {
+                const badge = inTrial ? '🎯 試用中' : '👑 Pro';
+                const sub = window.SQ.State?.subscription || {};
+                const expiryTxt = expiry ? `有效至 ${expiry}` : '';
+                return `
+                <div style="margin-bottom:12px; padding:12px 14px; border-radius:12px;
+                            background:var(--color-gold-soft);
+                            border:1px solid var(--color-gold); display:flex; align-items:center;
+                            justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:1.3rem;">👑</span>
+                        <div>
+                            <div style="font-weight:700; color:var(--color-gold-dark); font-size:0.88rem;">${badge} 已啟用</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted);">${expiryTxt || '無使用限制'}</div>
+                        </div>
+                    </div>
+                    <button data-action="cancelSubscription"
+                            style="background:none; border:none; cursor:pointer;
+                                   font-size:0.7rem; color:var(--text-ghost); text-decoration:underline;">
+                        管理
+                    </button>
+                </div>`;
+            } else {
+                return `
+                <div data-action="openSubscribePage"
+                     style="margin-bottom:12px; padding:11px 14px; border-radius:12px; cursor:pointer;
+                            background:var(--bg-elevated);
+                            border:1px solid var(--border); display:flex; align-items:center;
+                            justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:1.2rem; opacity:0.75;">✨</span>
+                        <div>
+                            <div style="font-weight:600; color:var(--text-2); font-size:0.86rem;">解鎖進階功能</div>
+                            <div style="font-size:0.7rem; color:var(--text-ghost);">無限分類・Focus Lock・主題自訂</div>
+                        </div>
+                    </div>
+                    <span style="color:var(--text-ghost); font-size:0.9rem;">›</span>
+                </div>`;
+            }
+        })()}
+
         <!-- 1. 核心設定 -->
         <div class="u-box">
             ${ui.composer.formField({ label:'核心設定',
@@ -149,13 +195,17 @@ window.SQ.View.Settings = {
                     action:'updateSettingsDraft', actionId:'mode', options: modeOptions
                 })
             })}
+
             <div data-action="openSettingsShop"
                  style="margin-top:10px;padding:12px;border:1px solid var(--color-gold);
                         background:var(--color-gold-soft);border-radius:var(--radius-sm);
                         cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
                 <div style="display:flex;align-items:center;gap:8px;">
                     <span>🛒</span>
-                    <span style="font-weight:bold;color:var(--color-gold-dark);">前往模式商店</span>
+                    <div>
+                        <div style="font-weight:bold;color:var(--color-gold-dark);">前往模式商店</div>
+                        <div style="font-size:0.7rem;color:var(--text-muted);">解鎖劇情模式・DLC 功能</div>
+                    </div>
                 </div>
                 <span style="color:var(--color-gold-dark);">&gt;</span>
             </div>
@@ -190,7 +240,9 @@ window.SQ.View.Settings = {
             <div class="section-title" style="margin-bottom:10px;">🔔 通知設定</div>
             ${renderToggle('toggleNotification','','開啟推播通知', notifOn, false)}
             ${notifOn ? `
-            <div style="margin-top:10px;">
+            <div style="margin-top:8px;">
+                ${renderToggle('updateNotifySetting','notifyDeadline','⏰ 截止日當天提醒', s.notifyDeadline!==false, false)}
+                <div style="border-top:1px solid var(--border-light); margin-top:4px;"></div>
                 <div style="display:flex;align-items:center;justify-content:space-between;
                             padding:10px 0;border-bottom:1px solid var(--border-light);">
                     <div>
@@ -200,14 +252,13 @@ window.SQ.View.Settings = {
                     ${timeInput('daily', s.notifyDailyHour??9, s.notifyDailyMinute??0, 'notifyDaily')}
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;
-                            padding:10px 0;border-bottom:1px solid var(--border-light);">
+                            padding:10px 0;">
                     <div>
                         <div style="font-size:0.9rem;color:var(--text);">🔥 連續天數警告</div>
                         <div style="font-size:0.75rem;color:var(--text-muted);">當天尚未登入時提醒</div>
                     </div>
                     ${timeInput('streak', s.notifyStreakHour??21, s.notifyStreakMinute??0, 'notifyStreak')}
                 </div>
-                ${renderToggle('updateNotifySetting','notifyDeadline','⏰ 截止日當天提醒', s.notifyDeadline!==false, false)}
                 <button data-action="saveNotifySettings"
                     style="width:100%;margin-top:12px;padding:10px;border-radius:10px;
                            border:none;cursor:pointer;background:var(--color-gold);
@@ -235,6 +286,99 @@ window.SQ.View.Settings = {
             'panel');
     },
 
+    renderSubscribePage: function() {
+        const isPro = window.SQ.Sub?.isPro() || false;
+        const inTrial = window.SQ.Sub?.isInTrial() || false;
+        const trialUsed = window.SQ.State?.subscription?.trialUsed || false;
+        const isMock = !window.SQ.Sub || window.SQ.Sub.SUB_MODE === 'mock';
+
+        const features = [
+            { icon:'♾️', text:'無限任務與分類（免費限 20 個 / 3 類）' },
+            { icon:'🔒', text:'Focus Lock 專注鎖定模式' },
+            { icon:'📅', text:'行事曆同步（寫入 + 截止日提醒）' },
+            { icon:'📷', text:'條碼掃描（自動帶入食物熱量）' },
+            { icon:'🎨', text:'外觀主題切換（深木 / 明亮 / 夜間）' },
+            { icon:'👑', text:'Pro 會員標籤' },
+        ];
+
+        const featureList = features.map(f => `
+            <div style="display:flex; align-items:center; gap:10px; padding:8px 0;
+                        border-bottom:1px solid rgba(0,0,0,0.05);">
+                <span style="font-size:1.1rem; width:24px; text-align:center;">${f.icon}</span>
+                <span style="font-size:0.88rem; color:#333;">${f.text}</span>
+                <span style="margin-left:auto; color:var(--color-correct); font-weight:700;">✓</span>
+            </div>`).join('');
+
+        const mockNote = isMock ? `
+            <div style="margin-bottom:14px; padding:8px 12px; border-radius:10px;
+                        background:rgba(255,152,0,0.1); border:1px solid rgba(255,152,0,0.3);
+                        font-size:0.75rem; color:#e65100; text-align:center;">
+                ⚙️ 測試模式：點擊直接啟用，不會實際扣款
+            </div>` : '';
+
+        const trialBtn = !trialUsed && !isPro && !inTrial ? `
+            <button data-action="startTrialAndClose"
+                    style="width:100%; padding:14px; border-radius:50px; border:1.5px solid var(--color-gold);
+                           background:var(--bg-card); cursor:pointer; font-weight:800; color:var(--color-gold-dark);
+                           font-size:0.95rem; margin-bottom:10px;">
+                🎯 免費試用 7 天
+            </button>` : '';
+
+        const bodyHtml = `
+            <div style="padding:4px 2px;">
+                ${mockNote}
+                <div style="text-align:center; margin-bottom:20px;">
+                    <div style="font-size:2.5rem; margin-bottom:6px;">👑</div>
+                    <div style="font-size:1.1rem; font-weight:800; color:var(--text);">Questory Pro</div>
+                    <div style="font-size:0.8rem; color:#888; margin-top:4px;">解鎖全部功能，支持持續開發</div>
+                </div>
+
+                <div style="background:var(--bg-elevated); border-radius:16px; padding:12px 16px;
+                            margin-bottom:20px;">
+                    ${featureList}
+                </div>
+
+                ${trialBtn}
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+                    <button data-action="subscribePro" data-val="${window.SQ.Sub?.SKU_MONTHLY || 'sub_pro_monthly'}"
+                            style="padding:16px 10px; border-radius:16px; border:1px solid var(--border);
+                                   background:var(--bg-card); cursor:pointer; text-align:center;
+                                   display:flex; flex-direction:column; align-items:center; gap:4px;">
+                        <div style="font-size:0.75rem; color:#888;">月訂閱</div>
+                        <div style="font-size:1.3rem; font-weight:800; color:var(--text);">
+                            ${isMock ? '免費測試' : 'NT$49'}
+                        </div>
+                        <div style="font-size:0.7rem; color:#aaa;">/ 月</div>
+                    </button>
+                    <button data-action="subscribePro" data-val="${window.SQ.Sub?.SKU_YEARLY || 'sub_pro_yearly'}"
+                            style="padding:16px 10px; border-radius:16px; border:1.5px solid var(--color-gold);
+                                   background:var(--color-gold-soft);
+                                   cursor:pointer; text-align:center; position:relative;
+                                   display:flex; flex-direction:column; align-items:center; gap:4px;">
+                        <div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%);
+                                    background:var(--color-gold); color:var(--color-gold-dark); font-size:0.65rem; font-weight:800;
+                                    padding:2px 10px; border-radius:50px; white-space:nowrap;">
+                            省 32%
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--color-gold-dark); font-weight:700;">年訂閱</div>
+                        <div style="font-size:1.3rem; font-weight:800; color:var(--color-gold-dark);">
+                            ${isMock ? '免費測試' : 'NT$399'}
+                        </div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">/ 年（≈NT$33/月）</div>
+                    </button>
+                </div>
+
+                <button data-action="restoreSubscription"
+                        style="width:100%; background:none; border:none; cursor:pointer;
+                               font-size:0.75rem; color:#bbb; text-decoration:underline; padding:4px;">
+                    恢復先前訂閱
+                </button>
+            </div>`;
+
+        ui.modal.render('👑 升級 Pro', bodyHtml, null, 'overlay');
+    },
+
     renderCalorieModal: function() {
         const val = window.SQ.Temp.settingsDraft?.calMax || window.SQ.State.settings?.calMax || 2000;
         const extraHtml = `
@@ -254,30 +398,78 @@ window.SQ.View.Settings = {
 
     renderSettingsShop: function() {
         if (window.SQ.Temp.activeModal !== 'settingsShop') return;
-        const items = window.SQ.Engine.Settings.shopItems;
-        const unlocks = window.SQ.State.unlocks || {};
-        const listHtml = items.map(item => `
-            <div class="std-card" style="margin-bottom:10px;border-left-color:${item.border};
-                                         ${item.bg?'background:'+item.bg+';':''}">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                    <h4 style="margin:0;color:${item.color};font-size:1.1rem;">${item.name}</h4>
-                    ${item.badge?ui.atom.badgeBase({text:item.badge,
-                        style:'color:var(--color-gold-dark);background:var(--color-gold-soft);'}):''}
-                </div>
-                <p style="font-size:0.9rem;color:var(--text-2);margin-bottom:12px;line-height:1.5;">
-                    ${item.desc}</p>
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <span style="font-weight:bold;color:var(--text-muted);">
-                        ${item.currency==='paid'?'💠':'💎'} ${item.price}</span>
-                    ${unlocks[item.id]
-                        ? `<span style="color:var(--text-ghost);font-size:0.9rem;font-weight:bold;">✅ 已擁有</span>`
-                        : ui.atom.buttonBase({label:'購買',size:'sm',theme:'correct',
-                                              action:'buyMode',actionId:item.id})}
-                </div>
-            </div>`).join('');
-        ui.modal.render('🛒 模式商店',`<div style="padding:10px;">${listHtml}</div>`,null,'overlay');
-    },
+        const items    = window.SQ.Engine.Settings.shopItems;
+        const unlocks  = window.SQ.State.unlocks || {};
+        const settings = window.SQ.State.settings || {};
+        const isPro    = window.SQ.Sub?.isProOrTrial() || false;
+        const curTheme = settings.theme || 'default';
 
+        const themeItems  = items.filter(i => i.type === 'theme');
+        const moduleItems = items.filter(i => i.type === 'module' || !i.type);
+
+        const renderThemeCard = (item) => {
+            const themeKey = item.preview || item.id.replace('theme_','');
+            const isActive = curTheme === themeKey;
+            return `
+            <div style="padding:12px 14px; border-radius:12px; margin-bottom:8px;
+                        background:${item.bg}; border:${isActive ? '2px solid var(--color-gold)' : '1px solid '+item.border};">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="font-size:1.4rem;">${item.name.split(' ')[0]}</div>
+                        <div>
+                            <div style="font-weight:700; color:${item.color}; font-size:0.9rem;">
+                                ${item.name.slice(item.name.indexOf(' ')+1)}
+                            </div>
+                            <div style="font-size:0.72rem; color:${item.color}; opacity:0.7;">${item.desc}</div>
+                        </div>
+                    </div>
+                    ${isActive
+                        ? '<span style="color:var(--color-gold-dark); font-size:0.82rem; font-weight:700;">✓ 使用中</span>'
+                        : isPro
+                            ? ui.atom.buttonBase({label:'套用', size:'sm', theme:'correct',
+                                                  action:'buyMode', actionId: item.id})
+                            : '<div data-action="openSubscribePage" style="font-size:0.75rem; color:var(--text-ghost); cursor:pointer; padding:5px 10px; border-radius:8px; border:1px dashed var(--border);">🔒 Pro</div>'
+                    }
+                </div>
+            </div>`;
+        };
+
+        const renderModuleCard = (item) => {
+            const owned = unlocks[item.id];
+            const priceLabel = item.currency === 'paid' ? ('💠 ' + item.price)
+                             : item.currency === 'pro'  ? '👑 Pro'
+                             : ('💎 ' + item.price);
+            return '<div class="std-card" style="margin-bottom:10px; border-left-color:' + item.border + ';'
+                + (item.bg ? 'background:'+item.bg+';' : '') + '">'
+                + '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">'
+                + '<h4 style="margin:0; color:' + item.color + '; font-size:1rem;">' + item.name + '</h4>'
+                + (item.badge ? ui.atom.badgeBase({text:item.badge, style:'color:var(--color-gold-dark);background:var(--color-gold-soft);'}) : '')
+                + '</div>'
+                + '<p style="font-size:0.85rem; color:var(--text-2); margin-bottom:10px; line-height:1.5;">' + item.desc + '</p>'
+                + '<div style="display:flex; justify-content:space-between; align-items:center;">'
+                + '<span style="font-weight:bold; color:var(--text-muted); font-size:0.85rem;">' + priceLabel + '</span>'
+                + (owned
+                    ? '<span style="color:var(--text-ghost); font-size:0.85rem; font-weight:bold;">✅ 已擁有</span>'
+                    : ui.atom.buttonBase({label:'購買', size:'sm', theme:'correct', action:'buyMode', actionId: item.id}))
+                + '</div></div>';
+        };
+
+        const themeSection = '<div style="margin-bottom:16px;">'
+            + '<div style="font-size:0.7rem; font-weight:700; color:var(--text-muted); letter-spacing:.5px; text-transform:uppercase; margin-bottom:10px;">🎨 主題模式</div>'
+            + themeItems.map(renderThemeCard).join('')
+            + '</div>';
+
+        const moduleSection = moduleItems.length
+            ? '<div>'
+                + '<div style="font-size:0.7rem; font-weight:700; color:var(--text-muted); letter-spacing:.5px; text-transform:uppercase; margin-bottom:10px;">🧩 功能模組</div>'
+                + moduleItems.map(renderModuleCard).join('')
+                + '</div>'
+            : '';
+
+        ui.modal.render('🛒 模式商店',
+            '<div style="padding:10px;">' + themeSection + moduleSection + '</div>',
+            null, 'overlay');
+    },
     renderResetConfirm: function() {
         ui.modal.render('系統警告',
             ui.composer.centeredModalBody({icon:'⚠️',title:'危險操作',

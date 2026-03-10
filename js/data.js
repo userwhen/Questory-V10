@@ -1,4 +1,4 @@
-/* js/data.js - V6.0 Unified Config & Default State */
+/* js/data.js - V7.0 Unified Config & Default State */
 
 // ==========================================
 // 1. 玩家初始預設存檔 (Default State)
@@ -50,6 +50,17 @@ window.DefaultData = {
     volume: 0.7
 	},
     unlocks: { basic: true, feature_cal: false, feature_strict: false },
+
+    // 訂閱狀態（由 subscription.js 管理）
+    subscription: {
+        active:     false,
+        mock:       false,
+        sku:        null,
+        expiresAt:  null,
+        startedAt:  null,
+        trialStart: null,
+        trialUsed:  false,
+    },
     cal: { today: 0, logs: [] },
     taskCats: ['每日', '運動', '工作', '待辦', '願望']
 };

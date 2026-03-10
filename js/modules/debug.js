@@ -46,10 +46,21 @@
                     </div>
                 </div>
                 <div style="${sectionStyle}">
-                    <label style="${labelStyle}">🔓 權限解鎖</label>
+                    <label style="${labelStyle}">🔓 功能解鎖</label>
                     <div style="${gridStyle}">
                         ${btn({label: '🔓 解鎖 DLC', theme: 'ghost', action: "unlockDLC"})}
-                        ${btn({label: '🔒 重置鎖定', theme: 'ghost', action: "resetDLC"})}
+                        ${btn({label: '🔒 重置 DLC', theme: 'ghost', action: "resetDLC"})}
+                        ${btn({label: '👑 啟用 Pro', theme: 'ghost', action: "debugEnablePro"})}
+                        ${btn({label: '🚫 關閉 Pro', theme: 'ghost', action: "debugDisablePro"})}
+                    </div>
+                </div>
+                <div style="${sectionStyle}">
+                    <label style="${labelStyle}">🔌 插件功能模擬</label>
+                    <div style="${gridStyle}">
+                        ${btn({label: '📅 行事曆', theme: 'ghost', action: "debugTogglePlugin", actionId: "calendar"})}
+                        ${btn({label: '📷 掃描器', theme: 'ghost', action: "debugTogglePlugin", actionId: "scanner"})}
+                        ${btn({label: '🔔 通知', theme: 'ghost', action: "debugTogglePlugin", actionId: "notification"})}
+                        ${btn({label: '💎 IAP', theme: 'ghost', action: "debugTogglePlugin", actionId: "iap"})}
                     </div>
                 </div>
                 <div style="border:none; padding-top:10px;">
@@ -143,11 +154,117 @@
 
     resetDLC: () => {
         const gs = window.SQ.State; if(gs.unlocks) { gs.unlocks.feature_cal = false; gs.unlocks.feature_strict = false; }
-        if(window.App) App.saveData();window.SQ.Actions.toast("🔒 DLC 功能已上鎖");
+        if(window.App) App.saveData(); window.SQ.Actions.toast("🔒 DLC 功能已上鎖");
         if(window.SQ.Actions.renderSettings) act.renderSettings();
     },
 
-    runFullDiagnosis: () => { alert("請執行診斷工具以獲得報告。"); },
+    debugEnablePro: () => {
+        const gs = window.SQ.State;
+        if (!gs.subscription) gs.subscription = {};
+        gs.subscription.mock    = true;
+        gs.subscription.active  = true;
+        gs.subscription.expiresAt = Date.now() + 365 * 24 * 60 * 60 * 1000;
+        if(window.App) App.saveData();
+        window.SQ.Actions.toast('👑 Pro 已啟用（測試）');
+        DebugEngine.showMenu();
+    },
+
+    debugDisablePro: () => {
+        const gs = window.SQ.State;
+        if (gs.subscription) {
+            gs.subscription.mock   = false;
+            gs.subscription.active = false;
+            gs.subscription.expiresAt = null;
+        }
+        if(window.App) App.saveData();
+        window.SQ.Actions.toast('🚫 Pro 已關閉');
+        DebugEngine.showMenu();
+    },
+
+    debugTogglePlugin: (pluginId) => {
+        const pluginMap = {
+            calendar:     () => window.SQ.Calendar,
+            scanner:      () => window.SQ.Scanner,
+            notification: () => window.SQ.Notification,
+            iap:          () => window.SQ.IAP,
+        };
+        const plugin = pluginMap[pluginId]?.();
+        if (!plugin) {
+            window.SQ.Actions.toast(`❌ 插件 ${pluginId} 未載入`);
+            return;
+        }
+        // Toggle mock mode if available
+        if ('MOCK_MODE' in plugin) {
+            plugin.MOCK_MODE = !plugin.MOCK_MODE;
+            window.SQ.Actions.toast(`🔌 ${pluginId} mock: ${plugin.MOCK_MODE ? 'ON' : 'OFF'}`);
+        } else if ('IAP_MODE' in plugin) {
+            plugin.IAP_MODE = plugin.IAP_MODE === 'mock' ? 'live' : 'mock';
+            window.SQ.Actions.toast(`🔌 IAP mode: ${plugin.IAP_MODE}`);
+        } else {
+            window.SQ.Actions.toast(`ℹ️ ${pluginId} 已載入，無 mock 開關`);
+        }
+    },
+
+    runFullDiagnosis: () => {
+        const lines = [];
+        const ok  = (label, val) => lines.push(`✅ ${label}: ${val}`);
+        const err = (label, val) => lines.push(`❌ ${label}: ${val}`);
+        const wrn = (label, val) => lines.push(`⚠️ ${label}: ${val}`);
+
+        // ── Audio ────────────────────────────────────────
+        const aud = window.SQ.Audio;
+        if (!aud)                     err('Audio', '模組未載入');
+        else if (!aud._ctx)           wrn('Audio', '已載入，等待首次點擊初始化 AudioContext');
+        else if (!aud._enabled)       wrn('Audio', '已停用（設定關閉）');
+        else                          ok('Audio', `就緒 | 音量 ${Math.round((aud._volume||0)*100)}%`);
+
+        // ── Subscription ─────────────────────────────────
+        const sub = window.SQ.Sub;
+        if (!sub)                     err('Subscription', '模組未載入');
+        else if (sub.isPro())         ok('Subscription', `Pro 有效至 ${sub.expiryLabel()||'無限制'} | mock:${sub.SUB_MODE}`);
+        else if (sub.isInTrial())     ok('Subscription', '試用中');
+        else                          wrn('Subscription', '未訂閱（免費版）');
+
+        // ── IAP ──────────────────────────────────────────
+        const iap = window.SQ.IAP;
+        if (!iap)                     err('IAP', '模組未載入');
+        else                          ok('IAP', `mode:${iap.IAP_MODE} | products:${Object.keys(iap.PRODUCTS||{}).length}`);
+
+        // ── Notification ─────────────────────────────────
+        const s = window.SQ.State?.settings || {};
+        if (!s.notificationEnabled)   wrn('Notification', '未開啟推播');
+        else                          ok('Notification', `開啟 | 每日 ${s.notifyDailyHour??9}:${String(s.notifyDailyMinute??0).padStart(2,'0')}`);
+
+        // ── Calendar ─────────────────────────────────────
+        if (!window.SQ.Calendar)      wrn('Calendar', '模組未載入');
+        else                          ok('Calendar', '已載入');
+
+        // ── Scanner ──────────────────────────────────────
+        if (!window.SQ.Scanner)       wrn('Scanner', '模組未載入');
+        else                          ok('Scanner', '已載入');
+
+        // ── State ────────────────────────────────────────
+        const gs = window.SQ.State;
+        if (!gs)                      err('State', '未初始化');
+        else {
+            ok('Tasks', `共 ${(gs.tasks||[]).length} 個 | 未完成 ${(gs.tasks||[]).filter(t=>!t.done).length}`);
+            ok('Player', `Lv.${gs.lv||1} | Gold:${gs.gold||0} | Gem:${(gs.freeGem||0)+(gs.paidGem||0)}`);
+        }
+
+        const body = lines.map(l => {
+            const color = l.startsWith('✅') ? 'var(--color-correct)' 
+                        : l.startsWith('❌') ? 'var(--color-danger)'
+                        : 'var(--color-gold-dark)';
+            return `<div style="padding:6px 0; border-bottom:1px solid var(--border);
+                                font-size:0.82rem; color:${color};">${l}</div>`;
+        }).join('');
+
+        ui.modal.render('🩺 系統診斷報告',
+            `<div style="padding:5px 10px;">${body}</div>`,
+            ui.atom.buttonBase({label:'關閉', theme:'normal', style:'width:100%;',
+                action:'closeModal', actionId:'m-panel'}),
+            'panel');
+    },
 
     triggerDevMode: () => {
         if (DebugEngine.clickTimer) clearTimeout(DebugEngine.clickTimer);
@@ -165,4 +282,21 @@
 };
 
 window.Debug = DebugEngine;
-	window.SQ.Actions.triggerDevMode = DebugEngine.triggerDevMode;}
+    window.SQ.Actions.triggerDevMode     = DebugEngine.triggerDevMode;
+    window.SQ.Actions.debugEnablePro     = DebugEngine.debugEnablePro;
+    window.SQ.Actions.debugDisablePro    = DebugEngine.debugDisablePro;
+    window.SQ.Actions.debugTogglePlugin  = DebugEngine.debugTogglePlugin;
+    window.SQ.Actions.unlockDLC          = DebugEngine.unlockDLC;
+    window.SQ.Actions.resetDLC           = DebugEngine.resetDLC;
+    window.SQ.Actions.runFullDiagnosis   = DebugEngine.runFullDiagnosis;
+    window.SQ.Actions.timeMachine        = DebugEngine.timeMachine;
+    window.SQ.Actions.cheat              = DebugEngine.cheat;
+    window.SQ.Actions.setMaxEnergy100    = DebugEngine.setMaxEnergy100;
+    window.SQ.Actions.toggleDevMode      = DebugEngine.toggleDevMode;
+    window.SQ.Actions.reloadApp          = DebugEngine.reloadApp;
+    window.SQ.Actions.selectShopIcon     = (ico) => {
+        // fallback if shop_controller not loaded yet
+        if (window.SQ.Controller?.Shop?.selectShopIcon) {
+            window.SQ.Controller.Shop.selectShopIcon(ico);
+        }
+    };}

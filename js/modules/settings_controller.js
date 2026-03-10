@@ -1,4 +1,4 @@
-/* js/modules/settings_controller.js - V55.0 */
+/* js/modules/settings_controller.js - V56.0 */
 window.SQ = window.SQ || {};
 window.SQ.Controller = window.SQ.Controller || {};
 window.SQ.Controller.Settings = {
@@ -95,6 +95,76 @@ window.SQ.Controller.Settings = {
                     if (window.sys && sys.confirm) sys.confirm(msg, doImport);
                     else if (confirm(msg)) doImport();
                 });
+            },
+
+            // ── 訂閱相關 ─────────────────────────────────────
+            openSubscribePage: () => {
+                if (window.SQ.View.Settings) window.SQ.View.Settings.renderSubscribePage();
+            },
+
+            subscribePro: async (sku) => {
+                if (!window.SQ.Sub) {
+                    window.SQ.Actions.toast('❌ 訂閱模組未載入');
+                    return;
+                }
+                await window.SQ.Sub.subscribe(sku);
+                if (window.SQ.View.Settings) window.SQ.View.Settings.render();
+            },
+
+            startTrial: () => {
+                if (!window.SQ.Sub) return;
+                window.SQ.Sub.startTrial();
+                if (window.SQ.View.Settings) window.SQ.View.Settings.render();
+            },
+
+            startTrialAndClose: () => {
+                if (!window.SQ.Sub) return;
+                const ok = window.SQ.Sub.startTrial();
+                if (!ok) return;
+                // 關閉所有 modal 並跳回主頁
+                ui?.modal?.close('m-overlay');
+                ui?.modal?.close('m-panel');
+                setTimeout(() => {
+                    window.SQ.Actions.navigate?.('main');
+                }, 150);
+            },
+
+            restoreSubscription: async () => {
+                if (!window.SQ.Sub) return;
+                await window.SQ.Sub.restoreSubscription();
+            },
+
+            cancelSubscription: () => {
+                if (!window.SQ.Sub) return;
+                window.SQ.Sub.cancelSubscription();
+            },
+
+            applyTheme: (theme) => {
+                // Pro 功能鎖
+                if (theme !== 'default' && window.SQ.Sub) {
+                    const check = window.SQ.Sub.canUseTheme();
+                    if (!check.ok) {
+                        window.SQ.Sub.showUpgradePrompt(check.reason);
+                        return;
+                    }
+                }
+                if (window.SQ.Engine.Settings?.applyTheme) {
+                    window.SQ.Engine.Settings.applyTheme(theme);
+                    window.SQ.Actions.save();
+                    window.SQ.Audio?.play('save');
+                    if (window.SQ.View.Settings) window.SQ.View.Settings.render();
+                }
+            },
+
+            // ── 重新教學 ──────────────────────────────────────
+            restartTutorial: () => {
+                if (window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('panel');
+                if (window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('overlay');
+                if (window.SQ.Actions.restartTutorial) {
+                    window.SQ.Actions.restartTutorial();
+                } else {
+                    window.SQ.Actions.toast('❌ 教學模組未載入');
+                }
             },
 
             // ── 即時音效開關（直接改 State 並重繪）─────────

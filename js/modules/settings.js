@@ -4,18 +4,23 @@ window.SQ.Engine = window.SQ.Engine || {};
 window.SQ.Engine.Settings = {
     // 商店商品定義
     shopItems: [
-        { 
-            id: 'harem', name: '💕 后宮模式', 
-            desc: '沈浸式體驗，專注於角色互動與好感度培養。',
-            price: 50, currency: 'free', 
-            color: '#e91e63', bg: '#fce4ec', border: '#f48fb1', badge: 'NEW'
-        },
-        { 
-            id: 'learning', name: '📚 語言學習模組', 
-            desc: '解鎖多語言劇情與單字替換功能。',
-            price: 100, currency: 'paid', 
-            color: '#f57f17', bg: '#fff8e1', border: '#ffb300', badge: 'HOT'
-        }
+        // ── 主題模式（外觀風格）
+        { id:'theme_wood',  name:'🌑 深木主題',  type:'theme',
+          desc:'深色木紋質感，護眼舒適。', price:0, currency:'pro',
+          color:'#d7ccc8', bg:'#3e2723', border:'#6d4c41', badge:'Pro', preview:'wood' },
+        { id:'theme_white', name:'☀️ 明亮主題',  type:'theme',
+          desc:'簡潔白底設計，清晰明快。', price:0, currency:'pro',
+          color:'#5d4037', bg:'#fafafa', border:'#d5c5a8', badge:'Pro', preview:'white' },
+        { id:'theme_story', name:'🌙 夜間主題',  type:'theme',
+          desc:'沉浸式暗黑風格，劇情感十足。', price:0, currency:'pro',
+          color:'#f0e6d3', bg:'rgba(0,0,0,0.85)', border:'rgba(255,255,255,0.15)', badge:'Pro', preview:'story' },
+        // ── 功能模組（DLC）
+        { id:'harem',    name:'💕 后宮模式',    type:'module',
+          desc:'沈浸式體驗，專注於角色互動與好感度培養。',
+          price:50, currency:'free', color:'#e91e63', bg:'#fce4ec', border:'#f48fb1', badge:'NEW' },
+        { id:'learning', name:'📚 語言學習模組', type:'module',
+          desc:'解鎖多語言劇情與單字替換功能。',
+          price:100, currency:'paid', color:'#f57f17', bg:'#fff8e1', border:'#ffb300', badge:'HOT' }
     ],
 
     // 1. 應用設定變更
@@ -71,6 +76,24 @@ window.SQ.Engine.Settings = {
         const gs = window.SQ.State;
         const item = this.shopItems.find(i => i.id === itemId);
         if (!item) return;
+
+        // 主題模式需要 Pro
+        if (item.type === 'theme') {
+            if (!window.SQ.Sub?.isProOrTrial()) {
+                window.SQ.Sub?.showUpgradePrompt('外觀主題需要 Pro 方案');
+                return;
+            }
+            // 套用主題
+            const themeKey = item.preview || item.id.replace('theme_','');
+            if (window.SQ.Engine.Settings.applyTheme) {
+                window.SQ.Engine.Settings.applyTheme(themeKey);
+            }
+            window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, `✅ 已套用 ${item.name}`);
+            if (window.SQ.Audio) window.SQ.Audio.play('save');
+            if (window.App) App.saveData();
+            if (window.SQ.View.Settings?.renderSettingsShop) window.SQ.View.Settings.renderSettingsShop();
+            return;
+        }
 
         const totalGem = (gs.freeGem || 0) + (gs.paidGem || 0);
         if (totalGem < item.price) {

@@ -1,4 +1,4 @@
-/* www/js/modules/timer.js - V1.0 */
+/* www/js/modules/timer.js - V2.0 */
 /* 計時器系統：倒數 / 番茄鐘 / 正計時 */
 /* 從背包使用「時間」類道具觸發，或直接呼叫 SQ.Timer.open() */
 
@@ -111,6 +111,7 @@ window.SQ.Timer = {
             countdown: { ring:'#f0a500', glow:'rgba(240,165,0,0.3)', text:'#ffd166' },
             pomodoro:  { ring: phase==='work' ? '#e55a5a' : '#4caf87', glow: phase==='work' ? 'rgba(229,90,90,0.3)' : 'rgba(76,175,135,0.3)', text: phase==='work' ? '#ff8080' : '#66ffcc' },
             stopwatch: { ring:'#5b8af0', glow:'rgba(91,138,240,0.3)', text:'#80a8ff' },
+            focus:     { ring:'#ef5350', glow:'rgba(239,83,80,0.3)',  text:'#ff8a80' },
         };
         const col = colors[mode] || colors.countdown;
 
@@ -119,6 +120,7 @@ window.SQ.Timer = {
             countdown: '⏳ 倒數計時',
             pomodoro:  phase === 'work' ? '🍅 專注中' : '☕ 休息中',
             stopwatch: '⏱️ 正計時',
+            focus:     '🔒 FOCUS LOCK',
         };
 
         // 控制按鈕
@@ -133,14 +135,21 @@ window.SQ.Timer = {
         // 模式選擇（idle 時顯示）
         const modeSelector = state === 'idle' ? `
             <div style="display:flex; gap:10px; margin-bottom:24px;">
-                ${['countdown','pomodoro','stopwatch'].map(m => `
+                ${['countdown','pomodoro','focus','stopwatch'].map(m => {
+                    const isPro = !window.SQ.Sub || window.SQ.Sub.isProOrTrial();
+                    const locked = m === 'focus' && !isPro;
+                    const labels = { countdown:'⏳ 倒數', pomodoro:'🍅 番茄', focus:'🔒 專注鎖', stopwatch:'⏱️ 正計時' };
+                    const proLabels = { countdown:'⏳ 倒數', pomodoro:'🍅 番茄', focus:'🔒 Focus', stopwatch:'⏱️ 正計時' };
+                    return `
                     <div onclick="window.SQ.Timer._selectMode('${m}')"
-                         style="padding:8px 16px; border-radius:50px; cursor:pointer; font-size:0.85rem;
-                                font-weight:600; transition:all 0.15s;
+                         style="padding:8px 12px; border-radius:50px; cursor:pointer; font-size:0.82rem;
+                                font-weight:600; transition:all 0.15s; position:relative;
                                 background:${mode===m ? col.ring : 'rgba(255,255,255,0.07)'};
-                                color:${mode===m ? '#111' : 'rgba(255,255,255,0.5)'};">
-                        ${ m==='countdown'?'⏳ 倒數' : m==='pomodoro'?'🍅 番茄' : '⏱️ 正計時'}
-                    </div>`).join('')}
+                                color:${mode===m ? '#111' : (locked ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.5)')};
+                                border:${locked ? '1px dashed rgba(255,255,255,0.15)' : 'none'};">
+                        ${isPro ? proLabels[m] : labels[m]}
+                    </div>`;
+                }).join('')}
             </div>` : '';
 
         // 時間設定（countdown + idle）
@@ -289,7 +298,15 @@ window.SQ.Timer = {
 
     // ── 控制邏輯 ────────────────────────────────────────
     _selectMode: function(mode) {
-        const totals = { countdown: 15*60, pomodoro: 25*60, stopwatch: 0 };
+        // Focus Lock 需要 Pro
+        if (mode === 'focus' && window.SQ.Sub) {
+            const check = window.SQ.Sub.canUseFocusLock();
+            if (!check.ok) {
+                window.SQ.Sub.showUpgradePrompt(check.reason);
+                return;
+            }
+        }
+        const totals = { countdown: 15*60, pomodoro: 25*60, focus: 25*60, stopwatch: 0 };
         this._currentMode    = mode;
         this._currentTotal   = totals[mode];
         this._currentElapsed = 0;
@@ -307,7 +324,18 @@ window.SQ.Timer = {
         this._currentElapsed = 0;
         const mode = this._currentMode || 'countdown';
         this._currentPhase = 'work';
-        
+
+        // Focus Lock：啟動時鎖定導航
+        if (mode === 'focus') {
+            if (!this._origNavigate) {
+                this._origNavigate = window.SQ.Actions.navigate;
+                window.SQ.Actions.navigate = () => {
+                    window.SQ.Actions.toast('🔒 專注鎖定中，請先完成計時');
+                    window.SQ.Audio?.play('error');
+                };
+            }
+        }
+
         // 👈 核心修改 1：記錄按下的那一瞬間的「真實系統時間」
         this._startTime = Date.now(); 
 
@@ -379,6 +407,11 @@ window.SQ.Timer = {
     _stop: function(showIdle = false) {
         clearInterval(this._interval);
         this._interval = null;
+        // Focus Lock：恢復導航
+        if (this._origNavigate) {
+            window.SQ.Actions.navigate = this._origNavigate;
+            this._origNavigate = null;
+        }
         if (showIdle) {
             this._currentElapsed = 0;
             this._render('idle', {
@@ -463,6 +496,10 @@ window.SQ.Timer = {
             window.SQ.EventBus.emit('TIMER_COMPLETED', { mode: mode, minutes: minutes });
         }
 
+        if (mode === 'focus') {
+            // Focus Lock 完成：跟 countdown 相同獎勵邏輯
+            // 導航鎖定在 _startTimer 處理
+        }
         if (mode === 'stopwatch') return; // 正計時不給金幣/EXP，但上面依然有發送廣播以累積成就！
 
         const gs = window.SQ.State;

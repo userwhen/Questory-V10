@@ -50,30 +50,7 @@ window.App = {
             const t = e.target.closest('[data-action]');
             if (!t) return;
             if (t.dataset.stop === 'true') e.stopPropagation();
-
-            const action = t.dataset.action;
-
-            // --- 🤖 全域音效智慧分配 ---
-            // 這些動作我們在 Controller 裡已經有寫專屬音效，或是由系統判定成功才發聲，因此在這裡靜音，避免聲音重疊
-            const silentActions = [
-                'submitTask', 'deleteTask', 'toggleTask', 'incrementTask', 'toggleSubtask',
-                'confirmBuy', 'useItem', 'updateBuyQty', 'updateUseQty', 'buyStamina', 'submitPayment',
-                'claimReward', 'submitMilestone', 'deleteAchievement', 'checkInAch',
-                'saveSkill', 'deleteSkill', '_toggleAlert', 'submitUpload', 'deleteShopItem'
-            ];
-
-            if (action === 'back' || action.includes('close')) {
-                window.SQ.Audio?.play('close'); // 關閉視窗與返回
-            } else if (action.includes('open') || action === 'editTask' || action === 'editAch' || action === 'editSkill' || action === 'addNewCategory') {
-                window.SQ.Audio?.play('open'); // 開啟視窗、新增項目
-            } else if (action === 'navigate' || action.includes('goTo') || action.includes('switch') || action.includes('Filter')) {
-                window.SQ.Audio?.play('navigate'); // 切換分頁與標籤
-            } else if (!silentActions.includes(action)) {
-                window.SQ.Audio?.play('click'); // 剩下所有的普通按鈕互動，都給予輕巧點擊聲
-            }
-            // ---------------------------
-
-            dispatch(action, t.dataset.id, t.dataset.val, e);
+            dispatch(t.dataset.action, t.dataset.id, t.dataset.val, e);
         });
 
         // 2. 攔截 Input
@@ -121,6 +98,10 @@ window.App = {
             console.error("🚨 [系統檢查出錯]", e);
         }
 
+        // ── 插件初始化（需在 Core.init 之前，讓 State 就緒後立刻讀設定）──
+        if (window.SQ.Audio) window.SQ.Audio.init();
+        if (window.SQ.IAP)   window.SQ.IAP.init?.();
+
         if (window.SQ.Core) window.SQ.Core.init(); else return console.error("❌ Core 未載入");
         
         const E = window.SQ.Engine;
@@ -131,18 +112,13 @@ window.App = {
         
         if (window.SQ.Core.checkDailyReset) window.SQ.Core.checkDailyReset();
 
-		// ── 新增：音效與通知系統初始化 ──
-		if (window.SQ.Audio) window.SQ.Audio.init();
-		if (window.SQ.Notification) window.SQ.Notification.init();
-		// ── 新增結束 ──
-
-		setTimeout(() => {
-			if (window.SQ.Actions?.navigate) {
-				if (window.Router) window.Router.init();
-				window.SQ.Actions.navigate('main');
+        setTimeout(() => {
+            if (window.SQ.Actions?.navigate) {
+                if (window.Router) window.Router.init();
+                window.SQ.Actions.navigate('main');
 				if (window.SQ.Actions.checkTutorial) window.SQ.Actions.checkTutorial();
-			}
-		}, 100);
+            }
+        }, 100);
     },
 
     saveData: function() {
@@ -202,9 +178,6 @@ window._nativePrompt = window.prompt; window.prompt = function(msg, def) { retur
 
 window.SQ.Actions = window.SQ.Actions || {};
 Object.assign(window.SQ.Actions, {
-	openTimer: () => {
-        if (window.SQ.Timer) window.SQ.Timer.open({ defaultMode: 'pomodoro' });
-    },
     handleSysConfirm: (result) => {
         const targetId = 'm-system';
         if (window.SQ.Actions.closeModal) window.SQ.Actions.closeModal(targetId);

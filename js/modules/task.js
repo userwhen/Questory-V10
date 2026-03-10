@@ -100,6 +100,17 @@ window.SQ.Engine.Task = {
     // =========================================
     addTask: function(temp) {
         const gs = window.SQ.State;
+
+        // ── 訂閱功能鎖：任務數量上限 ──────────────────────
+        if (window.SQ.Sub) {
+            const check = window.SQ.Sub.canAddTask();
+            if (!check.ok) {
+                window.SQ.EventBus?.emit(window.SQ.Events?.System?.TOAST, `⚠️ ${check.reason}`);
+                if (check.cta) window.SQ.Sub.showUpgradePrompt(check.reason);
+                return null;
+            }
+        }
+
         const newTask = { 
             id: 't_' + Date.now(), 
             createDate: Date.now(), 

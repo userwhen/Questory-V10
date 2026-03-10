@@ -231,12 +231,41 @@ ui.smart = {
     },
 
     shopItem: (item, editBtnHtml = '') => {
-        const isSoldOut = item.qty <= 0; const isOnce = item.type === 'once';
-        const specialStyle = isOnce ? 'border: 2px solid var(--color-gold); background: linear-gradient(180deg, rgba(255, 215, 0, 0.1) 0%, rgba(0,0,0,0) 100%); box-shadow: inset 0 2px 10px rgba(255, 215, 0, 0.15);' : '';
-        const soldOutOverlay = isSoldOut ? `<div style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); z-index:4; display:flex; align-items:center; justify-content:center; pointer-events:none;"><div style="border: 3px solid var(--color-danger); color: var(--color-danger); font-weight: bold; font-size: 1.2rem; padding: 5px 10px; transform: rotate(-15deg); border-radius: 8px; background:rgba(255,255,255,0.9); box-shadow:var(--shadow-sm);">SOLD OUT</div></div>` : '';
-        const btnAction = isSoldOut ? ui.atom.buttonBase({ label:'已售完', disabled:true, theme:'ghost', size:'sm', style:'width:100%;' }) : ui.atom.buttonBase({ label:'購買', theme:'correct', size:'sm', style:'width:100%;', action: 'openBuyModal', actionId: item.id });
-        return `<div style="position:relative; overflow:hidden; border-radius:var(--radius-md);">${editBtnHtml}${soldOutOverlay}${ui.composer.cardVertical({ style: specialStyle, iconHtml: item.icon ? `<div style="font-size:2.5rem;line-height:1.2;">${item.icon}</div>` : '', title: item.name, subTitle: `<div style="display:flex; justify-content:center; gap:8px;"><span style="color:var(--color-danger); font-weight:bold;">💰${item.price}</span><span style="opacity:0.6; font-size:0.9rem;">| 剩 ${item.qty}</span></div>`, desc: item.desc, actionBtnHtml: btnAction })}</div>`;
-    },
+    const isSoldOut = item.qty <= 0;
+    const isOnce = item.type === 'once';
+    
+    // 一次性商品特效
+    const specialStyle = isOnce ? 'border: 2px solid var(--color-gold); background: linear-gradient(180deg, rgba(255, 215, 0, 0.1) 0%, rgba(0,0,0,0) 100%); box-shadow: inset 0 2px 10px rgba(255, 215, 0, 0.15);' : '';
+    
+    // 完美的 SOLD OUT 遮罩
+    const soldOutOverlay = isSoldOut ? `<div style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); z-index:4; display:flex; align-items:center; justify-content:center; pointer-events:none;"><div style="border: 3px solid var(--color-danger); color: var(--color-danger); font-weight: bold; font-size: 1.2rem; padding: 5px 10px; transform: rotate(-15deg); border-radius: 8px; background:rgba(255,255,255,0.9); box-shadow:var(--shadow-sm);">SOLD OUT</div></div>` : '';
+
+    // 確保分類圖示正確對應
+    const catIcons = { '熱量': '🔥', '時間': '⏳', '金錢': '💰', '其他': '📦' };
+    const displayIcon = item.icon || catIcons[item.category] || '📦';
+
+    // 按鈕狀態控制
+    const btnAction = isSoldOut 
+        ? ui.atom.buttonBase({ label:'已售完', disabled:true, theme:'ghost', size:'sm', style:'width:100%;' }) 
+        : ui.atom.buttonBase({ label:'購買', theme:'correct', size:'sm', style:'width:100%;', action: 'openBuyModal', actionId: item.id });
+
+    return `
+        <div style="position:relative; overflow:hidden; border-radius:var(--radius-md);">
+            ${editBtnHtml}
+            ${soldOutOverlay}
+            ${ui.composer.cardVertical({ 
+                style: specialStyle, 
+                iconHtml: `<div style="font-size:2.5rem; line-height:1.2; text-align:center; margin-bottom:5px;">${displayIcon}</div>`,
+                title: item.name, 
+                subTitle: `<div style="display:flex; justify-content:center; gap:8px;">
+                            <span style="color:var(--color-danger); font-weight:bold;">💰${item.price}</span>
+                            <span style="opacity:0.6; font-size:0.9rem;">| 剩 ${item.qty}</span>
+                          </div>`, 
+                desc: item.desc, 
+                actionBtnHtml: btnAction 
+            })}
+        </div>`;
+},
 
     // 🌟 關鍵修改：消除 onerror，改用 data-fallback，由全域大腦捕捉錯誤
     wardrobeItem: (item, isWearing, isUnlocked, isPreviewing, actionBtnHtml) => {

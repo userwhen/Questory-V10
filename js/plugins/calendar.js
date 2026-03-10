@@ -12,6 +12,15 @@ window.SQ.Calendar = {
      * @param {object} task - 完整 task 物件
      */
     addTask: async function(task) {
+        // Pro 功能鎖
+        if (window.SQ.Sub) {
+            const check = window.SQ.Sub.canUseCalendar();
+            if (!check.ok) {
+                window.SQ.Sub.showUpgradePrompt(check.reason);
+                return false;
+            }
+        }
+
         if (!task.deadline) {
             window.SQ.Actions?.toast('❌ 此任務沒有截止日');
             return false;

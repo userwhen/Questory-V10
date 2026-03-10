@@ -329,9 +329,6 @@ html, body {
 
 .u-toast { position: fixed; left: 50%; bottom: calc(var(--nav-h) + 14px + var(--safe-bottom)); transform: translateX(-50%) translateY(8px); z-index: var(--z-toast); background: var(--bg-hud); color: var(--text-on-dark); padding: 10px 20px; border-radius: var(--radius-full); font-size: 0.88rem; font-weight: 600; pointer-events: none; opacity: 0; transition: opacity var(--t-base), transform var(--t-base) var(--ease-bounce); box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,0.1); max-width: 80%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .u-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-body:has(#page-story:not([style*="display: none"])) .u-toast {
-    bottom: calc(220px + var(--safe-bottom)) !important;
-}
 
 /* ==========================================================================
    7. 動畫庫（Animations）
@@ -354,4 +351,64 @@ body:has(#page-story:not([style*="display: none"])) .u-toast {
 .glass-dashboard {
     background: rgba(255,255,255,0.22); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255,255,255,0.45); border-radius: var(--radius-lg); margin: 0 14px 10px; padding: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+}
+/* ================================================
+   主題切換 classes（Pro 限定）
+   在 body 加上 class="theme-wood" 等即可切換
+   ================================================ */
+
+body.theme-wood {
+    --bg-panel:       var(--theme-wood-soft);
+    --bg-card:        var(--theme-wood-bg);
+    --bg-elevated:    var(--theme-wood-soft);
+    --bg-modal:       var(--theme-wood-bg);
+    --bg-modal-head:  #1e1208;
+    --bg-box:         rgba(255,255,255,0.05);
+    --text:           var(--theme-wood-text);
+    --text-2:         #d4b896;
+    --text-muted:     #a08060;
+    --text-ghost:     #7a5c40;
+    --border:         var(--theme-wood-border);
+    --border-card:    rgba(255,255,255,0.08);
+    --bg-input:       rgba(255,255,255,0.08);
+}
+
+body.theme-white {
+    --bg-panel:       #f5f5f5;
+    --bg-card:        var(--theme-white-bg);
+    --bg-elevated:    #f0ebe2;
+    --bg-modal:       #ffffff;
+    --bg-modal-head:  var(--theme-white-accent);
+    --bg-box:         rgba(0,0,0,0.03);
+    --text:           var(--theme-white-text);
+    --text-2:         #5c4a3a;
+    --text-muted:     #8c7060;
+    --text-ghost:     #b0a090;
+    --border:         var(--theme-white-border);
+    --border-card:    rgba(0,0,0,0.06);
+    --bg-input:       #ffffff;
+}
+
+body.theme-story {
+    --bg-panel:       var(--theme-story-bg);
+    --bg-card:        rgba(255,255,255,0.05);
+    --bg-elevated:    rgba(255,255,255,0.07);
+    --bg-modal:       rgba(20,12,6,0.98);
+    --bg-modal-head:  rgba(0,0,0,0.6);
+    --bg-box:         rgba(255,255,255,0.04);
+    --text:           var(--theme-story-text);
+    --text-2:         #d4b896;
+    --text-muted:     #a08060;
+    --text-ghost:     #6a5040;
+    --border:         var(--theme-story-border);
+    --border-card:    rgba(255,255,255,0.06);
+    --bg-input:       rgba(255,255,255,0.07);
+    --color-gold:     var(--theme-story-accent);
+}
+/* --- 掃描器專用：讓背景透明並隱藏主介面 --- */
+body.sq-scanner-active {
+    background: transparent !important;
+}
+body.sq-scanner-active #app-frame {
+    display: none !important;
 }

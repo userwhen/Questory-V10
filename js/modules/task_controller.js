@@ -136,6 +136,15 @@ window.SQ.Controller.Task = {
                         }
                         
                         if (!gs.taskCats.includes(newCat)) {
+                            // 訂閱功能鎖：分類數量上限
+                            if (window.SQ.Sub) {
+                                const catCheck = window.SQ.Sub.canAddCategory();
+                                if (!catCheck.ok) {
+                                    window.SQ.Actions.toast(`⚠️ ${catCheck.reason}`);
+                                    if (catCheck.cta) window.SQ.Sub.showUpgradePrompt(catCheck.reason);
+                                    return;
+                                }
+                            }
                             gs.taskCats.push(newCat);
                             if (window.SQ.Temp.editingTask) {
                                 window.SQ.Temp.editingTask.cat = newCat;

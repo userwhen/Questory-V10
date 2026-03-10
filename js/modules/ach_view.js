@@ -1,9 +1,9 @@
-/* js/modules/ach_view.js - V51.3 Full Features + Pure CSP */
+/* js/modules/ach_view.js - V51.4 Fixed Layout + CheckIn + Claim */
 window.SQ = window.SQ || {};
 window.SQ.View = window.SQ.View || {};
 window.SQ.View.Ach = {
     // =========================================
-    // 1. 成就列表渲染 (List Render)
+    // 1. 成就列表渲染
     // =========================================
     renderList: function() {
         const achs = window.SQ.Engine.Ach.getSortedAchievements();
@@ -11,21 +11,32 @@ window.SQ.View.Ach = {
         const achCats = ['全部', '每日', '里程碑', '官方'];
         
         const displayAchs = achs.filter(a => {
+            // ✅ 關鍵 1：直接把舊的系統每日打卡卡片攔截掉，不讓它渲染
+            if (a.id === 'sys_daily_checkin') return false; 
+            
             if (a.claimed && a.type !== 'check_in') return false; 
-            if (currentAchCat === '每日') return a.type === 'check_in';
+            
+            // ✅ 關鍵 2：當玩家點擊「每日」分類時，除了顯示自訂打卡，也要顯示合併後的「冒險足跡」
+            if (currentAchCat === '每日') {
+                return a.type === 'check_in' || a.id === 'sys_login_days';
+            }
             if (currentAchCat === '里程碑') return a.type !== 'check_in' && !a.isSystem;
             if (currentAchCat === '官方') return a.isSystem;
             return true;
         });
-		// 👈 新增：強制將官方累積登入置頂，其他依照可領取狀態排序
+
         displayAchs.sort((a, b) => {
+            // 每日打卡永遠置頂
+            if (a.id === 'sys_daily_checkin') return -1;
+            if (b.id === 'sys_daily_checkin') return 1;
+            // 冒險足跡次頂
             if (a.id === 'sys_login_days') return -1;
             if (b.id === 'sys_login_days') return 1;
-            
             const scoreA = (a.done && !a.claimed) ? 2 : (!a.done ? 1 : 0);
             const scoreB = (b.done && !b.claimed) ? 2 : (!b.done ? 1 : 0);
             return scoreB - scoreA;
         });
+
         const filterBtnsHtml = achCats.map(opt => {
             const isActive = currentAchCat === opt;
             return ui.atom.buttonBase({
@@ -52,39 +63,104 @@ window.SQ.View.Ach = {
         } else {
             achListItems = displayAchs.map(a => {
                 const isCheckIn = a.type === 'check_in';
-                const isReady = isCheckIn ? !a.done : (a.curr >= a.target); 
-                
+                const isReady = isCheckIn ? !a.done : (a.curr >= a.target && !a.claimed);
+
+                // ✅ [修正 3] 簽到按鈕直接手寫 HTML，不透過 buttonBase 的 stop 參數
+                // 避免 buttonBase 若未支援 stop:true 導致點擊冒泡到外層 editAch
                 let btnHtml = '';
-                if (isCheckIn) {
-                    btnHtml = a.done 
-                        ? ui.atom.buttonBase({ label:'已簽到', disabled:true, size:'sm' })
-                        : ui.atom.buttonBase({ label:'簽到', theme:'correct', size:'sm', action:'checkInAch', actionId: a.id, stop:true });
+            // 抓取隱藏的每日打卡狀態
+            const checkInAch = window.SQ.State.achievements ? window.SQ.State.achievements.find(ach => ach.id === 'sys_daily_checkin') : null;
+
+            // === 視覺合併特化區塊：冒險足跡 ===
+            if (a.id === 'sys_login_days') {
+                a.title = '👣 冒險啟程'; 
+                const isDailyDone = checkInAch ? checkInAch.done : true;
+
+                if (isDailyDone) {
+                    btnHtml = `<button disabled
+                        style="padding:5px 12px; border-radius:var(--radius-sm); border:1px solid var(--border);
+                               background:var(--bg-box); color:var(--text-ghost); font-size:0.8rem;
+                               cursor:not-allowed; white-space:nowrap;">
+                        今日已領
+                    </button>`;
                 } else {
-                    btnHtml = isReady 
-                        ? ui.atom.buttonBase({ label:'🎁 領取', theme:'paper', size:'sm', action:'claimReward', actionId: a.id, stop:true })
-                        : ui.atom.buttonBase({ label:'未完成', disabled:true, size:'sm', theme:'ghost' });
+                    btnHtml = `<button
+                        data-action="checkInAch"
+                        data-id="sys_daily_checkin"
+                        data-stop="true"
+                        style="padding:5px 12px; border-radius:var(--radius-sm); border:none;
+                               background:var(--color-correct); color:#fff; font-size:0.8rem;
+                               cursor:pointer; font-weight:600; white-space:nowrap;">
+                        🎁 每日領取
+                    </button>`;
                 }
-                
+            } 
+            // === 一般進度成就 ===
+            else {
+                const isReady = (a.curr >= a.target && !a.claimed);
+                if (isReady) {
+                    btnHtml = `<button
+                        data-action="claimReward"
+                        data-id="${a.id}"
+                        data-stop="true"
+                        style="padding:5px 12px; border-radius:var(--radius-sm); border:none;
+                               background:var(--color-gold); color:var(--color-gold-dark); font-size:0.8rem;
+                               cursor:pointer; font-weight:700; white-space:nowrap;">
+                        🎁 領取
+                    </button>`;
+                } else {
+                    btnHtml = `<button disabled
+                        style="padding:5px 12px; border-radius:var(--radius-sm); border:1px solid var(--border);
+                               background:var(--bg-box); color:var(--text-ghost); font-size:0.8rem;
+                               cursor:not-allowed; white-space:nowrap;">
+                        未完成
+                    </button>`;
+                }
+            }
+
                 let icon = isCheckIn ? '📅' : '🏅';
                 let tierBadge = '';
                 if (a.tier) {
-                    if (a.tier === 'S') { icon = '👑'; tierBadge = ui.atom.badgeBase({text:'S', style:'color:var(--color-gold-dark); background:var(--color-gold-soft); border-color:var(--color-gold-dark);'}); }
-                    else if (a.tier === 'A') { icon = '💎'; tierBadge = ui.atom.badgeBase({text:'A', style:'color:var(--color-info); background:var(--color-info-soft); border-color:var(--color-info);'}); }
-                    else { tierBadge = ui.atom.badgeBase({text:a.tier}); }
+                    if (a.tier === 'S') {
+                        icon = '👑';
+                        tierBadge = ui.atom.badgeBase({text:'S', style:'color:var(--color-gold-dark); background:var(--color-gold-soft); border-color:var(--color-gold-dark);'});
+                    } else if (a.tier === 'A') {
+                        icon = '💎';
+                        tierBadge = ui.atom.badgeBase({text:'A', style:'color:var(--color-info); background:var(--color-info-soft); border-color:var(--color-info);'});
+                    } else {
+                        tierBadge = ui.atom.badgeBase({text: a.tier});
+                    }
                 }
 
-                const pct = Math.min(100, Math.max(0, (a.curr / a.target) * 100));
-                const progressHtml = `<div class="u-progress" style="margin-top:6px;"><div class="u-progress-bar" style="width:${pct}%;"></div><div class="u-progress-text">${a.curr} / ${a.target}</div></div>`;
-                const borderColor = isReady ? 'var(--color-correct)' : 'var(--border)';
+                // progress bar（check_in 類型不顯示）
+                let progressHtml = '';
+                if (!isCheckIn) {
+                    const pct = Math.min(100, Math.max(0, (a.curr / a.target) * 100));
+                    progressHtml = `<div class="u-progress" style="margin-top:6px;">
+                        <div class="u-progress-bar" style="width:${pct}%;"></div>
+                        <div class="u-progress-text">${a.curr} / ${a.target}</div>
+                    </div>`;
+                }
 
+                const borderColor = isReady ? 'var(--color-correct)' : 'var(--border)';
+				const editAction = a.isSystem ? '' : `data-action="editAch" data-id="${a.id}"`;
+				const cursorStyle = a.isSystem ? 'cursor:default;' : 'cursor:pointer;';
+
+                // ✅ [修正 4] 外層卡片加 align-items:center，讓左右兩側 icon/按鈕對齊卡片垂直中線
                 return `
-                <div class="std-card" data-action="editAch" data-id="${a.id}" style="flex-direction:row; justify-content:space-between; border-left-color:${borderColor}; margin-bottom:10px; cursor:pointer;">
-                    <div class="card-icon" style="font-size:2rem; margin-right:12px;">${icon}</div>
-                    <div class="card-col-center" style="flex:1; min-width:0;">
-                        <div style="font-weight:bold; font-size:1rem; color:var(--text); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.title}</div>
-                        <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:4px;">
+				<div class="std-card" ${editAction}
+					 style="flex-direction:row; align-items:center; justify-content:space-between;
+							border-left-color:${borderColor}; margin-bottom:10px; ${cursorStyle}">
+					<div style="font-size:2rem; flex-shrink:0; margin-right:12px; line-height:1;">${icon}</div>
+					<div style="flex:1; min-width:0;">
+                        <div style="font-weight:bold; font-size:1rem; color:var(--text); margin-bottom:4px;
+                                    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.title}</div>
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
                             ${tierBadge}
-                            <span style="font-size:0.85rem; color:var(--text-ghost); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">- ${a.desc || ''}</span>
+                            <span style="font-size:0.82rem; color:var(--text-ghost); overflow:hidden;
+                                         text-overflow:ellipsis; white-space:nowrap; flex:1;">
+                                ${a.desc || ''}
+                            </span>
                         </div>
                         ${progressHtml}
                     </div>
@@ -97,7 +173,7 @@ window.SQ.View.Ach = {
     },
 
     // =========================================
-    // 2. 編輯表單 (Edit Form)
+    // 2. 編輯表單
     // =========================================
     renderCreateAchForm: function(achId = null) {
         const gs = window.SQ.State;
@@ -107,7 +183,9 @@ window.SQ.View.Ach = {
 
         window.SQ.Temp = window.SQ.Temp || {};
         if (!window.SQ.Temp.editingAch || window.SQ.Temp.editingAch.id !== achId) {
-            window.SQ.Temp.editingAch = ach ? JSON.parse(JSON.stringify(ach)) : { id: null, title: '', targetType: 'tag', targetValue: '每日', tier: 'C' };
+            window.SQ.Temp.editingAch = ach
+                ? JSON.parse(JSON.stringify(ach))
+                : { id: null, title: '', targetType: 'tag', targetValue: '每日', tier: 'C' };
         }
         const data = window.SQ.Temp.editingAch;
 
@@ -132,11 +210,9 @@ window.SQ.View.Ach = {
                 </div>
             </div>`;
 
-        // 呼叫引擎的數值矩陣，取得正確的目標數字與單位
         const config = window.SQ.Engine.Ach._getTierConfig(data.tier, data.targetType);
         const unitStr = window.SQ.Engine.Ach._getUnitString(data.targetType);
 
-        // 👈 修正 2：將陣列順序反轉，讓 S 在最左邊
         const tierArr = ['S', 'A', 'B', 'C']; 
         const tierButtons = tierArr.map(t => {
             const theme = data.tier === t ? 'correct' : 'normal';
@@ -158,7 +234,6 @@ window.SQ.View.Ach = {
                 </div>
             </div>`;
 
-        // 玩家自訂是否「自動升階」的 Checkbox
         bodyHtml += `
             <div class="u-box" style="margin-top:10px;">
                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.95rem; color:var(--text);">
@@ -176,25 +251,21 @@ window.SQ.View.Ach = {
 
     _renderTargetValueInput: function(data) {
         const gs = window.SQ.State;
-		// 👈 新增：專注時間的文字提示
         if (data.targetType === 'focus_time') {
             return `<div style="color:var(--text-muted); font-size:0.9rem;"><i>將根據你每次「正計時」與「倒數」的分鐘數累積</i></div>`;
         }
-        // 👈 新增：番茄鐘的文字提示
         if (data.targetType === 'pomodoro') {
             return `<div style="color:var(--text-muted); font-size:0.9rem;"><i>每完成一次「番茄鐘」循環將累積 1 顆番茄</i></div>`;
         }
-		if (data.targetType === 'login_streak') {
+        if (data.targetType === 'login_streak') {
             return `<div style="color:var(--text-muted); font-size:0.9rem;"><i>需連續每天登入，若中斷則從 1 開始計算</i></div>`;
         }
-        
         if (data.targetType === 'attr') {
             const attrs = gs.attrs ? Object.keys(gs.attrs) : ['STR','INT'];
             const opts = attrs.map(k => ({ value: k, label: `${gs.attrs[k].icon} ${gs.attrs[k].name}` }));
             if (!attrs.includes(data.targetValue)) data.targetValue = attrs[0];
             return ui.composer.formField({label: '選擇屬性', inputHtml: ui.atom.inputBase({type: 'select', val: data.targetValue, action: "updateAchField", actionId: "targetValue", options: opts})});
         }
-        
         const cats = gs.taskCats || ['每日', '運動', '工作'];
         const opts = cats.map(c => ({ value: c, label: c }));
         if (!cats.includes(data.targetValue)) data.targetValue = cats[0];
@@ -202,7 +273,7 @@ window.SQ.View.Ach = {
     },
 
     // =========================================
-    // 3. 殿堂頁面 (Milestone Page)
+    // 3. 殿堂頁面
     // =========================================
     renderMilestonePage: function() {
         const container = document.getElementById('page-milestone');
@@ -215,12 +286,13 @@ window.SQ.View.Ach = {
             : `<div style="padding: 14px;">` + achs.map(a => {
                 const d = new Date(a.finishDate || Date.now());
                 const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
-                
                 return `
-                <div class="std-card" style="flex-direction:row; justify-content:space-between; border-left-color:var(--color-gold); margin-bottom:10px;">
-                    <div class="card-icon" style="font-size:2rem; margin-right:12px;">🏅</div>
-                    <div class="card-col-center" style="flex:1; min-width:0;">
-                        <div style="font-weight:bold; font-size:1rem; color:var(--text); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.title}</div>
+                <div class="std-card" style="flex-direction:row; align-items:center; justify-content:space-between;
+                     border-left-color:var(--color-gold); margin-bottom:10px;">
+                    <div style="font-size:2rem; flex-shrink:0; margin-right:12px; line-height:1;">🏅</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:bold; font-size:1rem; color:var(--text); margin-bottom:4px;
+                                    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.title}</div>
                         <div style="font-size:0.85rem; color:var(--text-muted);">${a.desc}</div>
                     </div>
                     <div style="flex-shrink:0; font-size:0.8rem; color:var(--text-ghost); margin-left:10px;">${dateStr}</div>
@@ -252,7 +324,7 @@ window.SQ.View.Ach = {
     }
 };
 
-// 轉接器 (Adapter) - 註冊給全域大腦
+// 轉接器
 window.SQ.Actions.updateAchField = (f, v) => window.SQ.View.Ach.updateField(f, v);
 window.view = window.view || {};
 window.SQ.View.Main.renderMilestonePage = () => window.SQ.View.Ach.renderMilestonePage();
