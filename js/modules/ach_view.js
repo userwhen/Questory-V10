@@ -17,7 +17,15 @@ window.SQ.View.Ach = {
             if (currentAchCat === '官方') return a.isSystem;
             return true;
         });
-
+		// 👈 新增：強制將官方累積登入置頂，其他依照可領取狀態排序
+        displayAchs.sort((a, b) => {
+            if (a.id === 'sys_login_days') return -1;
+            if (b.id === 'sys_login_days') return 1;
+            
+            const scoreA = (a.done && !a.claimed) ? 2 : (!a.done ? 1 : 0);
+            const scoreB = (b.done && !b.claimed) ? 2 : (!b.done ? 1 : 0);
+            return scoreB - scoreA;
+        });
         const filterBtnsHtml = achCats.map(opt => {
             const isActive = currentAchCat === opt;
             return ui.atom.buttonBase({
@@ -108,25 +116,29 @@ window.SQ.View.Ach = {
             inputHtml: ui.atom.inputBase({type: 'text', val: data.title, placeholder: "例如: 健身達人", action: "updateAchField", actionId: "title"})
         });
 
-        const typeOpts = [ {value:'tag', label:'🏷️ 任務分類'}, {value:'attr', label:'💪 屬性鍛鍊'}, {value:'challenge', label:'🔥 極限挑戰'} ];
+        const typeOpts = [ 
+            {value:'tag', label:'🏷️ 任務分類'}, 
+            {value:'attr', label:'💪 屬性鍛鍊'}, 
+            {value:'focus_time', label:'⏱️ 專注時間'},
+            {value:'pomodoro', label:'🍅 番茄農夫'},
+            {value:'login_streak', label:'🔥 連續打卡'}
+        ];
         
         bodyHtml += `
             <div class="u-box" style="margin-top:10px;">
-                ${ui.composer.formField({label: '監聽目標', inputHtml: ui.atom.inputBase({type: 'select', val: data.targetType, action: "updateAchField", actionId: "targetType", options: typeOpts})})}
+                ${ui.composer.formField({label: '達成條件', inputHtml: ui.atom.inputBase({type: 'select', val: data.targetType, action: "updateAchField", actionId: "targetType", options: typeOpts})})}
                 <div style="margin-top:10px;">
                     ${this._renderTargetValueInput(data)}
                 </div>
             </div>`;
 
-        const tierInfo = {
-            'S': { label: 'S - 傳奇', target: 1000, reward: '💰500 ✨1000' },
-            'A': { label: 'A - 史詩', target: 500, reward: '💰200 ✨400' },
-            'B': { label: 'B - 稀少', target: 200, reward: '💰80 ✨150' },
-            'C': { label: 'C - 普通', target: 50, reward: '💰20 ✨50' }
-        };
-        const currentTier = tierInfo[data.tier] || tierInfo['C'];
+        // 呼叫引擎的數值矩陣，取得正確的目標數字與單位
+        const config = window.SQ.Engine.Ach._getTierConfig(data.tier, data.targetType);
+        const unitStr = window.SQ.Engine.Ach._getUnitString(data.targetType);
 
-        const tierButtons = Object.keys(tierInfo).map(t => {
+        // 👈 修正 2：將陣列順序反轉，讓 S 在最左邊
+        const tierArr = ['S', 'A', 'B', 'C']; 
+        const tierButtons = tierArr.map(t => {
             const theme = data.tier === t ? 'correct' : 'normal';
             return ui.atom.buttonBase({
                 label: t, theme: theme, action: 'updateAchField', actionId: 'tier', actionVal: t,
@@ -141,9 +153,18 @@ window.SQ.View.Ach = {
                     ${tierButtons}
                 </div>
                 <div style="font-size:0.9rem; color:var(--text-2); background:rgba(255,255,255,0.5); padding:8px; border-radius:var(--radius-sm);">
-                    <div>🎯 目標：累積 <b>${currentTier.target}</b> 點 Impact</div>
-                    <div>🎁 獎勵：${currentTier.reward}</div>
+                    <div>🎯 目標：累積完成 <b>${config.target}</b> ${unitStr}</div>
+                    <div>🎁 獎勵：💰${config.reward.gold} ✨${config.reward.exp}</div>
                 </div>
+            </div>`;
+
+        // 玩家自訂是否「自動升階」的 Checkbox
+        bodyHtml += `
+            <div class="u-box" style="margin-top:10px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.95rem; color:var(--text);">
+                    <input type="checkbox" data-change="updateAchField" data-id="isUpgradeable" ${data.isUpgradeable ? 'checked' : ''} style="width:18px; height:18px; accent-color:var(--color-correct);">
+                    達成後自動開啟下一階段挑戰
+                </label>
             </div>`;
 
         const footHtml = isEdit 
@@ -155,9 +176,16 @@ window.SQ.View.Ach = {
 
     _renderTargetValueInput: function(data) {
         const gs = window.SQ.State;
-        
-        if (data.targetType === 'challenge') {
-            return `<div style="color:var(--text-muted); font-size:0.9rem;"><i>監聽重要性與緊急性皆 >= 3 的任務</i></div>`;
+		// 👈 新增：專注時間的文字提示
+        if (data.targetType === 'focus_time') {
+            return `<div style="color:var(--text-muted); font-size:0.9rem;"><i>將根據你每次「正計時」與「倒數」的分鐘數累積</i></div>`;
+        }
+        // 👈 新增：番茄鐘的文字提示
+        if (data.targetType === 'pomodoro') {
+            return `<div style="color:var(--text-muted); font-size:0.9rem;"><i>每完成一次「番茄鐘」循環將累積 1 顆番茄</i></div>`;
+        }
+		if (data.targetType === 'login_streak') {
+            return `<div style="color:var(--text-muted); font-size:0.9rem;"><i>需連續每天登入，若中斷則從 1 開始計算</i></div>`;
         }
         
         if (data.targetType === 'attr') {

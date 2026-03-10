@@ -50,7 +50,30 @@ window.App = {
             const t = e.target.closest('[data-action]');
             if (!t) return;
             if (t.dataset.stop === 'true') e.stopPropagation();
-            dispatch(t.dataset.action, t.dataset.id, t.dataset.val, e);
+
+            const action = t.dataset.action;
+
+            // --- 🤖 全域音效智慧分配 ---
+            // 這些動作我們在 Controller 裡已經有寫專屬音效，或是由系統判定成功才發聲，因此在這裡靜音，避免聲音重疊
+            const silentActions = [
+                'submitTask', 'deleteTask', 'toggleTask', 'incrementTask', 'toggleSubtask',
+                'confirmBuy', 'useItem', 'updateBuyQty', 'updateUseQty', 'buyStamina', 'submitPayment',
+                'claimReward', 'submitMilestone', 'deleteAchievement', 'checkInAch',
+                'saveSkill', 'deleteSkill', '_toggleAlert', 'submitUpload', 'deleteShopItem'
+            ];
+
+            if (action === 'back' || action.includes('close')) {
+                window.SQ.Audio?.play('close'); // 關閉視窗與返回
+            } else if (action.includes('open') || action === 'editTask' || action === 'editAch' || action === 'editSkill' || action === 'addNewCategory') {
+                window.SQ.Audio?.play('open'); // 開啟視窗、新增項目
+            } else if (action === 'navigate' || action.includes('goTo') || action.includes('switch') || action.includes('Filter')) {
+                window.SQ.Audio?.play('navigate'); // 切換分頁與標籤
+            } else if (!silentActions.includes(action)) {
+                window.SQ.Audio?.play('click'); // 剩下所有的普通按鈕互動，都給予輕巧點擊聲
+            }
+            // ---------------------------
+
+            dispatch(action, t.dataset.id, t.dataset.val, e);
         });
 
         // 2. 攔截 Input
@@ -179,6 +202,9 @@ window._nativePrompt = window.prompt; window.prompt = function(msg, def) { retur
 
 window.SQ.Actions = window.SQ.Actions || {};
 Object.assign(window.SQ.Actions, {
+	openTimer: () => {
+        if (window.SQ.Timer) window.SQ.Timer.open({ defaultMode: 'pomodoro' });
+    },
     handleSysConfirm: (result) => {
         const targetId = 'm-system';
         if (window.SQ.Actions.closeModal) window.SQ.Actions.closeModal(targetId);

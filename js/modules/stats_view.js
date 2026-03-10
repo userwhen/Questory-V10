@@ -104,12 +104,14 @@ window.SQ.View.Stats = {
 
         // 改用 data-input / data-change
         const bodyHtml = `
-            ${ui.composer.formField({ label: '技能名稱', inputHtml: ui.atom.inputBase({type:'text', val: window.SQ.Temp.editingSkill.name, placeholder: "例如: 跑酷...", action: "updateSkillField", actionId: "name"}) })}
-            ${ui.composer.formField({ label: '綁定主屬性', inputHtml: ui.atom.inputBase({type:'select', val: window.SQ.Temp.editingSkill.parent, action: "updateSkillField", actionId: "parent", options: attrOpts}), hint: '技能經驗將同時回饋給此屬性' })}
+            ${ui.composer.formField({ label: '技能名稱', inputHtml: ui.atom.inputBase({type:'text', val: window.SQ.Temp.editingSkill.name, placeholder: "例如: 跑酷...", action: "updateSkillField", actionId: "name", id: "skill-name-input"}) })}
+            ${ui.composer.formField({ label: '綁定主屬性', inputHtml: ui.atom.inputBase({type:'select', val: window.SQ.Temp.editingSkill.parent, action: "updateSkillField", actionId: "parent", id: "skill-parent-select", options: attrOpts}), hint: '技能經驗將同時回饋給此屬性' })}
             ${isEdit ? `<div style="margin-top:15px; padding:12px; background:var(--color-gold-soft); border-radius:var(--radius-sm); font-size:0.85rem; color:var(--color-gold-dark); box-shadow:var(--shadow-inner);">🔥 目前等級: Lv.${skill.lv} <br> 累積經驗: ${skill.exp}</div>` : ''}
         `;
 
-        const footHtml = isEdit ? `${ui.atom.buttonBase({label:'刪除', theme:'danger', action:'deleteSkill', actionId: skill.name})} ${ui.atom.buttonBase({label:'儲存變更', theme:'correct', style:'flex:1;', action:'saveSkill'})}` : ui.atom.buttonBase({label:'確認新增', theme:'correct', style:'width:100%;', action:'saveSkill'});
+        const footHtml = isEdit 
+            ? `<div style="display:flex; gap:8px; width:100%;">${ui.atom.buttonBase({label:'🗑️ 刪除', theme:'danger', action:'deleteSkill', actionId: skill.name, actionVal: skill.name})} ${ui.atom.buttonBase({label:'儲存變更', theme:'correct', style:'flex:1;', action:'saveSkill'})}</div>` 
+            : ui.atom.buttonBase({label:'確認新增', theme:'correct', style:'width:100%;', action:'saveSkill'});
 
         ui.modal.render(isEdit ? '編輯技能' : '新增技能', bodyHtml, footHtml, 'overlay');
     },

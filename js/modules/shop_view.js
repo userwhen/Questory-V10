@@ -1,4 +1,4 @@
-/* js/modules/shop_view.js - V51.3 Zero Inline Events */
+/* js/modules/shop_view.js - V56.0 Zero Inline Events */
 window.SQ = window.SQ || {};
 window.SQ.View = window.SQ.View || {};
 window.SQ.View.Shop = {
@@ -22,28 +22,47 @@ window.SQ.View.Shop = {
     },
     renderBuyModal: function(id) {
         const item = window.SQ.Engine.Shop.getShopItems('全部').find(i => i.id === id); if (!item) return;
-        window.SQ.Temp.buyTargetId = id; 
-        ui.modal.render('🛒 購買商品', ui.composer.centeredModalBody({icon: item.icon||'🎁', title: item.name, desc: item.desc, extraHtml: `<div style="margin:20px 0; padding:15px; background:var(--bg-box); border-radius:var(--radius-md); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center;">${ui.composer.qtySelector({ idPrefix: 'buy-qty', qty: 1, action: 'updateBuyQty' })}<div style="margin-top:10px; text-align:center; color:var(--color-gold-dark); font-weight:bold; font-size:1.1rem;">總價: <span id="buy-total-price">${item.price}</span><span style="font-size:0.9rem; color:var(--text-ghost); font-weight:normal; margin-left:6px;">/ 剩餘 ${item.qty}</span></div></div>`}), ui.atom.buttonBase({ label:'確認購買', theme:'correct', style:'width:100%;', action:'confirmBuy' }), 'overlay');
+        window.SQ.Temp.buyTargetId = id;
+        window.SQ.Temp.buyQty = 1;
+        window.SQ.Temp.buyMax = item.qty || 99;
+        ui.modal.render('🛒 購買商品', ui.composer.centeredModalBody({icon: item.icon||'🎁', title: item.name, desc: item.desc, extraHtml: `<div style="margin:20px 0; padding:15px; background:var(--bg-box); border-radius:var(--radius-md); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center;">${ui.composer.qtySelector({ idPrefix: 'buy-qty', qty: 1, onChange: 'updateBuyQty' })}<div style="margin-top:10px; text-align:center; color:var(--color-gold-dark); font-weight:bold; font-size:1.1rem;">總價: <span id="buy-total-price">${item.price}</span><span style="font-size:0.9rem; color:var(--text-ghost); font-weight:normal; margin-left:6px;">/ 剩餘 ${item.qty}</span></div></div>`}), ui.atom.buttonBase({ label:'確認購買', theme:'correct', style:'width:100%;', action:'confirmBuy' }), 'overlay');
     },
     renderUploadModal: function(editId = null) {
-        const data = editId ? { ...(window.SQ.State.shop.user.find(i => i.id === editId) || {}) } : { name: '', desc: '', category: '熱量', price: '', qty: '', type: 'daily', val: '' };
+        const data = editId ? { ...(window.SQ.State.shop.user.find(i => i.id === editId) || {}) } : { name: '', desc: '', category: '熱量', price: 0, qty: 1, type: 'daily', val: '' };
         window.SQ.Temp.uploadEditId = editId; 
-        let body = `${ui.composer.formField({label:'商品名稱', inputHtml: ui.atom.inputBase({type:'text', val:data.name, placeholder:"請輸入名稱", action:"shopUploadChange", id:"up-name"})})}${ui.composer.formField({label:'描述', inputHtml: ui.atom.inputBase({type:'textarea', val:data.desc, placeholder:"商品效果或說明...", action:"shopUploadChange", id:"up-desc"})})}<div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:15px;"><div style="flex:1;">${ui.composer.formField({label:'分類', inputHtml: ui.atom.inputBase({type:'select', val:data.category, action:"shopUploadChange", id:"up-cat", options:[{val:'熱量', label:'🔥'}, {val:'時間', label:'⏳'}, {val:'金錢', label:'💰'}, {val:'其他', label:'📦'}]})})}</div><div id="up-dyn-container" style="flex:1;"></div></div><div style="border-top:1px dashed var(--border); padding-top:15px; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">${ui.composer.formField({label:'價格', inputHtml: ui.atom.inputBase({type:'number', val:data.price, id:"up-price"})})}${ui.composer.formField({label:'庫存', inputHtml: ui.atom.inputBase({type:'number', val:data.qty, id:"up-qty"})})}${ui.composer.formField({label:'重置', inputHtml: ui.atom.inputBase({type:'select', val:data.type, id:"up-type", options:[{val:'daily', label:'常駐'}, {val:'once', label:'單次'}]})})}</div>`;
+        let body = `<div style="display:flex; align-items:flex-end; gap:8px; margin-bottom:15px;">
+            <div style="flex:1;">${ui.composer.formField({label:'商品名稱', inputHtml: ui.atom.inputBase({type:'text', val:data.name, placeholder:"請輸入名稱", action:"shopUploadChange", id:"up-name"})})}</div>
+            <button data-action="startBarcodeScam"
+                style="flex-shrink:0; height:38px; padding:0 12px; border-radius:10px;
+                       border:1px solid var(--border); background:var(--bg-elevated);
+                       cursor:pointer; display:flex; align-items:center; gap:5px;
+                       color:var(--text-2); white-space:nowrap; align-self:flex-end; margin-bottom:1px;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M3 7V4a1 1 0 0 1 1-1h3"/><path d="M17 3h3a1 1 0 0 1 1 1v3"/>
+                    <path d="M21 17v3a1 1 0 0 1-1 1h-3"/><path d="M7 21H4a1 1 0 0 1-1-1v-3"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                </svg>
+                <span style="font-size:0.72rem; font-weight:600;">掃碼</span>
+            </button>
+        </div>
+        ${ui.composer.formField({label:'描述', inputHtml: ui.atom.inputBase({type:'textarea', val:data.desc, placeholder:"商品效果或說明...", action:"shopUploadChange", id:"up-desc"})})}<div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:15px;"><div style="flex:1;">${ui.composer.formField({label:'分類', inputHtml: ui.atom.inputBase({type:'select', val:data.category, action:"shopUploadChange", id:"up-cat", options:[{val:'熱量', label:'🔥 熱量'}, {val:'時間', label:'⏳ 時間'}, {val:'金錢', label:'💰 金錢'}, {val:'其他', label:'📦 其他'}]})})}</div><div id="up-dyn-container" style="flex:1;"></div></div><div style="border-top:1px dashed var(--border); padding-top:15px; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">${ui.composer.formField({label:'價格', inputHtml: ui.atom.inputBase({type:'number', val:data.price, placeholder:'0', id:"up-price"})})}${ui.composer.formField({label:'庫存', inputHtml: ui.atom.inputBase({type:'number', val:data.qty, placeholder:'1', id:"up-qty"})})}${ui.composer.formField({label:'重置', inputHtml: ui.atom.inputBase({type:'select', val:data.type, id:"up-type", options:[{val:'daily', label:'常駐'}, {val:'once', label:'單次'}]})})}</div>`;
         ui.modal.render(editId ? '編輯商品' : '上架商品', body, editId ? `${ui.atom.buttonBase({label:'下架', theme:'danger', action:'deleteShopItem'})} ${ui.atom.buttonBase({label:'保存修改', theme:'correct', style:'flex:1;', action:'submitUpload'})}` : ui.atom.buttonBase({label:'上架商品', theme:'correct', style:'width:100%;', action:'submitUpload'}), 'panel');
         setTimeout(() => this.renderDynamicFields(data.category, data.val), 0);
     },
     renderDynamicFields: function(cat, initVal = '') {
         const c = document.getElementById('up-dyn-container'); if (!c) return;
-        if (cat === '熱量') c.innerHTML = ui.composer.formField({label:'數值 (Kcal)', inputHtml: ui.atom.inputBase({type:'number', val:initVal, id:"up-val-cal"})});
-        else if (cat === '金錢') c.innerHTML = ui.composer.formField({label:'數值 ($)', inputHtml: ui.atom.inputBase({type:'number', val:initVal, id:"up-val-gold"})});
-        else if (cat === '時間') c.innerHTML = ui.composer.formField({label:'時長 (時:分)', inputHtml: `<div style="display:flex; align-items:center; gap:5px;">${ui.atom.inputBase({type:'number', val:Math.floor((parseInt(initVal)||0)/60), id:"up-time-h"})} <span style="font-weight:bold; opacity:0.6;">:</span> ${ui.atom.inputBase({type:'number', val:(parseInt(initVal)||0)%60, id:"up-time-m"})}</div>`});
+        if (cat === '熱量') c.innerHTML = ui.composer.formField({label:'數值 (Kcal)', inputHtml: ui.atom.inputBase({type:'number', val:initVal, placeholder:'0', id:"up-val-cal"})});
+        else if (cat === '金錢') c.innerHTML = ui.composer.formField({label:'數值 ($)', inputHtml: ui.atom.inputBase({type:'number', val:initVal, placeholder:'0', id:"up-val-gold"})});
+        else if (cat === '時間') c.innerHTML = ui.composer.formField({label:'時長 (時:分)', inputHtml: `<div style="display:flex; align-items:center; gap:5px;">${ui.atom.inputBase({type:'number', val:Math.floor((parseInt(initVal)||0)/60), placeholder:'0', id:"up-time-h"})} <span style="font-weight:bold; opacity:0.6;">:</span> ${ui.atom.inputBase({type:'number', val:(parseInt(initVal)||0)%60, placeholder:'00', id:"up-time-m"})}</div>`});
         else c.innerHTML = `<div style="height:32px;"></div>`;
     },
     renderPayment: function() { ui.modal.render('💎 儲值中心', `<div style="text-align:center; padding:10px;"><div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">${[30, 100, 300, 1000].map(v => ui.atom.buttonBase({label:`💎 ${v}`, theme:'ghost', action:'submitPayment', actionVal: v})).join('')}</div></div>`, null, 'overlay'); },
     renderItemDetail: function(id) {
         const item = window.SQ.Engine.Shop.getStackedBag('全部').find(i => i.id === id); if (!item) return;
-        window.SQ.Temp.useTargetId = id; 
-        ui.modal.render('📦 物品詳情', ui.composer.centeredModalBody({icon: item.icon||'📦', title: item.name, desc: item.desc || '無描述', extraHtml: `<div style="margin:20px 0; padding:15px; background:var(--bg-box); border-radius:var(--radius-md); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center;">${ui.composer.qtySelector({ idPrefix: 'use-qty', qty: 1, action: 'updateUseQty' })}<div style="margin-top:10px; text-align:center; color:var(--text-ghost); font-weight:normal; font-size:0.9rem;">剩餘: ${item.count}</div></div>`}), `<div style="display:flex; gap:10px; width:100%;">${ui.atom.buttonBase({ label:'🗑️ 丟棄', theme:'danger', style:'flex:1;', action:'useItem', actionVal:'true' })}${ui.atom.buttonBase({ label:'✨ 使用', theme:'correct', style:'flex:2;', action:'useItem', actionVal:'false' })}</div>`, 'panel');
+        window.SQ.Temp.useTargetId = id;
+        window.SQ.Temp.useQty = 1;
+        window.SQ.Temp.useMax = item.count || 1;
+        ui.modal.render('📦 物品詳情', ui.composer.centeredModalBody({icon: item.icon||'📦', title: item.name, desc: item.desc || '無描述', extraHtml: `<div style="margin:20px 0; padding:15px; background:var(--bg-box); border-radius:var(--radius-md); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center;">${ui.composer.qtySelector({ idPrefix: 'use-qty', qty: 1, onChange: 'updateUseQty' })}<div style="margin-top:10px; text-align:center; color:var(--text-ghost); font-weight:normal; font-size:0.9rem;">剩餘: ${item.count}</div></div>`}), `<div style="display:flex; gap:10px; width:100%;">${ui.atom.buttonBase({ label:'🗑️ 丟棄', theme:'danger', style:'flex:1;', action:'useItem', actionVal:'true' })}${ui.atom.buttonBase({ label:'✨ 使用', theme:'correct', style:'flex:2;', action:'useItem', actionVal:'false' })}</div>`, 'panel');
     },
     renderStaminaShop: function() {
         // 👈 改為 display: flex; flex-wrap: wrap; 讓卡片自動換行適應螢幕

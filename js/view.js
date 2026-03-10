@@ -188,7 +188,17 @@ ui.smart = {
             }
         }
 
-        const rightHtml = isHistory ? '' : ui.atom.buttonBase({label:'⚙️', theme:'ghost', action:'editTask', actionId: t.id, stop: true, style:'padding:0 5px; opacity:0.6; flex-shrink:0;'});
+        // 行事曆按鈕：所有未完成任務都顯示，放在齒輪左邊
+        const calBtnHtml = (!isHistory &&t.deadline && !t.done)
+            ? `<button data-action="addTaskToCalendar" data-id="${t.id}" data-stop="true"
+                       style="padding:0 5px; opacity:${t.calendarSynced ? '1' : '0.45'}; flex-shrink:0;
+                              background:none; border:none; cursor:pointer; font-size:1rem;
+                              color:${t.calendarSynced ? 'var(--color-info, #4fc3f7)' : 'inherit'};"
+                       title="${t.calendarSynced ? '已加入行事曆' : '加入行事曆'}">
+                   ${t.calendarSynced ? '📅' : '🗓️'}
+               </button>`
+            : '';
+        const rightHtml = isHistory ? '' : `<div style="display:flex; align-items:center; gap:2px;">${calBtnHtml}${ui.atom.buttonBase({label:'⚙️', theme:'ghost', action:'editTask', actionId: t.id, stop: true, style:'padding:0 5px; opacity:0.6; flex-shrink:0;'})}</div>`;
 
         let subtaskHtml = '';
         if (t.type === 'count') {
@@ -225,7 +235,7 @@ ui.smart = {
         const specialStyle = isOnce ? 'border: 2px solid var(--color-gold); background: linear-gradient(180deg, rgba(255, 215, 0, 0.1) 0%, rgba(0,0,0,0) 100%); box-shadow: inset 0 2px 10px rgba(255, 215, 0, 0.15);' : '';
         const soldOutOverlay = isSoldOut ? `<div style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); z-index:4; display:flex; align-items:center; justify-content:center; pointer-events:none;"><div style="border: 3px solid var(--color-danger); color: var(--color-danger); font-weight: bold; font-size: 1.2rem; padding: 5px 10px; transform: rotate(-15deg); border-radius: 8px; background:rgba(255,255,255,0.9); box-shadow:var(--shadow-sm);">SOLD OUT</div></div>` : '';
         const btnAction = isSoldOut ? ui.atom.buttonBase({ label:'已售完', disabled:true, theme:'ghost', size:'sm', style:'width:100%;' }) : ui.atom.buttonBase({ label:'購買', theme:'correct', size:'sm', style:'width:100%;', action: 'openBuyModal', actionId: item.id });
-        return `<div style="position:relative; overflow:hidden; border-radius:var(--radius-md);">${editBtnHtml}${soldOutOverlay}${ui.composer.cardVertical({ style: specialStyle, title: item.name, subTitle: `<div style="display:flex; justify-content:center; gap:8px;"><span style="color:var(--color-danger); font-weight:bold;">💰${item.price}</span><span style="opacity:0.6; font-size:0.9rem;">| 剩 ${item.qty}</span></div>`, desc: item.desc, actionBtnHtml: btnAction })}</div>`;
+        return `<div style="position:relative; overflow:hidden; border-radius:var(--radius-md);">${editBtnHtml}${soldOutOverlay}${ui.composer.cardVertical({ style: specialStyle, iconHtml: item.icon ? `<div style="font-size:2.5rem;line-height:1.2;">${item.icon}</div>` : '', title: item.name, subTitle: `<div style="display:flex; justify-content:center; gap:8px;"><span style="color:var(--color-danger); font-weight:bold;">💰${item.price}</span><span style="opacity:0.6; font-size:0.9rem;">| 剩 ${item.qty}</span></div>`, desc: item.desc, actionBtnHtml: btnAction })}</div>`;
     },
 
     // 🌟 關鍵修改：消除 onerror，改用 data-fallback，由全域大腦捕捉錯誤
@@ -315,7 +325,7 @@ view.renderMain = () => {
     const container = document.getElementById('page-main'); if (!container) return;
     const isBasic = window.SQ.State?.settings?.mode === 'basic';
     const btnStyle3D = `width: 48px; height: 48px; border-radius: var(--radius-md); font-size: 1.6rem; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--bg-card); border: 1.5px solid var(--border); box-shadow: var(--shadow-sm); transition: transform var(--t-fast) var(--ease-bounce), box-shadow var(--t-fast); margin-bottom: 8px; cursor: pointer;`;
-    const quickButtonsHtml = [{ icon: '📜', action: "openquickModal", show: true }, { icon: '👗', action: "navigate", val: "avatar", show: !isBasic }, { icon: '❓', action: "showQA", show: !isBasic }].filter(b => b.show).map(b => `<div data-action="${b.action}" ${b.val ? `data-val="${b.val}"` : ''} style="${btnStyle3D}">${b.icon}</div>`).join('');
+    const quickButtonsHtml = [{ icon: '📜', action: "openquickModal", show: true },{ icon: '🍅', action: "openTimer", show: true }, { icon: '👗', action: "navigate", val: "avatar", show: !isBasic }, { icon: '❓', action: "showQA", show: !isBasic }].filter(b => b.show).map(b => `<div data-action="${b.action}" ${b.val ? `data-val="${b.val}"` : ''} style="${btnStyle3D}">${b.icon}</div>`).join('');
     let charImg = window.Assets?.getCharImgTag ? window.Assets.getCharImgTag('main-char-img', 'height: 100%; width: auto; object-fit: contain; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.3));') : '<div style="font-size:6rem;">🦸</div>';
     const storyBtn = !isBasic ? ui.atom.buttonBase({ label: '🌀 進入劇情模式', theme: 'correct', action: 'emit', actionVal: 'action_enter_story_mode', style: `width: 240px; padding: 12px; border-radius: var(--radius-full); font-size: 1.1rem;` }).replace('data-val="action_enter_story_mode"', 'data-event="action_enter_story_mode"') : '';
     container.innerHTML = `<div style="position: relative; width: 100%; height: 100%; overflow: hidden;"><div style="position: absolute; top: 20px; right: 14px; z-index: 50; display: flex; flex-direction: column;">${quickButtonsHtml}</div><div style="width: 100%; height: 75%; display: flex; align-items: flex-end; justify-content: center; transform: translateY(40px); position: relative; z-index: 10; pointer-events: none;"><div style="height: 100%; width: auto; display: flex; align-items: flex-end; pointer-events: none;">${charImg}</div><div data-action="navigate" data-val="stats" style="position: absolute; bottom: 0; left: 30%; width: 40%; height: 90%; cursor: pointer; pointer-events: auto; z-index: 20;"></div></div><div style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100; width: auto; display: flex; justify-content: center;">${storyBtn}</div></div>`;

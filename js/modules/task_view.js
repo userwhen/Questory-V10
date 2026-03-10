@@ -1,4 +1,4 @@
-/* js/modules/task_view.js - V51.7 Ultimate Smooth Edition */
+/* js/modules/task_view.js - V52.0 Ultimate Smooth Edition */
 window.SQ = window.SQ || {};
 window.SQ.View = window.SQ.View || {};
 window.SQ.View.Task = {
@@ -28,7 +28,8 @@ window.SQ.View.Task = {
             const currentCat = window.SQ.Temp.filterCategory || '全部';
             const allCats = ['全部', ...((window.SQ.State.taskCats || []).filter(c => c !== '全部'))];
             const filterBtns = allCats.map(c => ui.atom.buttonBase({ label: c, theme: c === currentCat ? 'normal' : 'ghost', style: 'flex-shrink:0; border-radius:50px; padding:4px 12px;', action: 'setTaskFilter', actionVal: c })).join('');
-            const filterArea = `<div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;"><div style="flex:1; overflow:hidden;"><div class="u-scroll-list">${filterBtns}</div></div><div style="flex-shrink:0;">${ui.atom.buttonBase({ label:'📜 歷史', theme:'normal', size:'sm', action:'navigate', actionVal:'history' })}</div></div>`;
+            const calSyncBtn = ui.atom.buttonBase({ label:'📅', theme:'ghost', size:'sm', style:'flex-shrink:0; padding:4px 8px; font-size:1rem;', action:'openCalendarSync' });
+            const filterArea = `<div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;"><div style="flex:1; overflow:hidden;"><div class="u-scroll-list">${filterBtns}</div></div><div style="flex-shrink:0; display:flex; gap:4px;">${calSyncBtn}${ui.atom.buttonBase({ label:'📜 歷史', theme:'normal', size:'sm', action:'navigate', actionVal:'history' })}</div></div>`;
             const tasks = window.SQ.Engine.Task.getSortedTasks(currentCat);
             const listItems = tasks.length === 0 ? `<div class="ui-empty"><div class="ui-empty-icon">📭</div>暫無任務</div>` : `<div>${tasks.map(t => ui.smart.taskCard(t, false)).join('')}</div>`;
             contentHtml = filterArea + `<div style="padding-bottom:100px;">${listItems}</div>`;

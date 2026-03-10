@@ -47,7 +47,7 @@ window.SQ.Audio = {
             levelUp:      { type:'triangle', freq:[440,550,660],    dur:0.2,  vol:0.5 },
             goldGain:     { type:'sine',     freq:[880],            dur:0.08, vol:0.3 },
             purchase:     { type:'sine',     freq:[550,660],        dur:0.12, vol:0.35 },
-            error:        { type:'sawtooth', freq:[180],            dur:0.15, vol:0.3 },
+            error:        { type:'sine',     freq:[330,220],        dur:0.12, vol:0.25 },
             toast:        { type:'sine',     freq:[660],            dur:0.1,  vol:0.2 },
             click:        { type:'sine',     freq:[440],            dur:0.05, vol:0.15 },
             achievement:  { type:'triangle', freq:[440,550,660,880],dur:0.18, vol:0.5 },
@@ -57,7 +57,7 @@ window.SQ.Audio = {
             toggle_off:   { type:'sine',     freq:[400,320],        dur:0.1,  vol:0.2 },
             navigate:     { type:'sine',     freq:[500],            dur:0.07, vol:0.15 },
             save:         { type:'triangle', freq:[550,660],        dur:0.15, vol:0.3 },
-            delete:       { type:'sawtooth', freq:[300,200],        dur:0.15, vol:0.3 },
+            delete:       { type:'sine',     freq:[330,220],        dur:0.12, vol:0.25 },
         };
 
         const s = sounds[type];

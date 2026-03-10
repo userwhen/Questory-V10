@@ -81,7 +81,7 @@ window.SQ.Core = {
         if(!gs.tasks) gs.tasks = [];
         if(!gs.milestones) gs.milestones = []; 
         if(!gs.achievements) gs.achievements = [];
-        if(!gs.settings) gs.settings = { mode: 'basic' };
+        if(!gs.settings) gs.settings = { mode: 'adventurer' };
         if(!gs.avatar) gs.avatar = { gender: 'm', unlocked: [], wearing: {} };
         
         if(!gs.story) gs.story = { energy: 30, tags: [], vars: {}, flags: {}, chain: null, currentNode: null };

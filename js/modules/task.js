@@ -226,6 +226,8 @@ window.SQ.Engine.Task = {
 					gs.history.shift(); 
 				}
             window.SQ.EventBus.emit(window.SQ.Events.Task.COMPLETED, { task: task, impact: impact, gained: rewards });
+            // 被動寫入行事曆（完成紀錄）
+            if (window.SQ.Calendar?.logCompleted) window.SQ.Calendar.logCompleted(task);
             window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, `完成！+${rewards.gold}💰 +${rewards.exp}✨`);
 
         } else {

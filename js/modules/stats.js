@@ -246,7 +246,25 @@ window.SQ.Engine.Stats = {
     // =========================================
     // 4. 管理與其他 (CRUD)
     // =========================================
-    saveSkill: function(name, parentAttr, editId = null) {
+    saveSkill: function(data) {
+        // 支援 data 物件傳入，也向下相容舊的 (name, parentAttr, editId) 呼叫方式
+        let name, parentAttr, editId;
+        if (data && typeof data === 'object') {
+            name = data.name;
+            parentAttr = data.parent;
+            editId = data.editId || null;
+        } else {
+            // 向下相容
+            name = data;
+            parentAttr = arguments[1];
+            editId = arguments[2] || null;
+        }
+
+        if (!name || typeof name !== 'string' || !name.trim()) {
+            return { success: false, msg: "技能名稱不能為空" };
+        }
+        name = name.trim();
+
         const gs = window.SQ.State;
         const exists = gs.skills.find(s => s.name === name && s.name !== editId);
         if (exists) return { success: false, msg: "技能名稱重複" };
@@ -257,15 +275,17 @@ window.SQ.Engine.Stats = {
                 const oldName = skill.name;
                 skill.name = name;
                 skill.parent = parentAttr;
-                gs.tasks.forEach(t => {
-                    if (t.attrs && t.attrs.includes(oldName)) {
-                        t.attrs = t.attrs.map(n => n === oldName ? name : n);
-                    }
-                });
+                if (gs.tasks) {
+                    gs.tasks.forEach(t => {
+                        if (t.attrs && t.attrs.includes(oldName)) {
+                            t.attrs = t.attrs.map(n => n === oldName ? name : n);
+                        }
+                    });
+                }
             }
         } else {
             if (gs.skills.length >= 10) return { success: false, msg: "技能數量已達上限" };
-            gs.skills.push({ name: name, parent: parentAttr, lv: 1, exp: 0 });
+            gs.skills.push({ name: name, parent: parentAttr || 'STR', lv: 1, exp: 0 });
         }
 
         this._saveAndNotify();

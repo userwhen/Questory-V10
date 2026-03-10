@@ -30,18 +30,33 @@ window.SQ.Controller.Stats = {
             saveSkill: () => {
                 let data = window.SQ.Temp.editingSkill || {};
                 
-                // 👈 終極防呆：只在「活躍的視窗」裡尋找輸入框，避開隱藏的舊 DOM
+                // 👈 在活躍的視窗裡尋找輸入框
                 const activeModal = document.querySelector('.modal-overlay.active, .modal-panel.active') || document;
-                const inputs = activeModal.querySelectorAll('input, textarea');
                 
+                // 抓取文字輸入框
+                const inputs = activeModal.querySelectorAll('input, textarea');
                 inputs.forEach(input => {
                     const placeholder = input.placeholder || '';
+                    const id = input.id || '';
                     const val = input.value.trim();
-                    // 模糊比對，不管你的 UI 框架把 ID 命名成什麼都能抓到
-                    if (placeholder.includes('名稱') || input.id.includes('name')) data.name = val;
-                    if (placeholder.includes('圖標') || input.id.includes('icon')) data.icon = val;
-                    if (placeholder.includes('描述') || input.id.includes('desc')) data.desc = val;
+                    if (placeholder.includes('名稱') || id.includes('name')) data.name = val;
+                    if (placeholder.includes('圖標') || id.includes('icon')) data.icon = val;
+                    if (placeholder.includes('描述') || id.includes('desc')) data.desc = val;
                 });
+
+                // 抓取 select (綁定主屬性)
+                const selects = activeModal.querySelectorAll('select');
+                selects.forEach(select => {
+                    const id = select.id || '';
+                    if (id.includes('parent') || id.includes('attr')) {
+                        data.parent = select.value;
+                    }
+                });
+
+                // 若 parent 仍未取到，嘗試從 Temp 保存的值取
+                if (!data.parent && window.SQ.Temp.editingSkill && window.SQ.Temp.editingSkill.parent) {
+                    data.parent = window.SQ.Temp.editingSkill.parent;
+                }
 
                 if (!data.name || data.name === '[object Object]') {
                     return window.SQ.Actions.toast("⚠️ 請正確輸入技能名稱");
@@ -60,17 +75,20 @@ window.SQ.Controller.Stats = {
             },
 
             deleteSkill: (name) => {
+                // name 可能來自 actionId 或 actionVal，都要能接
+                const skillName = name || (window.SQ.Temp.editingSkill && window.SQ.Temp.editingSkill.editId);
+                if (!skillName) return window.SQ.Actions.toast('❌ 找不到要刪除的技能');
+
                 const doDelete = () => {
-                    window.SQ.Engine.Stats.deleteSkill(name);
+                    window.SQ.Engine.Stats.deleteSkill(skillName);
                     window.SQ.Actions.closeModal('overlay');
                     window.SQ.Actions.toast("🗑️ 技能已刪除");
                     window.SQ.Audio?.play('delete');
                 };
                 
-                // 👈 修正：確保 sys 前面都有加 window.
                 if(window.sys && window.sys.confirm) {
-                    window.sys.confirm(`確定要刪除技能 [${name}] 嗎？`, doDelete);
-                } else if(confirm(`確定要刪除技能 [${name}] 嗎？`)) {
+                    window.sys.confirm(`確定要刪除技能 [${skillName}] 嗎？`, doDelete);
+                } else if(confirm(`確定要刪除技能 [${skillName}] 嗎？`)) {
                     doDelete();
                 }
             },

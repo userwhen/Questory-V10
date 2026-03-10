@@ -23,7 +23,10 @@ window.SQ.Controller.Ach = {
             // B. 提交建立/更新
             submitMilestone: () => {
                 const data = window.SQ.Temp.editingAch;
-                if (!data || !data.title) return window.SQ.Actions.toast("⚠️ 請輸入目標名稱");
+                if (!data || !data.title) {
+                    window.SQ.Audio?.feedback('taskUndo'); // 👈 新增：防呆失敗音效
+                    return window.SQ.Actions.toast("⚠️ 請輸入目標名稱");
+                }
                 
                 if (data.id) {
                     window.SQ.Engine.Ach.updateMilestone({
@@ -43,6 +46,7 @@ window.SQ.Controller.Ach = {
                     });
                     window.SQ.Actions.toast("✅ 目標已建立！");
                 }
+                window.SQ.Audio?.play('save'); // 👈 新增：儲存成功音效
                 if (window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('overlay');
             },
             
@@ -69,6 +73,7 @@ window.SQ.Controller.Ach = {
             deleteAchievement: (id) => {
                 const doDelete = () => {
                     window.SQ.Engine.Ach.deleteMilestone(id);
+                    window.SQ.Audio?.play('delete');
                     if (window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('overlay');
                     window.SQ.Actions.toast('🗑️ 已刪除');
                 };
@@ -117,6 +122,16 @@ window.SQ.Controller.Ach = {
                 if (window.SQ.View.Ach && window.SQ.View.Ach.renderMilestonePage) {
                     window.SQ.View.Ach.renderMilestonePage();
                 }
+            }
+        });
+		window.SQ.EventBus.on('TIMER_COMPLETED', (data) => {
+            if (window.SQ.Engine.Ach.onTimerCompleted) {
+                window.SQ.Engine.Ach.onTimerCompleted(data.mode, data.minutes);
+            }
+        });
+		window.SQ.EventBus.on('LOGIN_UPDATED', (payload) => {
+            if (window.SQ.Engine.Ach.onLoginUpdated) {
+                window.SQ.Engine.Ach.onLoginUpdated(payload.total, payload.streak);
             }
         });
 

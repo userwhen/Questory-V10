@@ -205,7 +205,7 @@ window.SQ.Engine.Shop = {
             const idx = gs.shop.user.findIndex(i => i.id === data.id);
             if (idx >= 0) gs.shop.user[idx] = { ...gs.shop.user[idx], ...data };
         } else {
-            gs.shop.user.push({ ...data, id: 'usr_' + Date.now(), currency: 'gold', icon: '📦' });
+            gs.shop.user.push({ ...data, id: 'usr_' + Date.now(), currency: 'gold', icon: data.icon || '📦' });
         }
         if (window.App) App.saveData(); return true;
     },

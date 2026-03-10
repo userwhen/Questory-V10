@@ -9,7 +9,8 @@ window.SQ.Timer = {
     _state: null,   // null | 'idle' | 'running' | 'paused' | 'break' | 'done'
     _interval: null,
     _el: null,      // 浮層 DOM
-
+	_startTime: 0,  // 👈 新增：用來記錄真實世界的開始時間
+    _alertEnabled: true, // 👈 新增：控制是否發出音效與震動
     // 預設番茄鐘設定
     POMODORO_WORK:  25 * 60,
     POMODORO_BREAK: 5  * 60,
@@ -50,15 +51,30 @@ window.SQ.Timer = {
             this._el = document.createElement('div');
             this._el.id = 'sq-timer-layer';
             this._el.style.cssText = `
-                position:fixed; inset:0; z-index:10000;
-                background:rgba(10,10,18,0.96);
-                display:flex; flex-direction:column;
-                align-items:center; justify-content:center;
-                opacity:0; transition:opacity 0.25s, transform 0.25s;
-                transform:scale(0.97);
+                position: absolute; /* 絕對定位 */
+                top: 0; left: 0; right: 0; bottom: 0; 
+                z-index: 10000;
+                background: rgba(10,10,18,0.96);
+                display: flex; flex-direction: column;
+                align-items: center; justify-content: center;
+                opacity: 0; transition: opacity 0.25s, transform 0.25s;
+                transform: scale(0.97);
                 font-family: inherit;
             `;
-            document.body.appendChild(this._el);
+            
+            // 抓取你的遊戲外框容器 (根據你的專案結構可能是 app 或 mobile-wrapper)
+            const container = document.getElementById('app') || document.querySelector('.mobile-wrapper') || document.body;
+            
+            // 👈 核心修正：強制父容器變成 relative，這樣計時器就絕對逃不出去了！
+            if (container !== document.body) {
+                container.style.position = 'relative';
+                container.style.overflow = 'hidden'; 
+            }
+            
+            container.appendChild(this._el);
+            
+            // (確保你的主容器 CSS 有加上 position: relative; overflow: hidden; 喔！)
+
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 this._el.style.opacity = '1';
                 this._el.style.transform = 'scale(1)';
@@ -66,7 +82,7 @@ window.SQ.Timer = {
         }
 
         const mode    = data.mode    || this._currentMode    || 'countdown';
-        const total   = data.total   || this._currentTotal   || (25 * 60);
+        const total   = data.total   || this._currentTotal   || (15 * 60);
         const elapsed = data.elapsed || this._currentElapsed || 0;
         const phase   = data.phase   || this._currentPhase   || 'work'; // 'work' | 'break'
 
@@ -151,14 +167,15 @@ window.SQ.Timer = {
             </div>` : '';
 
         // 完成畫面
+        const doneTitle = mode === 'countdown' ? '⏰ 時間到！' : '🎉 專注完成！';
         const doneHtml = isDone ? `
             <div style="text-align:center; margin-bottom:24px; animation: sq-pop 0.4s ease;">
-                <div style="font-size:3rem; margin-bottom:8px;">🎉</div>
-                <div style="font-size:1.2rem; font-weight:700; color:#fff;">完成！</div>
+                <div style="font-size:3rem; margin-bottom:8px;">${mode === 'countdown' ? '⏰' : '🎉'}</div>
+                <div style="font-size:1.2rem; font-weight:700; color:#fff;">${doneTitle}</div>
                 <div style="font-size:0.9rem; color:rgba(255,255,255,0.5); margin-top:4px;">
-                    ${ mode==='stopwatch'
+                    ${ mode === 'stopwatch'
                         ? `共計時 ${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}`
-                        : `專注了 ${Math.floor(total/60)} 分鐘` }
+                        : (mode === 'countdown' ? `倒數 ${Math.floor(total/60)} 分鐘結束` : `專注了 ${Math.floor(total/60)} 分鐘`) }
                 </div>
             </div>` : '';
 
@@ -189,9 +206,9 @@ window.SQ.Timer = {
                             style="${btnStyle(isRunning ? 'rgba(255,255,255,0.12)' : col.ring, isRunning ? 'rgba(255,255,255,0.8)' : '#111')} min-width:100px;">
                         ${isRunning ? '⏸ 暫停' : '▶ 繼續'}
                     </button>
-                    <button onclick="window.SQ.Timer._stop(true)"
+                    <button onclick="window.SQ.Timer._finishEarly()"
                             style="${btnStyle('rgba(220,60,60,0.25)', '#ff8080')} padding:14px 20px;">
-                        ■ 停止
+                        ■ 結束
                     </button>
                 </div>`;
         }
@@ -210,13 +227,12 @@ window.SQ.Timer = {
                 #sq-timer-ring { filter: drop-shadow(0 0 12px ${col.glow}); }
                 #sq-timer-ring circle.track { transition: stroke-dashoffset 1s linear; }
             </style>
-
             <!-- 關閉按鈕 -->
             <button onclick="window.SQ.Timer.close()"
                     style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.07);
                            border:none; border-radius:50%; width:40px; height:40px; cursor:pointer;
                            color:rgba(255,255,255,0.4); font-size:1.2rem; display:flex;
-                           align-items:center; justify-content:center;">✕</button>
+                           align-items:center; justify-content:center; z-index:10001;">✕</button>
 
             <!-- 模式標籤 -->
             <div style="font-size:0.85rem; color:rgba(255,255,255,0.4); letter-spacing:0.12em;
@@ -231,6 +247,14 @@ window.SQ.Timer = {
             <!-- 圓形進度環 -->
             ${!isDone ? `
             <div style="position:relative; margin-bottom:28px;">
+			<button id="sq-timer-alert-btn" onclick="window.SQ.Timer._toggleAlert()"
+                        style="position:absolute; top:0px; right:0px; background:rgba(255,255,255,0.12);
+                               border:none; border-radius:50%; width:42px; height:42px; cursor:pointer;
+                               color:rgba(255,255,255,0.9); font-size:1.2rem; display:flex;
+                               align-items:center; justify-content:center; transition: 0.2s; z-index:10;
+                               box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    ${this._alertEnabled !== false ? '🔔' : '🔕'}
+                </button>
                 <svg id="sq-timer-ring" width="260" height="260" viewBox="0 0 260 260">
                     <!-- 背景環 -->
                     <circle cx="130" cy="130" r="${R}"
@@ -265,7 +289,7 @@ window.SQ.Timer = {
 
     // ── 控制邏輯 ────────────────────────────────────────
     _selectMode: function(mode) {
-        const totals = { countdown: 25*60, pomodoro: 25*60, stopwatch: 0 };
+        const totals = { countdown: 15*60, pomodoro: 25*60, stopwatch: 0 };
         this._currentMode    = mode;
         this._currentTotal   = totals[mode];
         this._currentElapsed = 0;
@@ -273,7 +297,7 @@ window.SQ.Timer = {
     },
 
     _adjustTime: function(deltaMin) {
-        const current = Math.floor((this._currentTotal || 25*60) / 60);
+        const current = Math.floor((this._currentTotal || 15*60) / 60);
         const next    = Math.max(1, Math.min(99, current + deltaMin));
         this._currentTotal = next * 60;
         this._render('idle', { mode: this._currentMode, total: this._currentTotal, elapsed: 0 });
@@ -284,12 +308,12 @@ window.SQ.Timer = {
         const mode = this._currentMode || 'countdown';
         this._currentPhase = 'work';
         
-        // 👈 修正：將錯誤的 _tick 替換成 _render，讓按下「開始」的瞬間畫面立刻切換到計時狀態
+        // 👈 核心修改 1：記錄按下的那一瞬間的「真實系統時間」
+        this._startTime = Date.now(); 
+
         this._render('running', {
-            mode: mode,
-            total: this._currentTotal,
-            elapsed: this._currentElapsed,
-            phase: this._currentPhase
+            mode: mode, total: this._currentTotal,
+            elapsed: this._currentElapsed, phase: this._currentPhase
         });
         
         this._runInterval();
@@ -298,21 +322,25 @@ window.SQ.Timer = {
     _runInterval: function() {
         this._stop(false);
         this._interval = setInterval(() => {
+            if (this._state !== 'running') return;
+
+            // 👈 核心修改 2：不再傻傻地 +1，而是用「現在時間 - 開始時間」來算出真實經過秒數！
+            // 這樣就算手機螢幕關掉 10 分鐘，一打開也能瞬間扣掉 600 秒
+            const now = Date.now();
+            this._currentElapsed = Math.floor((now - this._startTime) / 1000);
+
             const mode  = this._currentMode;
-            const state = this._state;
-            if (state !== 'running') return;
 
             if (mode === 'stopwatch') {
-                this._currentElapsed++;
                 this._render('running', {
                     mode, total: this._currentTotal,
                     elapsed: this._currentElapsed, phase: this._currentPhase
                 });
             } else {
-                this._currentElapsed++;
                 const remaining = this._currentTotal - this._currentElapsed;
 
                 if (remaining <= 0) {
+                    this._currentElapsed = this._currentTotal; // 確保不會變成負數
                     this._onComplete();
                     return;
                 }
@@ -321,7 +349,7 @@ window.SQ.Timer = {
                     elapsed: this._currentElapsed, phase: this._currentPhase
                 });
             }
-        }, 1000);
+        }, 1000); // 這裡維持 1000ms，但實際時間由 Date.now() 決定
         this._state = 'running';
     },
 
@@ -334,8 +362,18 @@ window.SQ.Timer = {
                 elapsed: this._currentElapsed, phase: this._currentPhase
             });
         } else if (this._state === 'paused') {
+            // 👈 核心修改 3：解除暫停時，要把「開始時間」往後推，扣掉已經經過的時間
+            this._startTime = Date.now() - (this._currentElapsed * 1000);
             this._runInterval();
         }
+    },
+
+    // 👈 新增：鈴鐺切換邏輯
+    _toggleAlert: function() {
+        this._alertEnabled = !this._alertEnabled;
+        const btn = document.getElementById('sq-timer-alert-btn');
+        if (btn) btn.innerText = this._alertEnabled ? '🔔' : '🔕';
+        window.SQ.Audio?.play('click');
     },
 
     _stop: function(showIdle = false) {
@@ -360,6 +398,14 @@ window.SQ.Timer = {
         });
     },
 
+    _finishEarly: function() {
+        if (this._currentMode === 'stopwatch') {
+            this._onComplete(); // 正計時手動按下結束，視為「專注完成」
+        } else {
+            this._stop(true); // 倒數或番茄鐘如果中途按結束，直接放棄回大廳
+        }
+    },
+
     _onComplete: function() {
         clearInterval(this._interval);
         this._interval = null;
@@ -367,50 +413,69 @@ window.SQ.Timer = {
         const mode    = this._currentMode;
         const elapsed = this._currentElapsed;
 
-        // 音效 + 震動
-        window.SQ.Audio?.feedback('achievement');
-        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        // 👈 差異化音效與震動
+        if (this._alertEnabled !== false) {
+            if (mode === 'countdown') {
+                // 倒數計時：時間到了的「連續 taskUndo 警報聲」
+                window.SQ.Audio?.play('taskUndo');
+                setTimeout(() => window.SQ.Audio?.play('taskUndo'), 400); // 0.4秒後響第二次
+                setTimeout(() => window.SQ.Audio?.play('taskUndo'), 800); // 0.8秒後響第三次
+                
+                if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]); // 急促震動
+            } else {
+                // 番茄鐘/正計時：專注完成的「成就音效」
+                window.SQ.Audio?.feedback('achievement');
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200]); // 溫和震動
+            }
+        }
 
-        // 番茄鐘：切換工作/休息
-        if (mode === 'pomodoro' && this._currentPhase === 'work') {
+        // 👈 差異化後續行為
+        if (mode === 'countdown') {
+            this._render('done', { mode, total: this._currentTotal, elapsed });
+            // 倒數計時只彈出警告，不給 EXP
+            if (window.sys && window.sys.alert) window.sys.alert("⏰ 滴答滴答... 時間到囉！");
+            else if (window.SQ.Actions && window.SQ.Actions.toast) window.SQ.Actions.toast("⏰ 時間到囉！");
+        } 
+        else if (mode === 'pomodoro' && this._currentPhase === 'work') {
+            // 番茄鐘：工作結束，自動進入休息倒數
             this._currentPhase = 'break';
             this._currentTotal = this.POMODORO_BREAK;
             this._currentElapsed = 0;
-            // 短暫顯示「休息開始」提示再自動進入下一輪
             this._render('done', { mode, total: this.POMODORO_WORK, elapsed: this.POMODORO_WORK });
-            // 3秒後自動進休息倒數
             setTimeout(() => {
                 if (this._state === 'done') {
                     this._runInterval();
-                    this._render('running', {
-                        mode, total: this.POMODORO_BREAK,
-                        elapsed: 0, phase: 'break'
-                    });
+                    this._render('running', { mode, total: this.POMODORO_BREAK, elapsed: 0, phase: 'break' });
                 }
             }, 3000);
         } else {
+            // 正計時結束 / 番茄大循環結束：結算與給獎
             this._render('done', { mode, total: this._currentTotal, elapsed });
-            // 給予獎勵（每完成一次倒數 / 番茄鐘給少量 EXP）
             this._giveReward(mode, elapsed);
         }
     },
 
     _giveReward: function(mode, elapsed) {
-        if (mode === 'stopwatch') return; // 正計時不給獎勵（避免掛機刷點）
+        const minutes = Math.floor(elapsed / 60);
+        
+        // 👈 新增：發送「計時完成」廣播，把模式與分鐘數傳送出去給成就系統
+        if (minutes >= 1 && window.SQ.EventBus) {
+            window.SQ.EventBus.emit('TIMER_COMPLETED', { mode: mode, minutes: minutes });
+        }
+
+        if (mode === 'stopwatch') return; // 正計時不給金幣/EXP，但上面依然有發送廣播以累積成就！
+
         const gs = window.SQ.State;
         if (!gs) return;
-
-        const minutes = Math.floor(elapsed / 60);
         if (minutes < 1) return;
 
-        const expReward = Math.min(minutes * 5, 200); // 每分鐘5 EXP，上限200
+        const expReward = Math.min(minutes * 5, 200); 
 
         gs.exp = (gs.exp || 0) + expReward;
         if (window.App) App.saveData();
         if (window.SQ.EventBus) {
             window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
-            window.SQ.EventBus.emit(window.SQ.Events.System.TOAST,
-                `⏱️ 專注完成！獲得 ${expReward} EXP`);
+            window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, `⏱️ 專注完成！獲得 ${expReward} EXP`);
         }
     },
 };

@@ -1,4 +1,4 @@
-/* js/modules/shop_controller.js - V51.3 Pure CSP Controller */
+/* js/modules/shop_controller.js - V56.0 Pure CSP Controller */
 window.SQ = window.SQ || {};
 window.SQ.Controller = window.SQ.Controller || {};
 window.SQ.Controller.Shop = {
@@ -30,23 +30,22 @@ window.SQ.Controller.Shop = {
             
             // --- 購買邏輯 ---
             updateBuyQty: (arg1, arg2) => {
-                const deltaStr = String((arg2 !== undefined) ? arg2 : arg1);
+                // qtySelector 按鈕通常只傳一個參數如 '+1', '-1', 'min', 'max'
+                const deltaStr = String((arg2 !== undefined && arg2 !== null) ? arg2 : arg1);
                 let qty = window.SQ.Temp.buyQty || 1;
-                const max = window.SQ.Temp.buyMax || 99; // 防呆上限 99
+                const max = window.SQ.Temp.buyMax || 99;
                 
                 if (deltaStr === 'min') qty = 1;
                 else if (deltaStr === 'max') qty = max;
-                else qty += parseInt(deltaStr.replace('+', ''), 10) || 0; 
+                else qty += parseInt(deltaStr.replace('+', ''), 10) || 0;
                 
                 if (qty < 1) qty = 1;
                 if (qty > max) qty = max;
                 window.SQ.Temp.buyQty = qty;
                 
-                // 👈 暴力網羅所有可能的 ID 名稱
                 const display = document.getElementById('buy-qty') || 
                                 document.getElementById('buy-qty-val') || 
                                 document.getElementById('buy-qty-display');
-                
                 if (display) {
                     if (display.tagName === 'INPUT') display.value = qty;
                     else display.innerText = qty;
@@ -78,13 +77,13 @@ window.SQ.Controller.Shop = {
 
 			// --- 使用與丟棄物品 ---
             updateUseQty: (arg1, arg2) => {
-                const deltaStr = String((arg2 !== undefined) ? arg2 : arg1);
+                const deltaStr = String((arg2 !== undefined && arg2 !== null) ? arg2 : arg1);
                 let qty = window.SQ.Temp.useQty || 1;
-                const max = window.SQ.Temp.useMax || 1; 
+                const max = window.SQ.Temp.useMax || 1;
                 
                 if (deltaStr === 'min') qty = 1;
                 else if (deltaStr === 'max') qty = max;
-                else qty += parseInt(deltaStr.replace('+', ''), 10) || 0; 
+                else qty += parseInt(deltaStr.replace('+', ''), 10) || 0;
                 
                 if (qty < 1) qty = 1;
                 if (qty > max) qty = max;
@@ -145,6 +144,10 @@ window.SQ.Controller.Shop = {
                 const itemType = typeSelect ? typeSelect.value : 'daily'; 
                 const inputQty = parseInt(document.getElementById('up-qty').value || 1);
 
+                // 依分類自動給 icon
+                const catIconMap = { '熱量': '🍱', '時間': '⏱️', '金錢': '💰', '其他': '🎁' };
+                const autoIcon = catIconMap[cat] || '📦';
+
                 const success = window.SQ.Engine.Shop.uploadItem({
                     name: name,
                     price: parseInt(price),
@@ -153,7 +156,8 @@ window.SQ.Controller.Shop = {
                     type: itemType,        
                     maxQty: inputQty,      
                     qty: inputQty,         
-                    val: val, 
+                    val: val,
+                    icon: autoIcon,
                     id: window.SQ.Temp.uploadEditId
                 });
 
@@ -168,6 +172,52 @@ window.SQ.Controller.Shop = {
                 if(window.SQ.Actions.toast)window.SQ.Actions.toast('🗑️ 商品已下架');
                 window.SQ.Actions.closeModal('panel');
                 window.SQ.View.Shop.render();
+            },
+
+            // --- 條碼掃描 ---
+            startBarcodeScam: async () => {
+                if (!window.SQ.Scanner) {
+                    window.SQ.Actions.toast('❌ 掃描模組未載入');
+                    return;
+                }
+                const result = await window.SQ.Scanner.scan();
+                if (!result) return; // 取消或失敗
+
+                if (!result.found) {
+                    window.SQ.Actions.toast('⚠️ 查無此條碼，請手動填寫');
+                    return;
+                }
+
+                // 自動填入表單
+                const nameEl  = document.getElementById('up-name');
+                const catEl   = document.getElementById('up-cat');
+
+                if (nameEl && result.name) {
+                    nameEl.value = result.name;
+                }
+
+                // 如果有熱量資料 → 自動切換為熱量分類並填入
+                if (result.kcal !== null) {
+                    if (catEl) {
+                        catEl.value = '熱量';
+                        // 觸發動態欄位重新渲染
+                        if (window.SQ.View.Shop) {
+                            window.SQ.View.Shop.renderDynamicFields('熱量', result.kcal);
+                        }
+                        // 填入 kcal
+                        setTimeout(() => {
+                            const calEl = document.getElementById('up-val-cal');
+                            if (calEl) calEl.value = result.kcal;
+                        }, 50);
+                    }
+                    const parts = [`${result.name}`];
+                    if (result.serving) parts.push(`每份 ${result.serving}`);
+                    window.SQ.Actions.toast(`✅ 已填入：${result.kcal} Kcal`);
+                } else {
+                    window.SQ.Actions.toast(`✅ 查到：${result.name}，熱量請手動填寫`);
+                }
+
+                window.SQ.Audio?.play('save');
             },
 
 			// --- 特殊商店 ---

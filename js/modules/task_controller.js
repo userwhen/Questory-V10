@@ -1,4 +1,4 @@
-/* js/modules/task_controller.js - V51.0 Pure CSP Controller */
+/* js/modules/task_controller.js - V52.0 Pure CSP Controller */
 window.SQ = window.SQ || {};
 window.SQ.Controller = window.SQ.Controller || {};
 window.SQ.Controller.Task = {
@@ -8,6 +8,27 @@ window.SQ.Controller.Task = {
         if (!window.SQ.EventBus || !E) return;
 
         Object.assign(window.SQ.Actions, {
+            // ── 行事曆 ────────────────────────────────────────
+            addTaskToCalendar: async (id) => {
+                const task = (window.SQ.State?.tasks || []).find(t => t.id === id);
+                if (!task) return;
+                if (!window.SQ.Calendar) {
+                    window.SQ.Actions.toast('❌ 行事曆模組未載入');
+                    return;
+                }
+                await window.SQ.Calendar.addTask(task);
+                if (window.SQ.View.Task?.render) window.SQ.View.Task.render();
+            },
+
+            openCalendarSync: () => {
+                if (!window.SQ.Calendar) {
+                    window.SQ.Actions.toast('❌ 行事曆模組未載入');
+                    return;
+                }
+                window.SQ.Calendar.openSyncModal();
+            },
+
+            // ─────────────────────────────────────────────────────
             goToTaskRoot: () => {
                 window.SQ.Temp.taskTab = 'list';
                 if (window.SQ.Temp.currentView === 'task') refreshPage();
@@ -20,26 +41,29 @@ window.SQ.Controller.Task = {
             },
             
             submitTask: () => {
-			const temp = window.SQ.Temp.editingTask;
-			if (!temp || !temp.title) return window.SQ.Actions.toast("⚠️ 標題必填");
-			if (temp.id) {
-				window.SQ.Engine.Task.updateTask(temp);
-				window.SQ.Actions.toast("✅ 已更新");
-				window.SQ.Audio?.play('save'); // 👈 新增這行 (儲存音效)
-			} else {
-				window.SQ.Engine.Task.addTask(temp);
-				window.SQ.Actions.toast("✅ 已新增");
-				window.SQ.Audio?.play('save'); // 👈 新增這行 (新增音效)
-			}
-			
-			window.SQ.Temp.editingTask = null; // ✅ 加上這行！清空殘留狀態
-			
-			if(window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('overlay');
-			},
+                const temp = window.SQ.Temp.editingTask;
+                if (!temp || !temp.title) {
+                    window.SQ.Audio?.feedback('taskUndo'); // 👈 新增：防呆失敗音效
+                    return window.SQ.Actions.toast("⚠️ 標題必填");
+                }
+                if (temp.id) {
+                    window.SQ.Engine.Task.updateTask(temp);
+                    window.SQ.Actions.toast("✅ 已更新");
+                } else {
+                    window.SQ.Engine.Task.addTask(temp);
+                    window.SQ.Actions.toast("✅ 已新增");
+                }
+                
+                window.SQ.Audio?.play('save'); // 👈 新增：儲存成功音效
+                
+                window.SQ.Temp.editingTask = null; 
+                if(window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('overlay');
+            },
+            
             deleteTask: (id) => {
                 const doDelete = () => {
                     window.SQ.Engine.Task.deleteTask(id);
-					window.SQ.Audio?.play('delete');
+                    window.SQ.Audio?.play('delete'); // 👈 新增：刪除音效 (由於步驟一的修改，現在聽起來會是舒服的登登聲)
                     if(window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('overlay');
                     window.SQ.Actions.toast('🗑️ 已刪除');
                 };
