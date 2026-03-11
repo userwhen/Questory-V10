@@ -19,11 +19,30 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('Service Worker 註冊成功！Scope: ', reg.scope))
-        .catch(err => console.log('Service Worker 註冊失敗：', err));
+        .then(registration => {
+          console.log('SW 註冊成功，作用域為:', registration.scope);
+        })
+        .catch(error => {
+          console.error('SW 註冊失敗:', error);
+        });
     });
   }
 </script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('SW Registered!', reg.scope))
+        .catch(err => console.error('SW Registration Failed!', err));
+    });
+  }
+
+  // 監聽安裝事件，如果成功觸發，會在 Console 顯示
+  window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('PWA Install Prompt is ready!');
+  });
+</script>
+
 <body>
 
 <div id="app-frame">
