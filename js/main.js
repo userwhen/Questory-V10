@@ -178,6 +178,14 @@ window._nativePrompt = window.prompt; window.prompt = function(msg, def) { retur
 
 window.SQ.Actions = window.SQ.Actions || {};
 Object.assign(window.SQ.Actions, {
+	openTimer: function() {
+    if (!window.SQ.Timer) {
+        window.SQ.Actions.toast('❌ 計時器模組未載入');
+        return;
+    }
+    window.SQ.Timer.open({ defaultMode: 'pomodoro', defaultMinutes: 25 });
+    window.SQ.Audio?.feedback('click');
+},
     handleSysConfirm: (result) => {
         const targetId = 'm-system';
         if (window.SQ.Actions.closeModal) window.SQ.Actions.closeModal(targetId);

@@ -17,10 +17,45 @@ window.SQ.Controller.Settings = {
                 if (window.SQ.View.Settings) window.SQ.View.Settings.render();
             },
 
+            // ── 即時預覽主題 ──
+            previewTheme: (themeKey) => {
+                document.body.className = themeKey === 'default' ? '' : 'theme-' + themeKey;
+            },
+            
+            // ── 還原為已存檔的主題 ──
+            restoreTheme: () => {
+                const currentTheme = window.SQ.State?.settings?.theme || 'default';
+                document.body.className = currentTheme === 'default' ? '' : 'theme-' + currentTheme;
+            },
+
+            // ── 覆寫打開商店，並綁定關閉時還原 ──
             openSettingsShop: () => {
                 window.SQ.Temp.activeModal = 'settingsShop';
                 if (window.SQ.View.Settings) window.SQ.View.Settings.renderSettingsShop();
-                window.SQ.EventBus.emit(E.Settings.UPDATED);
+                window.SQ.EventBus.emit(window.SQ.Events.Settings.UPDATED);
+                
+                // 監聽 Modal 關閉，如果沒有按下「套用」，就還原背景
+                const onModalClose = (layerName) => {
+                    if (layerName === 'm-overlay' || !layerName) {
+                        window.SQ.Actions.restoreTheme();
+                        window.SQ.EventBus.off(window.SQ.Events.System.MODAL_CLOSE, onModalClose);
+                        window.SQ.Temp.activeModal = null;
+                    }
+                };
+                window.SQ.EventBus.on(window.SQ.Events.System.MODAL_CLOSE, onModalClose);
+            },
+
+            // ── 套用主題（整張卡片觸發，data-val = themeKey 或 'default'）──
+            applyTheme: (val) => {
+                const themeKey = val || 'default';
+                if (window.SQ.Engine.Settings?.applyTheme) {
+                    window.SQ.Engine.Settings.applyTheme(themeKey);
+                    if (window.App && typeof window.App.saveData === 'function') window.App.saveData();
+                    window.SQ.Actions.toast(themeKey === 'default' ? "🔄 已恢復預設主題" : "✅ 已套用主題");
+                    if (window.SQ.Audio) window.SQ.Audio.play('save');
+                    // 立即重繪商店，讓按鈕狀態同步更新
+                    if (window.SQ.View.Settings) window.SQ.View.Settings.renderSettingsShop();
+                }
             },
 
             // draft 只用於 mode / strictMode / calMode（按儲存才生效）
@@ -71,7 +106,14 @@ window.SQ.Controller.Settings = {
                 if (window.SQ.Actions.navigate) window.SQ.Actions.navigate(targetPage);
             },
 
-            buyMode: (id) => window.SQ.Engine.Settings.buyMode(id),
+            // ── 購買（整張卡片觸發，data-val = itemId）──
+            buyMode: (val) => {
+                const itemId = val;
+                if (!itemId) return;
+                if (window.SQ.Engine.Settings?.buyMode) {
+                    window.SQ.Engine.Settings.buyMode(itemId);
+                }
+            },
             openResetConfirm: () => { if (window.SQ.View.Settings) window.SQ.View.Settings.renderResetConfirm(); },
             confirmReset: () => window.SQ.Engine.Settings.performReset(),
             openExportModal: () => { if (window.SettingsEngine) window.SQ.Engine.Settings.downloadSaveFile(); },
@@ -154,6 +196,21 @@ window.SQ.Controller.Settings = {
                     window.SQ.Audio?.play('save');
                     if (window.SQ.View.Settings) window.SQ.View.Settings.render();
                 }
+            },
+			toggleModule: (val) => {
+                // 整張卡片觸發，data-val = moduleId
+                const moduleId = val;
+                if (!moduleId) return;
+                const gs = window.SQ.State;
+                if (!gs.settings) gs.settings = {};
+                
+                const key = moduleId + '_active';
+                gs.settings[key] = !gs.settings[key]; // 切換布林值
+                
+                if (window.App && typeof window.App.saveData === 'function') window.App.saveData();
+                window.SQ.Actions.toast(gs.settings[key] ? "✅ 模組已啟用" : "🚫 模組已關閉");
+                if (window.SQ.Audio) window.SQ.Audio.play(gs.settings[key] ? 'toggle_on' : 'toggle_off');
+                if (window.SQ.View.Settings) window.SQ.View.Settings.renderSettingsShop();
             },
 
             // ── 重新教學 ──────────────────────────────────────

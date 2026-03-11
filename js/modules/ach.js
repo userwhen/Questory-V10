@@ -64,7 +64,7 @@ window.SQ.Engine.Ach = {
     onTaskCompleted: function(task, impact) {
         const val = (typeof impact === 'number') ? impact : 1;
         const gs = window.SQ.State;
-        const targets = gs.milestones || [];
+        const targets = [...(gs.milestones || []), ...(gs.achievements || [])];
         let anyUpdate = false;
 
         targets.forEach(ms => {
@@ -91,7 +91,7 @@ window.SQ.Engine.Ach = {
     onTaskUndone: function(task, impact) {
         const val = (typeof impact === 'number') ? impact : 1;
         const gs = window.SQ.State;
-        const targets = gs.milestones || [];
+        const targets = [...(gs.milestones || []), ...(gs.achievements || [])];
         let anyUpdate = false;
 
         targets.forEach(ms => {
@@ -118,7 +118,7 @@ window.SQ.Engine.Ach = {
     // [新增] 監聽計時器完成 (專注/番茄鐘成就)
     onTimerCompleted: function(mode, minutes) {
         const gs = window.SQ.State;
-        const targets = gs.milestones || [];
+        const targets = [...(gs.milestones || []), ...(gs.achievements || [])];
         let anyUpdate = false;
 
         targets.forEach(ms => {

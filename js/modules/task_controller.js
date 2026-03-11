@@ -59,7 +59,32 @@ window.SQ.Controller.Task = {
                 window.SQ.Temp.editingTask = null; 
                 if(window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('overlay');
             },
-            
+			// 【task_controller.js】新增這段
+			clearTaskForm: () => {
+				const doClear = () => {
+					// 重置資料
+					window.SQ.Temp.editingTask = { 
+						id: null, title: '', desc: '', importance: 1, urgency: 1, 
+						type: 'normal', attrs: [], cat: '每日', target: 10, 
+						subs: [], pinned: false, calories: 0, deadline: '', 
+						subRule: 'all', recurrence: '' 
+					};
+					// 通知畫面更新
+					window.SQ.EventBus.emit(window.SQ.Events.Task.FORM_UPDATE);
+					
+					// 確保關閉確認視窗 (對應層級為 system)
+					if(window.SQ.Actions && window.SQ.Actions.closeModal) {
+						window.SQ.Actions.closeModal('m-system');
+					}
+				};
+
+				// 使用內建的 confirm 視窗
+				if (window.sys && window.sys.confirm) {
+					window.sys.confirm('確定要清空所有內容嗎？<br><span style="font-size:0.85rem; color:var(--text-muted);">（未保存的資料將遺失）</span>', doClear);
+				} else {
+					doClear(); // 防呆備案
+				}
+			},            
             deleteTask: (id) => {
                 const doDelete = () => {
                     window.SQ.Engine.Task.deleteTask(id);
@@ -135,17 +160,23 @@ window.SQ.Controller.Task = {
                             defaults.forEach(d => { if(!gs.taskCats.includes(d)) gs.taskCats.push(d); });
                         }
                         
-                        if (!gs.taskCats.includes(newCat)) {
-                            // 訂閱功能鎖：分類數量上限
-                            if (window.SQ.Sub) {
-                                const catCheck = window.SQ.Sub.canAddCategory();
-                                if (!catCheck.ok) {
-                                    window.SQ.Actions.toast(`⚠️ ${catCheck.reason}`);
-                                    if (catCheck.cta) window.SQ.Sub.showUpgradePrompt(catCheck.reason);
-                                    return;
-                                }
-                            }
-                            gs.taskCats.push(newCat);
+                        // 【task_controller.js】找到 addNewCategory 的這段並替換：
+						if (!gs.taskCats.includes(newCat)) {
+							// 🌟 修正：只計算「預設以外」的自訂分類數量
+							const customCatsCount = gs.taskCats.filter(c => !defaults.includes(c)).length;
+
+							// 訂閱功能鎖：如果不是 Pro，且自訂分類 >= 3，就擋下
+							if (window.SQ.Sub && typeof window.SQ.Sub.isPro === 'function' && !window.SQ.Sub.isPro()) {
+								if (customCatsCount >= 3) {
+									window.SQ.Actions.toast(`⚠️ 免費版最多只能新增 3 個自訂分類`);
+									setTimeout(() => {
+										if (window.SQ.Sub.showUpgradePrompt) window.SQ.Sub.showUpgradePrompt('解鎖更多分類額度');
+									}, 300); // 確保不跟原視窗衝突
+									return;
+								}
+							}
+
+							gs.taskCats.push(newCat);
                             if (window.SQ.Temp.editingTask) {
                                 window.SQ.Temp.editingTask.cat = newCat;
                                 window.SQ.EventBus.emit(E.Task.FORM_UPDATE);
@@ -160,7 +191,29 @@ window.SQ.Controller.Task = {
                 };
                 if(window.sys && window.sys.prompt) window.sys.prompt("新分類名稱：", "", cb);
                 else cb(prompt("新分類名稱："));
-            }
+            },
+			promptDeleteCategory: (cat) => {
+				const defaults = ['每日', '運動', '工作'];
+				if (defaults.includes(cat)) {
+					return window.SQ.Actions.toast("⚠️ 預設分類無法刪除");
+				}
+				const doDelete = () => {
+					window.SQ.State.taskCats = window.SQ.State.taskCats.filter(c => c !== cat);
+					// 如果目前正在編輯的任務剛好是這個分類，把它退回每日
+					if (window.SQ.Temp.editingTask && window.SQ.Temp.editingTask.cat === cat) {
+						window.SQ.Temp.editingTask.cat = '每日';
+					}
+					window.SQ.Actions.toast(`🗑️ 已刪除分類：${cat}`);
+					window.SQ.EventBus.emit(window.SQ.Events.Task.FORM_UPDATE);
+					if(window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('m-system');
+				};
+				if (window.sys && window.sys.confirm) {
+					window.sys.confirm(`確定要刪除「${cat}」嗎？<br><span style="font-size:0.8rem; color:var(--text-muted);">（屬於此分類的任務不會被刪除）</span>`, doDelete);
+				} else {
+					doDelete();
+				}
+			},
+			
         });
 
         const refreshPage = () => {

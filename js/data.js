@@ -4,6 +4,12 @@
 // 1. 玩家初始預設存檔 (Default State)
 // 供 core.js 在建立新玩家時複製使用
 // ==========================================
+
+window.GameConfig.System = {
+    SaveKey: 'Levelife_Save_V1',
+    Version: '1.0.0',  // 👈 加這行
+    SaveInterval: 5000
+};
 window.DefaultData = {
     name: 'Commander', 
     gold: 0, freeGem: 0, paidGem: 0, lv: 1, exp: 0,

@@ -11,7 +11,7 @@ window.SQ.Engine.Task = {
 
         if (!gs.tasks) gs.tasks = [];
         if (!gs.history) gs.history = [];
-        if (!gs.taskCats) gs.taskCats = ['每日', '運動', '工作', '待辦', '願望'];
+        if (!gs.taskCats) gs.taskCats = ['每日', '運動', '工作'];
         if (!gs.cal) gs.cal = { today: 0, logs: [] };
         
         // 注意：這裡不再執行重置檢查，改由 Core 統一呼叫 resetDaily

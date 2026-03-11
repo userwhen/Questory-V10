@@ -6,7 +6,8 @@ window.SQ.View.Main.renderquickNoteModal = function(defaultText = '') {
         <div><b style="color:var(--text);">/</b> 標題 (例如: /買晚餐)</div>
         <div><b style="color:var(--text);">**</b> 備註 (例如: **要去巷口那家)</div>
         <div><b style="color:var(--text);">1.</b> 子任務 (例如: 1.領錢)</div>
-    </div>`;
+		<div><b style="color:var(--text);"></b>💡若不小心關閉生成任務視窗不必擔心，系統會貼心地幫您自動備份草稿~</div>
+	</div>`;
 
     const bodyHtml = `
         ${helpText}

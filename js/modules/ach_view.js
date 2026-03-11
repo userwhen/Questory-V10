@@ -131,7 +131,14 @@ window.SQ.View.Ach = {
                         tierBadge = ui.atom.badgeBase({text: a.tier});
                     }
                 }
+				let conditionTag = '';
+					if (a.targetType === 'tag') conditionTag = `🏷️ ${a.targetValue}`;
+					else if (a.targetType === 'attr') conditionTag = `💪 ${a.targetValue}`;
+					else if (a.targetType === 'focus_time') conditionTag = `⏱️ 專注`;
+					else if (a.targetType === 'pomodoro') conditionTag = `🍅 番茄`;
+					else if (a.targetType === 'login_days' || a.targetType === 'login_streak') conditionTag = `👣 登入`;
 
+					let tagHtml = conditionTag ? `<span style="background:var(--bg-box); padding:2px 6px; border-radius:4px; font-size:0.75rem; color:var(--text-muted); border:1px solid var(--border);">${conditionTag}</span>` : '';
                 // progress bar（check_in 類型不顯示）
                 let progressHtml = '';
                 if (!isCheckIn) {
@@ -156,12 +163,12 @@ window.SQ.View.Ach = {
                         <div style="font-weight:bold; font-size:1rem; color:var(--text); margin-bottom:4px;
                                     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.title}</div>
                         <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
-                            ${tierBadge}
-                            <span style="font-size:0.82rem; color:var(--text-ghost); overflow:hidden;
-                                         text-overflow:ellipsis; white-space:nowrap; flex:1;">
-                                ${a.desc || ''}
-                            </span>
-                        </div>
+							${tierBadge} ${tagHtml}
+							<span style="font-size:0.82rem; color:var(--text-ghost); overflow:hidden;
+										 text-overflow:ellipsis; white-space:nowrap; flex:1;">
+								${a.desc || ''}
+							</span>
+						</div>
                         ${progressHtml}
                     </div>
                     <div style="flex-shrink:0; margin-left:10px;">${btnHtml}</div>

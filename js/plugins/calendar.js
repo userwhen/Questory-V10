@@ -28,16 +28,33 @@ window.SQ.Calendar = {
 
         // 如果已同步，再次點擊 → 取消同步
         if (task.calendarSynced) {
-            const stateTask = (window.SQ.State?.tasks || []).find(t => t.id === task.id);
-            if (stateTask) {
-                stateTask.calendarSynced = false;
-                stateTask.calendarSyncTime = null;
-            }
-            if (window.App) App.saveData();
-            window.SQ.Actions?.toast('🗓️ 已取消行事曆同步');
-            window.SQ.Audio?.play('toggle_off');
-            return false;
-        }
+			// 1. 從系統行事曆刪除
+			if (window.Capacitor && Capacitor.Plugins?.CapacitorCalendar && task.calendarEventId) {
+				try {
+					await Capacitor.Plugins.CapacitorCalendar.deleteEventById({ id: task.calendarEventId });
+				} catch(e) { console.warn('刪除行事曆事件失敗:', e); }
+			}
+			
+			// 2. 取消排程的推播通知
+			if (window.Capacitor && Capacitor.Plugins?.LocalNotifications) {
+				try {
+					const baseId = this._taskNotifId(task.id);
+					await Capacitor.Plugins.LocalNotifications.cancel({ notifications: [{ id: baseId }, { id: baseId + 1 }] });
+				} catch(e) { console.warn('取消推播通知失敗:', e); }
+			}
+
+			// 3. 更新系統狀態
+			const stateTask = (window.SQ.State?.tasks || []).find(t => t.id === task.id);
+			if (stateTask) {
+				stateTask.calendarSynced = false;
+				stateTask.calendarSyncTime = null;
+				stateTask.calendarEventId = null; // 清除 ID
+			}
+			if (window.App) App.saveData();
+			window.SQ.Actions?.toast('🗓️ 已取消行事曆同步並移除紀錄');
+			window.SQ.Audio?.play('toggle_off');
+			return false;
+		}
 
         const results = { calendar: false, notification: false };
 
@@ -52,7 +69,11 @@ window.SQ.Calendar = {
             const stateTask = (window.SQ.State?.tasks || []).find(t => t.id === task.id);
             if (stateTask) {
                 stateTask.calendarSynced = true;
-                stateTask.calendarSyncTime = Date.now();
+				stateTask.calendarSyncTime = Date.now();
+				// 如果 _writeToCalendar 有回傳字串 ID，就存進 task 裡
+				if (typeof results.calendar === 'string') {
+					stateTask.calendarEventId = results.calendar;
+				}
             } else {
                 // 備用：直接改傳入的參考
                 task.calendarSynced = true;
@@ -98,8 +119,8 @@ window.SQ.Calendar = {
                 title:    `✓ ${task.title}`,
                 location: '',
                 notes:    `Questory 任務完成紀錄
-分類：${task.cat || '未分類'}
-獎勵：+${task.lastReward?.gold || 0}💰 +${task.lastReward?.exp || 0}✨`,
+				分類：${task.cat || '未分類'}
+				獎勵：+${task.lastReward?.gold || 0}💰 +${task.lastReward?.exp || 0}✨`,
                 startDate: now.getTime(),
                 endDate:   end.getTime(),
                 isAllDay:  false,
@@ -161,7 +182,7 @@ window.SQ.Calendar = {
             endTime.setHours(23, 59, 0, 0);
             deadline.setHours(0, 0, 0, 0);
 
-            await CapacitorCalendar.createEvent({
+            const result = await CapacitorCalendar.createEvent({
                 title:    `[Questory] ${task.title}`,
                 location: '',
                 notes:    task.desc || `來自 Questory 的任務`,
@@ -170,7 +191,7 @@ window.SQ.Calendar = {
                 isAllDay:  true,
             });
 
-            return true;
+            return (result && result.id) ? result.id : true;
         } catch (e) {
             console.error('[Calendar] 寫入失敗:', e);
             return false;

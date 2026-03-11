@@ -77,38 +77,49 @@ window.SQ.View.Task = {
             ${ui.composer.formField({label:'詳細說明', inputHtml: ui.atom.inputBase({type: 'textarea', val: data.desc, placeholder: "備註...", action: "updateTaskField", actionId: "desc"})})}`;
 
         // 分類 (具備 cat-sel-btn 類別以供局部更新)
-        const catButtons = (window.SQ.State.taskCats || ['每日', '運動', '工作']).map(c => {
-            const isActive = data.cat === c;
-            return `<button type="button" id="cat-btn-${c}" class="u-btn u-btn-sm ${isActive ? 'u-btn-correct' : 'u-btn-normal'} cat-sel-btn" 
-                style="flex-shrink:0; margin-right:5px; border-radius:50px; padding:4px 12px; white-space:nowrap; ${isActive ? 'box-shadow:var(--shadow-inner);' : ''}" 
-                data-action="updateTaskCategory" data-val="${c}">${c}</button>`;
-        }).join('');
+		const catButtons = (window.SQ.State.taskCats || ['每日', '運動', '工作']).map(c => {
+			const isActive = data.cat === c;
+			return `<button type="button" id="cat-btn-${c}" class="u-btn u-btn-sm ${isActive ? 'u-btn-correct' : 'u-btn-normal'} cat-sel-btn" 
+				style="flex-shrink:0; margin-right:5px; border-radius:50px; padding:4px 12px; white-space:nowrap; ${isActive ? 'box-shadow:var(--shadow-inner);' : ''}" 
+				data-action="updateTaskCategory" data-val="${c}"
+				oncontextmenu="window.SQ.Actions.promptDeleteCategory('${c}'); return false;">${c}</button>`;
+		}).join('');
 
-        bodyHtml += `<div style="margin-bottom:15px;"><label class="section-title">分類</label><div style="display:flex; align-items:center; width:100%;"><div class="u-scroll-x" id="cat-scroll-container" style="flex:1; overflow-x:auto; display:flex; align-items:center; background:var(--bg-box); border-radius:30px; padding:4px;">${catButtons}</div><div style="flex-shrink:0;">${ui.atom.buttonBase({label:'+', size:'sm', theme:'normal', action:'addNewCategory', style:'margin-left:5px; height:32px; width:32px; padding:0; border-radius:50%;'})}</div></div></div>`;
+		// 在下方的 bodyHtml 組合字串中，加入「(長按刪除)」的文字提示：
+		bodyHtml += `<div style="margin-bottom:15px;"><label class="section-title">分類 <span style="font-size:0.7rem; color:var(--text-ghost); font-weight:normal;">(長按標籤可刪除)</span></label><div style="display:flex; align-items:center; width:100%;"><div class="u-scroll-x" id="cat-scroll-container" style="flex:1; overflow-x:auto; display:flex; align-items:center; background:var(--bg-box); border-radius:30px; padding:4px;">${catButtons}</div><div style="flex-shrink:0;">${ui.atom.buttonBase({label:'+', size:'sm', theme:'normal', action:'addNewCategory', style:'margin-left:5px; height:32px; width:32px; padding:0; border-radius:50%;'})}</div></div></div>`
 
         // 熱量 (DLC)
         if (data.cat === '運動' && ((window.SQ.State.unlocks && window.SQ.State.unlocks.feature_cal) || (window.SQ.State.settings && window.SQ.State.settings.calMode))) {
             bodyHtml += `<div class="u-box" style="margin-bottom:15px; background:var(--color-gold-soft); border:1px dashed var(--color-gold); display:flex; justify-content:space-between; align-items:center; padding:12px;"><span style="font-weight:bold; color:var(--color-gold-dark); flex-shrink:0;">🔥 消耗熱量</span><div style="display:flex; align-items:center; gap:5px;">${ui.atom.inputBase({ type: 'number', val: data.calories, action: "updateTaskField", actionId: "calories", style: "width:70px; background:rgba(255,255,255,0.7); border:none; padding:6px; font-weight:bold; color:var(--text); outline:none;" })}<span style="font-size:0.9rem; color:var(--color-gold-dark); font-weight:bold;">Kcal</span></div></div>`;
         }
+		const subRuleLabel = data.subRule === 'any' ? '🎯 擇一' : '📌 全部';
+		const nextSubRule = data.subRule === 'any' ? 'all' : 'any';
+		// 如果是擇一模式，稍微改變顏色給予視覺提示
+		const subRuleTheme = data.subRule === 'any' ? 'warning' : 'warning'; 
 
-        // 計次與子任務
-        const rightSettingHtml = !isCount ? `
-            <div style="display:flex; gap:10px;">
-                <label style="display:flex; align-items:center; color:var(--text-muted); cursor:pointer;"><input type="radio" name="subRule" ${data.subRule==='all'?'checked':''} data-change="updateTaskField" data-id="subRule" value="all"><span style="margin-left:4px; font-size:0.8rem;">全部</span></label>
-                <label style="display:flex; align-items:center; color:var(--text-muted); cursor:pointer;"><input type="radio" name="subRule" ${data.subRule==='any'?'checked':''} data-change="updateTaskField" data-id="subRule" value="any"><span style="margin-left:4px; font-size:0.8rem;">擇一</span></label>
-            </div>` : `<div style="display:flex; align-items:center; gap:5px;">${ui.atom.inputBase({type: 'number', val: data.target, action: "updateTaskField", actionId: "target", style: 'width:50px;'})}<span style="font-size:0.9rem; color:var(--text-muted);">次</span></div>`;
+		const rightSettingHtml = !isCount ? 
+			ui.atom.buttonBase({
+				label: subRuleLabel, 
+				theme: subRuleTheme, 
+				action: "updateTaskField", 
+				actionId: "subRule", 
+				actionVal: nextSubRule, 
+				style: 'border-radius:50px; padding:4px 12px; font-size:0.8rem; border:1px solid var(--border);'
+			}) 
+			: `<div style="display:flex; align-items:center; gap:5px;">${ui.atom.inputBase({type: 'number', val: data.target, action: "updateTaskField", actionId: "target", style: 'width:50px;'})}<span style="font-size:0.9rem; color:var(--text-muted);">次</span></div>`;
 
-        bodyHtml += `
-            <div class="u-box" style="padding:12px; margin-bottom:15px; background:var(--bg-elevated);">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="display:flex; background:rgba(0,0,0,0.05); border-radius:20px; padding:2px;">
-                        ${ui.atom.buttonBase({label:'📝 一般', theme:!isCount?'correct':'ghost', action:"updateTaskField", actionId:"type", actionVal:"normal", style:'border-radius:50px; padding:4px 12px;'})}
-                        ${ui.atom.buttonBase({label:'🔢 計次', theme:isCount?'correct':'ghost', action:"updateTaskField", actionId:"type", actionVal:"count", style:'border-radius:50px; padding:4px 12px;'})}
-                    </div>
-                    ${rightSettingHtml}
-                </div>
-                ${!isCount ? `<div style="margin-top:12px; border-top:1px dashed var(--border); padding-top:12px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><div style="font-size:0.85rem; font-weight:bold; color:var(--text-muted);">🔨 子任務</div>${ui.atom.buttonBase({label:'+ 新增步驟', theme:'paper', size:'sm', action:'addSubtask'})}</div>${(data.subs || []).map((s, i) => `<div style="display:flex; gap:5px; margin-bottom:6px; align-items:center;">${ui.atom.inputBase({type:'text', val: s.text, placeholder: `步驟 ${i+1}`, action: "updateSubtaskText", actionId: i})}${ui.atom.buttonBase({label:'✕', theme:'ghost', size:'sm', style:'color:var(--color-danger); border:none;', action:'removeSubtask', actionVal: i})}</div>`).join('')}</div>` : ''}
-            </div>`;
+		// 【task_view.js】2. 左側復原為純粹的類型選擇
+		bodyHtml += `
+			<div class="u-box" style="padding:12px; margin-bottom:15px; background:var(--bg-elevated);">
+				<div style="display:flex; justify-content:space-between; align-items:center;">
+					<div style="display:flex; background:rgba(0,0,0,0.05); border-radius:20px; padding:2px;">
+						${ui.atom.buttonBase({label:'📝 一般', theme:!isCount?'correct':'ghost', action:"updateTaskField", actionId:"type", actionVal:"normal", style:'border-radius:50px; padding:4px 12px;'})}
+						${ui.atom.buttonBase({label:'🔢 計次', theme:isCount?'correct':'ghost', action:"updateTaskField", actionId:"type", actionVal:"count", style:'border-radius:50px; padding:4px 12px;'})}
+					</div>
+					${rightSettingHtml}
+				</div>
+				${!isCount ? `<div style="margin-top:12px; border-top:1px dashed var(--border); padding-top:12px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><div style="font-size:0.85rem; font-weight:bold; color:var(--text-muted);">🔨 子任務</div>${ui.atom.buttonBase({label:'+ 新增步驟', theme:'paper', size:'sm', action:'addSubtask'})}</div>${(data.subs || []).map((s, i) => `<div style="display:flex; gap:5px; margin-bottom:6px; align-items:center;">${ui.atom.inputBase({type:'text', val: s.text, placeholder: `步驟 ${i+1}`, action: "updateSubtaskText", actionId: String(i)})}${ui.atom.buttonBase({label:'✕', theme:'ghost', size:'sm', style:'color:var(--color-danger); border:none;', action:'removeSubtask', actionVal: String(i)})}</div>`).join('')}</div>` : ''}
+			</div>`;
 
         // 綁定技能 (局部 ID)
         const skillHtml = (window.SQ.State.skills || []).map(s => {
@@ -130,7 +141,12 @@ window.SQ.View.Task = {
         // 循環設定
         bodyHtml += `<div style="display:flex; gap:10px; align-items:flex-end;"><div style="flex: 1;">${ui.composer.formField({label:'📅 到期', inputHtml: ui.atom.inputBase({type: 'datetime-local', val: data.deadline, action: "updateTaskField", actionId: "deadline"})})}</div><div style="flex: 1;">${ui.composer.formField({label:'🔄 循環', inputHtml: ui.atom.inputBase({type: 'select', val: data.recurrence, action: "updateTaskField", actionId: "recurrence", options: [{val:'', label:'不重複'}, {val:'daily', label:'每天'}, {val:'weekly', label:'每週'}, {val:'monthly', label:'每月'}, {val:'yearly', label:'每年'}]})})}</div></div>`;
 
-        const footHtml = taskId ? `${ui.atom.buttonBase({label:'刪除', theme:'danger', action:'deleteTask', actionId: taskId})} ${ui.atom.buttonBase({label:'複製', theme:'normal', action:'copyTask', actionId: taskId})} ${ui.atom.buttonBase({label:'保存', theme:'correct', style:'flex:1;', action:'submitTask'})}` : ui.atom.buttonBase({label:'新增任務', theme:'correct', style:'width:100%;', action:'submitTask'});
+        const footHtml = taskId 
+		? `${ui.atom.buttonBase({label:'刪除', theme:'danger', action:'deleteTask', actionId: taskId})} ${ui.atom.buttonBase({label:'複製', theme:'normal', action:'copyTask', actionId: taskId})} ${ui.atom.buttonBase({label:'保存', theme:'correct', style:'flex:1;', action:'submitTask'})}` 
+		: `<div style="display:flex; gap:10px; width:100%;">
+			   ${ui.atom.buttonBase({label:'🗑️ 清空', theme:'normal', action:'clearTaskForm'})}
+			   ${ui.atom.buttonBase({label:'新增任務', theme:'correct', style:'flex:1;', action:'submitTask'})}
+		   </div>`;
 
         ui.modal.render(taskId ? '編輯任務' : '新增任務', bodyHtml, footHtml, 'overlay');
         this.updateMatrixPreview();

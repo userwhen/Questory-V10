@@ -34,7 +34,8 @@ window.SQ.Controller.Ach = {
                         title: data.title,
                         targetType: data.targetType,
                         targetValue: data.targetValue,
-                        tier: data.tier
+                        tier: data.tier,
+						isUpgradeable: data.isUpgradeable // 👈 補上這行
                     });
                     window.SQ.Actions.toast("✅ 目標已更新！");
                 } else {
@@ -42,7 +43,8 @@ window.SQ.Controller.Ach = {
                         title: data.title,
                         targetType: data.targetType,
                         targetValue: data.targetValue,
-                        tier: data.tier
+                        tier: data.tier,
+						isUpgradeable: data.isUpgradeable // 👈 補上這行
                     });
                     window.SQ.Actions.toast("✅ 目標已建立！");
                 }
