@@ -1,0 +1,964 @@
+/* ==========================================================================
+   主題變色覆蓋區 (只改變顏色，不影響原有的圓角、陰影與尺寸)
+   ========================================================================== */
+
+/* ==========================================================================
+   ██████╗  沉浸世界 (Immersive Story Themes)
+   完整沉浸體驗：HUD 漸層、紋路裝飾、Avatar 邊框、元件全面覆蓋
+   ========================================================================== */
+
+/* ── 🪭 後宮模式 ───────────────────────────────────────────────────────── */
+body.theme-harem {
+    --bg-frame:       #2A1816;
+    --bg-hud:         #241412;
+    --bg-nav:         #1F100E;
+    --bg-panel:       #E3D7C8;
+    --bg-card:        #FDF9F1;
+    --bg-card-done:   #F2EBE0;
+    --bg-elevated:    #D6C7B3;
+    --bg-modal:       #FDF9F1;
+    --bg-modal-head:  #82111F;
+    --bg-modal-foot:  #E8DEC8;
+    --text:           #2B1A18;
+    --text-2:         #5E413E;
+    --text-muted:     #8F7673;
+    --text-ghost:     #B5A09D;
+    --text-on-dark:   #F7E4C3;
+    --border:         #C8AFA5;
+    --border-card:    rgba(130,17,31,0.08);
+    --bg-box:         rgba(130,17,31,0.05);
+    --bg-input:       #FFFFFF;
+    --border-input:   #C8AFA5;
+    --color-gold:     #B37736;
+    --color-gold-dark: #8F5E28;
+    --color-gold-soft: #F2E3D5;
+    --color-correct:  #82111F;
+    --color-correct-dark: #5C0D16;
+    --color-correct-soft: #F5DCE0;
+    --nav-item-color: rgba(255,255,255,0.28);
+    --nav-item-active: #F7E4C3;
+    --nav-active-bar: #B37736;
+}
+/* HUD 漸層 + 金箔橫紋 */
+body.theme-harem #hud {
+    background: linear-gradient(160deg, #241412 0%, #160C0A 100%);
+    border-bottom: 1px solid rgba(179,119,54,0.2);
+    position: relative; overflow: hidden;
+}
+body.theme-harem #hud::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0px, transparent 30px, rgba(179,119,54,0.12) 30px, rgba(179,119,54,0.12) 31px);
+    pointer-events: none;
+}
+/* Avatar 古銅金框 */
+body.theme-harem .u-avatar {
+    border: 2px solid #B37736 !important;
+    box-shadow: 0 0 0 2px rgba(179,119,54,0.15);
+}
+/* Modal head 硃砂漸層 + 🪭 裝飾 */
+body.theme-harem .m-head {
+    background: linear-gradient(135deg, #82111F 0%, #5C0D16 100%) !important;
+    position: relative; overflow: hidden;
+}
+body.theme-harem .m-head::after {
+    content: '🪭';
+    position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+    font-size: 1.8rem; opacity: 0.2; pointer-events: none;
+}
+/* Content 宮廷點紋 */
+body.theme-harem #page-main, body.theme-harem .page {
+    position: relative;
+}
+body.theme-harem #page-main::before, body.theme-harem .page::before {
+    content: '';
+    position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background-image: radial-gradient(circle, rgba(179,119,54,0.06) 1px, transparent 1px);
+    background-size: 18px 18px;
+}
+/* Navbar */
+body.theme-harem #navbar { border-top: 1px solid rgba(179,119,54,0.2); }
+body.theme-harem .nav-item { color: rgba(255,255,255,0.28); }
+body.theme-harem .nav-item.active { color: #F7E4C3; }
+body.theme-harem .nav-item.active::after { background: #B37736; }
+/* 按鈕與元件 */
+body.theme-harem .u-btn-correct { background: #82111F; box-shadow: 0 4px 0 #5C0D16; color: #F7E4C3; }
+body.theme-harem .u-progress-bar { background: linear-gradient(90deg, #8F5E28, #B37736, #D4A055); }
+body.theme-harem .chk.done { background: #B37736; border-color: #B37736; }
+/* HUD 文字修正 */
+body.theme-harem .hud-name, body.theme-harem .hud-lv-txt { color: var(--text-on-dark); }
+
+/* ── 💠 未來科技 ────────────────────────────────────────────────────────── */
+body.theme-tech {
+    --bg-frame:       #060D1A;
+    --bg-hud:         #003366;
+    --bg-nav:         #F8FAFC;
+    --bg-panel:       #F2F5F8;
+    --bg-card:        #FFFFFF;
+    --bg-card-done:   #EEF2F6;
+    --bg-elevated:    #E2E8F0;
+    --bg-modal:       #FFFFFF;
+    --bg-modal-head:  #003366;
+    --bg-modal-foot:  #F1F5F9;
+    --text:           #1E293B;
+    --text-2:         #475569;
+    --text-muted:     #94A3B8;
+    --text-ghost:     #CBD5E1;
+    --text-on-dark:   #FFFFFF;
+    --border:         #CBD5E1;
+    --border-card:    rgba(0,0,0,0.05);
+    --bg-box:         rgba(0,102,255,0.04);
+    --bg-input:       #FFFFFF;
+    --border-input:   #CBD5E1;
+    --color-gold:     #0066FF;
+    --color-gold-dark: #0052CC;
+    --color-gold-soft: #E0EFFF;
+    --color-correct:  #0066FF;
+    --color-correct-dark: #0052CC;
+    --color-correct-soft: #E0EFFF;
+    --nav-item-color: #94A3B8;
+    --nav-item-active: #0066FF;
+    --nav-active-bar: #0066FF;
+}
+/* HUD 深藍漸層 + 網格 */
+body.theme-tech #hud {
+    background: linear-gradient(135deg, #003366 0%, #001E45 100%);
+    border-bottom: 2px solid #0066FF;
+    position: relative; overflow: hidden;
+}
+body.theme-tech #hud::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 20px 20px;
+    pointer-events: none;
+}
+/* Avatar 藍框方形 */
+body.theme-tech .u-avatar {
+    border: 2px solid #0066FF !important;
+    border-radius: 6px !important;
+    box-shadow: 0 0 12px rgba(0,102,255,0.3);
+}
+/* Modal head 深藍漸層 + ◈ 裝飾 */
+body.theme-tech .m-head {
+    background: linear-gradient(135deg, #003366 0%, #0052CC 100%) !important;
+    position: relative; overflow: hidden;
+}
+body.theme-tech .m-head::after {
+    content: '◈';
+    position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+    font-size: 1.6rem; opacity: 0.25; color: #fff; pointer-events: none;
+}
+/* Navbar 淺色 */
+body.theme-tech #navbar { background: #F8FAFC; border-top: 1px solid #CBD5E1; }
+body.theme-tech .nav-item { color: #94A3B8; }
+body.theme-tech .nav-item.active { color: #0066FF; }
+body.theme-tech .nav-item.active::after { background: #0066FF; }
+/* 按鈕與元件 */
+body.theme-tech .u-btn-correct { background: #0066FF; box-shadow: 0 4px 0 #0052CC; color: #fff; }
+body.theme-tech .u-progress-bar { background: linear-gradient(90deg, #0052CC, #0066FF, #4DA6FF); box-shadow: 0 0 6px rgba(0,102,255,0.4); }
+body.theme-tech .chk.done { background: #0066FF; border-color: #0066FF; }
+/* HUD 文字修正 */
+body.theme-tech .hud-name, body.theme-tech .hud-lv-txt { color: #FFFFFF; }
+body.theme-tech .u-btn-correct, body.theme-tech .u-btn-danger { color: #ffffff; }
+
+/* ── 🌑 魔法學院 ────────────────────────────────────────────────────────── */
+body.theme-wood {
+    --bg-frame:       #120C07;
+    --bg-hud:         #1E1309;   
+    --bg-nav:         #160E06;
+    --bg-panel:       #2A1B12; 
+    --bg-card:        #382418; 
+    --bg-card-done:   #2C1C12;
+    --bg-elevated:    #432C20;
+    --bg-modal:       #382418;
+    --bg-modal-head:  #5A1A1A;
+    --bg-modal-foot:  #2A1B12;
+    --text:           #EDE0CE; /* 羊皮紙暖白，高對比但不刺眼 */
+    --text-2:         #CAB099;
+    --text-muted:     #927060;
+    --text-ghost:     #6A5046;
+    --text-on-dark:   #EDE0CE;
+    --border:         #5C3E2C; 
+    --border-card:    rgba(255,255,255,0.06);
+    --bg-box:         rgba(0,0,0,0.18);
+    --bg-input:       rgba(0,0,0,0.18);
+    --border-input:   #6A4A38;
+    --color-gold:     #D4AF37;
+    --color-gold-dark: #A68222;
+    --color-gold-soft: #4A3E20;
+    --color-correct:  #277A4C;
+    --color-correct-dark: #1A5434;
+    --color-correct-soft: #1A3326;
+    --nav-item-color: rgba(255,255,255,0.35);
+    --nav-item-active: #D4AF37;
+    --nav-active-bar: #D4AF37;
+}
+body.theme-wood #hud {
+    background: linear-gradient(160deg, #1A110D 0%, #0D0806 100%);
+    border-bottom: 1px solid rgba(212,175,55,0.15);
+    position: relative; overflow: hidden;
+}
+body.theme-wood #hud::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(30deg, rgba(212,175,55,0.04) 1px, transparent 1px),
+        linear-gradient(150deg, rgba(212,175,55,0.04) 1px, transparent 1px);
+    background-size: 20px 20px;
+    pointer-events: none;
+}
+body.theme-wood .u-avatar {
+    border: 2px solid #D4AF37 !important;
+    box-shadow: 0 0 10px rgba(46,139,87,0.25), 0 0 0 2px rgba(212,175,55,0.12);
+}
+body.theme-wood .m-head {
+    background: linear-gradient(135deg, #5C1616 0%, #3D0D0D 100%) !important;
+    position: relative; overflow: hidden;
+}
+body.theme-wood .m-head::after {
+    content: '🔮';
+    position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+    font-size: 1.6rem; opacity: 0.3; pointer-events: none;
+}
+body.theme-wood .nav-item { color: rgba(255,255,255,0.3); }
+body.theme-wood .nav-item.active { color: #D4AF37; }
+body.theme-wood .nav-item.active::after { background: #D4AF37; }
+body.theme-wood .u-btn-correct { background: #277A4C; box-shadow: 0 4px 0 #1A5434; color: #fff; }
+body.theme-wood .u-progress-bar { background: linear-gradient(90deg, #1A5434, #277A4C, #A68222); }
+body.theme-wood .chk.done { background: #277A4C; border-color: #277A4C; }
+
+/* ── ☀️ 晨曦物語 ────────────────────────────────────────────────────────── */
+body.theme-white {
+    --bg-frame:       #EAE6DF;
+    --bg-hud:         #FFFFFF;
+    --bg-nav:         #FFFFFF;
+    --bg-panel:       #FCF9F2;
+    --bg-card:        #FFFFFF;
+    --bg-card-done:   #F5F0E6;
+    --bg-elevated:    #F2ECE1;
+    --bg-modal:       #FFFFFF;
+    --bg-modal-head:  #FFF7E6;
+    --bg-modal-foot:  #F7F4EC;
+    --text:           #4D4035;
+    --text-2:         #6B5B4F;
+    --text-muted:     #A39385;
+    --text-ghost:     #C2B5A8;
+    --text-on-dark:   #4D4035;
+    --border:         #EBE3D5;
+    --border-card:    rgba(0,0,0,0.06);
+    --bg-box:         rgba(0,0,0,0.03);
+    --bg-input:       #FFFFFF;
+    --border-input:   #EBE3D5;
+    --color-gold:     #F29C38; /* 晨曦橘 */
+    --color-gold-dark: #D98227;
+    --color-gold-soft: #FFF0D4;
+    --color-correct:  #5EAA6F;
+    --color-correct-dark: #458553;
+    --color-correct-soft: #E6F5EA;
+    --nav-item-color: #C2B5A8;
+    --nav-item-active: #D98227;
+    --nav-active-bar: #F29C38;
+}
+body.theme-white #hud {
+    background: linear-gradient(160deg, #FFF8EE 0%, #FFF3E0 100%);
+    border-bottom: 1px solid #EBE3D5;
+    box-shadow: 0 2px 10px rgba(242,156,56,0.1);
+    position: relative; overflow: hidden;
+}
+body.theme-white #hud::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 70% 50%, rgba(242,156,56,0.08) 0%, transparent 60%);
+    pointer-events: none;
+}
+body.theme-white .u-avatar {
+    border: 2px solid #F29C38 !important;
+    box-shadow: 0 0 8px rgba(242,156,56,0.2);
+}
+body.theme-white .m-head {
+    background: linear-gradient(135deg, #FFF0D4 0%, #FFE4B0 100%) !important;
+    border-bottom: 1px solid #EBE3D5 !important;
+    position: relative; overflow: hidden;
+}
+body.theme-white .m-head .m-title { color: #4D4035 !important; }
+body.theme-white .m-head::after {
+    content: '🌸';
+    position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+    font-size: 1.6rem; opacity: 0.3; pointer-events: none;
+}
+body.theme-white #navbar { background: #fff; border-top: 1px solid #EBE3D5; box-shadow: 0 -2px 6px rgba(0,0,0,0.04); }
+body.theme-white .nav-item { color: #C2B5A8; }
+body.theme-white .nav-item.active { color: #D98227; }
+body.theme-white .nav-item.active::after { background: #F29C38; }
+body.theme-white .hud-name, body.theme-white .hud-lv-txt { color: #4D4035; }
+body.theme-white .u-btn-correct { background: #F29C38; box-shadow: 0 4px 0 #D98227; color: #fff; }
+body.theme-white .u-progress-bar { background: linear-gradient(90deg, #D98227, #F29C38, #F9BA6A); }
+body.theme-white .chk.done { background: #F29C38; border-color: #F29C38; }
+body.theme-white .u-btn-correct, body.theme-white .u-btn-danger { color: #ffffff; }
+
+/* ── 🌙 賽博都市 ────────────────────────────────────────────────────────── */
+body.theme-story {
+    --bg-frame:       #08080C;
+    --bg-hud:         #0E0E16;
+    --bg-nav:         #0A0A12;
+    --bg-panel:       #14141E;
+    --bg-card:        #1C1C2C;
+    --bg-card-done:   #181824;
+    --bg-elevated:    #242438;
+    --bg-modal:       #1C1C2C;
+    --bg-modal-head:  #14141E;
+    --bg-modal-foot:  #0E0E16;
+    --text:           #D8D8EC; /* 藍白，對比高但偏暖 */
+    --text-2:         #A8A8C4;
+    --text-muted:     #6868A0;
+    --text-ghost:     #464670;
+    --text-on-dark:   #D8D8EC;
+    --border:         #2E2E48;
+    --border-card:    rgba(255,255,255,0.06);
+    --bg-box:         rgba(255,255,255,0.05);
+    --bg-input:       rgba(255,255,255,0.06);
+    --border-input:   #4A4A68;
+    --color-gold:     #8B2FCC;
+    --color-gold-dark: #6A1FA0;
+    --color-gold-soft: #1E1028;
+    --color-correct:  #00A876;
+    --color-correct-dark: #007A56;
+    --color-correct-soft: #0F2E24;
+    --nav-item-color: rgba(255,255,255,0.35);
+    --nav-item-active: #8B2FCC;
+    --nav-active-bar: #8B2FCC;
+}
+body.theme-story #hud {
+    background: linear-gradient(160deg, #0F0F11 0%, #080809 100%);
+    border-bottom: 1px solid rgba(184,41,234,0.2);
+    position: relative; overflow: hidden;
+}
+body.theme-story #hud::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(184,41,234,0.03) 3px, rgba(184,41,234,0.03) 4px);
+    pointer-events: none;
+}
+body.theme-story .u-avatar {
+    border: 2px solid #B829EA !important;
+    border-radius: 6px !important;
+    box-shadow: 0 0 12px rgba(184,41,234,0.3);
+}
+body.theme-story .m-head {
+    background: linear-gradient(135deg, #1a0a22 0%, #2a0d3a 100%) !important;
+    border-bottom: 1px solid rgba(184,41,234,0.3) !important;
+    position: relative; overflow: hidden;
+}
+body.theme-story .m-head::after {
+    content: '⚡';
+    position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+    font-size: 1.6rem; opacity: 0.25; pointer-events: none;
+}
+body.theme-story .nav-item { color: rgba(255,255,255,0.3); }
+body.theme-story .nav-item.active { color: #8B2FCC; text-shadow: 0 0 6px rgba(139,47,204,0.4); }
+body.theme-story .nav-item.active::after { background: #B829EA; }
+body.theme-story .u-btn-correct { background: #8B2FCC; box-shadow: 0 4px 0 #6A1FA0; color: #fff; }
+body.theme-story .u-progress-bar { background: linear-gradient(90deg, #6A1FA0, #8B2FCC, #A050E0); box-shadow: 0 0 8px rgba(184,41,234,0.5); }
+body.theme-story .chk.done { background: #8B2FCC; border-color: #8B2FCC; }
+
+/* ==========================================================================
+   ██████╗  基礎面板 (Basic Themes)
+   只換色票，不動結構（無 icon 替換、無裝飾偽元素、無特殊紋路）
+   ========================================================================== */
+
+/* ── 🪭 宮廷朱色 ────────────────────────────────────────────────────────── */
+body.theme-basic-harem {
+    --bg-frame:       #2A1816;
+    --bg-hud:         #241412;
+    --bg-nav:         #1F100E;
+    --bg-panel:       #E3D7C8;
+    --bg-card:        #FDF9F1;
+    --bg-card-done:   #F2EBE0;
+    --bg-elevated:    #D6C7B3;
+    --bg-modal:       #FDF9F1;
+    --bg-modal-head:  #82111F;
+    --bg-modal-foot:  #E8DEC8;
+    --text:           #2B1A18;
+    --text-2:         #5E413E;
+    --text-muted:     #8F7673;
+    --text-ghost:     #B5A09D;
+    --text-on-dark:   #F7E4C3;
+    --border:         #C8AFA5;
+    --border-card:    rgba(130,17,31,0.08);
+    --bg-box:         rgba(130,17,31,0.05);
+    --bg-input:       #FFFFFF;
+    --border-input:   #C8AFA5;
+    --color-gold:     #B37736;
+    --color-gold-dark: #8F5E28;
+    --color-gold-soft: #F2E3D5;
+    --color-correct:  #82111F;
+    --color-correct-dark: #5C0D16;
+    --color-correct-soft: #F5DCE0;
+}
+body.theme-basic-harem .nav-item { color: rgba(255,255,255,0.28); }
+body.theme-basic-harem .nav-item.active { color: #F7E4C3; }
+body.theme-basic-harem .hud-name, body.theme-basic-harem .hud-lv-txt { color: var(--text-on-dark); }
+
+/* ── 💠 科技藍調 ────────────────────────────────────────────────────────── */
+body.theme-basic-tech {
+    --bg-frame:       #E2E8F0;
+    --bg-hud:         #003366;
+    --bg-nav:         #F8FAFC;
+    --bg-panel:       #F2F5F8;
+    --bg-card:        #FFFFFF;
+    --bg-card-done:   #EEF2F6;
+    --bg-elevated:    #E2E8F0;
+    --bg-modal:       #FFFFFF;
+    --bg-modal-head:  #003366;
+    --bg-modal-foot:  #F1F5F9;
+    --text:           #1E293B;
+    --text-2:         #475569;
+    --text-muted:     #94A3B8;
+    --text-ghost:     #CBD5E1;
+    --text-on-dark:   #FFFFFF;
+    --border:         #CBD5E1;
+    --border-card:    rgba(0,0,0,0.05);
+    --bg-box:         rgba(0,102,255,0.04);
+    --bg-input:       #FFFFFF;
+    --border-input:   #CBD5E1;
+    --color-gold:     #0066FF;
+    --color-gold-dark: #0052CC;
+    --color-gold-soft: #E0EFFF;
+    --color-correct:  #0066FF;
+    --color-correct-dark: #0052CC;
+    --color-correct-soft: #E0EFFF;
+}
+body.theme-basic-tech #navbar { background: #F8FAFC; border-top: 1px solid #CBD5E1; }
+body.theme-basic-tech .nav-item { color: #94A3B8; }
+body.theme-basic-tech .nav-item.active { color: #0066FF; }
+body.theme-basic-tech .hud-name, body.theme-basic-tech .hud-lv-txt { color: #FFFFFF; }
+body.theme-basic-tech .u-btn-correct, body.theme-basic-tech .u-btn-danger { color: #ffffff; }
+
+/* ── 🌑 沉靜學院 ────────────────────────────────────────────────────────── */
+body.theme-basic-wood {
+    --bg-frame:       #120C07;
+    --bg-hud:         #1E1309;
+    --bg-nav:         #160E06;
+    --bg-panel:       #2A1B12;
+    --bg-card:        #382418;
+    --bg-card-done:   #2C1C12;
+    --bg-elevated:    #432C20;
+    --bg-modal:       #382418;
+    --bg-modal-head:  #5A1A1A;
+    --bg-modal-foot:  #2A1B12;
+    --text:           #EDE0CE;
+    --text-2:         #CAB099;
+    --text-muted:     #927060;
+    --text-ghost:     #6A5046;
+    --text-on-dark:   #EDE0CE;
+    --border:         #5C3E2C;
+    --border-card:    rgba(255,255,255,0.06);
+    --bg-box:         rgba(0,0,0,0.18);
+    --bg-input:       rgba(0,0,0,0.18);
+    --border-input:   #6A4A38;
+    --color-gold:     #D4AF37;
+    --color-gold-dark: #A68222;
+    --color-gold-soft: #4A3E20;
+    --color-correct:  #277A4C;
+    --color-correct-dark: #1A5434;
+    --color-correct-soft: #1A3326;
+}
+body.theme-basic-wood .nav-item { color: rgba(255,255,255,0.3); }
+body.theme-basic-wood .nav-item.active { color: #D4AF37; }
+body.theme-basic-wood .u-btn-correct { color: #ffffff; }
+
+/* ── ☀️ 明亮清晨 ────────────────────────────────────────────────────────── */
+body.theme-basic-white {
+    --bg-frame:       #EAE6DF;
+    --bg-hud:         #FFFFFF;
+    --bg-nav:         #FFFFFF;
+    --bg-panel:       #FCF9F2;
+    --bg-card:        #FFFFFF;
+    --bg-card-done:   #F5F0E6;
+    --bg-elevated:    #F2ECE1;
+    --bg-modal:       #FFFFFF;
+    --bg-modal-head:  #FFF7E6;
+    --bg-modal-foot:  #F7F4EC;
+    --text:           #4D4035;
+    --text-2:         #6B5B4F;
+    --text-muted:     #A39385;
+    --text-ghost:     #C2B5A8;
+    --text-on-dark:   #4D4035;
+    --border:         #EBE3D5;
+    --border-card:    rgba(0,0,0,0.06);
+    --bg-box:         rgba(0,0,0,0.03);
+    --bg-input:       #FFFFFF;
+    --border-input:   #EBE3D5;
+    --color-gold:     #F29C38;
+    --color-gold-dark: #D98227;
+    --color-gold-soft: #FFF0D4;
+    --color-correct:  #5EAA6F;
+    --color-correct-dark: #458553;
+    --color-correct-soft: #E6F5EA;
+}
+body.theme-basic-white #hud { border-bottom: 1px solid #EBE3D5; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+body.theme-basic-white #navbar { background: #fff; border-top: 1px solid #EBE3D5; box-shadow: 0 -2px 6px rgba(0,0,0,0.04); }
+body.theme-basic-white .nav-item { color: #C2B5A8; }
+body.theme-basic-white .nav-item.active { color: #D98227; }
+body.theme-basic-white .hud-name, body.theme-basic-white .hud-lv-txt { color: #4D4035; }
+body.theme-basic-white .u-btn-correct, body.theme-basic-white .u-btn-danger { color: #ffffff; }
+
+/* ── 🌙 霓光暗夜 ────────────────────────────────────────────────────────── */
+body.theme-basic-story {
+    --bg-frame:       #08080C;
+    --bg-hud:         #0E0E16;
+    --bg-nav:         #0A0A12;
+    --bg-panel:       #14141E;
+    --bg-card:        #1C1C2C;
+    --bg-card-done:   #181824;
+    --bg-elevated:    #242438;
+    --bg-modal:       #1C1C2C;
+    --bg-modal-head:  #14141E;
+    --bg-modal-foot:  #0E0E16;
+    --text:           #D8D8EC;
+    --text-2:         #A8A8C4;
+    --text-muted:     #6868A0;
+    --text-ghost:     #464670;
+    --text-on-dark:   #D8D8EC;
+    --border:         #2E2E48;
+    --border-card:    rgba(255,255,255,0.06);
+    --bg-box:         rgba(255,255,255,0.05);
+    --bg-input:       rgba(255,255,255,0.06);
+    --border-input:   #4A4A68;
+    --color-gold:     #8B2FCC;
+    --color-gold-dark: #6A1FA0;
+    --color-gold-soft: #1E1028;
+    --color-correct:  #00A876;
+    --color-correct-dark: #007A56;
+    --color-correct-soft: #0F2E24;
+}
+body.theme-basic-story .nav-item { color: rgba(255,255,255,0.3); }
+body.theme-basic-story .nav-item.active { color: #8B2FCC; }
+
+/* ==========================================================================
+   共用修正：白底/淺色主題文字與按鈕顏色（統一在此集中管理）
+   ========================================================================== */
+body.theme-white .u-btn-correct, body.theme-white .u-btn-danger,
+body.theme-tech .u-btn-correct, body.theme-tech .u-btn-danger,
+body.theme-basic-white .u-btn-correct, body.theme-basic-white .u-btn-danger,
+body.theme-basic-tech .u-btn-correct, body.theme-basic-tech .u-btn-danger { color: #ffffff; }
+/* ==========================================================================
+   深色主題通用文字對比修正（完整版）
+   覆蓋瀏覽器預設黑色，確保所有文字在暗底下清晰
+   ========================================================================== */
+
+/* 所有深色主題的共用選擇器前綴 */
+:is(
+  body.theme-wood,
+  body.theme-story,
+  body.theme-basic-wood,
+  body.theme-basic-story,
+  body.theme-basic-harem
+) {
+    color: var(--text);
+    background: var(--bg-frame);
+}
+
+/* h1-h6 全部繼承主題文字色 */
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) h1,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) h2,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) h3,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) h4,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) h5,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) h6 {
+    color: var(--text) !important;
+}
+
+/* p, label, li 繼承 */
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) p,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) label,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) li {
+    color: inherit;
+}
+
+/* page 區域背景與文字 */
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .page,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) #page-main,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) #page-task,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) #page-shop,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) #page-stats,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) #page-ach {
+    background: var(--bg-panel);
+    color: var(--text);
+}
+
+/* 卡片與盒子 */
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .std-card,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .task-card,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .u-box {
+    background: var(--bg-card);
+    border-color: var(--border);
+    color: var(--text);
+}
+
+/* std-card 內所有子元素繼承 */
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .std-card *,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .task-card * {
+    color: inherit;
+}
+
+/* 任務 title 和 section title */
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .task-title {
+    color: var(--text) !important;
+}
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .section-title {
+    color: var(--text-muted) !important;
+}
+
+/* 子任務、說明文字 */
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .task-sub,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) [class*="sub"],
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) [class*="hint"],
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) [class*="desc"] {
+    color: var(--text-2);
+}
+
+/* modal */
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .m-body {
+    background: var(--bg-modal);
+    color: var(--text);
+}
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .modal {
+    background: var(--bg-modal);
+}
+
+/* input / textarea */
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) input,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) textarea,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) select {
+    background: var(--bg-input) !important;
+    border-color: var(--border-input) !important;
+    color: var(--text) !important;
+}
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) input::placeholder,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) textarea::placeholder {
+    color: var(--text-ghost) !important;
+}
+
+/* toggle label */
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .u-toggle-row label,
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .u-toggle-row span {
+    color: var(--text-2) !important;
+}
+
+/* pin 圖示（硬編碼 #5d4037 改為繼承 gold）*/
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) [style*="color:#5d4037"] {
+    color: var(--color-gold) !important;
+}
+
+/* glass-dashboard */
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .glass-dashboard {
+    color: var(--text-on-dark);
+}
+
+/* harem 深色版（額外需要確保文字對比的元件）*/
+body.theme-basic-harem h1, body.theme-basic-harem h2, body.theme-basic-harem h3,
+body.theme-basic-harem h4, body.theme-basic-harem h5, body.theme-basic-harem h6 {
+    color: var(--text) !important;
+}
+body.theme-basic-harem .std-card, body.theme-basic-harem .task-card, body.theme-basic-harem .u-box {
+    background: var(--bg-card);
+    color: var(--text);
+}
+body.theme-basic-harem .section-title { color: var(--text-muted) !important; }
+body.theme-basic-harem .m-body { background: var(--bg-modal); color: var(--text); }
+body.theme-basic-harem input, body.theme-basic-harem textarea, body.theme-basic-harem select {
+    background: var(--bg-input) !important;
+    color: var(--text) !important;
+}
+
+
+/* ==========================================================================
+   深色主題：頁面 Header / Modal Title 文字強制修正
+   ========================================================================== */
+
+/* modal head (.m-head) 的 .m-title span 與 text-on-dark 確認 */
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .m-head {
+    background: var(--bg-modal-head);
+    color: var(--text-on-dark);
+}
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .m-title {
+    color: var(--text-on-dark) !important;
+}
+
+/* headerBase 的頁面標題 div（font-weight:800）*/
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) [style*="font-weight:800"],
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) [style*="font-weight: 800"] {
+    color: var(--text);
+}
+
+/* page 背景與文字（page-task, page-shop 等）*/
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story, body.theme-basic-harem) .page {
+    background: var(--bg-panel);
+    color: var(--text);
+}
+
+/* 所有深色主題 gold-soft 區域文字 */
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story) [style*="color:var(--color-gold-dark)"],
+:is(body.theme-wood, body.theme-story, body.theme-basic-wood, body.theme-basic-story) [style*="color: var(--color-gold-dark)"] {
+    color: var(--color-gold) !important;
+}
+
+/* ==========================================================================
+   🌊 人魚系列 (Mermaid Series)
+   ========================================================================== */
+
+/* ── 🧜 深海賽壬 (theme-siren) ──────────────────────────────────────────── */
+body.theme-siren {
+    --bg-frame:       #03060D;
+    --bg-hud:         #060C18;
+    --bg-nav:         #040A14;
+    --bg-panel:       #080F1E;
+    --bg-card:        #0C1628;
+    --bg-card-done:   #0A1220;
+    --bg-elevated:    #102030;
+    --bg-modal:       #0C1628;
+    --bg-modal-head:  #080F1E;
+    --bg-modal-foot:  #060C18;
+    --text:           #C8F0E8;  /* 冷青薄荷白 */
+    --text-2:         #88C4B8;
+    --text-muted:     #4A8878;
+    --text-ghost:     #2E5850;
+    --text-on-dark:   #C8F0E8;
+    --border:         #0E2840;
+    --border-card:    rgba(0,255,209,0.08);
+    --bg-box:         rgba(0,255,209,0.04);
+    --bg-input:       rgba(0,255,209,0.06);
+    --border-input:   #0E3050;
+    --color-gold:     #00C9A7;  /* 深海生物螢光 */
+    --color-gold-dark: #009880;
+    --color-gold-soft: #042820;
+    --color-correct:  #00A876;
+    --color-correct-dark: #007A56;
+    --color-correct-soft: #0A2820;
+    --color-danger:   #FF4C5E;  /* 賽壬血色 */
+    --color-danger-dark: #CC2A3A;
+    --color-danger-soft: #2A080C;
+    --nav-item-color: rgba(200,240,232,0.3);
+    --nav-item-active: #00FFD1;
+    --nav-active-bar: #00FFD1;
+}
+body.theme-siren #hud {
+    background: linear-gradient(160deg, #060C18 0%, #03060D 100%);
+    border-bottom: 1px solid rgba(0,255,209,0.15);
+    position: relative; overflow: hidden;
+}
+/* 水流掃描線 */
+body.theme-siren #hud::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0,255,209,0.03) 3px,
+        rgba(0,255,209,0.03) 4px
+    );
+    pointer-events: none;
+    animation: siren-scan 8s linear infinite;
+}
+@keyframes siren-scan {
+    0%   { background-position: 0 0; }
+    100% { background-position: 0 80px; }
+}
+body.theme-siren .u-avatar {
+    border: 2px solid #00FFD1;
+    box-shadow: 0 0 10px rgba(0,255,209,0.4), 0 0 24px rgba(0,255,209,0.15);
+    border-radius: 50%;
+}
+body.theme-siren .m-head {
+    background: linear-gradient(135deg, #060C18, #0A1E30);
+    border-bottom: 1px solid rgba(0,255,209,0.2);
+}
+body.theme-siren .m-head::after {
+    content: '🧜';
+    position: absolute; right: 48px; top: 50%; transform: translateY(-50%);
+    font-size: 1rem; opacity: 0.5; pointer-events: none;
+}
+body.theme-siren .nav-item { color: rgba(200,240,232,0.3); }
+body.theme-siren .nav-item.active { color: #00FFD1; text-shadow: 0 0 8px rgba(0,255,209,0.6); }
+body.theme-siren .nav-item.active::after { background: #00FFD1; box-shadow: 0 0 6px rgba(0,255,209,0.6); }
+body.theme-siren .u-btn-correct { background: #00A876; box-shadow: 0 4px 0 #007A56; color: #fff; }
+body.theme-siren .u-progress-bar { background: linear-gradient(90deg, #007A56, #00C9A7, #00FFD1); }
+body.theme-siren .chk.done { background: #00A876; border-color: #00A876; }
+
+/* ── 🐚 夢幻人魚 (theme-mermaid) ──────────────────────────────────────── */
+body.theme-mermaid {
+    --bg-frame:       #E8F3FB;
+    --bg-hud:         #D8ECF8;
+    --bg-nav:         #CBE4F5;
+    --bg-panel:       #EDF4FC;
+    --bg-card:        #F7FBFF;
+    --bg-card-done:   #EEF6FD;
+    --bg-elevated:    #FFFFFF;
+    --bg-modal:       #F7FBFF;
+    --bg-modal-head:  #D0E8F8;
+    --bg-modal-foot:  #E8F3FB;
+    --text:           #1E3A52;  /* 深海藍文字 */
+    --text-2:         #3A607A;
+    --text-muted:     #6A90A8;
+    --text-ghost:     #A8C4D8;
+    --text-on-dark:   #1E3A52;
+    --border:         #C0D8EE;
+    --border-card:    rgba(91,143,212,0.15);
+    --bg-box:         rgba(91,143,212,0.06);
+    --bg-input:       rgba(255,255,255,0.9);
+    --border-input:   #B0CCE4;
+    --color-gold:     #5B8FD4;  /* 珍珠藍 */
+    --color-gold-dark: #3A6FB4;
+    --color-gold-soft: #D8E8F8;
+    --color-correct:  #3AA87A;
+    --color-correct-dark: #2A7A58;
+    --color-correct-soft: #D0EEE2;
+    --color-danger:   #E86878;
+    --color-danger-dark: #C04858;
+    --color-danger-soft: #FDE8EC;
+    --nav-item-color: rgba(30,58,82,0.4);
+    --nav-item-active: #5B8FD4;
+    --nav-active-bar: #5B8FD4;
+}
+body.theme-mermaid #hud {
+    background: linear-gradient(160deg, #C8E4F5 0%, #D8ECF8 50%, #E8F3FB 100%);
+    border-bottom: 1px solid rgba(91,143,212,0.2);
+    position: relative; overflow: hidden;
+}
+/* 氣泡浮動紋路 */
+body.theme-mermaid #hud::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        radial-gradient(circle at 20% 60%, rgba(244,168,192,0.25) 4px, transparent 4px),
+        radial-gradient(circle at 55% 30%, rgba(91,143,212,0.2) 6px, transparent 6px),
+        radial-gradient(circle at 78% 70%, rgba(244,168,192,0.2) 3px, transparent 3px),
+        radial-gradient(circle at 40% 80%, rgba(91,143,212,0.15) 5px, transparent 5px),
+        radial-gradient(circle at 90% 20%, rgba(244,168,192,0.18) 4px, transparent 4px);
+    pointer-events: none;
+    animation: mermaid-bubbles 6s ease-in-out infinite alternate;
+}
+@keyframes mermaid-bubbles {
+    0%   { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-6px); opacity: 0.7; }
+}
+body.theme-mermaid .u-avatar {
+    border: 2px solid #F4A8C0;
+    box-shadow: 0 0 8px rgba(244,168,192,0.5), 0 0 20px rgba(91,143,212,0.2);
+    border-radius: 50%;
+}
+body.theme-mermaid .m-head {
+    background: linear-gradient(135deg, #C8E4F5, #D8ECF8);
+    border-bottom: 1px solid rgba(91,143,212,0.2);
+}
+body.theme-mermaid .m-head::after {
+    content: '🐚';
+    position: absolute; right: 48px; top: 50%; transform: translateY(-50%);
+    font-size: 1rem; opacity: 0.5; pointer-events: none;
+}
+body.theme-mermaid .nav-item { color: rgba(30,58,82,0.4); }
+body.theme-mermaid .nav-item.active { color: #5B8FD4; }
+body.theme-mermaid .nav-item.active::after { background: #5B8FD4; }
+body.theme-mermaid .u-btn-correct { background: #3AA87A; box-shadow: 0 4px 0 #2A7A58; color: #fff; }
+body.theme-mermaid .u-progress-bar { background: linear-gradient(90deg, #3A6FB4, #5B8FD4, #F4A8C0); }
+body.theme-mermaid .chk.done { background: #3AA87A; border-color: #3AA87A; }
+body.theme-mermaid .u-btn-correct, body.theme-mermaid .u-btn-normal { color: #ffffff; }
+
+/* ── 🧜 深海藍黑 基礎面板 (theme-basic-siren) ──────────────────────────── */
+body.theme-basic-siren {
+    --bg-frame:       #040810;
+    --bg-hud:         #070E1C;
+    --bg-nav:         #050B16;
+    --bg-panel:       #0A1222;
+    --bg-card:        #0E1A2E;
+    --bg-card-done:   #0C1626;
+    --bg-elevated:    #122030;
+    --bg-modal:       #0E1A2E;
+    --bg-modal-head:  #0A1222;
+    --bg-modal-foot:  #070E1C;
+    --text:           #B8E8DC;
+    --text-2:         #78B8AC;
+    --text-muted:     #3E7870;
+    --text-ghost:     #264848;
+    --text-on-dark:   #B8E8DC;
+    --border:         #0C2238;
+    --border-card:    rgba(0,201,167,0.07);
+    --bg-box:         rgba(0,201,167,0.04);
+    --bg-input:       rgba(0,201,167,0.05);
+    --border-input:   #0E2A48;
+    --color-gold:     #00C9A7;
+    --color-gold-dark: #009880;
+    --color-gold-soft: #042820;
+    --color-correct:  #009870;
+    --color-correct-dark: #007050;
+    --color-correct-soft: #0A2420;
+    --nav-item-color: rgba(184,232,220,0.3);
+    --nav-item-active: #00C9A7;
+    --nav-active-bar: #00C9A7;
+}
+body.theme-basic-siren .nav-item { color: rgba(184,232,220,0.3); }
+body.theme-basic-siren .nav-item.active { color: #00C9A7; }
+body.theme-basic-siren .u-btn-correct { color: #ffffff; }
+
+/* ── 🐚 珍珠粉藍 基礎面板 (theme-basic-mermaid) ────────────────────────── */
+body.theme-basic-mermaid {
+    --bg-frame:       #EAF2FA;
+    --bg-hud:         #DBE9F6;
+    --bg-nav:         #CFE2F2;
+    --bg-panel:       #EEF5FC;
+    --bg-card:        #F8FCFF;
+    --bg-card-done:   #EFF6FD;
+    --bg-elevated:    #FFFFFF;
+    --bg-modal:       #F8FCFF;
+    --bg-modal-head:  #D2E6F5;
+    --bg-modal-foot:  #EAF2FA;
+    --text:           #1C3850;
+    --text-2:         #385E78;
+    --text-muted:     #6888A0;
+    --text-ghost:     #A8C2D4;
+    --text-on-dark:   #1C3850;
+    --border:         #BCCEE0;
+    --border-card:    rgba(91,143,212,0.12);
+    --bg-box:         rgba(91,143,212,0.05);
+    --bg-input:       rgba(255,255,255,0.9);
+    --border-input:   #AECCE8;
+    --color-gold:     #5B8FD4;
+    --color-gold-dark: #3A6FB4;
+    --color-gold-soft: #D4E6F8;
+    --color-correct:  #3AA87A;
+    --color-correct-dark: #2A7A58;
+    --color-correct-soft: #CCE8DC;
+    --nav-item-color: rgba(28,56,80,0.4);
+    --nav-item-active: #5B8FD4;
+    --nav-active-bar: #5B8FD4;
+}
+body.theme-basic-mermaid .nav-item { color: rgba(28,56,80,0.4); }
+body.theme-basic-mermaid .nav-item.active { color: #5B8FD4; }
+body.theme-basic-mermaid .u-btn-correct, body.theme-basic-mermaid .u-btn-normal { color: #ffffff; }
+
+/* 深海系（siren）歸入深色主題的文字修正 */
+:is(body.theme-siren, body.theme-basic-siren) {
+    color: var(--text);
+}
+:is(body.theme-siren, body.theme-basic-siren) h1,
+:is(body.theme-siren, body.theme-basic-siren) h2,
+:is(body.theme-siren, body.theme-basic-siren) h3,
+:is(body.theme-siren, body.theme-basic-siren) h4,
+:is(body.theme-siren, body.theme-basic-siren) h5,
+:is(body.theme-siren, body.theme-basic-siren) h6 { color: var(--text) !important; }
+:is(body.theme-siren, body.theme-basic-siren) .std-card,
+:is(body.theme-siren, body.theme-basic-siren) .task-card,
+:is(body.theme-siren, body.theme-basic-siren) .u-box { background: var(--bg-card); color: var(--text); border-color: var(--border); }
+:is(body.theme-siren, body.theme-basic-siren) .m-body { background: var(--bg-modal); color: var(--text); }
+:is(body.theme-siren, body.theme-basic-siren) .m-title { color: var(--text-on-dark) !important; }
+:is(body.theme-siren, body.theme-basic-siren) .m-head { background: var(--bg-modal-head); color: var(--text-on-dark); }
+:is(body.theme-siren, body.theme-basic-siren) .section-title { color: var(--text-muted) !important; }
+:is(body.theme-siren, body.theme-basic-siren) .task-title { color: var(--text) !important; }
+:is(body.theme-siren, body.theme-basic-siren) .page { background: var(--bg-panel); color: var(--text); }
+:is(body.theme-siren, body.theme-basic-siren) input,
+:is(body.theme-siren, body.theme-basic-siren) textarea,
+:is(body.theme-siren, body.theme-basic-siren) select { background: var(--bg-input) !important; color: var(--text) !important; border-color: var(--border-input) !important; }

@@ -77,6 +77,32 @@ window.SQ.Engine.Settings = {
             color: '#B829EA', bg: '#1E1E21', border: '#333336', badge: 'Pro', preview: 'basic-story'
         },
 
+        // ── 人魚系列 (Mermaid Series) ────────────────────────
+        {
+            id: 'theme_siren', name: '🧜 深海賽壬', type: 'theme_story',
+            desc: '深邃藍黑底，毒藍綠螢光點綴，危險神秘的深海女妖氛圍。',
+            price: 300, currency: 'paid',
+            color: '#00FFD1', bg: '#03060D', border: '#0A2040', badge: 'NEW', preview: 'siren'
+        },
+        {
+            id: 'theme_mermaid', name: '🐚 夢幻人魚', type: 'theme_story',
+            desc: '粉藍珍珠底，柔光氣泡紋路，夢幻浪漫的海底仙境。',
+            price: 300, currency: 'paid',
+            color: '#5B8FD4', bg: '#EDF4FC', border: '#C0D8F0', badge: 'NEW', preview: 'mermaid'
+        },
+        {
+            id: 'theme_basic_siren', name: '🧜 深海藍黑', type: 'theme_basic',
+            desc: '深海色票基礎版，只換配色不含紋路。',
+            price: 0, currency: 'pro',
+            color: '#00C9A7', bg: '#060D1A', border: '#0E2038', badge: 'Pro', preview: 'basic-siren'
+        },
+        {
+            id: 'theme_basic_mermaid', name: '🐚 珍珠粉藍', type: 'theme_basic',
+            desc: '夢幻人魚色票基礎版，只換配色不含氣泡紋路。',
+            price: 0, currency: 'pro',
+            color: '#5B8FD4', bg: '#EDF4FC', border: '#C0D8F0', badge: 'Pro', preview: 'basic-mermaid'
+        },
+
         // ── 系統擴充 (module) ─────────────────────────────────
         {
             id: 'learning', name: '📚 語言學習模組', type: 'module',

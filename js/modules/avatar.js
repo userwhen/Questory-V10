@@ -7,21 +7,10 @@ window.SQ.Engine.Avatar = {
         const gs = window.SQ.State;
         // 確保結構存在
         if (!gs.avatar) gs.avatar = { unlocked: [], wearing: {}, gender: 'm' };
-        
-        // 確保商店數據存在 (Fallback)
-        if (!window.GameConfig) window.GameConfig = {};
-        if (!window.GameConfig.AvatarShop) {
-            window.GameConfig.AvatarShop = [
-                { id: 'adventurer_m', name: '冒險者 (男)', price: 0, type: 'suit' },
-                { id: 'adventurer_f', name: '冒險者 (女)', price: 0, type: 'suit' }, 
-                { id: 'harem_m', name: '後宮 (男)', price: 150, type: 'suit' },
-                { id: 'harem_f', name: '後宮 (女)', price: 150, type: 'suit' }
-            ];
-        }
 
         // 如果還沒解鎖預設套裝，自動解鎖
-        if (!gs.avatar.unlocked.includes('adventurer_m')) {
-            gs.avatar.unlocked.push('adventurer_m');
+        if (!gs.avatar.unlocked.includes('outfit_01')) {
+            gs.avatar.unlocked.push('outfit_01');
         }
 
         // 複製當前穿著到預覽暫存

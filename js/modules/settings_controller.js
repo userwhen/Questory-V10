@@ -45,16 +45,26 @@ window.SQ.Controller.Settings = {
                 window.SQ.EventBus.on(window.SQ.Events.System.MODAL_CLOSE, onModalClose);
             },
 
-            // ── 套用主題（整張卡片觸發，data-val = themeKey 或 'default'）──
-            applyTheme: (val) => {
-                const themeKey = val || 'default';
+            // ── 修正 Controller 的套用介面，導向 Engine ──
+            applyTheme: (id, val) => {
+                // 如果是點擊「取消」，會傳入 'default'
+                const themeKey = val || id || 'default'; 
                 if (window.SQ.Engine.Settings?.applyTheme) {
                     window.SQ.Engine.Settings.applyTheme(themeKey);
-                    if (window.App && typeof window.App.saveData === 'function') window.App.saveData();
+                    // 安全存檔
+                    if (window.App && typeof window.App.saveData === 'function') window.App.saveData(); 
+                    
                     window.SQ.Actions.toast(themeKey === 'default' ? "🔄 已恢復預設主題" : "✅ 已套用主題");
                     if (window.SQ.Audio) window.SQ.Audio.play('save');
-                    // 立即重繪商店，讓按鈕狀態同步更新
-                    if (window.SQ.View.Settings) window.SQ.View.Settings.renderSettingsShop();
+                    // [Bug Fix #2] 套用後立刻重渲商店，讓卡片狀態即時更新
+                    if (window.SQ.Temp.activeModal === 'settingsShop' && window.SQ.View.Settings) {
+                        window.SQ.View.Settings.renderSettingsShop();
+                    }
+                    // 重渲 HUD / Navbar 反映新主題 icon
+                    if (window.view) {
+                        if (window.view.initHUD) window.view.initHUD(window.SQ.State);
+                        if (window.view.renderNavbar) window.view.renderNavbar();
+                    }
                 }
             },
 
@@ -106,9 +116,8 @@ window.SQ.Controller.Settings = {
                 if (window.SQ.Actions.navigate) window.SQ.Actions.navigate(targetPage);
             },
 
-            // ── 購買（整張卡片觸發，data-val = itemId）──
-            buyMode: (val) => {
-                const itemId = val;
+            buyMode: (id, val) => {
+                const itemId = id || val;
                 if (!itemId) return;
                 if (window.SQ.Engine.Settings?.buyMode) {
                     window.SQ.Engine.Settings.buyMode(itemId);
@@ -181,25 +190,8 @@ window.SQ.Controller.Settings = {
                 window.SQ.Sub.cancelSubscription();
             },
 
-            applyTheme: (theme) => {
-                // Pro 功能鎖
-                if (theme !== 'default' && window.SQ.Sub) {
-                    const check = window.SQ.Sub.canUseTheme();
-                    if (!check.ok) {
-                        window.SQ.Sub.showUpgradePrompt(check.reason);
-                        return;
-                    }
-                }
-                if (window.SQ.Engine.Settings?.applyTheme) {
-                    window.SQ.Engine.Settings.applyTheme(theme);
-                    window.SQ.Actions.save();
-                    window.SQ.Audio?.play('save');
-                    if (window.SQ.View.Settings) window.SQ.View.Settings.render();
-                }
-            },
-			toggleModule: (val) => {
-                // 整張卡片觸發，data-val = moduleId
-                const moduleId = val;
+            toggleModule: (id, val) => {
+                const moduleId = id || val;
                 if (!moduleId) return;
                 const gs = window.SQ.State;
                 if (!gs.settings) gs.settings = {};
@@ -354,7 +346,15 @@ window.SQ.Controller.Settings = {
             }
         });
 
-        console.log("✅ SettingsController V55.0 Active");
+        // ── [Bug Fix #1] App 啟動時恢復已存檔主題 ────────────
+        // 原本沒有這段，導致每次重開 App 都回到預設
+        const savedTheme = window.SQ.State?.settings?.theme;
+        if (savedTheme && savedTheme !== 'default') {
+            document.body.className = 'theme-' + savedTheme;
+            console.log(`🎨 [SettingsController] 恢復主題: theme-${savedTheme}`);
+        }
+
+        console.log("✅ SettingsController V56.1 Active");
     }
 };
 

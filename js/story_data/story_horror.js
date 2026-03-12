@@ -134,14 +134,14 @@
         dialogue: [
             {
                 text: {
-                    zh: "你帶著工具箱來到了{env_building}。<br><br>根據你之前蒐集到的資料，這裡有關於{curse_type}的記錄。<br><br>{env_pack_visual}<br><br>這個地方有問題——你早就知道。<br>問題是：它有多嚴重。"
+                    zh: "你帶著工具箱來到了{env_building}。<br><br>根據你之前蒐集到的資料，這裡有關於{curse_type}的記錄。<br><br>{env_pack_visual}<br><br>這個地方有問題——你早就知道，<br>問題是：它有多嚴重。"
                 }
             }
         ],
         options: [
             {
                 label: {
-                    zh: "先護好自己，再動手查",
+                    zh: "先做好防護，再進入調查",
                     jp: "身を守ってから調べる",
                     kr: "자신을 지킨 후 조사하다"
                 },
@@ -565,7 +565,7 @@
         options: [
             {
                 label: {
-                    zh: "這是真的警告，重新想",
+                    zh: "這是真的警告，重新思考",
                     jp: "本物の警告だ。計画を見直す",
                     kr: "진짜 경고야. 계획을 다시 세우다"
                 },
@@ -573,9 +573,26 @@
                 rewards: {
                     tags: ["found_warning"],
                     varOps: [{ key: 'knowledge', val: 10, op: '+' }]
-                }
-            },
-            {
+                },
+				nextScene: {
+                    dialogue: [{
+                        text: { zh: "你環顧四週，選擇聽從建議。" }
+                    }],
+                    options: [
+                        {
+                            label: "趁天黑離開",
+                            action: "advance_chain",
+                            rewards: {
+                                tags: ['found_warning'],
+                                varOps: [{ key: 'curse_val', val: 2, op: '+' }]
+                            }
+                        },
+                        { label: "繼續搜查其他地方", action: "advance_chain",
+					rewards: {tags: ["found_warning"],
+                    varOps: [{ key: 'curse_val', val: 12, op: '+' }]
+						}
+				},],},
+            
                 label: "繼續，別在意這種東西",
                 action: "advance_chain",
                 rewards: {
@@ -583,8 +600,8 @@
                     varOps: [{ key: 'curse_val', val: 12, op: '+' }]
                 }
             }
-        ]
-    });
+				]}
+    );
 
     // MIDDLE-通用-C：與其他倖存者遭遇（共用結構，偵探劇本也可觸發）
     DB.templates.push({
@@ -595,7 +612,7 @@
         dialogue: [
             {
                 text: {
-                    zh: "{sentence_encounter}<br><br>不是怪物。是一個{identity_modifier}{core_identity}，<br>對方{state_modifier}。<br><br>「你也被困在這裡了嗎？」"
+                    zh: "{sentence_encounter}<br><br>不是怪物，而是一個{identity_modifier}{core_identity}，<br>對方{state_modifier}。<br><br>「你也被困在這裡了嗎？」"
                 }
             }
         ],

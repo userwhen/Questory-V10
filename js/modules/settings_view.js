@@ -26,6 +26,15 @@ window.SQ.View.Settings = {
         const vibOn    = s.vibrationEnabled ?? true;
         const notifOn  = s.notificationEnabled || false;
 
+        // ── 模式選項 ──────────────────────────────────────
+        let modeOptions = [
+            { val:'adventurer', label:'🛡️ 冒險者模式' },
+            { val:'basic',      label:'📊 基礎模式' }
+        ];
+        // 如果玩家已解鎖大型主題，才把它們加進選單
+        if (unlocks.theme_harem) modeOptions.push({ val:'harem', label:'🪭 后宮模式' });
+        if (unlocks.theme_tech)  modeOptions.push({ val:'tech',  label:'💠 菁英科技' });
+
         // ── Toggle 渲染器 ─────────────────────────────────
         const renderToggle = (action, actionId, label, checked, locked, icon='') => {
             if (locked) return `
@@ -179,33 +188,30 @@ window.SQ.View.Settings = {
             }
         })()}
 
-        <!-- 1. 主題設定 -->
+        <!-- 1. 核心設定 -->
         <div class="u-box">
-            ${(() => {
-                // 顯示目前套用的主題名稱（從 shopItems 反查）
-                const allItems = window.SQ.Engine.Settings?.shopItems || [];
-                const curT = s.theme || 'default';
-                const activeItem = allItems.find(i => (i.preview || i.id.replace('theme_','')) === curT);
-                const themeName = activeItem ? activeItem.name : '⬜ 預設主題';
-                return `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <span style="font-size:0.85rem; font-weight:600; color:var(--text-2);">目前主題</span>
-                    <span style="font-size:0.88rem; font-weight:800; color:var(--color-gold-dark);">${themeName}</span>
-                </div>`;
-            })()}
-
-            <div data-action="openSettingsShop"
-                 style="padding:12px;border:1px solid var(--color-gold);
-                        background:var(--color-gold-soft);border-radius:var(--radius-sm);
-                        cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <span>🛒</span>
-                    <div>
-                        <div style="font-weight:bold;color:var(--color-gold-dark);">模式商店</div>
-                        <div style="font-size:0.7rem;color:var(--text-muted);">點擊卡片直接切換・解鎖新主題</div>
+            <div style="padding:8px 4px 10px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:3px;">目前主題</div>
+                    <div style="font-weight:700; color:var(--text); font-size:0.95rem;">
+                        ${(() => {
+                            const t = s.theme || 'default';
+                            const names = {
+                                'default':'🛡️ 冒險者模式','harem':'🪭 後宮模式','tech':'💠 未來科技',
+                                'wood':'🌑 魔法學院','white':'☀️ 晨曦物語','story':'🌙 賽博都市',
+                                'basic-harem':'🪭 宮廷朱色','basic-tech':'💠 科技藍調',
+                                'basic-wood':'🌑 沉靜學院','basic-white':'☀️ 明亮清晨','basic-story':'🌙 霓光暗夜','siren':'🧜 深海賽壬','mermaid':'🐚 夢幻人魚','basic-siren':'🧜 深海藍黑','basic-mermaid':'🐚 珍珠粉藍'
+                            };
+                            return names[t] || t;
+                        })()}
                     </div>
                 </div>
-                <span style="color:var(--color-gold-dark);">&gt;</span>
+                <div data-action="openSettingsShop"
+                     style="padding:7px 14px; border-radius:var(--radius-sm);
+                            background:var(--color-gold-soft); border:1px solid var(--color-gold);
+                            cursor:pointer; font-size:0.8rem; font-weight:700; color:var(--color-gold-dark);">
+                    🛒 更換主題
+                </div>
             </div>
         </div>
 
@@ -402,173 +408,178 @@ window.SQ.View.Settings = {
         const isPro    = window.SQ.Sub?.isProOrTrial() || false;
         const curTheme = settings.theme || 'default';
 
+        // 依種類過濾
         const storyThemes = items.filter(i => i.type === 'theme_story');
         const basicThemes = items.filter(i => i.type === 'theme_basic');
         const moduleItems = items.filter(i => i.type === 'module');
 
-        // ── 主題卡片 ──────────────────────────────────────────
-        // 設計原則：
-        //   整張卡片 = 唯一可點擊區域，用 data-action + data-val 傳值
-        //   完全不使用 pointer-events:none / onclick / stopPropagation
-        //   狀態徽章只是視覺，不是按鈕
+        // 渲染主題卡片 (大型與基礎)
         const renderThemeCard = (item) => {
-            const themeKey = item.preview || item.id.replace('theme_','');
+            const themeKey = item.preview || item.id.replace('theme_','').replace('basic_','basic-');
             const isActive = curTheme === themeKey;
-            const isOwned  = item.price === 0 || !!unlocks[item.id];
+            const isOwned  = item.price === 0 || unlocks[item.id];
             const isLarge  = item.type === 'theme_story';
+            const priceLabel = item.price > 0 ? `💎 ${item.price}` : `👑 Pro`;
 
-            // 決定卡片的 action 與 val
-            let cardAction = '', cardVal = '';
-            if (!isPro) {
-                cardAction = 'openSubscribePage'; cardVal = '';
-            } else if (!isOwned && item.price > 0) {
-                cardAction = 'buyMode'; cardVal = item.id;
-            } else if (isActive) {
-                // 再次點擊 → 取消套用，恢復預設
-                cardAction = 'applyTheme'; cardVal = 'default';
-            } else {
-                // 基礎面板直接套用；大型主題同樣直接套用（已擁有的話）
-                cardAction = 'applyTheme'; cardVal = themeKey;
+            // ── 判斷卡片明暗：
+            // 淺色卡（不加濾鏡）：後宮模式(harem)、晨曦(white)、未來科技(tech)、
+            //                     宮廷朱色(basic-harem)、科技藍調(basic-tech)、明亮清晨(basic-white)
+            // 暗色卡（需考慮濾鏡）：魔法學院(wood)、賽博都市(story)、沉靜學院(basic-wood)、霓光暗夜(basic-story)
+            const darkCards  = ['wood','story','basic-wood','basic-story','siren','basic-siren'];
+            const isDarkCard  = darkCards.includes(themeKey);
+            const isLightCard = !isDarkCard;
+
+            // ── 卡片底色：未來科技統一用淺藍（與科技藍調一致）──
+            const cardBg = (themeKey === 'tech') ? '#EEF3FA' : item.bg;
+
+            // ── 遮色片：只在環境與卡片明暗相反時才加 ──
+            const currentIsDark = ['wood','story','basic-wood','basic-story','basic-harem','siren','basic-siren'].includes(curTheme);
+            let overlayStyle = '';
+            if (isDarkCard && !currentIsDark) {
+                // 目前是亮色環境，顯示暗底卡片 → 輕微加深讓它協調
+                overlayStyle = `position:absolute;inset:0;border-radius:11px;pointer-events:none;background:rgba(20,15,30,0.12);`;
+            } else if (isLightCard && currentIsDark) {
+                // 目前是暗色環境，顯示亮底卡片 → 輕微壓暗防刺眼
+                overlayStyle = `position:absolute;inset:0;border-radius:11px;pointer-events:none;background:rgba(30,20,10,0.15);`;
             }
 
-            // 右側狀態徽章（純視覺，不帶事件）
-            let badge = '';
+            // ── 已套用 → 點擊取消（恢復預設）──
+            // ── 未套用 → 點擊套用 ──
+            let actionBtn = '';
             if (isActive) {
-                badge = `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
-                    <span style="font-size:1.1rem;">✅</span>
-                    <span style="font-size:0.6rem;font-weight:800;color:${item.color};white-space:nowrap;">使用中</span>
-                    <span style="font-size:0.55rem;color:var(--text-muted);white-space:nowrap;">再點取消</span>
-                </div>`;
+                actionBtn = `
+                    <button data-action="applyTheme" data-id="default"
+                        style="border:1.5px solid ${item.color}; background:transparent; color:${item.color};
+                               font-size:0.78rem; font-weight:800; cursor:pointer; padding:5px 8px;
+                               border-radius:8px; width:60px; text-align:center; flex-shrink:0; line-height:1.3;">
+                        ✓ 使用中<br><span style="font-size:0.6rem; opacity:0.7;">(取消)</span>
+                    </button>`;
             } else if (!isPro) {
-                badge = `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;
-                                     width:40px;padding:6px 0;border-radius:8px;
-                                     border:1px dashed ${item.color};background:rgba(255,255,255,0.06);">
-                    <span style="font-size:0.9rem;">🔒</span>
-                    <span style="font-size:0.6rem;font-weight:800;color:${item.color};">解鎖</span>
-                </div>`;
-            } else if (!isOwned && item.price > 0) {
-                badge = `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;
-                                     width:44px;padding:5px 0;border-radius:8px;
-                                     background:var(--color-correct-soft);border:1px solid var(--color-correct);">
-                    <span style="font-size:0.7rem;font-weight:800;color:var(--color-correct);">💎 ${item.price}</span>
-                    <span style="font-size:0.6rem;font-weight:700;color:var(--color-correct);">購買</span>
-                </div>`;
-            } else if (isLarge) {
-                badge = `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;
-                                     width:40px;padding:5px 0;border-radius:8px;
-                                     background:var(--color-gold-soft);border:1px solid var(--color-gold);">
-                    <span style="font-size:0.85rem;">👑</span>
-                    <span style="font-size:0.6rem;font-weight:800;color:var(--color-gold-dark);">套用</span>
-                </div>`;
+                actionBtn = `
+                    <div data-action="openSubscribePage"
+                         style="font-size:0.75rem; color:${item.color}; font-weight:bold; cursor:pointer;
+                                width:46px; text-align:center; padding:6px 0; border-radius:8px;
+                                border:1px dashed ${item.color}; background:rgba(255,255,255,0.08); flex-shrink:0;">
+                        🔒<br>解鎖
+                    </div>`;
+            } else if (isOwned) {
+                // 基礎面板 or 沉浸世界都直接套用
+                actionBtn = ui.atom.buttonBase({
+                    label: '套用', size: 'sm', theme: 'correct',
+                    action: 'applyTheme', actionId: themeKey,
+                    style: 'flex-shrink:0;'
+                });
             } else {
-                badge = `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;
-                                     width:40px;padding:5px 0;border-radius:8px;
-                                     background:var(--color-correct-soft);border:1px solid var(--color-correct);">
-                    <span style="font-size:0.85rem;">🎨</span>
-                    <span style="font-size:0.6rem;font-weight:800;color:var(--color-correct);">套用</span>
-                </div>`;
+                actionBtn = ui.atom.buttonBase({
+                    label: priceLabel + '<br>購買', size: 'sm', theme: 'normal',
+                    action: 'buyMode', actionId: item.id,
+                    style: 'flex-shrink:0; padding:4px 10px; line-height:1.2;'
+                });
             }
+
+            // ── 文字色：暗底卡片強制用淺色 ──
+            const titleColor  = isDarkCard ? '#F0EAE0' : item.color;
+            const descColor   = isDarkCard ? 'rgba(240,234,224,0.75)' : `${item.color}CC`;
+
+            const badgeHtml = item.badge ? (() => {
+                const bg = item.badge === 'NEW' ? '#4CAF7D' : item.badge === 'HOT' ? '#FF5722' : 'var(--color-gold)';
+                return `<span style="font-size:0.6rem;background:${bg};color:#fff;padding:2px 6px;border-radius:4px;line-height:1;font-weight:900;letter-spacing:0.04em;">${item.badge}</span>`;
+            })() : '';
 
             return `
-            <div data-action="${cardAction}" data-val="${cardVal}"
-                 style="padding:12px 14px; border-radius:12px; margin-bottom:10px; cursor:pointer;
-                        background:${item.bg}; 
-                        border:${isActive ? '2px solid var(--color-gold)' : '1px solid '+item.border};
-                        box-shadow:${isActive ? '0 0 0 3px rgba(212,175,55,0.15)' : '0 2px 8px rgba(0,0,0,0.05)'};
-                        transition:opacity 0.15s, transform 0.1s;"
-                 ontouchstart="this.style.opacity='0.75'"
-                 ontouchend="this.style.opacity='1'">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <div style="font-size:1.5rem; flex-shrink:0;">${item.name.split(' ')[0]}</div>
-                    <div style="flex:1; min-width:0;">
-                        <div style="font-weight:800; color:${item.color}; font-size:0.95rem; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                            ${item.name.slice(item.name.indexOf(' ')+1)}
-                            ${item.badge ? `<span style="font-size:0.6rem;background:var(--color-gold);color:var(--bg-card);padding:2px 5px;border-radius:4px;">${item.badge}</span>` : ''}
+            <div style="padding:12px 14px; border-radius:12px; margin-bottom:10px;
+                        background:${cardBg}; position:relative; overflow:hidden;
+                        border:${isActive ? `2px solid var(--color-gold)` : `1px solid ${item.border}`};
+                        box-shadow:${isActive ? '0 0 0 1px var(--color-gold)' : '0 2px 8px rgba(0,0,0,0.05)'};
+                        transition:transform 0.15s, box-shadow 0.15s; cursor:pointer;">
+                ${overlayStyle ? `<div style="${overlayStyle}"></div>` : ''}
+                <div style="display:flex; align-items:center; justify-content:space-between; position:relative; z-index:1;">
+                    <div data-action="previewTheme" data-val="${themeKey}"
+                         style="display:flex; align-items:center; gap:10px; flex:1; padding-right:10px; min-height:44px;">
+                        <div style="font-size:1.5rem; flex-shrink:0;">${item.name.split(' ')[0]}</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:800; color:${titleColor}; font-size:0.95rem; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                ${item.name.slice(item.name.indexOf(' ')+1)}
+                                ${badgeHtml}
+                            </div>
+                            <div style="font-size:0.75rem; color:${descColor}; margin-top:3px; line-height:1.4;">${item.desc}</div>
                         </div>
-                        <div style="font-size:0.73rem; color:${item.color}; opacity:0.75; margin-top:3px; line-height:1.4;">${item.desc}</div>
                     </div>
-                    ${badge}
+                    <div style="flex-shrink:0; display:flex; align-items:center; justify-content:center; min-width:52px;">
+                        ${actionBtn}
+                    </div>
                 </div>
             </div>`;
         };
 
-        // ── 模組卡片 ──────────────────────────────────────────
-        // Toggle 開關同樣直接掛在外層 div，不需要巢狀事件
+        // 渲染功能擴充卡片
         const renderModuleCard = (item) => {
-            const owned    = !!unlocks[item.id];
-            const isOn     = settings[item.id + '_active'] !== false;
-            const priceLabel = '💠 ' + item.price;
-
+            const owned = unlocks[item.id];
+            const priceLabel = item.currency === 'paid' ? ('💠 ' + item.price) : ('💎 ' + item.price);
+            
+            // 判斷模組是否為開啟狀態 (預設為開啟)
+            const isActive = settings[item.id + '_active'] !== false; 
+            let actionHtml = '';
+            
             if (owned) {
-                // 整張卡片點擊 = toggle
-                return `
-                <div data-action="toggleModule" data-val="${item.id}"
-                     style="display:flex; align-items:center; gap:12px; padding:12px 14px;
-                            border-radius:12px; margin-bottom:10px; cursor:pointer;
-                            background:var(--bg-card); border:1px solid var(--border);
-                            transition:opacity 0.15s;"
-                     ontouchstart="this.style.opacity='0.75'"
-                     ontouchend="this.style.opacity='1'">
-                    <div style="flex:1; min-width:0;">
-                        <div style="font-weight:800; color:${item.color}; font-size:0.95rem; display:flex; align-items:center; gap:6px;">
-                            ${item.name}
-                            ${item.badge ? `<span style="font-size:0.6rem;background:var(--color-gold);color:var(--bg-card);padding:2px 5px;border-radius:4px;">${item.badge}</span>` : ''}
-                        </div>
-                        <div style="font-size:0.75rem; color:var(--text-2); margin-top:3px; line-height:1.4;">${item.desc}</div>
-                    </div>
-                    <div style="flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:3px;">
-                        <div style="width:44px; height:24px; border-radius:50px;
-                                    background:${isOn ? 'var(--color-correct)' : 'var(--bg-box)'};
-                                    border:2px solid ${isOn ? 'var(--color-correct)' : 'var(--border)'};
-                                    position:relative; transition:all 0.2s;">
-                            <div style="width:16px; height:16px; background:#fff; border-radius:50%;
-                                        position:absolute; top:2px; left:${isOn ? '22px' : '2px'};
-                                        transition:all 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
-                        </div>
-                        <span style="font-size:0.6rem; font-weight:700;
-                                     color:${isOn ? 'var(--color-correct)' : 'var(--text-ghost)'};">
-                            ${isOn ? '啟用' : '關閉'}
-                        </span>
-                    </div>
+                // 如果已擁有，渲染成 iOS 風格的 Toggle 開關
+                actionHtml = `<div data-action="toggleModule" data-id="${item.id}" style="width:44px; height:24px; border-radius:50px; background:${isActive ? 'var(--color-correct)' : 'var(--bg-box)'}; border:2px solid ${isActive ? 'var(--color-correct)' : 'var(--border)'}; cursor:pointer; position:relative; transition:all 0.2s;">
+                    <div style="width:16px; height:16px; background:#fff; border-radius:50%; position:absolute; top:2px; left:${isActive ? '22px' : '2px'}; transition:all 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
                 </div>`;
             } else {
-                // 未擁有：整張卡片點擊 = 購買
-                return `
-                <div data-action="buyMode" data-val="${item.id}"
-                     style="display:flex; align-items:center; gap:12px; padding:12px 14px;
-                            border-radius:12px; margin-bottom:10px; cursor:pointer;
-                            background:${item.bg || 'var(--bg-card)'}; border:1px solid ${item.border || 'var(--border)'};
-                            transition:opacity 0.15s;"
-                     ontouchstart="this.style.opacity='0.75'"
-                     ontouchend="this.style.opacity='1'">
-                    <div style="flex:1; min-width:0;">
-                        <div style="font-weight:800; color:${item.color}; font-size:0.95rem; display:flex; align-items:center; gap:6px;">
-                            ${item.name}
-                            ${item.badge ? `<span style="font-size:0.6rem;background:var(--color-gold);color:var(--bg-card);padding:2px 5px;border-radius:4px;">${item.badge}</span>` : ''}
-                        </div>
-                        <div style="font-size:0.75rem; color:var(--text-2); margin-top:3px; line-height:1.4;">${item.desc}</div>
-                    </div>
-                    <div style="flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:3px;
-                                width:44px; padding:5px 0; border-radius:8px;
-                                background:var(--color-correct-soft); border:1px solid var(--color-correct);">
-                        <span style="font-size:0.7rem; font-weight:800; color:var(--color-correct);">${priceLabel}</span>
-                        <span style="font-size:0.6rem; font-weight:700; color:var(--color-correct);">購買</span>
-                    </div>
-                </div>`;
+                actionHtml = ui.atom.buttonBase({label:'購買', size:'sm', theme:'correct', action:'buyMode', actionId: item.id});
             }
+
+            // 深色主題不套用 item.bg（避免亮底蓋掉暗主題的卡片色）
+            const _darkThemes = ['wood','story','basic-wood','basic-story','basic-harem','siren','basic-siren'];
+            const _moduleBg = _darkThemes.includes(curTheme) ? '' : (item.bg ? 'background:'+item.bg+';' : '');
+
+            return `
+            <div class="std-card" style="margin-bottom:12px; border-left-color:${item.border}; ${_moduleBg}">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <h4 style="margin:0; color:var(--text); font-size:1rem; border-left:3px solid ${item.border}; padding-left:8px;">${item.name}</h4>
+                    ${item.badge ? ui.atom.badgeBase({text:item.badge, style:'color:var(--color-gold-dark);background:var(--color-gold-soft);'}) : ''}
+                </div>
+                <p style="font-size:0.85rem; color:var(--text-2); margin-bottom:12px; line-height:1.5;">${item.desc}</p>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:bold; color:var(--text-muted); font-size:0.85rem;">${priceLabel}</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        ${owned ? `<span style="font-size:0.8rem; font-weight:bold; color:${isActive ? 'var(--color-correct)' : 'var(--text-ghost)'};">${isActive ? '啟用中' : '已關閉'}</span>` : ''}
+                        ${actionHtml}
+                    </div>
+                </div>
+            </div>`;
         };
 
-        const sectionTitle = (title) => `
-            <div style="display:flex; align-items:center; gap:10px; margin:20px 0 10px;">
-                <div style="height:1px; flex:1; background:var(--border);"></div>
-                <div style="font-size:0.72rem; font-weight:800; color:var(--text-muted); letter-spacing:1px;">${title}</div>
-                <div style="height:1px; flex:1; background:var(--border);"></div>
-            </div>`;
+        // 區塊標題組件
+        const sectionTitle = (title) => `<div style="display:flex; align-items:center; gap:10px; margin:20px 0 12px;">
+            <div style="height:1px; flex:1; background:var(--border);"></div>
+            <div style="font-size:0.75rem; font-weight:800; color:var(--text-muted); letter-spacing:1px;">${title}</div>
+            <div style="height:1px; flex:1; background:var(--border);"></div>
+        </div>`;
 
         let html = '<div style="padding:4px 10px 24px;">';
-        if (storyThemes.length) html += sectionTitle('✨ 沉浸世界') + storyThemes.map(renderThemeCard).join('');
-        if (basicThemes.length) html += sectionTitle('🎨 基礎面板') + basicThemes.map(renderThemeCard).join('');
+
+        if (storyThemes.length) {
+            html += sectionTitle('✨ 沉浸世界');
+            // 排序：亮色系在上、深色系在下
+            const lightStory = storyThemes.filter(i => ['white'].includes(i.preview));
+            const darkStory  = storyThemes.filter(i => !['white'].includes(i.preview));
+            html += lightStory.map(renderThemeCard).join('');
+            html += darkStory.map(renderThemeCard).join('');
+        }
+
+        if (basicThemes.length) {
+            html += sectionTitle('🎨 基礎面板');
+            // 排序：亮色系在上、深色系在下，全部單欄
+            const lightBasic = basicThemes.filter(i => ['basic-tech','basic-white'].includes(i.preview));
+            const darkBasic  = basicThemes.filter(i => !['basic-tech','basic-white'].includes(i.preview));
+            html += lightBasic.map(renderThemeCard).join('');
+            html += darkBasic.map(renderThemeCard).join('');
+        }
+
         if (moduleItems.length) html += sectionTitle('🧩 系統擴充') + moduleItems.map(renderModuleCard).join('');
+
         html += '</div>';
 
         ui.modal.render('🛒 模式商店', html, null, 'overlay');

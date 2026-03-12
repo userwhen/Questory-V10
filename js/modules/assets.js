@@ -2,7 +2,7 @@
 window.Assets = window.Assets || {
     getConf: function() {
         return (window.GameConfig && window.GameConfig.Assets) ? window.GameConfig.Assets : {
-            basePath: 'img/', defExt: '.png', avatars: { adventurer: {m:'adventurer_m', f:'adventurer_f'} }
+            basePath: 'img/', defExt: '.png', avatars: { adventurer: {m:'outfit_01', f:'outfit_02'} }
         };
     },
     
@@ -11,7 +11,7 @@ window.Assets = window.Assets || {
         const m = mode || 'adventurer';
         const g = (gender === 'f' || gender === '👩') ? 'f' : 'm';
         const modeMap = (conf.avatars && conf.avatars[m]) ? conf.avatars[m] : conf.avatars['adventurer'];
-        return `${conf.basePath}${modeMap ? modeMap[g] : 'adventurer_m'}${conf.defExt}`;
+        return `${conf.basePath}${modeMap ? modeMap[g] : 'outfit_01'}${conf.defExt}`;
     },
 
     getCharImgTag: function(className='', style='') {
@@ -21,7 +21,7 @@ window.Assets = window.Assets || {
         // ✅ [核心衝突修復] 讓大廳與 HUD 真正讀取「更衣室正在穿的服裝」
         const currentSuitId = (gs.avatar && gs.avatar.wearing && gs.avatar.wearing.suit) 
                                ? gs.avatar.wearing.suit 
-                               : 'adventurer_m'; // 預設防呆
+                               : 'outfit_01'; // 預設防呆
         
         const conf = this.getConf();
         const path = `${conf.basePath}${currentSuitId}${conf.defExt}`;

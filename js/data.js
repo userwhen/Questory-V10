@@ -4,12 +4,6 @@
 // 1. 玩家初始預設存檔 (Default State)
 // 供 core.js 在建立新玩家時複製使用
 // ==========================================
-
-window.GameConfig.System = {
-    SaveKey: 'Levelife_Save_V1',
-    Version: '1.0.0',  // 👈 加這行
-    SaveInterval: 5000
-};
 window.DefaultData = {
     name: 'Commander', 
     gold: 0, freeGem: 0, paidGem: 0, lv: 1, exp: 0,
@@ -32,7 +26,8 @@ window.DefaultData = {
     story: { energy: 30, tags: [], vars: {}, flags: {}, learning: {}, chain: null, currentNode: null },
     
     // [與 avatar.js 對齊] 紙娃娃系統基礎狀態
-    avatar: { gender: 'm', unlocked: ['adventurer_m'], wearing: { suit: 'adventurer_m' } }, 
+    avatar: { gender: 'm', unlocked: ['outfit_01'], wearing: { suit: 'outfit_01' } }, 
+    
     
     // 商店自訂商品
     shop: { user: [] }, 
@@ -79,16 +74,40 @@ window.GameConfig = window.GameConfig || {};
 
 // 系統常數
 window.GameConfig.System = {
-    SaveKey: 'Levelife_Save_V1', // [與 main.js 對齊] 統一管理存檔名稱
-    SaveInterval: 5000 
+    SaveKey:      'Levelife_Save_V1', // [與 main.js 對齊] 統一管理存檔名稱
+    SaveInterval: 5000,
+    Version:      '1.0.0'            // App 版本號（供 Q&A 關於我們頁讀取）
 };
 
 // 紙娃娃商店列表 [與 avatar.js 的 ID 對齊]
 window.GameConfig.AvatarShop = [
-    { id: 'adventurer_m', name: '冒險者 (男)', price: 0, type: 'suit' },
-    { id: 'adventurer_f', name: '冒險者 (女)', price: 0, type: 'suit' }, 
-    { id: 'harem_m', name: '後宮 (男)', price: 150, type: 'suit' },
-    { id: 'harem_f', name: '後宮 (女)', price: 150, type: 'suit' }
+	{ id: 'outfit_01', name: '勇者',     price: 0,   type: 'suit' },
+    { id: 'outfit_02', name: '法師',     price: 0,   type: 'suit' },
+    { id: 'outfit_03', name: '射手',     price: 150, type: 'suit' },
+    { id: 'outfit_04', name: '刺客',     price: 150, type: 'suit' },
+    { id: 'outfit_05', name: '後宮 (男)', price: 150, type: 'suit' },
+    { id: 'outfit_06', name: '後宮 (女)', price: 150, type: 'suit' },
+	{ id: 'outfit_07', name: '男學生',     price: 150, type: 'suit' },
+    { id: 'outfit_08', name: '女學生',     price: 150, type: 'suit' },
+    { id: 'outfit_09', name: '管家', price: 150, type: 'suit' },
+    { id: 'outfit_10', name: '女僕', price: 150, type: 'suit' },
+	{ id: 'outfit_11', name: '工程師',     price: 150, type: 'suit' },
+    { id: 'outfit_12', name: '檢驗師',     price: 150, type: 'suit' },
+    { id: 'outfit_13', name: '電機刺客', price: 150, type: 'suit' },
+    { id: 'outfit_14', name: '電機駭客', price: 150, type: 'suit' },
+	{ id: 'outfit_15', name: '貴族公子',     price: 150, type: 'suit' },
+    { id: 'outfit_16', name: '貴族千金',     price: 150, type: 'suit' },
+    { id: 'outfit_17', name: '貴族子弟', price: 150, type: 'suit' },
+    { id: 'outfit_18', name: '貴族小姐', price: 150, type: 'suit' },
+	{ id: 'outfit_19', name: '現代男',     price: 150, type: 'suit' },
+    { id: 'outfit_20', name: '現代女',     price: 150, type: 'suit' },
+    { id: 'outfit_21', name: '男人魚', price: 150, type: 'suit' },
+    { id: 'outfit_22', name: '女人魚', price: 150, type: 'suit' },
+	{ id: 'outfit_23', name: '人魚王子',     price: 150, type: 'suit' },
+    { id: 'outfit_24', name: '人魚公主',     price: 150, type: 'suit' },
+    { id: 'outfit_25', name: '黑市刺客', price: 150, type: 'suit' },
+    { id: 'outfit_26', name: '黑市獵人', price: 150, type: 'suit' },
+	{ id: 'outfit_27', name: '後宮嬪妃', price: 150, type: 'suit' },
 ];
 // 資源路徑配置 (Assets)
 window.GameConfig.Assets = {
@@ -96,9 +115,9 @@ window.GameConfig.Assets = {
     defExt: '.png',
     fallback: '🧚',
     avatars: { 
-        adventurer: { m: 'adventurer_m', f: 'adventurer_f' }, 
-        harem: { m: 'harem_m', f: 'harem_f' }, 
-        basic: { m: 'adventurer_m', f: 'adventurer_f' } 
+        adventurer: { m: 'outfit_01', f: 'outfit_02' }, 
+        harem: { m: 'outfit_05', f: 'outfit_06' }, 
+        basic: { m: 'outfit_01', f: 'outfit_02' } 
     }
 };
 

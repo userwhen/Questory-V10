@@ -144,6 +144,58 @@ window.SQ.ThemeConfig = {
             label:    '🌙 霓光暗夜',
             navbar: null,
             quickIcons: null
+        },
+
+        // ── 人魚系列 (Mermaid Series) ────────────────────────
+
+        siren: {
+            type:     'story',
+            shopId:   'theme_siren',
+            label:    '🧜 深海賽壬',
+            navbar: [
+                { id: 'task', icon: '🔱', label: '使命', action: 'goToTaskRoot' },
+                { id: 'main', icon: '🌊', label: '深海', action: 'navigate', val: 'main' },
+                { id: 'shop', icon: '🐡', label: '寶庫', action: 'navigate', val: 'shop' }
+            ],
+            quickIcons: [
+                { icon: '📜', action: 'openquickModal' },
+                { icon: '⏳', action: 'openTimer' },
+                { icon: '🧜', action: 'navigate', val: 'avatar' },
+                { icon: '❓', action: 'showQA' }
+            ]
+        },
+
+        mermaid: {
+            type:     'story',
+            shopId:   'theme_mermaid',
+            label:    '🐚 夢幻人魚',
+            navbar: [
+                { id: 'task', icon: '🐚', label: '心願', action: 'goToTaskRoot' },
+                { id: 'main', icon: '🏝️', label: '海灣', action: 'navigate', val: 'main' },
+                { id: 'shop', icon: '💎', label: '珍寶', action: 'navigate', val: 'shop' }
+            ],
+            quickIcons: [
+                { icon: '📝', action: 'openquickModal' },
+                { icon: '🌅', action: 'openTimer' },
+                { icon: '🐠', action: 'navigate', val: 'avatar' },
+                { icon: '❓', action: 'showQA' }
+            ]
+        },
+
+        'basic-siren': {
+            type:     'basic',
+            shopId:   'theme_basic_siren',
+            label:    '🧜 深海藍黑',
+            navbar: null,
+            quickIcons: null
+        },
+
+        'basic-mermaid': {
+            type:     'basic',
+            shopId:   'theme_basic_mermaid',
+            label:    '🐚 珍珠粉藍',
+            navbar: null,
+            quickIcons: null
         }
     },
 
