@@ -26,6 +26,13 @@ window.SQ.Engine.Settings = {
             price: 300, currency: 'paid',
             color: '#0066FF', bg: '#0A1628', border: '#1E3A5F', badge: 'NEW', preview: 'tech'
         },
+		
+        {
+            id: 'theme_mermaid', name: '🐚 夢幻人魚', type: 'theme_story',
+            desc: '粉藍珍珠底，柔光氣泡紋路，夢幻浪漫的海底仙境。',
+            price: 300, currency: 'paid',
+            color: '#5B8FD4', bg: '#EDF4FC', border: '#C0D8F0', badge: 'NEW', preview: 'mermaid'
+        },
         {
             id: 'theme_wood', name: '🌑 魔法學院', type: 'theme_story',
             desc: '暗木深褐、魔法陣紋路、黃銅金與魔法綠，沉浸霍格華茲學院氛圍。',
@@ -43,6 +50,18 @@ window.SQ.Engine.Settings = {
             desc: '極黑底色、霓虹紫光暈、掃描線紋路，沉浸賽博龐克都市。',
             price: 300, currency: 'paid',
             color: '#B829EA', bg: '#111111', border: '#333336', badge: '', preview: 'story'
+        },
+		{
+            id: 'theme_siren', name: '🧜 深海賽壬', type: 'theme_story',
+            desc: '深邃藍黑底，毒藍綠螢光點綴，危險神秘的深海女妖氛圍。',
+            price: 300, currency: 'paid',
+            color: '#00FFD1', bg: '#03060D', border: '#0A2040', badge: 'NEW', preview: 'siren'
+        },
+		{
+            id: 'theme_gilded', name: '✨ 深淵鎏金', type: 'theme_story',
+            desc: 'Art Deco 幾何金紋，氧化銅綠與深邃黑底，沉浸於海底銷金窟的奢華與衰敗。',
+            price: 300, currency: 'paid',
+            color: '#C8891E', bg: '#0C1A14', border: '#8A5E10', badge: 'NEW', preview: 'gilded'
         },
 
         // ── 基礎面板 (theme_basic) ────────────────────────────
@@ -79,16 +98,10 @@ window.SQ.Engine.Settings = {
 
         // ── 人魚系列 (Mermaid Series) ────────────────────────
         {
-            id: 'theme_siren', name: '🧜 深海賽壬', type: 'theme_story',
-            desc: '深邃藍黑底，毒藍綠螢光點綴，危險神秘的深海女妖氛圍。',
-            price: 300, currency: 'paid',
-            color: '#00FFD1', bg: '#03060D', border: '#0A2040', badge: 'NEW', preview: 'siren'
-        },
-        {
-            id: 'theme_mermaid', name: '🐚 夢幻人魚', type: 'theme_story',
-            desc: '粉藍珍珠底，柔光氣泡紋路，夢幻浪漫的海底仙境。',
-            price: 300, currency: 'paid',
-            color: '#5B8FD4', bg: '#EDF4FC', border: '#C0D8F0', badge: 'NEW', preview: 'mermaid'
+            id: 'theme_basic_mermaid', name: '🐚 珍珠粉藍', type: 'theme_basic',
+            desc: '夢幻人魚色票基礎版，只換配色不含氣泡紋路。',
+            price: 0, currency: 'pro',
+            color: '#5B8FD4', bg: '#EDF4FC', border: '#C0D8F0', badge: 'Pro', preview: 'basic-mermaid'
         },
         {
             id: 'theme_basic_siren', name: '🧜 深海藍黑', type: 'theme_basic',
@@ -96,11 +109,12 @@ window.SQ.Engine.Settings = {
             price: 0, currency: 'pro',
             color: '#00C9A7', bg: '#060D1A', border: '#0E2038', badge: 'Pro', preview: 'basic-siren'
         },
-        {
-            id: 'theme_basic_mermaid', name: '🐚 珍珠粉藍', type: 'theme_basic',
-            desc: '夢幻人魚色票基礎版，只換配色不含氣泡紋路。',
+        
+		{
+            id: 'theme_basic_gilded', name: '✨ 鎏金暗影', type: 'theme_basic',
+            desc: '深淵鎏金色票基礎版，保留高對比復古金綠配色，移除背景光柱動效。',
             price: 0, currency: 'pro',
-            color: '#5B8FD4', bg: '#EDF4FC', border: '#C0D8F0', badge: 'Pro', preview: 'basic-mermaid'
+            color: '#C8891E', bg: '#0C1A14', border: '#5A4614', badge: 'Pro', preview: 'basic-gilded'
         },
 
         // ── 系統擴充 (module) ─────────────────────────────────

@@ -735,9 +735,9 @@ body.theme-siren {
     --color-gold:     #00C9A7;  
     --color-gold-dark: #009880;
     --color-gold-soft: #042820;
-    --color-correct:  #00A876;
-    --color-correct-dark: #007A56;
-    --color-correct-soft: #0A2820;
+    --color-correct:  #187A50;       /* 深海海藻綠 */
+    --color-correct-dark: #105738;   /* 按壓時的暗影 */
+    --color-correct-soft: #08281A;   /* 幽暗的背景透色 */
     --color-danger:   #FF6090;  /* 修正：由 FF4C5E 提亮，增加危險狀態辨識度 */
     --color-danger-dark: #CC2A3A;
     --color-danger-soft: #2A080C;
@@ -763,9 +763,9 @@ body.theme-siren .m-head { background: linear-gradient(135deg, #060C18, #0A1E30)
 body.theme-siren .m-head::after { content: '🧜'; position: absolute; right: 48px; top: 50%; transform: translateY(-50%); font-size: 1rem; opacity: 0.5; pointer-events: none; }
 body.theme-siren .nav-item { color: rgba(200,240,232,0.3); }
 body.theme-siren .nav-item.active { color: #00FFD1; text-shadow: 0 0 8px rgba(0,255,209,0.6); }
-body.theme-siren .u-btn-correct { background: #00A876; box-shadow: 0 4px 0 #007A56; color: #fff; }
+body.theme-siren .u-btn-correct { background: #187A50; box-shadow: 0 4px 0 #007A56; color: #fff; }
 body.theme-siren .u-progress-bar { background: linear-gradient(90deg, #007A56, #00C9A7, #00FFD1); }
-body.theme-siren .chk.done { background: #00A876; border-color: #00A876; }
+body.theme-siren .chk.done { background: #187A50; border-color: #187A50; }
 
 /* ── 🐚 夢幻人魚 (theme-mermaid) ──────────────────────────────────────── */
 body.theme-mermaid {
@@ -792,11 +792,11 @@ body.theme-mermaid {
     --color-gold:     #5B8FD4;  
     --color-gold-dark: #3A6FB4;
     --color-gold-soft: #D8E8F8;
-    --color-correct:  #2A8860;  /* 修正：由 3AA87A 加深以滿足白底對比 */
-    --color-correct-dark: #1E6648;
-    --color-correct-soft: #D0EEE2;
+    --color-correct:  #4A8C80;       /* 柔和海沫綠 */
+    --color-correct-dark: #356B61;   /* 按壓時的暗影 */
+    --color-correct-soft: #D5E8E4;   /* 配合白底的淺綠背景 */
     --color-danger:   #E86878;
-    --nav-item-color: rgba(30,58,82,0.4);
+    --nav-item-color: rgba(30,58,82,0.65); /* 修正對比度 */
     --nav-item-active: #5B8FD4;
 }
 /* 特製按鈕樣式 (夢幻泡泡風) */
@@ -817,7 +817,7 @@ body.theme-mermaid #hud { background: linear-gradient(160deg, #C8E4F5 0%, #D8ECF
 body.theme-mermaid .u-avatar { border: 2px solid #F4A8C0; border-radius: 50%; box-shadow: 0 0 8px rgba(244,168,192,0.5), 0 0 20px rgba(91,143,212,0.2); }
 body.theme-mermaid .m-head { background: linear-gradient(135deg, #C8E4F5, #D8ECF8); }
 body.theme-mermaid .nav-item.active { color: #5B8FD4; }
-body.theme-mermaid .u-btn-correct { background: #2A8860; box-shadow: 0 4px 0 #1E6648; color: #fff; border-radius: 50px !important;}
+body.theme-mermaid .u-btn-correct { background: #4A8C80; box-shadow: 0 4px 0 #1E6648; color: #fff; border-radius: 50px !important;}
 body.theme-mermaid .u-progress-bar { background: linear-gradient(90deg, #3A6FB4, #5B8FD4, #F4A8C0); }
 
 /* ── ✨ 深淵鎏金 (Gilded Abyss) ────────────────────────────────────────── */
@@ -845,9 +845,9 @@ body.theme-gilded {
     --color-gold:     #C8891E;
     --color-gold-dark: #8A5E10;
     --color-gold-soft: rgba(200,137,30,0.15);
-    --color-correct:  #2E9B8C;
-    --color-correct-dark: #1E6B60;
-    --color-correct-soft: rgba(46,155,140,0.15);
+    --color-correct:  #287366;       /* 氧化銅綠 */
+    --color-correct-dark: #1C544A;   /* 按壓時的暗影 */
+    --color-correct-soft: rgba(40, 115, 102, 0.15); /* 沉浸式透明背景 */
     --nav-item-color: rgba(192,150,50,0.28); /* 修正：提高Inactive標籤對比度 */
     --nav-item-active: #C8891E;
 }
@@ -874,18 +874,18 @@ body.theme-gilded .m-head { background: linear-gradient(135deg, #0C1A14, #101E18
 body.theme-gilded .m-head::after { content: '◈'; position: absolute; right: 40px; top: 50%; transform: translateY(-50%); font-size: 1.2rem; opacity: 0.42; color: #C8A040; pointer-events: none; }
 body.theme-gilded .nav-item { color: rgba(192,150,50,0.28); }
 body.theme-gilded .nav-item.active { color: #C8891E; }
-body.theme-gilded .u-btn-correct { background: #2E9B8C; box-shadow: 0 4px 0 #1E6B60; color: #fff; border-radius: 2px !important; }
+body.theme-gilded .u-btn-correct { background: #287366; box-shadow: 0 4px 0 #1E6B60; color: #fff; border-radius: 2px !important; }
 body.theme-gilded .u-progress-bar { background: linear-gradient(90deg, #6A4810, #C8891E, #E8D060); }
 body.theme-gilded .std-card, body.theme-gilded .task-card { border-radius: 4px; border-left: 2px solid rgba(170,130,36,0.4); backdrop-filter: blur(3px); }
 
 /* 基礎色版本（無複雜偽元素與動效） */
 body.theme-basic-siren { --text-muted: #3A7858; --text-ghost: #4A9080; --color-danger: #FF6090; /* 修正同上 */ }
-body.theme-basic-mermaid { --text-2: #2A5490; --text-muted: #4A72A8; --text-ghost: #6A90B0; --color-correct: #2A8860; }
+body.theme-basic-mermaid { --text-2: #2A5490; --text-muted: #4A72A8; --text-ghost: #6A90B0; --color-correct: #4A8C80;--nav-item-color: rgba(28,56,80,0.65); /* 修正對比度 */ }
 body.theme-basic-gilded {
     --bg-frame: #05090B; --bg-hud: #0A120E; --bg-nav: #060C08; --bg-panel: #08120E; --bg-card: #0C1A14;
     --text: #D4A84C; --text-2: #C8A040; --text-muted: #5A9070; --text-ghost: #3A6050; --text-on-dark: #D4A84C;
     --border: rgba(170,130,36,0.3); --border-card: rgba(170,130,36,0.12); --bg-input: rgba(0,0,0,0.5); --border-input: rgba(170,130,36,0.4);
-    --color-gold: #C8891E; --color-correct: #2E9B8C; --nav-item-color: rgba(192,150,50,0.28); --nav-item-active: #C8891E;
+    --color-gold: #C8891E; --color-correct: #287366; --nav-item-color: rgba(192,150,50,0.28); --nav-item-active: #C8891E;
 }
 
 /* 確保深色主題文字色統一覆蓋 (包含新加入的 gilded) */
@@ -911,3 +911,4 @@ body.theme-basic-gilded {
 :is(body.theme-siren, body.theme-basic-siren, body.theme-gilded, body.theme-basic-gilded) input,
 :is(body.theme-siren, body.theme-basic-siren, body.theme-gilded, body.theme-basic-gilded) textarea,
 :is(body.theme-siren, body.theme-basic-siren, body.theme-gilded, body.theme-basic-gilded) select { background: var(--bg-input) !important; color: var(--text) !important; border-color: var(--border-input) !important; }
+
