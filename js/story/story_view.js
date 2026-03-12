@@ -162,7 +162,7 @@ window.SQ.View.Story = {
         isOpen:          window.SQ.Temp.isTagDrawerOpen || false,
         contentHtml:     drawerInnerHtml,
         toggleAction:    "toggleStoryDrawer",
-        height:          '320px',
+        height:          '40%',  // 【修改】從 '320px' 改為 '40%' (大約佔文字框的 1/3 到 1/2)
         handleIconOpen:  '▼',
         handleIconClose: '▲',
         variant:         'story'
@@ -254,19 +254,23 @@ window.SQ.View.Story = {
 
         const bar = document.createElement('div');
         bar.id = 'story-status-bar';
-        bar.style.cssText = [
-            'display:flex',
-            'flex-wrap:wrap',
-            'justify-content:center',
+		bar.style.cssText = [
+        'display:flex',
+            'flex-wrap:nowrap',           // 【修改】設為 nowrap 強制單行顯示
+            'overflow-x:auto',            // 【新增】內容過多時允許水平滑動
+            'scrollbar-width:none',       // 【新增】隱藏捲軸 (Firefox)
+            'justify-content:flex-start', // 【修改】改為靠左對齊，確保滑動時開頭不會被截斷
             'align-items:center',
             'gap:6px',
-            'padding:8px 52px 8px 10px',
+            'padding:8px 10px',           // 【修改】移除原本右側的 52px，改為左右對稱的 10px
             'background:rgba(0,0,0,0.25)',
             'border-top:1px solid rgba(255,255,255,0.07)',
             'flex-shrink:0',
             'min-height:38px'
         ].join(';');
-        bar.innerHTML = items;
+        
+        // 【修改】植入一段隱藏 Webkit (Chrome/Safari) 捲軸的 CSS，讓畫面保持乾淨
+        bar.innerHTML = `<style>#story-status-bar::-webkit-scrollbar { display: none; }</style>` + items;
 
         // 🌟 只做這一行，不移動任何其他元素
         container.parentNode.insertBefore(bar, container);

@@ -200,7 +200,9 @@ window.SQ.View.Settings = {
                                 'default':'🛡️ 冒險者模式','harem':'🪭 後宮模式','tech':'💠 未來科技',
                                 'wood':'🌑 魔法學院','white':'☀️ 晨曦物語','story':'🌙 賽博都市',
                                 'basic-harem':'🪭 宮廷朱色','basic-tech':'💠 科技藍調',
-                                'basic-wood':'🌑 沉靜學院','basic-white':'☀️ 明亮清晨','basic-story':'🌙 霓光暗夜','siren':'🧜 深海賽壬','mermaid':'🐚 夢幻人魚','basic-siren':'🧜 深海藍黑','basic-mermaid':'🐚 珍珠粉藍'
+                                'basic-wood':'🌑 沉靜學院','basic-white':'☀️ 明亮清晨','basic-story':'🌙 霓光暗夜',
+                                'siren':'🧜 深海賽壬','mermaid':'🐚 夢幻人魚','basic-siren':'🧜 深海藍黑','basic-mermaid':'🐚 珍珠粉藍',
+                                'gilded':'✨ 深淵鎏金','basic-gilded':'✨ 鎏金暗影' // <-- 新增這裡
                             };
                             return names[t] || t;
                         })()}
@@ -425,7 +427,7 @@ window.SQ.View.Settings = {
             // 淺色卡（不加濾鏡）：後宮模式(harem)、晨曦(white)、未來科技(tech)、
             //                     宮廷朱色(basic-harem)、科技藍調(basic-tech)、明亮清晨(basic-white)
             // 暗色卡（需考慮濾鏡）：魔法學院(wood)、賽博都市(story)、沉靜學院(basic-wood)、霓光暗夜(basic-story)
-            const darkCards  = ['wood','story','basic-wood','basic-story','siren','basic-siren'];
+            const darkCards  = ['wood','story','basic-wood','basic-story','siren','basic-siren', 'gilded', 'basic-gilded']; // <-- 加入 gilded
             const isDarkCard  = darkCards.includes(themeKey);
             const isLightCard = !isDarkCard;
 
@@ -433,7 +435,7 @@ window.SQ.View.Settings = {
             const cardBg = (themeKey === 'tech') ? '#EEF3FA' : item.bg;
 
             // ── 遮色片：只在環境與卡片明暗相反時才加 ──
-            const currentIsDark = ['wood','story','basic-wood','basic-story','basic-harem','siren','basic-siren'].includes(curTheme);
+            const currentIsDark = ['wood','story','basic-wood','basic-story','basic-harem','siren','basic-siren', 'gilded', 'basic-gilded'].includes(curTheme);
             let overlayStyle = '';
             if (isDarkCard && !currentIsDark) {
                 // 目前是亮色環境，顯示暗底卡片 → 輕微加深讓它協調
@@ -531,7 +533,7 @@ window.SQ.View.Settings = {
             }
 
             // 深色主題不套用 item.bg（避免亮底蓋掉暗主題的卡片色）
-            const _darkThemes = ['wood','story','basic-wood','basic-story','basic-harem','siren','basic-siren'];
+            const _darkThemes = ['wood','story','basic-wood','basic-story','basic-harem','siren','basic-siren', 'gilded', 'basic-gilded'];
             const _moduleBg = _darkThemes.includes(curTheme) ? '' : (item.bg ? 'background:'+item.bg+';' : '');
 
             return `

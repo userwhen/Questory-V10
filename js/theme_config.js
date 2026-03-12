@@ -102,6 +102,58 @@ window.SQ.ThemeConfig = {
                 { icon: '❓', action: 'showQA' }
             ]
         },
+		// ── 人魚系列 (Mermaid Series) ────────────────────────
+
+        siren: {
+            type:     'story',
+            shopId:   'theme_siren',
+            label:    '🧜 深海賽壬',
+            navbar: [
+                { id: 'task', icon: '🔱', label: '使命', action: 'goToTaskRoot' },
+                { id: 'main', icon: '🌊', label: '深海', action: 'navigate', val: 'main' },
+                { id: 'shop', icon: '🐡', label: '寶庫', action: 'navigate', val: 'shop' }
+            ],
+            quickIcons: [
+                { icon: '📜', action: 'openquickModal' },
+                { icon: '⏳', action: 'openTimer' },
+                { icon: '🧜', action: 'navigate', val: 'avatar' },
+                { icon: '❓', action: 'showQA' }
+            ]
+        },
+
+        mermaid: {
+            type:     'story',
+            shopId:   'theme_mermaid',
+            label:    '🐚 夢幻人魚',
+            navbar: [
+                { id: 'task', icon: '🐚', label: '心願', action: 'goToTaskRoot' },
+                { id: 'main', icon: '🏝️', label: '海灣', action: 'navigate', val: 'main' },
+                { id: 'shop', icon: '💎', label: '珍寶', action: 'navigate', val: 'shop' }
+            ],
+            quickIcons: [
+                { icon: '📝', action: 'openquickModal' },
+                { icon: '🌅', action: 'openTimer' },
+                { icon: '🐠', action: 'navigate', val: 'avatar' },
+                { icon: '❓', action: 'showQA' }
+            ]
+        },
+		// ── 深淵鎏金 (Gilded Abyss) ────────────────────────
+        gilded: {
+            type:     'story',
+            shopId:   'theme_gilded',
+            label:    '✨ 深淵鎏金',
+            navbar: [
+                { id: 'task', icon: '⚗️', label: '任務', action: 'goToTaskRoot' },
+                { id: 'main', icon: '🏛️', label: '大廳', action: 'navigate', val: 'main' },
+                { id: 'shop', icon: '⚙️', label: '商店', action: 'navigate', val: 'shop' }
+            ],
+            quickIcons: [
+                { icon: '📜', action: 'openquickModal' },
+                { icon: '⏳', action: 'openTimer' },
+                { icon: '🎭', action: 'navigate', val: 'avatar' },
+                { icon: '❓', action: 'showQA' }
+            ]
+        },
 
         // ── 基礎面板 (theme_basic) ────────────────────────────
         // 基礎面板不替換 navbar icon，全部使用預設
@@ -146,42 +198,7 @@ window.SQ.ThemeConfig = {
             quickIcons: null
         },
 
-        // ── 人魚系列 (Mermaid Series) ────────────────────────
-
-        siren: {
-            type:     'story',
-            shopId:   'theme_siren',
-            label:    '🧜 深海賽壬',
-            navbar: [
-                { id: 'task', icon: '🔱', label: '使命', action: 'goToTaskRoot' },
-                { id: 'main', icon: '🌊', label: '深海', action: 'navigate', val: 'main' },
-                { id: 'shop', icon: '🐡', label: '寶庫', action: 'navigate', val: 'shop' }
-            ],
-            quickIcons: [
-                { icon: '📜', action: 'openquickModal' },
-                { icon: '⏳', action: 'openTimer' },
-                { icon: '🧜', action: 'navigate', val: 'avatar' },
-                { icon: '❓', action: 'showQA' }
-            ]
-        },
-
-        mermaid: {
-            type:     'story',
-            shopId:   'theme_mermaid',
-            label:    '🐚 夢幻人魚',
-            navbar: [
-                { id: 'task', icon: '🐚', label: '心願', action: 'goToTaskRoot' },
-                { id: 'main', icon: '🏝️', label: '海灣', action: 'navigate', val: 'main' },
-                { id: 'shop', icon: '💎', label: '珍寶', action: 'navigate', val: 'shop' }
-            ],
-            quickIcons: [
-                { icon: '📝', action: 'openquickModal' },
-                { icon: '🌅', action: 'openTimer' },
-                { icon: '🐠', action: 'navigate', val: 'avatar' },
-                { icon: '❓', action: 'showQA' }
-            ]
-        },
-
+        
         'basic-siren': {
             type:     'basic',
             shopId:   'theme_basic_siren',
@@ -194,6 +211,13 @@ window.SQ.ThemeConfig = {
             type:     'basic',
             shopId:   'theme_basic_mermaid',
             label:    '🐚 珍珠粉藍',
+            navbar: null,
+            quickIcons: null
+        },
+		'basic-gilded': {
+            type:     'basic',
+            shopId:   'theme_basic_gilded',
+            label:    '✨ 鎏金暗影',
             navbar: null,
             quickIcons: null
         }
