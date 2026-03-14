@@ -83,7 +83,7 @@ window.SQ.Core = {
         if(!gs.achievements) gs.achievements = [];
         if(!gs.settings) gs.settings = { mode: 'adventurer' };
         if(!gs.avatar) gs.avatar = { gender: 'm', unlocked: [], wearing: {} };
-        
+        if (!gs.subscription) gs.subscription = { active: false, mock: false, sku: null, expiresAt: null };
         if(!gs.story) gs.story = { energy: 30, tags: [], vars: {}, flags: {}, chain: null, currentNode: null };
         if(gs.story.chain === undefined) gs.story.chain = null;
         if(gs.story.currentNode === undefined) gs.story.currentNode = null;

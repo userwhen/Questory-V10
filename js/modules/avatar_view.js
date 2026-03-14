@@ -1,4 +1,4 @@
-/* js/modules/avatar_view.js - V51.2 Zero Inline Events */
+/* js/modules/avatar_view.js - V51.3 Clean Theme Edition */
 window.SQ = window.SQ || {};
 window.SQ.View = window.SQ.View || {};
 window.SQ.View.Avatar = {
@@ -7,18 +7,20 @@ window.SQ.View.Avatar = {
         const container = document.getElementById('page-avatar');
         if (!container) return;
 
+        // 🌟 修正：移除寫死的木頭色，改用系統標準變數
         const headerHtml = ui.composer.pageHeader({
             title: '👗 更衣室',
-            rightContent: ui.atom.buttonBase({ label:'返回', icon: '↵', theme:'normal', action:'navigate', actionVal:'main', style:'padding: 6px 12px; font-size:0.9rem; border-radius:8px; background:rgba(255,255,255,0.4); color:#5d4037; border:none;' }),
-            style: 'background:#d8a273; color:#5d4037; border-bottom:1px solid #c88c51;'
+            rightContent: ui.atom.buttonBase({ label:'返回', icon: '↵', theme:'normal', action:'navigate', actionVal:'main', style:'padding: 6px 12px; font-size:0.9rem; border-radius:8px; background:var(--bg-box); color:var(--text); border:none;' }),
+            style: 'background:var(--bg-card); color:var(--text); border-bottom:1px solid var(--border);'
         });
 
+        // 🌟 修正：舞台與衣櫃背景全面改用變數，完美支援深/淺色主題
         container.innerHTML = `
             <div style="position:relative; width:100%; height:100%; display:flex; flex-direction:column; background:var(--bg-panel); overflow:hidden;">
                 ${headerHtml}
-                <div id="avatar-stage" style="flex:1; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; background:radial-gradient(circle, #fffaf0 0%, #f0e2d3 80%);"></div>
-                <div style="height:35%; min-height:200px; flex-shrink:0; background:#d8a273; display:flex; flex-direction:column; box-shadow:0 -4px 15px rgba(139,69,19,0.15); z-index:10;">
-                    <div style="flex-shrink:0; padding:12px 15px; font-weight:bold; background:rgba(255,255,255,0.1); color:#4a332a; border-bottom:1px solid rgba(0,0,0,0.06); box-shadow: 0 2px 4px rgba(0,0,0,0.05);">我的衣櫃</div>
+                <div id="avatar-stage" style="flex:1; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; background:var(--bg-body);"></div>
+                <div style="height:35%; min-height:200px; flex-shrink:0; background:var(--bg-elevated); display:flex; flex-direction:column; box-shadow:0 -4px 15px var(--shadow-md); z-index:10;">
+                    <div style="flex-shrink:0; padding:12px 15px; font-weight:bold; background:var(--bg-box); color:var(--text); border-bottom:1px solid var(--border); box-shadow: var(--shadow-sm);">我的衣櫃</div>
                     <div id="wardrobe-list" style="flex:1; overflow-x:auto; display:flex; align-items:center; gap:12px; padding:10px 15px;"></div>
                 </div>
             </div>
@@ -36,21 +38,25 @@ window.SQ.View.Avatar = {
         let imgHtml = '';
 
         if (preview.suit) {
-            // 拔除 onerror，改用 data-fallback 讓 main.js 大腦接管
-            imgHtml = `<img src="img/${preview.suit}.png" data-fallback="true" style="height:90%; object-fit:contain; filter:drop-shadow(0 8px 20px rgba(0,0,0,0.25)); transition:transform var(--t-base);">
+            imgHtml = `<img src="img/${preview.suit}.png" data-fallback="true" style="height:90%; object-fit:contain; filter:drop-shadow(var(--shadow-md)); transition:transform var(--t-base);">
                        <div style="display:none; font-size:5rem;">🦸</div>`;
         } else {
             if (window.Assets && window.Assets.getCharImgTag) {
-                // CharImgTag 也加入了 fallback 支援
-                imgHtml = window.Assets.getCharImgTag('avatar-char-img', 'height:90%; object-fit:contain; filter:drop-shadow(0 8px 20px rgba(0,0,0,0.25));').replace('<img', '<img data-fallback="true"');
+                imgHtml = window.Assets.getCharImgTag('avatar-char-img', 'height:90%; object-fit:contain; filter:drop-shadow(var(--shadow-md));').replace('<img', '<img data-fallback="true"');
             } else {
                 imgHtml = '<div style="font-size:6rem;">🧍</div>';
             }
         }
         
+        // 🌟 修正：利用 var(--bg-box) 達成自動對比，並嚴格控制 z-index
         stage.innerHTML = `
-            <div style="position:absolute; width:70%; height:70%; background:radial-gradient(circle, rgba(255,255,255,0.7) 0%, transparent 60%); top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none;"></div>
-            ${imgHtml}
+            <div style="position:absolute; inset:0; background: var(--bg-box); z-index: 0; pointer-events:none;"></div>
+
+            <div style="position:absolute; width:70%; height:70%; background:radial-gradient(circle, var(--text) 0%, transparent 60%); opacity: 0.15; top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none; z-index: 1;"></div>
+
+            <div style="position:relative; z-index: 10; height:100%; display:flex; align-items:center; justify-content:center;">
+                ${imgHtml}
+            </div>
         `;
     },
 
@@ -82,12 +88,11 @@ window.SQ.View.Avatar = {
                 btnActionHtml = ui.atom.buttonBase({ label: `💎 ${item.price}`, theme: 'normal', size: 'sm', action: 'buyAvatarItem', actionId: item.id, style: 'width:100%;' });
             }
 
-            // 拔除 onclick，改用 data-action="previewAvatarItem"
             const borderStyle = isPreviewing ? 'border-color: var(--color-gold); background: var(--color-gold-soft); box-shadow: inset 0 0 0 1px var(--color-gold);' : '';
             return `
             <div class="avatar-card" style="min-width:110px; height:165px; flex-shrink:0; border-radius:var(--radius-md); display:flex; flex-direction:column; padding:10px; transition:all var(--t-base); border: 1.5px solid transparent; ${borderStyle}">
                 <div data-action="previewAvatarItem" data-id="${item.id}" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;">
-                    <img src="img/${item.id}.png" data-fallback="true" style="height:65px; object-fit:contain; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.1));">
+                    <img src="img/${item.id}.png" data-fallback="true" style="height:65px; object-fit:contain; filter:drop-shadow(var(--shadow-sm));">
                     <div style="display:none; font-size:2.5rem">👕</div>
                     <div style="font-size:0.8rem; margin-top:8px; font-weight:bold; color:var(--text-2); text-align:center;">${item.name}</div>
                 </div>

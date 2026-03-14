@@ -48,7 +48,8 @@ window.SQ.Controller.Settings = {
             // ── 修正 Controller 的套用介面，導向 Engine ──
             applyTheme: (id, val) => {
                 // 如果是點擊「取消」，會傳入 'default'
-                const themeKey = val || id || 'default'; 
+                const themeKey = val || id || 'default';
+				if (themeKey === 'module') return;
                 if (window.SQ.Engine.Settings?.applyTheme) {
                     window.SQ.Engine.Settings.applyTheme(themeKey);
                     // 安全存檔
@@ -99,7 +100,7 @@ window.SQ.Controller.Settings = {
                     window.SQ.Temp.settingsDraft = window.SQ.Temp.settingsDraft || {};
                     window.SQ.Temp.settingsDraft['calMax'] = val;
                     window.SQ.Temp.settingsDraft['calMode'] = true;
-                    ui.modal.close('m-overlay');
+                    window.SQ.Actions.closeModal('overlay');
                     window.SQ.Actions.toast(`✅ 目標設定: ${val} Kcal`);
                     if (window.SQ.View.Settings) window.SQ.View.Settings.render();
                 } else {
@@ -112,7 +113,8 @@ window.SQ.Controller.Settings = {
                 const draft = window.SQ.Temp.settingsDraft || {};
                 const targetPage = window.SQ.Engine.Settings.applySettings(draft);
                 window.SQ.Temp.settingsDraft = {};
-                ui.modal.close('m-panel');
+                // 👇 [修復] 改用標準 API
+                window.SQ.Actions.closeModal('panel');
                 if (window.SQ.Actions.navigate) window.SQ.Actions.navigate(targetPage);
             },
 
@@ -209,8 +211,10 @@ window.SQ.Controller.Settings = {
             restartTutorial: () => {
                 if (window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('panel');
                 if (window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('overlay');
-                if (window.SQ.Actions.restartTutorial) {
-                    window.SQ.Actions.restartTutorial();
+                
+                // 👇 [修復] 改為呼叫 Tutorial 模組本身，而非再次呼叫 Action 導致無限迴圈
+                if (window.SQ.Tutorial && window.SQ.Tutorial.restart) {
+                    window.SQ.Tutorial.restart();
                 } else {
                     window.SQ.Actions.toast('❌ 教學模組未載入');
                 }
@@ -226,8 +230,6 @@ window.SQ.Controller.Settings = {
                 // 切換滑桿顯示：已開啟→展開音效滑桿；已關閉→收合
                 window.SQ.Temp.settingsAudioSlider = enabled ? 'sound' : null;
                 window.SQ.Audio?.feedback(enabled ? 'toggle_on' : 'toggle_off');
-                window.SQ.Audio?.feedback(enabled ? 'toggle_on' : 'toggle_off');
-                window.SQ.Audio?.feedback(enabled ? 'toggle_on' : 'toggle_off');
                 window.SQ.Actions.toast(enabled ? '🔊 音效已開啟' : '🔇 音效已關閉');
                 if (window.SQ.View.Settings) window.SQ.View.Settings.render();
             },
@@ -239,8 +241,6 @@ window.SQ.Controller.Settings = {
                 if (window.SQ.Audio) window.SQ.Audio.setMusicEnabled(enabled);
                 window.SQ.Temp.settingsAudioSlider = enabled ? 'music' : null;
                 window.SQ.Audio?.feedback(enabled ? 'toggle_on' : 'toggle_off');
-                window.SQ.Audio?.feedback(enabled ? 'toggle_on' : 'toggle_off');
-                window.SQ.Audio?.feedback(enabled ? 'toggle_on' : 'toggle_off');
                 window.SQ.Actions.toast(enabled ? '🎵 音樂已開啟' : '🎵 音樂已關閉');
                 if (window.SQ.View.Settings) window.SQ.View.Settings.render();
             },
@@ -251,9 +251,8 @@ window.SQ.Controller.Settings = {
                 window.SQ.Actions.save();
                 if (enabled && navigator.vibrate) navigator.vibrate(50);
                 window.SQ.Temp.settingsAudioSlider = enabled ? 'vib' : null;
-                window.SQ.Audio?.play('toggle_on');
-                window.SQ.Audio?.play('toggle_on');
-                window.SQ.Audio?.play('toggle_on');
+                // 👇 [修復] 將 play 改為 feedback
+                window.SQ.Audio?.feedback('toggle_on');
                 window.SQ.Actions.toast(enabled ? '📳 震動已開啟' : '📴 震動已關閉');
                 if (window.SQ.View.Settings) window.SQ.View.Settings.render();
             },

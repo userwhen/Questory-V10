@@ -7,7 +7,9 @@ window.SQ.Controller.Quick = {
         Object.assign(window.SQ.Actions, {
             openquickModal: () => {
                 const savedDraft = localStorage.getItem('SQ_QUICK_DRAFT') || '';
-                if (window.SQ.View.Main && view.renderquickNoteModal) view.renderquickNoteModal(savedDraft);
+                if (window.SQ.View.Main && typeof window.SQ.View.Main.renderquickNoteModal === 'function') {
+                    window.SQ.View.Main.renderquickNoteModal(savedDraft);
+                }
             },
             
             saveQuickDraft: (text) => {
@@ -37,13 +39,19 @@ window.SQ.Controller.Quick = {
                 localStorage.removeItem('SQ_QUICK_DRAFT');
                 window.SQ.Temp.importedTaskData = parsedData;
 
-                if(window.SQ.Actions &&window.SQ.Actions.navigate)window.SQ.Actions.navigate('task'); 
+                if(window.SQ.Actions && window.SQ.Actions.navigate) window.SQ.Actions.navigate('task'); 
                 if(window.SQ.Actions && window.SQ.Actions.switchTaskTab) window.SQ.Actions.switchTaskTab('list');
-                if(window.ui && ui.modal) ui.modal.closeAll();
+                
+                // 👇 [修復] 改用統一的 Actions API 關閉 Modal
+                if(window.SQ.Actions && window.SQ.Actions.closeModal) {
+                    window.SQ.Actions.closeModal('overlay');
+                    window.SQ.Actions.closeModal('panel');
+                    window.SQ.Actions.closeModal('system');
+                }
 
                 setTimeout(() => {
                     if (window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.Task.EDIT_MODE, { taskId: null });
-                }, 400); 
+                }, 400);
             }
         });
     },

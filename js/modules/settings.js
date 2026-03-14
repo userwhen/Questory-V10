@@ -77,18 +77,25 @@ window.SQ.Engine.Settings = {
             price: 0, currency: 'pro',
             color: '#0066FF', bg: '#F2F5F8', border: '#CBD5E1', badge: 'Pro', preview: 'basic-tech'
         },
+		{
+            id: 'theme_basic_white', name: '☀️ 明亮清晨', type: 'theme_basic',
+            desc: '暖白奶油色系，輕盈清爽的日常極簡風。',
+            price: 0, currency: 'pro',
+            color: '#F29C38', bg: '#FFFFFF', border: '#EBE3D5', badge: 'Pro', preview: 'basic-white'
+        },
+		{
+            id: 'theme_basic_mermaid', name: '🐚 珍珠粉藍', type: 'theme_basic',
+            desc: '夢幻人魚色票基礎版，只換配色不含氣泡紋路。',
+            price: 0, currency: 'pro',
+            color: '#5B8FD4', bg: '#EDF4FC', border: '#C0D8F0', badge: 'Pro', preview: 'basic-mermaid'
+        },
         {
             id: 'theme_basic_wood', name: '🌑 沉靜學院', type: 'theme_basic',
             desc: '深褐暗木色調，低調沉穩的學院風格。',
             price: 0, currency: 'pro',
             color: '#D4AF37', bg: '#35251C', border: '#523828', badge: 'Pro', preview: 'basic-wood'
         },
-        {
-            id: 'theme_basic_white', name: '☀️ 明亮清晨', type: 'theme_basic',
-            desc: '暖白奶油色系，輕盈清爽的日常極簡風。',
-            price: 0, currency: 'pro',
-            color: '#F29C38', bg: '#FFFFFF', border: '#EBE3D5', badge: 'Pro', preview: 'basic-white'
-        },
+        
         {
             id: 'theme_basic_story', name: '🌙 霓光暗夜', type: 'theme_basic',
             desc: '極黑模式搭配霓虹點綴，護眼深色簡約版。',
@@ -97,12 +104,7 @@ window.SQ.Engine.Settings = {
         },
 
         // ── 人魚系列 (Mermaid Series) ────────────────────────
-        {
-            id: 'theme_basic_mermaid', name: '🐚 珍珠粉藍', type: 'theme_basic',
-            desc: '夢幻人魚色票基礎版，只換配色不含氣泡紋路。',
-            price: 0, currency: 'pro',
-            color: '#5B8FD4', bg: '#EDF4FC', border: '#C0D8F0', badge: 'Pro', preview: 'basic-mermaid'
-        },
+        
         {
             id: 'theme_basic_siren', name: '🧜 深海藍黑', type: 'theme_basic',
             desc: '深海色票基礎版，只換配色不含紋路。',

@@ -94,13 +94,16 @@ window.SQ.Controller.Ach = {
 				
 				// 賦予每日領取獎勵 (可依需求調整數值)
 				const reward = ach.reward || { gold: 20, exp: 10 };
-				window.SQ.State.gold = (window.SQ.State.gold || 0) + reward.gold;
-				window.SQ.State.exp = (window.SQ.State.exp || 0) + reward.exp;
+                window.SQ.State.gold = (window.SQ.State.gold || 0) + reward.gold;
+                
+                // 👇 [完全移除直接修改 exp 的備用防呆，徹底交給引擎]
+                if (window.SQ.Engine?.Stats?.addPlayerExp) {
+                    window.SQ.Engine.Stats.addPlayerExp(reward.exp);
+                }
 
-				// 呼叫引擎存檔並發送刷新 UI 的訊號
-				if (window.SQ.Engine.Ach._saveAndNotify) {
-					window.SQ.Engine.Ach._saveAndNotify();
-				}
+                if (window.SQ.Engine.Ach._saveAndNotify) {
+                    window.SQ.Engine.Ach._saveAndNotify();
+                }
 				window.SQ.Actions.toast(`🎁 領取成功！ +${reward.gold}💰 +${reward.exp}✨`);
 				window.SQ.Audio?.feedback('taskComplete');
 				

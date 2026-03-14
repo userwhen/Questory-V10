@@ -73,7 +73,7 @@ window.SQ.Controller.Shop = {
                     window.SQ.Audio?.feedback('purchase');
                     window.SQ.Actions.closeModal('overlay');
                     window.SQ.View.Shop.render();
-                    if (window.SQ.View.Main && view.updateHUD) view.updateHUD(window.SQ.State);
+                    if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.Stats) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
                 } else {
                     if(window.SQ.Actions.toast) window.SQ.Actions.toast(`❌ ${result.msg}`);
                     window.SQ.Audio?.feedback('taskUndo');
@@ -115,7 +115,7 @@ window.SQ.Controller.Shop = {
                 }
                 window.SQ.Actions.closeModal('panel');
                 window.SQ.View.Shop.render(); 
-                if (window.SQ.View.Main && view.updateHUD) view.updateHUD(window.SQ.State);
+                if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.Stats) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
             },
 
             // --- 自訂商品上架邏輯 ---
@@ -195,7 +195,7 @@ window.SQ.Controller.Shop = {
                     if(window.SQ.Actions.toast) window.SQ.Actions.toast(`⚡ 精力恢復了！ (目前: ${res.current}/${max})`);
                     window.SQ.Actions.closeModal('overlay');
                     if (window.SQ.Temp.currentView === 'story' && window.SQ.View.Story) window.SQ.View.Story.render(); 
-                    if (window.SQ.View.Main && view.updateHUD) view.updateHUD(window.SQ.State);
+                    if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.Stats) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
                 } else {
                     if(window.SQ.Actions.toast) window.SQ.Actions.toast(res.msg || '❌ 購買失敗');
                 }
@@ -208,14 +208,14 @@ window.SQ.Controller.Shop = {
                         window.SQ.Engine.Shop.addGem(amount);
                         window.SQ.Actions.toast(`💎 獲得 ${amount} 鑽石！`);
                         window.SQ.Actions.closeModal('overlay');
-                        if (window.SQ.View.Main && view.updateHUD) view.updateHUD(window.SQ.State);
+                        if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.Stats) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
                     }
                     return;
                 }
                 const result = await window.SQ.IAP.purchase(sku);
                 if (result.success) {
                     window.SQ.Actions.closeModal('overlay');
-                    if (window.SQ.View.Main && view.updateHUD) view.updateHUD(window.SQ.State);
+                    if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.Stats) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
                 }
             },
 

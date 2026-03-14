@@ -33,11 +33,12 @@ window.SQ.View.Stats = {
         }
         
         const tabs = [{label:'● 能力分析', val:'attr'}, {label:'● 熱量監控', val:'cal'}];
+        // 🌟 修正：border-top 移除 rgba(255,255,255,0.2) 改為 var(--border)
         const tabsHtml = `
-            <div style="margin-top: 5px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); display:flex; width:100%;">
+            <div style="margin-top: 5px; padding-top: 10px; border-top: 1px solid var(--border); display:flex; width:100%;">
                 ${tabs.map(opt => ui.atom.buttonBase({
                     label: opt.label, theme: currentTab === opt.val ? 'correct' : 'normal',
-                    style: `flex:1; margin:2px; ${currentTab === opt.val ? 'box-shadow:inset 0 2px 4px rgba(0,0,0,0.1);' : ''}`,
+                    style: `flex:1; margin:2px; ${currentTab === opt.val ? 'box-shadow:var(--shadow-inner);' : ''}`,
                     action: 'switchStatsTab', actionVal: opt.val
                 })).join('')}
             </div>
@@ -152,7 +153,7 @@ window.SQ.View.Stats = {
     }
 };
 
-window.view = window.view || {};
+
 window.SQ.View.Main.renderStats = () => window.SQ.View.Stats.render();
 window.SQ.View.Main.renderSkillModal = (n) => window.SQ.View.Stats.renderSkillModal(n);
 window.SQ.View.Main.updateSkillField = (f, v) => window.SQ.View.Stats.updateSkillField(f, v);

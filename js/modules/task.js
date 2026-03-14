@@ -34,10 +34,14 @@ window.SQ.Engine.Task = {
         gs.tasks.forEach(t => {
             if ((t.cat === '每日' || t.recurrence === 'daily') && t.done) {
                 if (!gs.history) gs.history = [];
-                // 必須使用深拷貝，否則指標會連動導致歷史紀錄也被重置
-                const entry = JSON.parse(JSON.stringify(t));
-                entry.archivedDate = todayStr; // 加上歸檔日期的標籤
-                gs.history.push(entry);
+                // 👇 [修復] 加上去重判斷，防止同一天的同一個任務被重複塞入
+                const alreadyArchived = gs.history.some(h => h.id === t.id && h.archivedDate === todayStr);
+                
+                if (!alreadyArchived) {
+                    const entry = JSON.parse(JSON.stringify(t));
+                    entry.archivedDate = todayStr; // 加上歸檔日期的標籤
+                    gs.history.push(entry);
+                }
             }
         });
 
@@ -293,7 +297,6 @@ window.SQ.Engine.Task = {
         if (window.App && window.App.saveData) App.saveData(); 
         
         if (window.SQ.EventBus) {
-            window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
             window.SQ.EventBus.emit(window.SQ.Events.Task.UPDATED);
         }
     },

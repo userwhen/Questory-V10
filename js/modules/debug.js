@@ -83,33 +83,45 @@
         if (mode === 'yesterday') {
             d.setDate(d.getDate() - 1);
             gs.lastLoginDate = d.toDateString(); 
-            if(window.App) App.saveData();
-            if (window.Core && Core.checkDailyReset) Core.checkDailyReset();
-            if (window.SQ.View.Main && view.updateHUD) view.updateHUD(window.SQ.State);
-            if (window.SQ.Temp.currentView === 'task' && window.SQ.View.Task) window.SQ.View.Task.render();
-           window.SQ.Actions.toast("已模擬跨日！");
+            if(window.App) window.App.saveData();
+            
+            // 👇 完全只用 window.SQ.Core
+            if (window.SQ.Core) {
+				window.SQ.Core._dailyResetDone = false;
+				window.SQ.Core.checkDailyReset();
+			}
+            
+            // 👇 拔除 view，改用 EventBus
+            if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.Stats) {
+                window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
+            }
+            if (window.SQ.Temp.currentView === 'task' && window.SQ.View && window.SQ.View.Task) window.SQ.View.Task.render();
+            window.SQ.Actions.toast("已模擬跨日！");
         } else if (mode === 'week_ago') {
             d.setDate(d.getDate() - 7);
             gs.lastLoginDate = d.toDateString();
-            if(window.App) App.saveData();
-           window.SQ.Actions.toast("已回到 7 天前 (請重整)");
+            if(window.App) window.App.saveData();
+            window.SQ.Actions.toast("已回到 7 天前 (請重整)");
             setTimeout(() => location.reload(), 1000);
         }
     },
 
     cheat: (type, val) => {
         const gs = window.SQ.State;
-        if (type === 'gold') { gs.gold = (gs.gold || 0) + val;window.SQ.Actions.toast(`💰 金幣 +${val}`); } 
-        else if (type === 'exp') { gs.exp = (gs.exp || 0) + val; if(window.SQ.Engine.Stats) window.SQ.Engine.Stats.checkLevelUp();window.SQ.Actions.toast(`✨ 經驗 +${val}`); } 
+        if (type === 'gold') { gs.gold = (gs.gold || 0) + val; window.SQ.Actions.toast(`💰 金幣 +${val}`); } 
+        else if (type === 'exp') { gs.exp = (gs.exp || 0) + val; if(window.SQ.Engine && window.SQ.Engine.Stats) window.SQ.Engine.Stats.checkLevelUp(); window.SQ.Actions.toast(`✨ 經驗 +${val}`); } 
         else if (type === 'energy') {
             if (!gs.story) gs.story = {};
-            const max = (window.SQ.Engine.Story.calculateMaxEnergy) ? window.SQ.Engine.Story.calculateMaxEnergy() : 30;
+            const max = (window.SQ.Engine && window.SQ.Engine.Story && window.SQ.Engine.Story.calculateMaxEnergy) ? window.SQ.Engine.Story.calculateMaxEnergy() : 30;
             gs.story.energy = max; 
-            if (window.SQ.View.Main && window.SQ.Temp.currentView === 'story') window.SQ.View.Story.render();
-           window.SQ.Actions.toast(`⚡ 精力已設定為 ${max}`);
+            if (window.SQ.View && window.SQ.View.Story && window.SQ.Temp.currentView === 'story') window.SQ.View.Story.render();
+            window.SQ.Actions.toast(`⚡ 精力已設定為 ${max}`);
         }
-        if(window.App) App.saveData();
-        if (window.SQ.View.Main && view.updateHUD) view.updateHUD(gs);
+        if(window.App) window.App.saveData();
+        // 👇 拔除 view，改用 EventBus
+        if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.Stats) {
+            window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
+        }
     },
 
     openLiveStoryEditor: () => {
@@ -141,21 +153,26 @@
     setMaxEnergy100: () => {
         const gs = window.SQ.State; if (!gs) return;
         gs.lv = 36; gs.exp = 0; if (!gs.story) gs.story = {}; gs.story.energy = 100;
-        if(window.App) App.saveData();window.SQ.Actions.toast("🔥 已設定為 Lv.36");
-        if (window.SQ.View.Main && view.updateHUD) view.updateHUD(gs);
+        if(window.App) window.App.saveData();window.SQ.Actions.toast("🔥 已設定為 Lv.36");
+        // 👇 拔除 view，改用 EventBus
+        if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.Stats) {
+            window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
+        }
     },
 
     unlockDLC: () => {
         const gs = window.SQ.State; if(!gs.unlocks) gs.unlocks = {};
         gs.unlocks.feature_cal = true; gs.unlocks.feature_strict = true;
-        if(window.App) App.saveData();window.SQ.Actions.toast("✅ DLC 功能已解鎖");
-        if(window.SQ.Actions.renderSettings) act.renderSettings();
+        if(window.App) window.App.saveData();window.SQ.Actions.toast("✅ DLC 功能已解鎖");
+        // 👇 [修復] 補上 window.SQ.Actions
+        if(window.SQ.Actions.renderSettings) window.SQ.Actions.renderSettings();
     },
 
     resetDLC: () => {
         const gs = window.SQ.State; if(gs.unlocks) { gs.unlocks.feature_cal = false; gs.unlocks.feature_strict = false; }
-        if(window.App) App.saveData(); window.SQ.Actions.toast("🔒 DLC 功能已上鎖");
-        if(window.SQ.Actions.renderSettings) act.renderSettings();
+        if(window.App) window.App.saveData(); window.SQ.Actions.toast("🔒 DLC 功能已上鎖");
+        // 👇 [修復] 補上 window.SQ.Actions
+        if(window.SQ.Actions.renderSettings) window.SQ.Actions.renderSettings();
     },
 
     debugEnablePro: () => {

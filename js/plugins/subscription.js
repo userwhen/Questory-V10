@@ -219,8 +219,9 @@ window.SQ.Sub = {
     // ── 工具：顯示升級提示 ────────────────────────────────
     showUpgradePrompt: function(reason) {
         const msg = reason ? `🔒 ${reason}\n\n升級 Pro 即可解鎖！` : '升級 Pro 解鎖全部功能！';
-        if (window.sys?.confirm) {
-            sys.confirm(msg + '\n\n前往訂閱頁面？', () => {
+        // 👇 [修復] 加上 window. 前綴
+        if (window.sys && window.sys.confirm) {
+            window.sys.confirm(msg + '\n\n前往訂閱頁面？', () => {
                 window.SQ.Actions?.openSubscribePage?.();
             });
         } else {

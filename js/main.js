@@ -116,7 +116,10 @@ window.App = {
             if (window.SQ.Actions?.navigate) {
                 if (window.Router) window.Router.init();
                 window.SQ.Actions.navigate('main');
-				if (window.SQ.Actions.checkTutorial) window.SQ.Actions.checkTutorial();
+                // 👇 [修復] 改用安全的呼叫方式
+                if (window.SQ.Tutorial && typeof window.SQ.Tutorial.checkTutorial === 'function') {
+                    window.SQ.Tutorial.checkTutorial();
+                }
             }
         }, 100);
     },

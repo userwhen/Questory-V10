@@ -86,8 +86,8 @@ window.SQ.IAP = {
         window.SQ.Actions?.toast(`💎 獲得 ${product.gems} 鑽石！（測試模式）`);
         window.SQ.Audio?.feedback('purchase');
 
-        if (window.SQ.View.Main && view.updateHUD) {
-            view.updateHUD(window.SQ.State);
+        if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.Stats) {
+            window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
         }
 
         return { success: true, mock: true, gems: product.gems };
@@ -137,9 +137,9 @@ window.SQ.IAP = {
             window.SQ.Actions?.toast(`💎 獲得 ${product.gems} 鑽石！感謝支持！`);
             window.SQ.Audio?.feedback('purchase');
 
-            if (window.SQ.View.Main && view.updateHUD) {
-                view.updateHUD(window.SQ.State);
-            }
+            if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.Stats) {
+			window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
+     		}
 
             return { success: true, gems: product.gems };
 

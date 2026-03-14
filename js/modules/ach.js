@@ -53,8 +53,31 @@ window.SQ.Engine.Ach = {
                 if (checkIn) {
                     checkIn.done = false;
                     checkIn.claimed = false;
-                    console.log('📅 [Ach] 每日打卡已重置');
                 }
+                
+                // 👇 [修復] 將原本獨立的 checkDailyLogin 邏輯整併至此
+                const gs = window.SQ.State;
+                gs.stats = gs.stats || {};
+                gs.stats.loginDays = (gs.stats.loginDays || 0) + 1; // 總天數自己加
+                const currentStreak = gs.loginStreak || 1; // 連續天數聽 Core 的
+
+                const targets = [...(gs.milestones || []), ...(gs.achievements || [])];
+                let anyUpdate = false;
+
+                targets.forEach(ms => {
+                    if (ms.done) return;
+                    if (ms.targetType === 'login_days') {
+                        ms.curr = gs.stats.loginDays;
+                        anyUpdate = true;
+                        if (ms.curr >= ms.target) window.SQ.Engine.Ach._unlockMilestone(ms);
+                    } else if (ms.targetType === 'login_streak') {
+                        ms.curr = currentStreak;
+                        anyUpdate = true;
+                        if (ms.curr >= ms.target) window.SQ.Engine.Ach._unlockMilestone(ms);
+                    }
+                });
+
+                if (anyUpdate) window.SQ.Engine.Ach._saveAndNotify();
                 if (window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.Ach.UPDATED);
             });
         }
@@ -267,55 +290,7 @@ window.SQ.Engine.Ach = {
         }
     },
 
-    // 登入與連續打卡系統
-    checkDailyLogin: function() {
-        const gs = window.SQ.State;
-        if (!gs) return;
-        const now = new Date();
-        const todayStr = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
-        if (!gs.stats) gs.stats = {};
-        if (gs.stats.lastLoginDate === todayStr) return;
-
-        const yesterday = new Date(now.getTime() - 86400000);
-        const yesterdayStr = `${yesterday.getFullYear()}-${yesterday.getMonth()+1}-${yesterday.getDate()}`;
-        gs.stats.loginDays = (gs.stats.loginDays || 0) + 1;
-        if (gs.stats.lastLoginDate === yesterdayStr) {
-            gs.stats.loginStreak = (gs.stats.loginStreak || 0) + 1;
-        } else {
-            gs.stats.loginStreak = 1;
-        }
-        gs.stats.lastLoginDate = todayStr;
-
-        if (window.SQ.EventBus) window.SQ.EventBus.emit('LOGIN_UPDATED', {
-            total: gs.stats.loginDays,
-            streak: gs.stats.loginStreak
-        });
-
-        if (window.App) App.saveData();
-    },
-
-    onLoginUpdated: function(totalDays, streakDays) {
-        const gs = window.SQ.State;
-        const targets = [...(gs.milestones || []), ...(gs.achievements || [])];
-        let anyUpdate = false;
-
-        targets.forEach(ms => {
-            if (ms.done) return;
-            if (ms.targetType === 'login_days') {
-                ms.curr = totalDays;
-                anyUpdate = true;
-                if (ms.curr >= ms.target) this._unlockMilestone(ms);
-            } else if (ms.targetType === 'login_streak') {
-                ms.curr = streakDays;
-                anyUpdate = true;
-                if (ms.curr < ms.target && ms.done) ms.done = false;
-                if (ms.curr >= ms.target) this._unlockMilestone(ms);
-            }
-        });
-        if (anyUpdate) this._saveAndNotify();
-    },
-
-    getSortedAchievements: function() {
+        getSortedAchievements: function() {
         const gs = window.SQ.State;
         const list = [
             ...(gs.milestones || []),

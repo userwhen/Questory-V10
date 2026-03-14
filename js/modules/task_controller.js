@@ -88,11 +88,12 @@ window.SQ.Controller.Task = {
             deleteTask: (id) => {
                 const doDelete = () => {
                     window.SQ.Engine.Task.deleteTask(id);
-                    window.SQ.Audio?.play('delete'); // 👈 新增：刪除音效 (由於步驟一的修改，現在聽起來會是舒服的登登聲)
+                    window.SQ.Audio?.play('delete'); 
                     if(window.SQ.Actions.closeModal) window.SQ.Actions.closeModal('overlay');
                     window.SQ.Actions.toast('🗑️ 已刪除');
                 };
-                if(window.sys && sys.confirm) sys.confirm('確定刪除？', doDelete);
+                // 👇 [修復] 加上 window. 前綴
+                if(window.sys && window.sys.confirm) window.sys.confirm('確定刪除？', doDelete);
                 else if(confirm('確定刪除？')) doDelete();
             },
 

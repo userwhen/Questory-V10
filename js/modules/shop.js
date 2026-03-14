@@ -231,7 +231,7 @@ window.SQ.Engine.Shop = {
         else if (item.category === '金錢' && val > 0) {
             gs.gold = (gs.gold || 0) + val;
             msg = `💰 獲得了 ${val} 金幣`;
-            if (window.SQ.View.Main && window.view.updateHUD) window.view.updateHUD(gs);
+            if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.Stats) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
         }
         else if (item.category === '時間') {
             // 👈 雙重保險：如果背包裡的舊道具沒有 val，就去商店原型裡抓最新的 val
@@ -262,7 +262,7 @@ window.SQ.Engine.Shop = {
                 // 呼叫恢復精力邏輯，cost 為 0 因為是從背包使用的
                 const res = this.recoverStamina(val, 0); 
                 msg = `⚡ 恢復了 ${val} 點精力`;
-                if (window.SQ.View.Main && window.view.updateHUD) window.view.updateHUD(gs);
+                if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.Stats) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
             } else {
                 msg = `🎫 使用了${item.name}，好好放鬆一下吧！`;
             }

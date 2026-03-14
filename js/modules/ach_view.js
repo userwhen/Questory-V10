@@ -333,5 +333,5 @@ window.SQ.View.Ach = {
 
 // 轉接器
 window.SQ.Actions.updateAchField = (f, v) => window.SQ.View.Ach.updateField(f, v);
-window.view = window.view || {};
+
 window.SQ.View.Main.renderMilestonePage = () => window.SQ.View.Ach.renderMilestonePage();
