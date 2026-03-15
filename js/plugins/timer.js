@@ -1,39 +1,45 @@
-/* www/js/modules/timer.js - V2.0 */
+/* www/js/modules/timer.js - V2.1 */
 /* 計時器系統：倒數 / 番茄鐘 / 正計時 */
-/* 從背包使用「時間」類道具觸發，或直接呼叫 SQ.Timer.open() */
+/* 修復紀錄:
+ *   V2.1 - [Fix A] Focus Lock 改為所有模式的「開關選項」(PRO限定)，而非獨立模式
+ *        - [Fix B] 攔截 Android 實體返回鍵 (需要 @capacitor/app 插件)
+ *        - [Fix C] Focus Lock 啟動時隱藏關閉按鈕，強制玩家完成計時
+ *        - 正計時模式保留，完成後根據分鐘數給成就廣播
+ */
 
 window.SQ = window.SQ || {};
 window.SQ.Timer = {
 
-    // ── 狀態 ────────────────────────────────────────────
-    _state: null,   // null | 'idle' | 'running' | 'paused' | 'break' | 'done'
-    _interval: null,
-    _el: null,      // 浮層 DOM
-	_startTime: 0,  // 👈 新增：用來記錄真實世界的開始時間
-    _alertEnabled: true, // 👈 新增：控制是否發出音效與震動
-    // 預設番茄鐘設定
+    _state:        null,
+    _interval:     null,
+    _el:           null,
+    _startTime:    0,
+    _alertEnabled: true,
+    _focusLocked:  false,   // ✅ [新增] 目前是否處於 Focus Lock 狀態
+    _backHandler:  null,    // ✅ [新增] 儲存返回鍵監聽器，方便移除
+
     POMODORO_WORK:  25 * 60,
     POMODORO_BREAK: 5  * 60,
 
-    // ── 開啟計時器浮層 ──────────────────────────────────
     open: function(opts = {}) {
         if (this._el) this._el.remove();
-        this._opts = opts; 
-
-        // 👈 新增這段：強制將傳入的 defaultMinutes 轉換為秒數！
-        this._currentMode = opts.defaultMode || 'countdown';
-        if (opts.defaultMinutes) {
-            this._currentTotal = opts.defaultMinutes * 60;
-        } else {
-            this._currentTotal = 15 * 60; // 預設 15 分鐘
-        }
-        this._currentElapsed = 0; // 重置已過時間
-
+        this._opts = opts;
+        this._currentMode    = opts.defaultMode || 'countdown';
+        this._currentTotal   = opts.defaultMinutes ? opts.defaultMinutes * 60 : 15 * 60;
+        this._currentElapsed = 0;
+        this._focusLocked    = false; // 開啟時重置鎖定狀態
         this._render('idle');
     },
 
     close: function() {
+        // Focus Lock 開啟時禁止關閉
+        if (this._focusLocked) {
+            window.SQ.Actions?.toast('🔒 專注鎖定中，請先完成計時');
+            window.SQ.Audio?.play('error');
+            return;
+        }
         this._stop();
+        this._releaseFocusLock(); // 確保釋放所有鎖定
         if (this._el) {
             this._el.style.opacity = '0';
             this._el.style.transform = 'scale(0.95)';
@@ -46,13 +52,12 @@ window.SQ.Timer = {
     _render: function(state, data = {}) {
         this._state = state;
 
-        // 第一次建立浮層
         if (!this._el) {
             this._el = document.createElement('div');
             this._el.id = 'sq-timer-layer';
             this._el.style.cssText = `
-                position: absolute; /* 絕對定位 */
-                top: 0; left: 0; right: 0; bottom: 0; 
+                position: absolute;
+                top: 0; left: 0; right: 0; bottom: 0;
                 z-index: 10000;
                 background: rgba(10,10,18,0.96);
                 display: flex; flex-direction: column;
@@ -61,20 +66,12 @@ window.SQ.Timer = {
                 transform: scale(0.97);
                 font-family: inherit;
             `;
-            
-            // 抓取你的遊戲外框容器 (根據你的專案結構可能是 app 或 mobile-wrapper)
             const container = document.getElementById('app') || document.querySelector('.mobile-wrapper') || document.body;
-            
-            // 👈 核心修正：強制父容器變成 relative，這樣計時器就絕對逃不出去了！
             if (container !== document.body) {
                 container.style.position = 'relative';
-                container.style.overflow = 'hidden'; 
+                container.style.overflow = 'hidden';
             }
-            
             container.appendChild(this._el);
-            
-            // (確保你的主容器 CSS 有加上 position: relative; overflow: hidden; 喔！)
-
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 this._el.style.opacity = '1';
                 this._el.style.transform = 'scale(1)';
@@ -83,17 +80,18 @@ window.SQ.Timer = {
 
         const mode    = data.mode    || this._currentMode    || 'countdown';
         const total   = data.total   || this._currentTotal   || (15 * 60);
-        const elapsed = data.elapsed || this._currentElapsed || 0;
-        const phase   = data.phase   || this._currentPhase   || 'work'; // 'work' | 'break'
+        const elapsed = data.elapsed !== undefined ? data.elapsed : (this._currentElapsed || 0);
+        const phase   = data.phase   || this._currentPhase   || 'work';
 
-        // 儲存目前值供外部更新用
         this._currentMode    = mode;
         this._currentTotal   = total;
         this._currentElapsed = elapsed;
         this._currentPhase   = phase;
 
         const remaining = Math.max(0, total - elapsed);
-        const progress  = mode === 'stopwatch' ? Math.min(elapsed / 3600, 1) : (total > 0 ? (total - remaining) / total : 0);
+        const progress  = mode === 'stopwatch'
+            ? Math.min(elapsed / 3600, 1)
+            : (total > 0 ? (total - remaining) / total : 0);
 
         const mins = String(Math.floor(remaining / 60)).padStart(2, '0');
         const secs = String(remaining % 60).padStart(2, '0');
@@ -101,30 +99,32 @@ window.SQ.Timer = {
             ? `${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}`
             : `${mins}:${secs}`;
 
-        // 圓形進度環參數
         const R  = 110;
         const C  = 2 * Math.PI * R;
         const dash = C * (1 - progress);
 
-        // 顏色主題
+        const isPro = !window.SQ.Sub || window.SQ.Sub.isProOrTrial();
+        const focusActive = this._focusLocked;
+
+        // 顏色主題（Focus Lock 開啟時變紅）
         const colors = {
-            countdown: { ring:'#f0a500', glow:'rgba(240,165,0,0.3)', text:'#ffd166' },
-            pomodoro:  { ring: phase==='work' ? '#e55a5a' : '#4caf87', glow: phase==='work' ? 'rgba(229,90,90,0.3)' : 'rgba(76,175,135,0.3)', text: phase==='work' ? '#ff8080' : '#66ffcc' },
-            stopwatch: { ring:'#5b8af0', glow:'rgba(91,138,240,0.3)', text:'#80a8ff' },
-            focus:     { ring:'#ef5350', glow:'rgba(239,83,80,0.3)',  text:'#ff8a80' },
+            countdown: focusActive ? { ring:'#ef5350', glow:'rgba(239,83,80,0.3)', text:'#ff8a80' }
+                                   : { ring:'#f0a500', glow:'rgba(240,165,0,0.3)',  text:'#ffd166' },
+            pomodoro:  { ring: phase==='work' ? '#e55a5a' : '#4caf87',
+                         glow: phase==='work' ? 'rgba(229,90,90,0.3)' : 'rgba(76,175,135,0.3)',
+                         text: phase==='work' ? '#ff8080' : '#66ffcc' },
+            stopwatch: focusActive ? { ring:'#ef5350', glow:'rgba(239,83,80,0.3)', text:'#ff8a80' }
+                                   : { ring:'#5b8af0', glow:'rgba(91,138,240,0.3)', text:'#80a8ff' },
         };
         const col = colors[mode] || colors.countdown;
 
-        // 模式標籤
         const modeLabels = {
             countdown: '⏳ 倒數計時',
             pomodoro:  phase === 'work' ? '🍅 專注中' : '☕ 休息中',
             stopwatch: '⏱️ 正計時',
-            focus:     '🔒 FOCUS LOCK',
         };
 
-        // 控制按鈕
-        const isRunning = state === 'running' || state === 'break_running';
+        const isRunning = state === 'running';
         const isDone    = state === 'done';
 
         const btnStyle = (bg, fg='#fff') =>
@@ -132,27 +132,36 @@ window.SQ.Timer = {
              background:${bg}; color:${fg}; font-size:1rem; font-weight:700;
              letter-spacing:0.05em; transition:all 0.15s; user-select:none;`;
 
-        // 模式選擇（idle 時顯示）
+        // ✅ [Fix A] 模式選擇：移除獨立 focus 模式，改為三個模式 + Focus Lock 開關
         const modeSelector = state === 'idle' ? `
-            <div style="display:flex; gap:10px; margin-bottom:24px;">
-                ${['countdown','pomodoro','focus','stopwatch'].map(m => {
-                    const isPro = !window.SQ.Sub || window.SQ.Sub.isProOrTrial();
-                    const locked = m === 'focus' && !isPro;
-                    const labels = { countdown:'⏳ 倒數', pomodoro:'🍅 番茄', focus:'🔒 專注鎖', stopwatch:'⏱️ 正計時' };
-                    const proLabels = { countdown:'⏳ 倒數', pomodoro:'🍅 番茄', focus:'🔒 Focus', stopwatch:'⏱️ 正計時' };
+            <div style="display:flex; gap:10px; margin-bottom:16px;">
+                ${['countdown','pomodoro','stopwatch'].map(m => {
+                    const labels = { countdown:'⏳ 倒數', pomodoro:'🍅 番茄', stopwatch:'⏱️ 正計時' };
                     return `
                     <div onclick="window.SQ.Timer._selectMode('${m}')"
                          style="padding:8px 12px; border-radius:50px; cursor:pointer; font-size:0.82rem;
-                                font-weight:600; transition:all 0.15s; position:relative;
+                                font-weight:600; transition:all 0.15s;
                                 background:${mode===m ? col.ring : 'rgba(255,255,255,0.07)'};
-                                color:${mode===m ? '#111' : (locked ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.5)')};
-                                border:${locked ? '1px dashed rgba(255,255,255,0.15)' : 'none'};">
-                        ${isPro ? proLabels[m] : labels[m]}
+                                color:${mode===m ? '#111' : 'rgba(255,255,255,0.5)'};">
+                        ${labels[m]}
                     </div>`;
                 }).join('')}
+            </div>
+            <!-- ✅ Focus Lock 開關 (PRO限定) -->
+            <div onclick="window.SQ.Timer._toggleFocusLockSetting()"
+                 style="display:flex; align-items:center; gap:8px; margin-bottom:20px;
+                        padding:10px 16px; border-radius:50px; cursor:pointer;
+                        background:${focusActive ? 'rgba(239,83,80,0.15)' : 'rgba(255,255,255,0.05)'};
+                        border:1px solid ${focusActive ? 'rgba(239,83,80,0.4)' : 'rgba(255,255,255,0.1)'};">
+                <span style="font-size:0.9rem;">${focusActive ? '🔒' : '🔓'}</span>
+                <span style="font-size:0.82rem; font-weight:600;
+                             color:${focusActive ? '#ff8a80' : 'rgba(255,255,255,0.4)'};">
+                    Focus Lock ${focusActive ? '已開啟' : '關閉'}
+                </span>
+                ${!isPro ? '<span style="font-size:0.7rem; color:rgba(255,255,255,0.25); margin-left:auto;">PRO</span>' : ''}
             </div>` : '';
 
-        // 時間設定（countdown + idle）
+        // 時間設定（倒數模式 + idle）
         const timeSetHtml = (state === 'idle' && mode === 'countdown') ? `
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:20px;">
                 <button onclick="window.SQ.Timer._adjustTime(-5)"
@@ -168,167 +177,150 @@ window.SQ.Timer = {
                         style="${btnStyle('rgba(255,255,255,0.08)','rgba(255,255,255,0.7)')} padding:8px 14px; font-size:1.1rem;">+5</button>
             </div>` : '';
 
-        // 番茄鐘說明
         const pomodoroHint = (state === 'idle' && mode === 'pomodoro') ? `
             <div style="margin-bottom:16px; font-size:0.82rem; color:rgba(255,255,255,0.35);
                         text-align:center; line-height:1.6;">
                 25 分鐘專注 → 5 分鐘休息
             </div>` : '';
 
-        // 完成畫面
-        const doneTitle = mode === 'countdown' ? '⏰ 時間到！' : '🎉 專注完成！';
         const doneHtml = isDone ? `
-            <div style="text-align:center; margin-bottom:24px; animation: sq-pop 0.4s ease;">
+            <div style="text-align:center; margin-bottom:24px;">
                 <div style="font-size:3rem; margin-bottom:8px;">${mode === 'countdown' ? '⏰' : '🎉'}</div>
-                <div style="font-size:1.2rem; font-weight:700; color:#fff;">${doneTitle}</div>
+                <div style="font-size:1.2rem; font-weight:700; color:#fff;">
+                    ${mode === 'countdown' ? '⏰ 時間到！' : '🎉 專注完成！'}
+                </div>
                 <div style="font-size:0.9rem; color:rgba(255,255,255,0.5); margin-top:4px;">
-                    ${ mode === 'stopwatch'
+                    ${mode === 'stopwatch'
                         ? `共計時 ${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}`
-                        : (mode === 'countdown' ? `倒數 ${Math.floor(total/60)} 分鐘結束` : `專注了 ${Math.floor(total/60)} 分鐘`) }
+                        : `${Math.floor(total/60)} 分鐘`}
                 </div>
             </div>` : '';
 
-        // 主控制按鈕
         let ctrlHtml = '';
         if (isDone) {
             ctrlHtml = `
                 <div style="display:flex; gap:12px;">
                     <button onclick="window.SQ.Timer._restart()"
-                            style="${btnStyle('rgba(255,255,255,0.1)', 'rgba(255,255,255,0.8)')}">
-                        🔄 再來一次
+                            style="${btnStyle('rgba(255,255,255,0.08)','rgba(255,255,255,0.7)')}">
+                        🔁 再來一次
                     </button>
                     <button onclick="window.SQ.Timer.close()"
                             style="${btnStyle(col.ring, '#111')}">
-                        ✅ 完成
+                        完成 ✓
                     </button>
                 </div>`;
         } else if (state === 'idle') {
             ctrlHtml = `
-                <button onclick="window.SQ.Timer._start()"
-                        style="${btnStyle(col.ring, '#111')} min-width:140px;">
+                <button onclick="window.SQ.Timer._startTimer()"
+                        style="${btnStyle(col.ring, '#111')} min-width:160px;">
                     ▶ 開始
                 </button>`;
         } else {
             ctrlHtml = `
-                <div style="display:flex; gap:12px;">
+                <div style="display:flex; gap:12px; align-items:center;">
                     <button onclick="window.SQ.Timer._togglePause()"
-                            style="${btnStyle(isRunning ? 'rgba(255,255,255,0.12)' : col.ring, isRunning ? 'rgba(255,255,255,0.8)' : '#111')} min-width:100px;">
-                        ${isRunning ? '⏸ 暫停' : '▶ 繼續'}
+                            style="${btnStyle(col.ring, '#111')} min-width:100px;">
+                        ${state === 'paused' ? '▶ 繼續' : '⏸ 暫停'}
                     </button>
+                    ${!focusActive ? `
                     <button onclick="window.SQ.Timer._finishEarly()"
-                            style="${btnStyle('rgba(220,60,60,0.25)', '#ff8080')} padding:14px 20px;">
-                        ■ 結束
-                    </button>
+                            style="${btnStyle('rgba(255,255,255,0.08)','rgba(255,255,255,0.5)')} padding:10px 18px; font-size:0.85rem;">
+                        ${mode === 'stopwatch' ? '⏹ 結束' : '✕ 放棄'}
+                    </button>` : `
+                    <!-- Focus Lock 開啟時隱藏放棄按鈕 -->
+                    <div style="font-size:0.75rem; color:rgba(239,83,80,0.6); text-align:center; max-width:80px; line-height:1.4;">
+                        🔒 鎖定中<br>堅持到底！
+                    </div>`}
                 </div>`;
         }
 
-        // 相位標籤（番茄鐘）
-        const phaseTag = (mode === 'pomodoro' && state !== 'idle') ? `
-            <div style="font-size:0.85rem; font-weight:600; letter-spacing:0.1em;
-                        color:${col.text}; margin-bottom:8px; text-transform:uppercase;">
-                ${phase === 'work' ? '🍅 FOCUS' : '☕ BREAK'}
+        // Focus Lock 狀態標示
+        const focusBadge = focusActive && state === 'running' ? `
+            <div style="position:absolute; top:16px; left:50%; transform:translateX(-50%);
+                        background:rgba(239,83,80,0.15); border:1px solid rgba(239,83,80,0.3);
+                        border-radius:50px; padding:4px 12px; font-size:0.75rem; color:#ff8a80;">
+                🔒 FOCUS LOCK 啟動中
             </div>` : '';
 
         this._el.innerHTML = `
             <style>
                 @keyframes sq-pop { from { transform:scale(0.8); opacity:0; } to { transform:scale(1); opacity:1; } }
-                @keyframes sq-pulse { 0%,100%{ box-shadow:0 0 0 0 ${col.glow}; } 50%{ box-shadow:0 0 0 16px transparent; } }
-                #sq-timer-ring { filter: drop-shadow(0 0 12px ${col.glow}); }
-                #sq-timer-ring circle.track { transition: stroke-dashoffset 1s linear; }
             </style>
-            <!-- 關閉按鈕 -->
+            ${focusBadge}
+            <!-- ✅ [Fix C] Focus Lock 開啟時隱藏關閉按鈕 -->
+            ${!focusActive ? `
             <button onclick="window.SQ.Timer.close()"
-                    style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.07);
-                           border:none; border-radius:50%; width:40px; height:40px; cursor:pointer;
-                           color:rgba(255,255,255,0.4); font-size:1.2rem; display:flex;
-                           align-items:center; justify-content:center; z-index:10001;">✕</button>
-
-            <!-- 模式標籤 -->
-            <div style="font-size:0.85rem; color:rgba(255,255,255,0.4); letter-spacing:0.12em;
-                        margin-bottom:20px; text-transform:uppercase;">
-                ${modeLabels[mode] || ''}
-            </div>
-
-            ${modeSelector}
-            ${pomodoroHint}
-            ${doneHtml}
-
-            <!-- 圓形進度環 -->
-            ${!isDone ? `
-            <div style="position:relative; margin-bottom:28px;">
-			<button id="sq-timer-alert-btn" onclick="window.SQ.Timer._toggleAlert()"
-                        style="position:absolute; top:0px; right:0px; background:rgba(255,255,255,0.12);
-                               border:none; border-radius:50%; width:42px; height:42px; cursor:pointer;
-                               color:rgba(255,255,255,0.9); font-size:1.2rem; display:flex;
-                               align-items:center; justify-content:center; transition: 0.2s; z-index:10;
-                               box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                    ${this._alertEnabled !== false ? '🔔' : '🔕'}
+                    style="position:absolute; top:16px; right:16px;
+                           background:rgba(255,255,255,0.07); border:none; border-radius:50%;
+                           width:36px; height:36px; cursor:pointer;
+                           color:rgba(255,255,255,0.4); font-size:1rem;">✕</button>` : ''}
+            <div style="position:absolute; top:16px; left:16px; display:flex; gap:8px;">
+                <button id="sq-timer-alert-btn" onclick="window.SQ.Timer._toggleAlert()"
+                        style="background:rgba(255,255,255,0.07); border:none; border-radius:50%;
+                               width:36px; height:36px; cursor:pointer; font-size:1rem;">
+                    ${this._alertEnabled ? '🔔' : '🔕'}
                 </button>
-                <svg id="sq-timer-ring" width="260" height="260" viewBox="0 0 260 260">
-                    <!-- 背景環 -->
-                    <circle cx="130" cy="130" r="${R}"
-                            fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
-                    <!-- 進度環 -->
-                    <circle class="track" cx="130" cy="130" r="${R}"
-                            fill="none" stroke="${col.ring}" stroke-width="10"
-                            stroke-linecap="round"
-                            stroke-dasharray="${C.toFixed(1)}"
-                            stroke-dashoffset="${dash.toFixed(1)}"
-                            transform="rotate(-90 130 130)"/>
-                </svg>
-                <!-- 中央時間顯示 -->
-                <div style="position:absolute; inset:0; display:flex; flex-direction:column;
-                            align-items:center; justify-content:center;">
-                    ${phaseTag}
-                    <div style="font-size:3.2rem; font-weight:800; color:#fff;
-                                letter-spacing:-0.02em; line-height:1; font-variant-numeric:tabular-nums;">
-                        ${timeDisplay}
-                    </div>
-                    ${(state !== 'idle') ? `
-                    <div style="font-size:0.78rem; color:rgba(255,255,255,0.3); margin-top:6px;">
-                        ${isRunning ? '進行中' : '已暫停'}
-                    </div>` : ''}
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                <div style="font-size:0.82rem; font-weight:600; color:${col.ring};
+                            letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">
+                    ${modeLabels[mode] || ''}
                 </div>
-            </div>` : ''}
-
-            ${timeSetHtml}
-            ${ctrlHtml}
+                ${modeSelector}
+                ${timeSetHtml}
+                ${pomodoroHint}
+                ${doneHtml}
+                <!-- 圓形進度環 -->
+                <div style="position:relative; margin-bottom:24px;">
+                    <svg width="260" height="260" viewBox="0 0 260 260">
+                        <circle cx="130" cy="130" r="${R}"
+                                fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12"/>
+                        <circle cx="130" cy="130" r="${R}"
+                                fill="none" stroke="${col.ring}" stroke-width="12"
+                                stroke-linecap="round"
+                                stroke-dasharray="${C}"
+                                stroke-dashoffset="${dash}"
+                                transform="rotate(-90 130 130)"
+                                style="filter:drop-shadow(0 0 8px ${col.glow}); transition:stroke-dashoffset 0.8s ease;"/>
+                    </svg>
+                    <div style="position:absolute; inset:0; display:flex; flex-direction:column;
+                                align-items:center; justify-content:center; gap:4px;">
+                        <div style="font-size:3rem; font-weight:200; letter-spacing:0.05em;
+                                    color:${col.text}; font-variant-numeric:tabular-nums;">
+                            ${timeDisplay}
+                        </div>
+                        ${mode === 'stopwatch' && state === 'running' ? `
+                        <div style="font-size:0.72rem; color:rgba(255,255,255,0.3);">
+                            ${focusActive ? '🔒 專注中' : '計時中'}
+                        </div>` : ''}
+                    </div>
+                </div>
+                ${ctrlHtml}
+            </div>
         `;
     },
 
-    // ── 控制邏輯 ────────────────────────────────────────
-    _selectMode: function(mode) {
-        // Focus Lock 需要 Pro
-        if (mode === 'focus' && window.SQ.Sub) {
-            const check = window.SQ.Sub.canUseFocusLock();
-            if (!check.ok) {
-                window.SQ.Sub.showUpgradePrompt(check.reason);
-                return;
-            }
+    // ── Focus Lock 開關（設定階段點擊）──────────────────
+    _toggleFocusLockSetting: function() {
+        const isPro = !window.SQ.Sub || window.SQ.Sub.isProOrTrial();
+        if (!isPro) {
+            window.SQ.Sub?.showUpgradePrompt('Focus Lock 為 Pro 功能');
+            return;
         }
-        const totals = { countdown: 15*60, pomodoro: 25*60, focus: 25*60, stopwatch: 0 };
-        this._currentMode    = mode;
-        this._currentTotal   = totals[mode];
-        this._currentElapsed = 0;
-        this._render('idle', { mode, total: totals[mode], elapsed: 0 });
+        this._focusLocked = !this._focusLocked;
+        this._render('idle', {
+            mode: this._currentMode, total: this._currentTotal,
+            elapsed: 0, phase: 'work'
+        });
+        window.SQ.Audio?.play('toggle_on');
     },
 
-    _adjustTime: function(deltaMin) {
-        const current = Math.floor((this._currentTotal || 15*60) / 60);
-        const next    = Math.max(1, Math.min(99, current + deltaMin));
-        this._currentTotal = next * 60;
-        this._render('idle', { mode: this._currentMode, total: this._currentTotal, elapsed: 0 });
-    },
-
-    _start: function() {
-        this._currentElapsed = 0;
-        const mode = this._currentMode || 'countdown';
-        this._currentPhase = 'work';
-
-        // Focus Lock：啟動時鎖定導航
-        if (mode === 'focus') {
-            if (!this._origNavigate) {
-                this._origNavigate = window.SQ.Actions.navigate;
+    // ✅ [Fix B] 鎖定 Android 返回鍵
+    _applyFocusLock: function() {
+        // 攔截 App 內導航
+        if (!this._origNavigate) {
+            this._origNavigate = window.SQ.Actions?.navigate;
+            if (window.SQ.Actions) {
                 window.SQ.Actions.navigate = () => {
                     window.SQ.Actions.toast('🔒 專注鎖定中，請先完成計時');
                     window.SQ.Audio?.play('error');
@@ -336,14 +328,59 @@ window.SQ.Timer = {
             }
         }
 
-        // 👈 核心修改 1：記錄按下的那一瞬間的「真實系統時間」
-        this._startTime = Date.now(); 
+        // 攔截 Android 實體返回鍵
+        if (window.Capacitor?.Plugins?.App && !this._backHandler) {
+            window.Capacitor.Plugins.App.addListener('backButton', () => {
+                window.SQ.Actions?.toast('🔒 專注鎖定中，請先完成計時');
+                window.SQ.Audio?.play('error');
+            }).then(handle => {
+                this._backHandler = handle;
+            });
+        }
+    },
+
+    _releaseFocusLock: function() {
+        // 恢復導航
+        if (this._origNavigate && window.SQ.Actions) {
+            window.SQ.Actions.navigate = this._origNavigate;
+            this._origNavigate = null;
+        }
+        // 移除返回鍵監聽
+        if (this._backHandler) {
+            this._backHandler.remove?.();
+            this._backHandler = null;
+        }
+    },
+
+    // ── 計時器控制 ───────────────────────────────────────
+    _selectMode: function(m) {
+        this._currentMode = m;
+        if (m === 'pomodoro') this._currentTotal = this.POMODORO_WORK;
+        else if (m === 'stopwatch') this._currentTotal = 0;
+        this._currentElapsed = 0;
+        this._currentPhase = 'work';
+        this._render('idle', { mode: m, total: this._currentTotal, elapsed: 0, phase: 'work' });
+    },
+
+    _adjustTime: function(delta) {
+        const newTotal = Math.max(60, this._currentTotal + delta * 60);
+        this._currentTotal = newTotal;
+        this._render('idle', { mode: this._currentMode, total: newTotal, elapsed: 0 });
+    },
+
+    _startTimer: function() {
+        // Focus Lock 開啟時施加鎖定
+        if (this._focusLocked) {
+            this._applyFocusLock();
+        }
+
+        this._currentPhase = 'work';
+        this._startTime = Date.now();
 
         this._render('running', {
-            mode: mode, total: this._currentTotal,
+            mode: this._currentMode, total: this._currentTotal,
             elapsed: this._currentElapsed, phase: this._currentPhase
         });
-        
         this._runInterval();
     },
 
@@ -352,12 +389,10 @@ window.SQ.Timer = {
         this._interval = setInterval(() => {
             if (this._state !== 'running') return;
 
-            // 👈 核心修改 2：不再傻傻地 +1，而是用「現在時間 - 開始時間」來算出真實經過秒數！
-            // 這樣就算手機螢幕關掉 10 分鐘，一打開也能瞬間扣掉 600 秒
             const now = Date.now();
             this._currentElapsed = Math.floor((now - this._startTime) / 1000);
 
-            const mode  = this._currentMode;
+            const mode = this._currentMode;
 
             if (mode === 'stopwatch') {
                 this._render('running', {
@@ -366,9 +401,8 @@ window.SQ.Timer = {
                 });
             } else {
                 const remaining = this._currentTotal - this._currentElapsed;
-
                 if (remaining <= 0) {
-                    this._currentElapsed = this._currentTotal; // 確保不會變成負數
+                    this._currentElapsed = this._currentTotal;
                     this._onComplete();
                     return;
                 }
@@ -377,7 +411,7 @@ window.SQ.Timer = {
                     elapsed: this._currentElapsed, phase: this._currentPhase
                 });
             }
-        }, 1000); // 這裡維持 1000ms，但實際時間由 Date.now() 決定
+        }, 1000);
         this._state = 'running';
     },
 
@@ -390,13 +424,11 @@ window.SQ.Timer = {
                 elapsed: this._currentElapsed, phase: this._currentPhase
             });
         } else if (this._state === 'paused') {
-            // 👈 核心修改 3：解除暫停時，要把「開始時間」往後推，扣掉已經經過的時間
             this._startTime = Date.now() - (this._currentElapsed * 1000);
             this._runInterval();
         }
     },
 
-    // 👈 新增：鈴鐺切換邏輯
     _toggleAlert: function() {
         this._alertEnabled = !this._alertEnabled;
         const btn = document.getElementById('sq-timer-alert-btn');
@@ -407,11 +439,6 @@ window.SQ.Timer = {
     _stop: function(showIdle = false) {
         clearInterval(this._interval);
         this._interval = null;
-        // Focus Lock：恢復導航
-        if (this._origNavigate) {
-            window.SQ.Actions.navigate = this._origNavigate;
-            this._origNavigate = null;
-        }
         if (showIdle) {
             this._currentElapsed = 0;
             this._render('idle', {
@@ -424,18 +451,20 @@ window.SQ.Timer = {
     _restart: function() {
         this._currentElapsed = 0;
         this._currentPhase   = 'work';
+        this._focusLocked    = false; // 完成後解除鎖定狀態
+        this._releaseFocusLock();
         const mode = this._currentMode;
         if (mode === 'pomodoro') this._currentTotal = this.POMODORO_WORK;
-        this._render('idle', {
-            mode, total: this._currentTotal, elapsed: 0, phase: 'work'
-        });
+        this._render('idle', { mode, total: this._currentTotal, elapsed: 0, phase: 'work' });
     },
 
     _finishEarly: function() {
         if (this._currentMode === 'stopwatch') {
-            this._onComplete(); // 正計時手動按下結束，視為「專注完成」
+            this._onComplete();
         } else {
-            this._stop(true); // 倒數或番茄鐘如果中途按結束，直接放棄回大廳
+            this._stop(true);
+            this._releaseFocusLock();
+            this._focusLocked = false;
         }
     },
 
@@ -446,43 +475,41 @@ window.SQ.Timer = {
         const mode    = this._currentMode;
         const elapsed = this._currentElapsed;
 
-        // 👈 差異化音效與震動
+        // Focus Lock 結束時自動釋放
+        if (this._focusLocked) {
+            this._releaseFocusLock();
+            this._focusLocked = false;
+        }
+
         if (this._alertEnabled !== false) {
             if (mode === 'countdown') {
-                // 倒數計時：時間到了的「連續 taskUndo 警報聲」
                 window.SQ.Audio?.play('taskUndo');
-                setTimeout(() => window.SQ.Audio?.play('taskUndo'), 400); // 0.4秒後響第二次
-                setTimeout(() => window.SQ.Audio?.play('taskUndo'), 800); // 0.8秒後響第三次
-                
-                if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]); // 急促震動
+                setTimeout(() => window.SQ.Audio?.play('taskUndo'), 400);
+                setTimeout(() => window.SQ.Audio?.play('taskUndo'), 800);
+                if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
             } else {
-                // 番茄鐘/正計時：專注完成的「成就音效」
                 window.SQ.Audio?.feedback('achievement');
-                if (navigator.vibrate) navigator.vibrate([200, 100, 200]); // 溫和震動
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
             }
         }
 
-        // 👈 差異化後續行為
         if (mode === 'countdown') {
             this._render('done', { mode, total: this._currentTotal, elapsed });
-            // 倒數計時只彈出警告，不給 EXP
-            if (window.sys && window.sys.alert) window.sys.alert("⏰ 滴答滴答... 時間到囉！");
-            else if (window.SQ.Actions && window.SQ.Actions.toast) window.SQ.Actions.toast("⏰ 時間到囉！");
-        } 
-        else if (mode === 'pomodoro' && this._currentPhase === 'work') {
-            // 番茄鐘：工作結束，自動進入休息倒數
+            if (window.sys?.alert) window.sys.alert('⏰ 滴答滴答... 時間到囉！');
+            else window.SQ.Actions?.toast('⏰ 時間到囉！');
+        } else if (mode === 'pomodoro' && this._currentPhase === 'work') {
             this._currentPhase = 'break';
             this._currentTotal = this.POMODORO_BREAK;
             this._currentElapsed = 0;
             this._render('done', { mode, total: this.POMODORO_WORK, elapsed: this.POMODORO_WORK });
             setTimeout(() => {
                 if (this._state === 'done') {
+                    this._startTime = Date.now();
                     this._runInterval();
                     this._render('running', { mode, total: this.POMODORO_BREAK, elapsed: 0, phase: 'break' });
                 }
             }, 3000);
         } else {
-            // 正計時結束 / 番茄大循環結束：結算與給獎
             this._render('done', { mode, total: this._currentTotal, elapsed });
             this._giveReward(mode, elapsed);
         }
@@ -490,24 +517,17 @@ window.SQ.Timer = {
 
     _giveReward: function(mode, elapsed) {
         const minutes = Math.floor(elapsed / 60);
-        
-        // 👈 新增：發送「計時完成」廣播，把模式與分鐘數傳送出去給成就系統
+
         if (minutes >= 1 && window.SQ.EventBus) {
-            window.SQ.EventBus.emit('TIMER_COMPLETED', { mode: mode, minutes: minutes });
+            window.SQ.EventBus.emit('TIMER_COMPLETED', { mode, minutes });
         }
 
-        if (mode === 'focus') {
-            // Focus Lock 完成：跟 countdown 相同獎勵邏輯
-            // 導航鎖定在 _startTimer 處理
-        }
-        if (mode === 'stopwatch') return; // 正計時不給金幣/EXP，但上面依然有發送廣播以累積成就！
+        if (mode === 'stopwatch') return;
 
         const gs = window.SQ.State;
-        if (!gs) return;
-        if (minutes < 1) return;
+        if (!gs || minutes < 1) return;
 
-        const expReward = Math.min(minutes * 5, 200); 
-
+        const expReward = Math.min(minutes * 5, 200);
         gs.exp = (gs.exp || 0) + expReward;
         if (window.App) App.saveData();
         if (window.SQ.EventBus) {

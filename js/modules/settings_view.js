@@ -214,6 +214,26 @@ window.SQ.View.Settings = {
             ${renderToggle('checkCalMode','','🔥 卡路里消耗計算', draft.calMode, !unlocks.feature_cal)}
             ${renderToggle('updateSettingsDraft','strictMode','⚡ 嚴格模式 (失敗扣分)', draft.strictMode, !unlocks.feature_strict)}
         </div>
+		<div class="u-box" style="margin-top:12px;">
+            <div class="section-title" style="margin-bottom:10px;">🔍 介面字體大小</div>
+            <div style="display:flex; gap:5px;">
+                ${[
+                    { val: '14px', label: '小 (14px)' },
+                    { val: '16px', label: '中 (16px)' },
+                    { val: '18px', label: '大 (18px)' }
+                ].map(opt => {
+                    const currentSize = s.fontSize || '16px';
+                    const isActive = currentSize === opt.val;
+                    return ui.atom.buttonBase({
+                        label: opt.label,
+                        theme: isActive ? 'correct' : 'normal',
+                        action: 'setFontSize',
+                        actionVal: opt.val,
+                        style: `flex:1; padding:6px; border-radius:var(--radius-sm);`
+                    });
+                }).join('')}
+            </div>
+        </div>
 
         <div class="u-box" style="margin-top:12px;">
             <div class="section-title" style="margin-bottom:12px;">🔊 音效與震動</div>

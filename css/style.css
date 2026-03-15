@@ -284,18 +284,3 @@ input::placeholder, textarea::placeholder { color: var(--text-ghost); }
 #hud > .ga-deco-top {
     display: none !important; /* 隱藏所有主題(包含人魚、賽博等)的呼吸燈、網格、光暈與掃描線 */
 }
-
-/* ── 1. APK 頂部與底部防遮擋 (安全區域保底機制) ── */
-html, body {
-    height: 100% !important; /* 捨棄 dvh，在 APK 中改用 100% 貼合 WebView 最穩定 */
-    width: 100% !important;
-    overflow: hidden !important;
-}
-#app-frame {
-    height: 100% !important;
-    box-sizing: border-box;
-    /* 關鍵：使用 max() 加上保底內距。
-       即使 env() 失效，頂部至少有 24px 避開狀態列，底部至少有 36px 避開導航列 */
-    padding-top: max(env(safe-area-inset-top), 24px) !important;
-    padding-bottom: max(env(safe-area-inset-bottom), 36px) !important; 
-}

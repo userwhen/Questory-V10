@@ -20,29 +20,40 @@ window.SQ.Notification = {
     // 初始化（在 main.js 的 App.init() 裡呼叫）
     // =====================================================
     init: async function() {
-        // 確保 Capacitor 環境存在
-        if (!window.Capacitor) {
-            console.log('[Notification] 非 Capacitor 環境，略過');
-            return;
-        }
+        if (!window.Capacitor || !Capacitor.Plugins?.LocalNotifications) return;
 
         try {
             const { LocalNotifications } = Capacitor.Plugins;
-            if (!LocalNotifications) {
-                console.warn('[Notification] LocalNotifications 插件未安裝');
-                return;
-            }
 
-            // 檢查玩家是否已開啟通知設定
+            // 1. 註冊通知的動作按鈕 (Action Types)
+            await LocalNotifications.registerActionTypes({
+                types: [{
+                    id: 'TASK_ACTION',
+                    actions: [
+                        { id: 'complete', title: '✓ 完成任務' },
+                        { id: 'skip', title: '跳過' }
+                    ]
+                }]
+            });
+
+            // 2. 監聽玩家點擊了哪個按鈕
+            LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
+                const taskId = action.notification.extra?.taskId;
+                if (action.actionId === 'complete' && taskId) {
+                    // 連動到你的任務系統
+                    if (window.SQ.Engine?.Task?.resolveTask) {
+                        window.SQ.Engine.Task.resolveTask(taskId);
+                        console.log(`[Notification] 透過通知完成了任務: ${taskId}`);
+                    }
+                }
+            });
+
             const settings = window.SQ.State?.settings || {};
             if (!settings.notificationEnabled) return;
 
-            // 重新排程（每次開 App 都要重設，確保排程存活）
             await this.scheduleAll();
-            console.log('✅ Notification V1.0 初始化完成');
-        } catch(e) {
-            console.warn('[Notification] init 失敗:', e);
-        }
+            console.log('✅ Notification V1.1 初始化完成 (支援快捷按鈕)');
+        } catch(e) { console.warn('[Notification] init 失敗:', e); }
     },
 
     // =====================================================
@@ -76,81 +87,56 @@ window.SQ.Notification = {
     // =====================================================
     scheduleAll: async function() {
         if (!window.Capacitor) return;
-
         try {
             const { LocalNotifications } = Capacitor.Plugins;
-
-            // 先清除所有舊排程
             await LocalNotifications.cancel({ notifications: [
-                { id: 1001 }, // 每日任務提醒
-                { id: 1002 }, // 連續天數警告
-                ...Array.from({length: 50}, (_, i) => ({ id: 2000 + i })) // 截止日通知
+                { id: 1001 }, { id: 1002 }, ...Array.from({length: 50}, (_, i) => ({ id: 2000 + i }))
             ]});
 
             const notifications = [];
             const settings = window.SQ.State?.settings || {};
 
-            // --- 1. 每日任務提醒 ---
+            // 每日任務提醒
             if (settings.notificationEnabled) {
-                const dailyTime = this._getNextTime(
-                    settings.notifyDailyHour ?? this.DEFAULTS.dailyHour,
-                    settings.notifyDailyMinute ?? this.DEFAULTS.dailyMinute
-                );
+                const dailyTime = this._getNextTime(settings.notifyDailyHour ?? this.DEFAULTS.dailyHour, settings.notifyDailyMinute ?? this.DEFAULTS.dailyMinute);
                 notifications.push({
                     id: 1001,
                     title: '⚔️ 今日任務等你完成！',
                     body: this._getDailyBody(),
-                    schedule: {
-                        at: dailyTime,
-                        repeats: true,
-                        every: 'day'
-                    },
+                    schedule: { at: dailyTime, repeats: true, every: 'day' },
                     sound: 'default',
                     smallIcon: 'ic_notification',
                     channelId: 'quest-reminder'
                 });
             }
 
-            // --- 2. 連續天數警告 ---
+            // 連續天數警告
             if (settings.notificationEnabled && settings.notifyStreakWarning !== false) {
-                const streakTime = this._getNextTime(
-                    settings.notifyStreakHour ?? this.DEFAULTS.streakWarningHour,
-                    settings.notifyStreakMinute ?? this.DEFAULTS.streakWarningMinute
-                );
+                const streakTime = this._getNextTime(settings.notifyStreakHour ?? this.DEFAULTS.streakWarningHour, settings.notifyStreakMinute ?? this.DEFAULTS.streakWarningMinute);
                 const streak = window.SQ.State?.loginStreak || 0;
-                if (streak > 0) {
-                    // 判斷今天是否已登入
-                    const lastLogin = window.SQ.State?.lastLoginDate;
-                    const today = new Date().toDateString();
-                    if (lastLogin !== today) {
-                        notifications.push({
-                            id: 1002,
-                            title: `🔥 連續 ${streak} 天！今天還沒回來`,
-                            body: '再不登入，連續天數就要歸零了！',
-                            schedule: { at: streakTime },
-                            sound: 'default',
-                            smallIcon: 'ic_notification',
-                            channelId: 'quest-reminder'
-                        });
-                    }
+                const lastLogin = window.SQ.State?.lastLoginDate;
+                if (streak > 0 && lastLogin !== new Date().toDateString()) {
+                    notifications.push({
+                        id: 1002,
+                        title: `🔥 連續 ${streak} 天！今天還沒回來`,
+                        body: '再不登入，連續天數就要歸零了！',
+                        schedule: { at: streakTime },
+                        sound: 'default',
+                        smallIcon: 'ic_notification',
+                        channelId: 'quest-reminder'
+                    });
                 }
             }
 
-            // --- 3. 任務截止日提醒（當天） ---
+            // 任務截止日提醒 (加上 Action 按鈕)
             if (settings.notificationEnabled && settings.notifyDeadline !== false) {
-                const deadlineNotifs = this._buildDeadlineNotifications();
-                notifications.push(...deadlineNotifs);
+                notifications.push(...this._buildDeadlineNotifications());
             }
 
-            // 送出排程
             if (notifications.length > 0) {
                 await LocalNotifications.schedule({ notifications });
-                console.log(`[Notification] 已排程 ${notifications.length} 則通知`);
             }
-
-        } catch(e) {
-            console.warn('[Notification] scheduleAll 失敗:', e);
-        }
+        } catch(e) { console.warn('[Notification] scheduleAll 失敗:', e); }
     },
 
     // =====================================================
@@ -165,21 +151,13 @@ window.SQ.Notification = {
 
         tasks.forEach(task => {
             if (!task.deadline || task.done) return;
-
             const deadline = new Date(task.deadline);
             deadline.setHours(0, 0, 0, 0);
-
-            // 只處理今天截止的任務
             if (deadline.getTime() !== today.getTime()) return;
 
-            // 當天早上 8 點提醒
             const notifyAt = new Date();
             notifyAt.setHours(8, 0, 0, 0);
-
-            // 如果現在已經過了 8 點，設為 1 小時後
-            if (notifyAt < new Date()) {
-                notifyAt.setTime(new Date().getTime() + 60 * 60 * 1000);
-            }
+            if (notifyAt < new Date()) notifyAt.setTime(new Date().getTime() + 60 * 60 * 1000);
 
             notifications.push({
                 id: 2000 + idCounter++,
@@ -188,10 +166,11 @@ window.SQ.Notification = {
                 schedule: { at: notifyAt },
                 sound: 'default',
                 smallIcon: 'ic_notification',
-                channelId: 'quest-deadline'
+                channelId: 'quest-deadline',
+                actionTypeId: 'TASK_ACTION', // 👈 綁定剛剛註冊的按鈕群組
+                extra: { taskId: task.id }   // 👈 夾帶任務 ID，讓點擊時知道要完成哪一個
             });
         });
-
         return notifications;
     },
 

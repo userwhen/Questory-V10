@@ -142,10 +142,14 @@ window.SQ.View.Ach = {
                 // progress bar（check_in 類型不顯示）
                 let progressHtml = '';
                 if (!isCheckIn) {
-                    const pct = Math.min(100, Math.max(0, (a.curr / a.target) * 100));
+                    // 👇 加上強型別轉換與預設值，保護計算過程
+                    const currVal = parseInt(a.curr) || 0;
+                    const tgtVal = parseInt(a.target) || 1;
+                    const pct = Math.min(100, Math.max(0, (currVal / tgtVal) * 100));
+                    
                     progressHtml = `<div class="u-progress" style="margin-top:6px;">
                         <div class="u-progress-bar" style="width:${pct}%;"></div>
-                        <div class="u-progress-text">${a.curr} / ${a.target}</div>
+                        <div class="u-progress-text">${currVal} / ${tgtVal}</div>
                     </div>`;
                 }
 

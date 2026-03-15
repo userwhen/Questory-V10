@@ -6,7 +6,6 @@ window.SQ.Scanner = {
 
     // ── 主流程：掃描 → 查詢 → 回傳結果 ──────────────────
     scan: async function() {
-        // Pro 功能鎖
         if (window.SQ.Sub) {
             const check = window.SQ.Sub.canUseScanner();
             if (!check.ok) {
@@ -15,49 +14,62 @@ window.SQ.Scanner = {
             }
         }
 
-        // 非 Capacitor 環境：顯示手動輸入條碼的備用介面
-        if (!window.Capacitor) {
-            return this._manualFallback();
-        }
-
-        // ✅ [修正] 最新版 API 改為從 Capacitor.Plugins 取得，且方法名稱已更新
-        const BSC = Capacitor.Plugins?.BarcodeScanner;
-        if (!BSC) {
+        const BSC = (window.Capacitor && window.Capacitor.Plugins) ? window.Capacitor.Plugins.BarcodeScanner : null;
+		//  原本寫這樣：const BSC = Capacitor.Plugins?.BarcodeScanner;
+        if (!window.Capacitor || !BSC) {
             return this._manualFallback();
         }
 
         try {
-            // ✅ [修正] 最新版權限 API: checkPermission (singular) + force 參數
-            // @capacitor-community/barcode-scanner 仍使用 checkPermission({ force })
-            const status = await BSC.checkPermission({ force: true });
+            // ✅ [相容修正] 自動判斷使用新版或舊版權限檢查 API
+            let isGranted = false;
+            if (BSC.checkPermissions) {
+                const status = await BSC.checkPermissions();
+                isGranted = status.camera === 'granted';
+                if (!isGranted && BSC.requestPermissions) {
+                    const req = await BSC.requestPermissions();
+                    isGranted = req.camera === 'granted';
+                }
+            } else if (BSC.checkPermission) {
+                const status = await BSC.checkPermission({ force: true });
+                isGranted = status.granted;
+            }
 
-            if (!status.granted) {
+            if (!isGranted) {
                 window.SQ.Actions?.toast('❌ 需要相機權限才能掃描');
                 return null;
             }
 
-            // 準備掃描：隱藏 app 背景讓相機可見
+            // 準備掃描：隱藏 app 背景
             document.body.classList.add('sq-scanner-active');
-            BSC.hideBackground();
+            if (BSC.hideBackground) await BSC.hideBackground();
 
-            const result = await BSC.startScan();
+            // ✅ [相容修正] 自動判斷使用新版 scan() 或舊版 startScan()
+            const result = BSC.scan ? await BSC.scan() : await BSC.startScan();
 
-            // 還原 app 背景
+            // 還原背景
             document.body.classList.remove('sq-scanner-active');
-            BSC.showBackground();
+            if (BSC.showBackground) await BSC.showBackground();
 
-            if (!result.hasContent) {
+            let barcode = null;
+            
+            // ✅ [相容修正] 判斷回傳格式 (新版為 barcodes 陣列，舊版為 content)
+            if (result.barcodes && result.barcodes.length > 0) {
+                barcode = result.barcodes[0].rawValue || result.barcodes[0].displayValue;
+            } else if (result.hasContent && result.content) {
+                barcode = result.content;
+            }
+
+            if (!barcode) {
                 window.SQ.Actions?.toast('⚠️ 未能讀取條碼');
                 return null;
             }
 
-            const barcode = result.content;
             window.SQ.Actions?.toast('🔍 查詢中...');
             return await this._lookupBarcode(barcode);
 
         } catch (e) {
             document.body.classList.remove('sq-scanner-active');
-            // 嘗試還原背景
             try { Capacitor.Plugins?.BarcodeScanner?.showBackground(); } catch(_) {}
             console.error('[Scanner]', e);
             window.SQ.Actions?.toast('❌ 掃描失敗，請手動輸入');
@@ -199,5 +211,89 @@ window.SQ.Scanner = {
             Capacitor.Plugins.BarcodeScanner.showBackground();
         }
         document.body.classList.remove('sq-scanner-active');
+    },
+	
+	// ── 商店進貨專屬流程 ───────────────────────────────
+    scanAndAddToShop: async function() {
+        // 1. 啟動掃描
+        let result = await this.scan();
+        
+        // 2. 顯示上架確認視窗 (不管有沒有掃到，都進入這個視窗讓玩家確認或手動輸入)
+        this._showShopImportModal(result);
+    },
+
+    _showShopImportModal: function(scanData) {
+        // 預設值設定 (如果有掃描到資料就帶入)
+        const isFound = scanData && scanData.found;
+        const defaultName = isFound ? scanData.name : '';
+        const defaultKcal = isFound && scanData.kcal ? scanData.kcal : '';
+        const defaultPrice = isFound && scanData.kcal ? Math.floor(scanData.kcal * 0.5) : 100; // 價格自動換算或預設100
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position:fixed; inset:0; z-index:11000;
+            background:rgba(10,10,18,0.95);
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            padding:24px;
+        `;
+
+        overlay.innerHTML = `
+            <div style="background:#1e1e24; padding:24px; border-radius:16px; width:100%; max-width:320px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+                <div style="font-size:1.2rem; font-weight:800; color:#fff; margin-bottom:16px; text-align:center;">
+                    ${isFound ? '✅ 掃描成功！' : '✍️ 手動建立商品'}
+                </div>
+                
+                <label style="display:block; color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:4px;">商品名稱</label>
+                <input id="sq-import-name" type="text" value="${defaultName}" placeholder="例如：無糖豆漿"
+                       style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#fff; margin-bottom:12px; box-sizing:border-box;">
+
+                <div style="display:flex; gap:12px; margin-bottom:20px;">
+                    <div style="flex:1;">
+                        <label style="display:block; color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:4px;">熱量 (Kcal)</label>
+                        <input id="sq-import-kcal" type="number" value="${defaultKcal}" placeholder="0"
+                               style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#fff; box-sizing:border-box;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="display:block; color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:4px;">售價 (金幣)</label>
+                        <input id="sq-import-price" type="number" value="${defaultPrice}"
+                               style="width:100%; padding:10px; border-radius:8px; border:1px solid #f0a500; background:rgba(240,165,0,0.1); color:#ffd166; font-weight:bold; box-sizing:border-box;">
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button id="sq-import-cancel" style="flex:1; padding:12px; border-radius:50px; border:none; background:rgba(255,255,255,0.1); color:#fff; cursor:pointer;">取消</button>
+                    <button id="sq-import-confirm" style="flex:2; padding:12px; border-radius:50px; border:none; background:#4caf87; color:#fff; font-weight:bold; cursor:pointer;">📥 上架到商店</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        // 綁定按鈕事件
+        document.getElementById('sq-import-cancel').onclick = () => overlay.remove();
+        document.getElementById('sq-import-confirm').onclick = () => {
+            const name = document.getElementById('sq-import-name').value.trim() || '未命名商品';
+            const kcal = parseInt(document.getElementById('sq-import-kcal').value) || 0;
+            const price = parseInt(document.getElementById('sq-import-price').value) || 0;
+
+            // 呼叫 shop.js 的上架功能
+            if (window.SQ.Engine?.Shop?.uploadItem) {
+                window.SQ.Engine.Shop.uploadItem({
+                    name: name,
+                    price: price,
+                    category: '熱量',
+                    val: kcal, // 熱量數值
+                    desc: `回復 ${kcal} kcal 熱量`,
+                    type: 'daily',
+                    maxQty: 99
+                });
+                window.SQ.Actions?.toast(`✅ ${name} 已上架到商店！`);
+                window.SQ.Audio?.play('save'); // 如果有存檔音效的話
+            }
+            
+            // 重新渲染商店畫面
+            if (window.SQ.View?.Shop?.render) window.SQ.View.Shop.render();
+            overlay.remove();
+        };
     }
 };

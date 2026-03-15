@@ -219,6 +219,19 @@ window.SQ.Controller.Settings = {
                     window.SQ.Actions.toast('❌ 教學模組未載入');
                 }
             },
+			// ── 字體大小設定 ──
+            setFontSize: (sizeStr) => {
+                document.documentElement.style.fontSize = sizeStr;
+                window.SQ.State.settings.fontSize = sizeStr;
+                window.SQ.Actions.save();
+                
+                let sizeLabel = '中';
+                if (sizeStr === '14px') sizeLabel = '小';
+                if (sizeStr === '18px') sizeLabel = '大';
+                
+                window.SQ.Actions.toast(`🔍 字體已切換為 ${sizeLabel}`);
+                if (window.SQ.View.Settings) window.SQ.View.Settings.render();
+            },
 
             // ── 即時音效開關（直接改 State 並重繪）─────────
             toggleSound: (val) => {
@@ -350,7 +363,12 @@ window.SQ.Controller.Settings = {
         const savedTheme = window.SQ.State?.settings?.theme;
         if (savedTheme && savedTheme !== 'default') {
             document.body.className = 'theme-' + savedTheme;
-            console.log(`🎨 [SettingsController] 恢復主題: theme-${savedTheme}`);
+        }
+        
+        // 👇 補上這行：App 啟動時自動套用玩家選擇的字體大小
+        const savedFontSize = window.SQ.State?.settings?.fontSize;
+        if (savedFontSize) {
+            document.documentElement.style.fontSize = savedFontSize;
         }
 
         console.log("✅ SettingsController V56.1 Active");

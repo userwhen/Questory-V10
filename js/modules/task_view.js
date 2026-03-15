@@ -118,7 +118,15 @@ window.SQ.View.Task = {
 					</div>
 					${rightSettingHtml}
 				</div>
-				${!isCount ? `<div style="margin-top:12px; border-top:1px dashed var(--border); padding-top:12px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><div style="font-size:0.85rem; font-weight:bold; color:var(--text-muted);">🔨 子任務</div>${ui.atom.buttonBase({label:'+ 新增步驟', theme:'paper', size:'sm', action:'addSubtask'})}</div>${(data.subs || []).map((s, i) => `<div style="display:flex; gap:5px; margin-bottom:6px; align-items:center;">${ui.atom.inputBase({type:'text', val: s.text, placeholder: `步驟 ${i+1}`, action: "updateSubtaskText", actionId: String(i)})}${ui.atom.buttonBase({label:'✕', theme:'ghost', size:'sm', style:'color:var(--color-danger); border:none;', action:'removeSubtask', actionVal: String(i)})}</div>`).join('')}</div>` : ''}
+                
+				${!isCount ? `
+                <div style="margin-top:12px; border-top:1px dashed var(--border); padding-top:12px;">
+                    <div style="font-size:0.85rem; font-weight:bold; color:var(--text-muted); margin-bottom:10px;">🔨 子任務</div>
+                    ${(data.subs || []).map((s, i) => `<div style="display:flex; gap:5px; margin-bottom:6px; align-items:center;">${ui.atom.inputBase({type:'text', val: s.text, placeholder: `步驟 ${i+1}`, action: "updateSubtaskText", actionId: String(i)})}${ui.atom.buttonBase({label:'✕', theme:'ghost', size:'sm', style:'color:var(--color-danger); border:none;', action:'removeSubtask', actionVal: String(i)})}</div>`).join('')}
+                    <div style="margin-top:8px;">
+                        ${ui.atom.buttonBase({label:'+ 新增步驟', theme:'paper', size:'sm', action:'addSubtask', style: 'width:100%; justify-content:center; border:1px dashed var(--border); color:var(--text-muted); background:transparent;'})}
+                    </div>
+                </div>` : ''}
 			</div>`;
 
         // 綁定技能 (局部 ID)

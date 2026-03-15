@@ -44,8 +44,21 @@ window.SQ.Engine.Ach = {
                 isSystem: true
             });
         }
+		gs.stats = gs.stats || {};
+        // 如果是 0 或者沒有紀錄，就當作是第 1 天
+        if (typeof gs.stats.loginDays !== 'number' || gs.stats.loginDays === 0) {
+            gs.stats.loginDays = 1; 
+        }
+        if (typeof gs.loginStreak !== 'number' || gs.loginStreak === 0) {
+            gs.loginStreak = 1; 
+        }
 
-        // ✅ [新增] 監聽換日事件，重置每日打卡狀態
+        // 強制把現在的天數推給進度條
+        if (typeof this.onLoginUpdated === 'function') {
+            this.onLoginUpdated(gs.stats.loginDays, gs.loginStreak);
+        }
+
+        // ✅ [新增] 監聽換日事件... (原本的程式碼)
         if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.System.DAILY_RESET) {
             window.SQ.EventBus.on(window.SQ.Events.System.DAILY_RESET, () => {
                 const checkIn = (window.SQ.State.achievements || [])
@@ -152,6 +165,31 @@ window.SQ.Engine.Ach = {
             else if (ms.targetType === 'pomodoro' && mode === 'pomodoro') { isMatch = true; valToAdd = 1; }
             if (isMatch && valToAdd > 0) {
                 ms.curr = (ms.curr || 0) + valToAdd;
+                anyUpdate = true;
+                if (ms.curr >= ms.target) this._unlockMilestone(ms);
+            }
+        });
+
+        if (anyUpdate) this._saveAndNotify();
+    },
+	onLoginUpdated: function(totalDays, streakDays) {
+        const gs = window.SQ.State;
+        const targets = [...(gs.milestones || []), ...(gs.achievements || [])];
+        let anyUpdate = false;
+
+        targets.forEach(ms => {
+            if (ms.done) return;
+            let isMatch = false;
+            
+            if (ms.targetType === 'login_days') {
+                ms.curr = totalDays;
+                isMatch = true;
+            } else if (ms.targetType === 'login_streak') {
+                ms.curr = streakDays;
+                isMatch = true;
+            }
+            
+            if (isMatch) {
                 anyUpdate = true;
                 if (ms.curr >= ms.target) this._unlockMilestone(ms);
             }

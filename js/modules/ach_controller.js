@@ -84,35 +84,54 @@ window.SQ.Controller.Ach = {
 
             // E. [Fix] 補回簽到功能
             checkInAch: (id) => {
-			// 修正 Bug：從 achievements 與 milestones 兩邊一起找
-			const ach = window.SQ.State.achievements.find(m => m.id === id) || 
-						(window.SQ.State.milestones && window.SQ.State.milestones.find(m => m.id === id));
-						
-			if (ach && ach.type === 'check_in') {
-				ach.done = true;
-				ach.finishDate = Date.now();
-				
-				// 賦予每日領取獎勵 (可依需求調整數值)
-				const reward = ach.reward || { gold: 20, exp: 10 };
-                window.SQ.State.gold = (window.SQ.State.gold || 0) + reward.gold;
+                const gs = window.SQ.State || {};
                 
-                // 👇 [完全移除直接修改 exp 的備用防呆，徹底交給引擎]
-                if (window.SQ.Engine?.Stats?.addPlayerExp) {
-                    window.SQ.Engine.Stats.addPlayerExp(reward.exp);
-                }
+                // 1. 安全抓取陣列，避免 undefined 導致 .find() 崩潰
+                const achList = gs.achievements || [];
+                const msList = gs.milestones || [];
+                
+                const ach = achList.find(m => m.id === id) || msList.find(m => m.id === id);
+                            
+                if (ach && ach.type === 'check_in') {
+                    ach.done = true;
+                    ach.finishDate = Date.now();
+                    
+                    // 2. 賦予每日領取獎勵
+                    const reward = ach.reward || { gold: 20, exp: 10 };
+                    gs.gold = (gs.gold || 0) + reward.gold;
+                    
+                    // 3. 安全地增加經驗值 (判斷 Engine 是否就緒)
+                    if (window.SQ.Engine && window.SQ.Engine.Stats && typeof window.SQ.Engine.Stats.addPlayerExp === 'function') {
+                        window.SQ.Engine.Stats.addPlayerExp(reward.exp);
+                    } else {
+                        gs.exp = (gs.exp || 0) + reward.exp;
+                    }
 
-                if (window.SQ.Engine.Ach._saveAndNotify) {
-                    window.SQ.Engine.Ach._saveAndNotify();
+                    // 4. 安全存檔並通知畫面更新
+                    if (window.SQ.Engine && window.SQ.Engine.Ach && typeof window.SQ.Engine.Ach._saveAndNotify === 'function') {
+                        window.SQ.Engine.Ach._saveAndNotify();
+                    }
+
+                    // 5. 觸發成功提示與音效
+                    if (window.SQ.Actions && typeof window.SQ.Actions.toast === 'function') {
+                        window.SQ.Actions.toast(`🎁 領取成功！ +${reward.gold}💰 +${reward.exp}✨`);
+                    }
+                    if (window.SQ.Audio && typeof window.SQ.Audio.feedback === 'function') {
+                        window.SQ.Audio.feedback('taskComplete');
+                    }
+                    
+                    // 6. 完美防呆更新上方資源列 (HUD)
+                    if (window.view && typeof window.view.updateHUD === 'function') {
+                        window.view.updateHUD(gs);
+                    } else if (window.view && typeof window.view.initHUD === 'function') {
+                        window.view.initHUD(gs);
+                    } else if (window.SQ.View && window.SQ.View.Main && typeof window.SQ.View.Main.updateHUD === 'function') {
+                        window.SQ.View.Main.updateHUD(gs);
+                    }
+                } else {
+                    console.warn("⚠️ 打卡失敗：找不到目標，或型別不是 check_in");
                 }
-				window.SQ.Actions.toast(`🎁 領取成功！ +${reward.gold}💰 +${reward.exp}✨`);
-				window.SQ.Audio?.feedback('taskComplete');
-				
-				// 更新上方資源列
-				if (window.SQ.View.Main && window.view.updateHUD) {
-					window.view.updateHUD(window.SQ.State);
-				}
-			}
-		}
+            }
         });
 
         // ============================

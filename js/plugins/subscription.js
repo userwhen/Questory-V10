@@ -121,6 +121,7 @@ window.SQ.Sub = {
     },
 
     // ── Mock 訂閱（測試用）───────────────────────────────
+    // ── Mock 訂閱（測試用）───────────────────────────────
     _mockSubscribe: function(sku) {
         const state = window.SQ.State;
         if (!state.subscription) state.subscription = {};
@@ -141,12 +142,31 @@ window.SQ.Sub = {
         window.SQ.Actions?.toast(`✅ ${label} 已啟用！（測試模式）`);
         window.SQ.Audio?.feedback('achievement');
 
-        // 重新渲染設定頁
+        // 重新渲染設定頁 (為了讓背景的資料更新)
         if (window.SQ.View.Settings) window.SQ.View.Settings.render();
+
+        // 👇 終極核彈級關閉：一次掃蕩所有圖層 (System, Overlay, Panel)
+        const layers = ['m-system', 'm-overlay', 'm-panel'];
+        layers.forEach(id => {
+            // 1. 嘗試常規 API 關閉
+            const actionId = id.replace('m-', '');
+            if (window.SQ.Actions && window.SQ.Actions.closeModal) {
+                window.SQ.Actions.closeModal(actionId);
+            }
+            // 2. 暴力 DOM 隱藏與清空
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.remove('active');
+                el.style.display = 'none';
+                // 清空內容，防止殘影或按鈕失效
+                if (id === 'm-overlay' || id === 'm-system') {
+                    el.innerHTML = ''; 
+                }
+            }
+        });
 
         return { success: true, mock: true };
     },
-
     // ── 真實訂閱（上線後取消 comment）────────────────────
     _liveSubscribe: async function(sku) {
         /*
@@ -174,6 +194,13 @@ window.SQ.Sub = {
             window.SQ.Actions?.toast('✅ 訂閱成功！歡迎加入 Pro！');
             window.SQ.Audio?.feedback('achievement');
             if (window.SQ.View.Settings) window.SQ.View.Settings.render();
+
+            // 👇 新增在這裡：自動關閉 PRO 訂閱視窗
+            if (window.SQ.Actions && window.SQ.Actions.closeModal) {
+                window.SQ.Actions.closeModal('overlay');
+                window.SQ.Actions.closeModal('panel');
+            }
+
             return { success: true };
         } catch(e) {
             console.error('[Sub] 訂閱失敗:', e);

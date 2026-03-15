@@ -40,6 +40,9 @@ window.SQ.Audio = {
 
     play: function(type) {
         if (!this._enabled || !this._ctx) return;
+		if (this._ctx.state === 'suspended') {
+            this._ctx.resume();
+        }
 
         const sounds = {
             taskComplete: { type:'sine',     freq:[440,660],        dur:0.15, vol:0.4 },
