@@ -133,6 +133,33 @@ window.SQ.Controller.Shop = {
                     window.SQ.View.Shop.renderDynamicFields(cat);
                 }
             },
+			// --- 自動計價引擎 ---
+            autoCalculatePrice: () => {
+                const catEl = document.getElementById('up-cat');
+                const priceEl = document.getElementById('up-price');
+                if (!catEl || !priceEl) return;
+
+                const cat = catEl.value;
+                let price = 0;
+
+                if (cat === '熱量') {
+                    const kcal = parseInt(document.getElementById('up-val-cal')?.value || 0);
+                    price = Math.floor(kcal * 0.5); // 比例：1 Kcal = 0.5 金幣
+                } else if (cat === '時間') {
+                    const h = parseInt(document.getElementById('up-time-h')?.value || 0);
+                    const m = parseInt(document.getElementById('up-time-m')?.value || 0);
+                    const totalMins = (h * 60) + m;
+                    price = Math.floor(totalMins * 10); // 比例：1 分鐘 = 10 金幣
+                } else if (cat === '金錢') {
+                    const gold = parseInt(document.getElementById('up-val-gold')?.value || 0);
+                    price = gold; // 比例：1:1 等值
+                }
+
+                // 只有在非「其他」分類時，才覆蓋畫面上的價格
+                if (cat !== '其他') {
+                    priceEl.value = price;
+                }
+            },
 
             submitUpload: () => {
                 const name = document.getElementById('up-name').value;
@@ -251,6 +278,9 @@ window.SQ.Controller.Shop = {
                             if (preview) preview.textContent = newIcon;
                             if (window.SQ.View.Shop.renderDynamicFields) {
                                 window.SQ.View.Shop.renderDynamicFields('熱量', result.kcal);
+                                
+                                // 👇 [新增] 延遲 50ms 等待欄位渲染完畢後，立刻自動計算價格！
+                                setTimeout(() => window.SQ.Actions.autoCalculatePrice(), 50);
                             }
                         }
                     }

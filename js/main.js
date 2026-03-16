@@ -69,13 +69,26 @@ window.App = {
             dispatch(t.dataset.change, t.dataset.id, e.target.type === 'checkbox' ? e.target.checked : e.target.value, e);
         });
 
-        // 4. 攔截 Error
+        // 4. 攔截 Error (CSP 安全版圖片破圖處理)
         document.body.addEventListener('error', e => {
-            if (e.target.tagName?.toLowerCase() === 'img' && e.target.dataset.fallback) {
-                e.target.style.display = 'none';
-                if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'block';
+            if (e.target.tagName?.toLowerCase() === 'img') {
+                // 原本的 dataset fallback 邏輯
+                if (e.target.dataset.fallback) {
+                    e.target.style.display = 'none';
+                    if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'block';
+                }
+                
+                // 👇 [新增] 自動處理大廳主角與頭像的破圖 (取代 inline onerror)
+                if (e.target.classList.contains('hud-avatar-img') || e.target.classList.contains('main-char-img')) {
+                    const isMain = e.target.classList.contains('main-char-img');
+                    const style = isMain 
+                        ? "height: 100%; width: auto; object-fit: contain; filter: drop-shadow(var(--shadow-md)); font-size:80px; display:flex; justify-content:center; align-items:center;"
+                        : "width: 100%; height: 100%; object-fit: cover; font-size: 30px; display: flex; justify-content: center; align-items: center;";
+                    const className = isMain ? 'main-char-img' : 'hud-avatar-img';
+                    e.target.outerHTML = `<span class="${className}" style="${style}">🧍</span>`;
+                }
             }
-        }, true);
+        }, true); // 👈 這裡的 true 很重要，代表捕獲階段攔截
 
         // 👇 新增這段：資料庫錯誤邊界檢查 (try-catch 版)
         try {

@@ -68,29 +68,12 @@ window.SQ.Engine.Ach = {
                     checkIn.claimed = false;
                 }
                 
-                // 👇 [修復] 將原本獨立的 checkDailyLogin 邏輯整併至此
+                // 系統底層天數照算，但不再這裡自動推動進度條
                 const gs = window.SQ.State;
                 gs.stats = gs.stats || {};
-                gs.stats.loginDays = (gs.stats.loginDays || 0) + 1; // 總天數自己加
-                const currentStreak = gs.loginStreak || 1; // 連續天數聽 Core 的
+                gs.stats.loginDays = (gs.stats.loginDays || 0) + 1; 
 
-                const targets = [...(gs.milestones || []), ...(gs.achievements || [])];
-                let anyUpdate = false;
-
-                targets.forEach(ms => {
-                    if (ms.done) return;
-                    if (ms.targetType === 'login_days') {
-                        ms.curr = gs.stats.loginDays;
-                        anyUpdate = true;
-                        if (ms.curr >= ms.target) window.SQ.Engine.Ach._unlockMilestone(ms);
-                    } else if (ms.targetType === 'login_streak') {
-                        ms.curr = currentStreak;
-                        anyUpdate = true;
-                        if (ms.curr >= ms.target) window.SQ.Engine.Ach._unlockMilestone(ms);
-                    }
-                });
-
-                if (anyUpdate) window.SQ.Engine.Ach._saveAndNotify();
+                // 通知畫面更新按鈕狀態
                 if (window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.Ach.UPDATED);
             });
         }
@@ -165,31 +148,6 @@ window.SQ.Engine.Ach = {
             else if (ms.targetType === 'pomodoro' && mode === 'pomodoro') { isMatch = true; valToAdd = 1; }
             if (isMatch && valToAdd > 0) {
                 ms.curr = (ms.curr || 0) + valToAdd;
-                anyUpdate = true;
-                if (ms.curr >= ms.target) this._unlockMilestone(ms);
-            }
-        });
-
-        if (anyUpdate) this._saveAndNotify();
-    },
-	onLoginUpdated: function(totalDays, streakDays) {
-        const gs = window.SQ.State;
-        const targets = [...(gs.milestones || []), ...(gs.achievements || [])];
-        let anyUpdate = false;
-
-        targets.forEach(ms => {
-            if (ms.done) return;
-            let isMatch = false;
-            
-            if (ms.targetType === 'login_days') {
-                ms.curr = totalDays;
-                isMatch = true;
-            } else if (ms.targetType === 'login_streak') {
-                ms.curr = streakDays;
-                isMatch = true;
-            }
-            
-            if (isMatch) {
                 anyUpdate = true;
                 if (ms.curr >= ms.target) this._unlockMilestone(ms);
             }

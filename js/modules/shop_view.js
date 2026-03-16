@@ -9,7 +9,32 @@ window.SQ.View.Shop = {
         page.style.padding = '0'; page.style.height = '100%'; page.style.overflow = 'hidden';
         const curCat = window.SQ.Temp.shopCategory || '全部';
         
-        const npcArea = `<div style="background: var(--bg-hud); padding: 15px 20px; display: flex; align-items: center; gap: 15px; height: 120px; flex-shrink: 0; position: relative; z-index: 10;"><div data-action="toggleNpcDialog" style="width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--color-gold); background: var(--bg-nav); overflow: hidden; flex-shrink: 0; cursor: pointer; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm);"><div style="font-size:3rem; line-height:1;">👩‍🍳</div></div><div style="background: var(--bg-card); padding: 10px 15px; border-radius: 12px; position: relative; flex: 1; font-size: 0.9rem; color: var(--text); line-height: 1.4; box-shadow: var(--shadow-sm);"><div style="position: absolute; left: -8px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-right: 8px solid var(--bg-card);"></div><span id="shop-npc-text" style="font-weight:bold;">${window.SQ.Temp.npcText || "歡迎光臨！"}</span></div></div>`;
+        // ✅ 根據目前「主題/模式」決定 NPC 圖片
+        const currentTheme = window.SQ.State?.settings?.theme || 'default';
+        const npcThemeMap = {
+            'harem': '03', 'basic-harem': '03',       // 宮廷
+            'tech': '04', 'basic-tech': '04',         // 科技
+            'mermaid': '02', 'basic-mermaid': '02',   // 人魚
+            'wood': '01', 'basic-wood': '01',         // 魔法學院
+            'white': '01', 'basic-white': '01',       // 晨曦
+            'story': '04', 'basic-story': '04',       // 賽博
+            'siren': '02', 'basic-siren': '02',       // 深海女妖
+            'gilded': '05', 'basic-gilded': '05'      // 鎏金
+        };
+        const npcNum = npcThemeMap[currentTheme] || '01'; 
+        const npcId = `npc_outfit_${npcNum}`;
+        
+        const npcImgHtml = `<img src="img/${npcId}.png" data-fallback="true" style="width:100%; height:100%; object-fit:cover; transform:scale(1.15) translateY(5px);"><div style="display:none; font-size:3rem; line-height:1;">👩‍🍳</div>`;
+
+        const npcArea = `<div style="background: var(--bg-hud); padding: 15px 20px; display: flex; align-items: center; gap: 15px; height: 120px; flex-shrink: 0; position: relative; z-index: 10;">
+            <div data-action="toggleNpcDialog" style="width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--color-gold); background: var(--bg-nav); overflow: hidden; flex-shrink: 0; cursor: pointer; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm);">
+                ${npcImgHtml}
+            </div>
+            <div style="background: var(--bg-card); padding: 10px 15px; border-radius: 12px; position: relative; flex: 1; font-size: 0.9rem; color: var(--text); line-height: 1.4; box-shadow: var(--shadow-sm);">
+                <div style="position: absolute; left: -8px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-right: 8px solid var(--bg-card);"></div>
+                <span id="shop-npc-text" style="font-weight:bold;">${window.SQ.Temp.npcText || "歡迎光臨！"}</span>
+            </div>
+        </div>`;
         
         const filterBar = `<div style="background: var(--bg-elevated); padding: 10px 15px; border-bottom: 1px solid var(--border); flex-shrink: 0; display:flex; align-items:center; gap:8px;">
             <div style="flex:1; overflow:hidden;"><div class="u-scroll-list">${['全部', '熱量', '時間', '金錢', '其他'].map(c => ui.atom.buttonBase({label: c, theme: c === curCat ? 'normal' : 'ghost', style: 'flex-shrink:0; border-radius:50px; padding:4px 12px;', action: 'setShopFilter', actionVal: c })).join('')}</div></div>
@@ -18,7 +43,6 @@ window.SQ.View.Shop = {
         
         const items = window.SQ.Engine.Shop.getShopItems(curCat);
         const bodyArea = `<div style="flex: 1; overflow-y: auto; padding: 15px; background: var(--bg-panel); padding-bottom: 50px;">${items.length > 0 ? `<div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; width:100%;">` + items.map(i => {
-            // ✅ [修正] 商店卡片 icon：優先用商品自帶 icon，無則 fallback 到分類 icon
             const displayIcon = i.icon || (window.SQ.CATEGORY_ICONS && window.SQ.CATEGORY_ICONS[i.category]) || '📦';
             const itemWithIcon = { ...i, icon: displayIcon };
             return ui.smart.shopItem(itemWithIcon, i.id.startsWith('usr_') ? ui.atom.buttonBase({label:'⚙️', theme:'ghost', size:'sm', style:'position:absolute; top:2px; right:2px; padding:2px; z-index:5; border:none;', action:'openUploadModal', actionId: i.id}) : '');
@@ -28,11 +52,9 @@ window.SQ.View.Shop = {
         const bagItems = window.SQ.Engine.Shop.getStackedBag(bagCat);
         const bagGrid = bagItems.length > 0 ? `<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; width:100%;">` + bagItems.map(i => {
             const bagIcon = i.icon || (window.SQ.CATEGORY_ICONS && window.SQ.CATEGORY_ICONS[i.category]) || '🎒';
-            // 🌟 修正：移除 rgba，改用 var(--bg-card) 與 var(--border)
             return `<div data-action="renderItemDetail" data-id="${i.id}" style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 5px; text-align:center; cursor:pointer;"><div style="font-size:1.8rem; margin-bottom:4px;">${bagIcon}</div><div style="font-size:0.75rem; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:bold;">${i.name}</div><div style="font-size:0.7rem; color:var(--color-gold);">x${i.count}</div></div>`;
         }).join('') + `</div>` : `<div class="ui-empty"><div class="ui-empty-icon">🎒</div>背包空空如也</div>`;
 
-        // 🌟 修正：移除 rgba(0,0,0,0.2) 與 rgba(255,255,255,0.1)
         const drawerInner = `<div style="display: flex; flex-direction: column; height: 100%; color:var(--text);"><div style="flex-shrink: 0; display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border);"><div style="font-size: 1.1rem; font-weight: bold; white-space: nowrap; color: var(--color-gold-dark);">🎒 我的背包</div><div style="flex: 1; min-width: 0; background: var(--bg-track); border-radius: 20px; padding: 4px 10px; overflow-x: auto; white-space: nowrap; display: flex; align-items: center; scrollbar-width: none;"><div class="u-scroll-list">${['全部', '熱量', '時間', '金錢'].map(c => ui.atom.buttonBase({label: c, theme: c === bagCat ? 'normal' : 'ghost', style: 'flex-shrink:0; border-radius:50px; padding:4px 12px;', action: 'setBagFilter', actionVal: c })).join('')}</div></div></div><div style="flex: 1; overflow-y: auto; padding-bottom: 20px;">${bagGrid}</div></div>`;
 
         page.innerHTML = `<div style="position: relative; width: 100%; height: 100%; overflow: hidden; display: flex; flex-direction: column;">${npcArea}${filterBar}${bodyArea}${ui.composer.drawer({isOpen: window.SQ.Temp.isBagOpen||false, contentHtml: drawerInner, toggleAction: 'toggleBag', height: '280px', handleIconOpen: '▼', handleIconClose: '▲'})}</div>`;
@@ -53,46 +75,47 @@ window.SQ.View.Shop = {
         const data = editId ? { ...(window.SQ.State.shop.user.find(i => i.id === editId) || {}) } : { name: '', desc: '', category: '熱量', price: 0, qty: 1, type: 'daily', val: '' };
         window.SQ.Temp.uploadEditId = editId;
 
-        // ✅ [修正] icon 初始值：編輯時讀已存的 icon；新建時根據分類自動決定
         const initIcon = data.icon || (window.SQ.CATEGORY_ICONS && window.SQ.CATEGORY_ICONS[data.category]) || '📦';
-
         const scanIconSvg = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px; height:20px;"><path d="M4 8V4H8M16 4H20V8M20 16V20H16M8 20H4V16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 12H18" stroke="#f85149" stroke-width="2" stroke-linecap="round"/></svg>`;
 
-        const nameAndScanRow = `
-            <div style="display:flex; align-items:flex-end; gap:8px; margin-bottom:15px;">
-                <div style="flex:1;">
-                    ${ui.composer.formField({
-                        label:'商品名稱', 
-                        style: 'margin-bottom:0;',
-                        inputHtml: ui.atom.inputBase({type:'text', val:data.name, placeholder:"輸入或掃描...", action:"shopUploadChange", id:"up-name"})
-                    })}
-                </div>
-                <button data-action="startScan" 
-                        style="width:42px; height:42px; background:var(--bg-elevated); border:1px solid var(--border); 
-                               border-radius:8px; cursor:pointer; display:flex; align-items:center; 
-                               justify-content:center; color:var(--text); flex-shrink:0; transition:all 0.2s;">
-                    ${scanIconSvg}
-                </button>
-            </div>`;
+        // ✅ 修正 1：給予商品名稱輸入框與掃描按鈕「絕對一致」的 40px 高度
+        const nameAndScanRow = ui.composer.formField({
+            label: '商品名稱',
+            inputHtml: `
+                <div style="display:flex; gap:8px;">
+                    <div style="flex:1;">
+                        ${ui.atom.inputBase({type:'text', val:data.name, placeholder:"輸入或掃描...", action:"shopUploadChange", id:"up-name", style: "height:40px; box-sizing:border-box;"})}
+                    </div>
+                    <button data-action="startScan" 
+                            style="width:40px; height:40px; background:var(--bg-elevated); border:1px solid var(--border); 
+                                   border-radius:var(--radius-sm); cursor:pointer; display:flex; align-items:center; 
+                                   justify-content:center; color:var(--text); flex-shrink:0; transition:all 0.2s; box-sizing:border-box;">
+                        ${scanIconSvg}
+                    </button>
+                </div>`
+        });
 			const iconPreviewRow = `<input type="hidden" id="up-icon" value="${initIcon}">`;
 
+        // ✅ 修正 2：強制分類下拉選單、價格、庫存、重置選單全部鎖定為 40px
         let body = `
             ${nameAndScanRow}
             ${iconPreviewRow}
             ${ui.composer.formField({label:'描述', inputHtml: ui.atom.inputBase({type:'textarea', val:data.desc, placeholder:"說明...", action:"shopUploadChange", id:"up-desc"})})}
+            
             <div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:15px;">
                 <div style="flex:1;">
                     ${ui.composer.formField({label:'分類', inputHtml: ui.atom.inputBase({
-                        type:'select', val:data.category, action:"shopUploadChange", id:"up-cat", 
+                        type:'select', val:data.category, action:"shopUploadChange", id:"up-cat", style: "height:40px; box-sizing:border-box;",
                         options:[{val:'熱量', label:'🔥 熱量'}, {val:'時間', label:'⏳ 時間'}, {val:'金錢', label:'💰 金錢'}, {val:'其他', label:'📦 其他'}]
                     })})}
                 </div>
                 <div id="up-dyn-container" style="flex:1;"></div>
             </div>
+            
             <div style="border-top:1px dashed var(--border); padding-top:15px; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
-                ${ui.composer.formField({label:'價格', inputHtml: ui.atom.inputBase({type:'number', val:data.price, id:"up-price"})})}
-                ${ui.composer.formField({label:'庫存', inputHtml: ui.atom.inputBase({type:'number', val:data.qty, id:"up-qty"})})}
-                ${ui.composer.formField({label:'重置', inputHtml: ui.atom.inputBase({type:'select', val:data.type, id:"up-type", options:[{val:'daily', label:'常駐'}, {val:'once', label:'單次'}]})})}
+                ${ui.composer.formField({label:'價格', inputHtml: ui.atom.inputBase({type:'number', val:data.price, id:"up-price", style: "height:40px; box-sizing:border-box;"})})}
+                ${ui.composer.formField({label:'庫存', inputHtml: ui.atom.inputBase({type:'number', val:data.qty, id:"up-qty", style: "height:40px; box-sizing:border-box;"})})}
+                ${ui.composer.formField({label:'重置', inputHtml: ui.atom.inputBase({type:'select', val:data.type, id:"up-type", style: "height:40px; box-sizing:border-box;", options:[{val:'daily', label:'常駐'}, {val:'once', label:'單次'}]})})}
             </div>`;
 
         ui.modal.render(
@@ -106,13 +129,26 @@ window.SQ.View.Shop = {
         setTimeout(() => this.renderDynamicFields(data.category, data.val), 0);
     },
 
+    // ✅ 修正 3：動態欄位（熱量、金錢、時間）也強制套用 40px 標準高度
     renderDynamicFields: function(cat, initVal = '') {
         const c = document.getElementById('up-dyn-container');
         if (!c) return;
-        if (cat === '熱量') c.innerHTML = ui.composer.formField({label:'數值 (Kcal)', inputHtml: ui.atom.inputBase({type:'number', val:initVal, id:"up-val-cal"})});
-        else if (cat === '金錢') c.innerHTML = ui.composer.formField({label:'數值 ($)', inputHtml: ui.atom.inputBase({type:'number', val:initVal, id:"up-val-gold"})});
-        else if (cat === '時間') c.innerHTML = ui.composer.formField({label:'時長 (時:分)', inputHtml: `<div style="display:flex; align-items:center; gap:5px;">${ui.atom.inputBase({type:'number', val:Math.floor((parseInt(initVal)||0)/60), id:"up-time-h"})} <span style="font-weight:bold; opacity:0.6;">:</span> ${ui.atom.inputBase({type:'number', val:(parseInt(initVal)||0)%60, id:"up-time-m"})}</div>`});
-        else c.innerHTML = `<div style="height:32px;"></div>`;
+        const uniformStyle = "height:40px; box-sizing:border-box;";
+        
+        if (cat === '熱量') {
+            c.innerHTML = ui.composer.formField({label:'數值 (Kcal)', inputHtml: ui.atom.inputBase({type:'number', val:initVal, action: "autoCalculatePrice", id:"up-val-cal", style: uniformStyle})});
+        } else if (cat === '金錢') {
+            c.innerHTML = ui.composer.formField({label:'數值 ($)', inputHtml: ui.atom.inputBase({type:'number', val:initVal, action: "autoCalculatePrice", id:"up-val-gold", style: uniformStyle})});
+        } else if (cat === '時間') {
+            // 👇 修改這裡：如果有值才計算，沒值就保持空白 ('')
+            const hVal = initVal ? Math.floor(parseInt(initVal) / 60) : '';
+            const mVal = initVal ? (parseInt(initVal) % 60) : '';
+            
+            // 👇 順便補上 placeholder="0" 讓畫面看起來更直覺
+            c.innerHTML = ui.composer.formField({label:'時長 (時:分)', inputHtml: `<div style="display:flex; align-items:center; gap:5px;">${ui.atom.inputBase({type:'number', val:hVal, placeholder:'0', action: "autoCalculatePrice", id:"up-time-h", style: uniformStyle})} <span style="font-weight:bold; opacity:0.6;">:</span> ${ui.atom.inputBase({type:'number', val:mVal, placeholder:'0', action: "autoCalculatePrice", id:"up-time-m", style: uniformStyle})}</div>`});
+        } else {
+            c.innerHTML = `<div style="height:32px;"></div>`;
+        }
     },
 
     renderPayment: function() {

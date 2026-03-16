@@ -18,7 +18,6 @@ window.Assets = window.Assets || {
         const gs = window.SQ.State;
         if (!gs) return ''; 
         
-        // ✅ [核心衝突修復] 讓大廳與 HUD 真正讀取「更衣室正在穿的服裝」
         const currentSuitId = (gs.avatar && gs.avatar.wearing && gs.avatar.wearing.suit) 
                                ? gs.avatar.wearing.suit 
                                : 'outfit_01'; // 預設防呆
@@ -26,6 +25,7 @@ window.Assets = window.Assets || {
         const conf = this.getConf();
         const path = `${conf.basePath}${currentSuitId}${conf.defExt}`;
         
-        return `<img src="${path}" class="${className}" style="${style}" onerror="this.outerHTML='<span class=\\'${className}\\' style=\\'${style} font-size:80px; display:flex; justify-content:center; align-items:center;\\'>🧍</span>'">`;
+        // ✅ [CSP 修復] 徹底移除 onerror，加入 data-fallback 交給 main.js 處理
+        return `<img src="${path}" class="${className}" style="${style}" data-fallback="true">`;
     }
 };

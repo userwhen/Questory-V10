@@ -235,14 +235,18 @@ window.SQ.Engine.Task = {
             const historyEntry = JSON.parse(JSON.stringify(task));
             historyEntry.doneImpact = impact; 
             gs.history.push(historyEntry);
-			// [Fix] 關鍵修復：防止存檔隨著時間膨脹
-				// 500 筆紀錄大約佔用數十 KB，足以應付絕大多數玩家查閱，且保證存檔穩定
-				if (gs.history.length > 500) {
-					gs.history.shift(); 
-				}
+            
+            // [Fix] 關鍵修復：防止存檔隨著時間膨脹
+            if (gs.history.length > 500) {
+                gs.history.shift(); 
+            }
             window.SQ.EventBus.emit(window.SQ.Events.Task.COMPLETED, { task: task, impact: impact, gained: rewards });
-            // 被動寫入行事曆（完成紀錄）
-            if (window.SQ.Calendar?.logCompleted) window.SQ.Calendar.logCompleted(task);
+            
+            // 👇 修改這裡：把原本的 logCompleted 換成我們寫好的 markAsDoneInCalendar
+            if (window.SQ.Calendar?.markAsDoneInCalendar) {
+                window.SQ.Calendar.markAsDoneInCalendar(task);
+            }
+            
             window.SQ.EventBus.emit(window.SQ.Events.System.TOAST, `完成！+${rewards.gold}💰 +${rewards.exp}✨`);
 
         } else {

@@ -85,34 +85,49 @@ window.SQ.Controller.Ach = {
             // E. [Fix] 補回簽到功能
             checkInAch: (id) => {
                 const gs = window.SQ.State || {};
-                
-                // 1. 安全抓取陣列，避免 undefined 導致 .find() 崩潰
                 const achList = gs.achievements || [];
                 const msList = gs.milestones || [];
-                
                 const ach = achList.find(m => m.id === id) || msList.find(m => m.id === id);
                             
                 if (ach && ach.type === 'check_in') {
                     ach.done = true;
                     ach.finishDate = Date.now();
                     
-                    // 2. 賦予每日領取獎勵
+                    // 1. 發送每日打卡獎勵
                     const reward = ach.reward || { gold: 20, exp: 10 };
                     gs.gold = (gs.gold || 0) + reward.gold;
                     
-                    // 3. 安全地增加經驗值 (判斷 Engine 是否就緒)
                     if (window.SQ.Engine && window.SQ.Engine.Stats && typeof window.SQ.Engine.Stats.addPlayerExp === 'function') {
                         window.SQ.Engine.Stats.addPlayerExp(reward.exp);
                     } else {
                         gs.exp = (gs.exp || 0) + reward.exp;
                     }
 
-                    // 4. 安全存檔並通知畫面更新
+                    // 🌟 2. [選項 B 核心] 在按下去的這一刻，手動推進「冒險足跡」的進度！
+                    const targets = [...msList, ...achList];
+                    targets.forEach(ms => {
+                        if (ms.done) return;
+                        // 只要是登入天數或連續登入的成就，就在打卡時 +1
+                        if (ms.targetType === 'login_days' || ms.targetType === 'login_streak') {
+                            ms.curr = (ms.curr || 0) + 1;
+                            
+                            // 檢查是否達成目標 (0/7 -> 7/7)
+                            if (ms.curr >= ms.target) {
+                                ms.curr = ms.target;
+                                ms.done = true;
+                                if (window.SQ.Actions && window.SQ.Actions.toast) {
+                                    setTimeout(() => window.SQ.Actions.toast(`🎉 目標達成：${ms.title}`), 500);
+                                }
+                            }
+                        }
+                    });
+
+                    // 3. 存檔與通知
                     if (window.SQ.Engine && window.SQ.Engine.Ach && typeof window.SQ.Engine.Ach._saveAndNotify === 'function') {
                         window.SQ.Engine.Ach._saveAndNotify();
                     }
 
-                    // 5. 觸發成功提示與音效
+                    // 4. 畫面與音效回饋
                     if (window.SQ.Actions && typeof window.SQ.Actions.toast === 'function') {
                         window.SQ.Actions.toast(`🎁 領取成功！ +${reward.gold}💰 +${reward.exp}✨`);
                     }
@@ -120,13 +135,11 @@ window.SQ.Controller.Ach = {
                         window.SQ.Audio.feedback('taskComplete');
                     }
                     
-                    // 6. 完美防呆更新上方資源列 (HUD)
+                    // 5. 更新上方資源列
                     if (window.view && typeof window.view.updateHUD === 'function') {
                         window.view.updateHUD(gs);
                     } else if (window.view && typeof window.view.initHUD === 'function') {
                         window.view.initHUD(gs);
-                    } else if (window.SQ.View && window.SQ.View.Main && typeof window.SQ.View.Main.updateHUD === 'function') {
-                        window.SQ.View.Main.updateHUD(gs);
                     }
                 } else {
                     console.warn("⚠️ 打卡失敗：找不到目標，或型別不是 check_in");
@@ -167,12 +180,7 @@ window.SQ.Controller.Ach = {
                 window.SQ.Engine.Ach.onTimerCompleted(data.mode, data.minutes);
             }
         });
-		window.SQ.EventBus.on('LOGIN_UPDATED', (payload) => {
-            if (window.SQ.Engine.Ach.onLoginUpdated) {
-                window.SQ.Engine.Ach.onLoginUpdated(payload.total, payload.streak);
-            }
-        });
-
+		
         console.log("✅ AchController V40.2 Fixed (checkInAch Added).");
     }
 };

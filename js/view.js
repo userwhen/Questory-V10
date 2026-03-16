@@ -189,13 +189,13 @@ ui.smart = {
             }
         }
 
-        const calBtnHtml = (!isHistory &&t.deadline && !t.done)
-            ? `<button data-action="addTaskToCalendar" data-id="${t.id}" data-stop="true"
-                       style="padding:0 5px; opacity:${t.calendarSynced ? '1' : '0.45'}; flex-shrink:0;
-                              background:none; border:none; cursor:pointer; font-size:1rem;
-                              color:${t.calendarSynced ? 'var(--color-info)' : 'inherit'};"
-                       title="${t.calendarSynced ? '已加入行事曆' : '加入行事曆'}">
-                   ${t.calendarSynced ? '📅' : '🗓️'}
+        const calBtnHtml = (!isHistory && t.deadline)
+            ? `<button data-action="${t.done ? '' : 'addTaskToCalendar'}" data-id="${t.id}" data-stop="true"
+                       style="padding:0 5px; opacity:${t.calendarSynced ? (t.done ? '0.8' : '1') : '0.45'}; flex-shrink:0;
+                              background:none; border:none; cursor:${t.done ? 'default' : 'pointer'}; font-size:1rem;
+                              color:${t.calendarSynced ? (t.done ? 'var(--color-correct)' : 'var(--color-info)') : 'inherit'};"
+                       title="${t.calendarSynced ? (t.done ? '已完成並記錄於行事曆' : '已加入行事曆') : '加入行事曆'}">
+                   ${t.calendarSynced ? (t.done ? '✅' : '📅') : '🗓️'}
                </button>`
             : '';
         const rightHtml = isHistory ? '' : `<div style="display:flex; align-items:center; gap:2px;">${calBtnHtml}${ui.atom.buttonBase({label:'⚙️', theme:'ghost', action:'editTask', actionId: t.id, stop: true, style:'padding:0 5px; opacity:0.6; flex-shrink:0;'})}</div>`;

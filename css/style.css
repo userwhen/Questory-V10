@@ -284,3 +284,51 @@ input::placeholder, textarea::placeholder { color: var(--text-ghost); }
 #hud > .ga-deco-top {
     display: none !important; /* 隱藏所有主題(包含人魚、賽博等)的呼吸燈、網格、光暈與掃描線 */
 }
+/* ==========================================================================
+   🔍 掃描專用介面 (LINE 風格對焦框)
+   ========================================================================== */
+body.sq-scanner-active {
+    background: transparent !important;
+}
+body.sq-scanner-active #app-frame,
+body.sq-scanner-active #page-shop,
+body.sq-scanner-active #content-area {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* 遮罩與挖空效果 */
+.sq-scanner-overlay {
+    position: fixed; inset: 0; z-index: 99999;
+    display: flex; flex-direction: column;
+    /* 這裡利用 box-shadow 做出四周半透明黑，中間全透明的挖空效果 */
+    background: transparent;
+    pointer-events: none; /* 讓點擊穿透到下方的取消按鈕 */
+}
+.sq-scanner-hole {
+    width: 250px; height: 250px;
+    margin: auto;
+    position: relative;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.65); 
+    border-radius: 12px;
+}
+
+/* 對焦框的四個邊角 (黃色) */
+.sq-scanner-hole::before, .sq-scanner-hole::after,
+.sq-scanner-hole .corner-bl, .sq-scanner-hole .corner-br {
+    content: ''; position: absolute;
+    width: 30px; height: 30px;
+    border-color: var(--color-gold);
+    border-style: solid;
+}
+.sq-scanner-hole::before { top: 0; left: 0; border-width: 4px 0 0 4px; border-top-left-radius: 12px; }
+.sq-scanner-hole::after { top: 0; right: 0; border-width: 4px 4px 0 0; border-top-right-radius: 12px; }
+.sq-scanner-hole .corner-bl { bottom: 0; left: 0; border-width: 0 0 4px 4px; border-bottom-left-radius: 12px; }
+.sq-scanner-hole .corner-br { bottom: 0; right: 0; border-width: 0 4px 4px 0; border-bottom-right-radius: 12px; }
+
+/* 提示文字與取消按鈕 */
+.sq-scanner-ui {
+    position: absolute; bottom: 80px; left: 0; width: 100%;
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+    pointer-events: auto;
+}

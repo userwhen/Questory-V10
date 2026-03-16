@@ -68,13 +68,25 @@ window.SQ.View.Task = {
         data.importance = parseInt(data.importance) || 1; data.urgency = parseInt(data.urgency) || 1; if (!data.attrs) data.attrs = [];
         const isCount = data.type === 'count';
 
-        // 表單本體
-        let bodyHtml = `
-            <div style="display:flex; align-items:flex-end; gap:10px;">
-                <div style="flex:1;">${ui.composer.formField({label:'任務名稱', inputHtml: ui.atom.inputBase({type: 'text', val: data.title, placeholder: "要做什麼呢？", action: "updateTaskField", actionId: "title"})})}</div>
-                <div style="margin-bottom:14px;">${ui.atom.buttonBase({ id: 'btn-pin-toggle', label: '📌', theme: 'ghost', action: 'toggleTaskPin', style: `font-size:1.4rem; padding:0 8px; border:none; opacity:${data.pinned ? '1' : '0.3'}; transition:all 0.2s;` })}</div>
-            </div>
-            ${ui.composer.formField({label:'詳細說明', inputHtml: ui.atom.inputBase({type: 'textarea', val: data.desc, placeholder: "備註...", action: "updateTaskField", actionId: "desc"})})}`;
+        // ✅ 修正：將置頂按鈕(📌)和輸入框包在同一個 formField 裡
+        let bodyHtml = ui.composer.formField({
+            label: '任務名稱',
+            inputHtml: `
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <div style="flex:1;">
+                        ${ui.atom.inputBase({type: 'text', val: data.title, placeholder: "要做什麼呢？", action: "updateTaskField", actionId: "title"})}
+                    </div>
+                    ${ui.atom.buttonBase({ 
+                        id: 'btn-pin-toggle', label: '📌', theme: 'ghost', action: 'toggleTaskPin', 
+                        style: `font-size:1.4rem; padding:0 8px; border:none; opacity:${data.pinned ? '1' : '0.3'}; transition:all 0.2s; background:transparent; box-shadow:none; flex-shrink:0;` 
+                    })}
+                </div>`
+        });
+        
+        bodyHtml += ui.composer.formField({
+            label: '詳細說明', 
+            inputHtml: ui.atom.inputBase({type: 'textarea', val: data.desc, placeholder: "備註...", action: "updateTaskField", actionId: "desc"})
+        });
 
         // 分類 (具備 cat-sel-btn 類別以供局部更新)
 		const catButtons = (window.SQ.State.taskCats || ['每日', '運動', '工作']).map(c => {
@@ -147,8 +159,8 @@ window.SQ.View.Task = {
             </div>`;
 
         // 循環設定
-        bodyHtml += `<div style="display:flex; gap:10px; align-items:flex-end;"><div style="flex: 1;">${ui.composer.formField({label:'📅 到期', inputHtml: ui.atom.inputBase({type: 'datetime-local', val: data.deadline, action: "updateTaskField", actionId: "deadline"})})}</div><div style="flex: 1;">${ui.composer.formField({label:'🔄 循環', inputHtml: ui.atom.inputBase({type: 'select', val: data.recurrence, action: "updateTaskField", actionId: "recurrence", options: [{val:'', label:'不重複'}, {val:'daily', label:'每天'}, {val:'weekly', label:'每週'}, {val:'monthly', label:'每月'}, {val:'yearly', label:'每年'}]})})}</div></div>`;
-
+        bodyHtml += `<div style="display:flex; gap:10px; align-items:flex-end;"><div style="flex: 1;">${ui.composer.formField({label:'📅 到期', inputHtml: ui.atom.inputBase({type: 'datetime-local', val: data.deadline, action: "updateTaskField", actionId: "deadline", style: "height:40px; box-sizing:border-box;"})})}</div><div style="flex: 1;">${ui.composer.formField({label:'🔄 循環', inputHtml: ui.atom.inputBase({type: 'select', val: data.recurrence, action: "updateTaskField", actionId: "recurrence", style: "height:40px; box-sizing:border-box;", options: [{val:'', label:'不重複'}, {val:'daily', label:'每天'}, {val:'weekly', label:'每週'}, {val:'monthly', label:'每月'}, {val:'yearly', label:'每年'}]})})}</div></div>`;
+		
         const footHtml = taskId 
 		? `${ui.atom.buttonBase({label:'刪除', theme:'danger', action:'deleteTask', actionId: taskId})} ${ui.atom.buttonBase({label:'複製', theme:'normal', action:'copyTask', actionId: taskId})} ${ui.atom.buttonBase({label:'保存', theme:'correct', style:'flex:1;', action:'submitTask'})}` 
 		: `<div style="display:flex; gap:10px; width:100%;">

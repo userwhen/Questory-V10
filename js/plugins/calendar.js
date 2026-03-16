@@ -33,24 +33,35 @@ window.SQ.Calendar = {
 
         // 如果已同步，再次點擊 → 取消同步
         if (task.calendarSynced) {
-            // 1. 從系統行事曆刪除
-            if (window.Capacitor && Capacitor.Plugins?.CapacitorCalendar && task.calendarEventId) {
-                try {
-                    await Capacitor.Plugins.CapacitorCalendar.deleteEventById({ id: task.calendarEventId });
-                    console.log('[Calendar] 已刪除行事曆事件 ID:', task.calendarEventId);
-                } catch(e) { console.warn('[Calendar] 刪除行事曆事件失敗:', e); }
-            } else if (!task.calendarEventId) {
-                console.warn('[Calendar] 找不到 calendarEventId，無法刪除行事曆事件');
-            }
+            
+            // 👇 [新增] 網頁測試環境的模擬 Log
+            if (!window.Capacitor || !Capacitor.Plugins?.CapacitorCalendar) {
+                console.log(`[Calendar] (模擬) 玩家手動取消同步，已刪除行事曆事件 ID: ${task.calendarEventId}`);
+                console.log(`[Calendar] (模擬) 已取消該任務的推播通知`);
+            } 
+            // 👇 下面維持原本的真機執行邏輯
+            else {
+                // 1. 從系統行事曆刪除
+                if (task.calendarEventId) {
+                    try {
+                        if (Capacitor.Plugins.CapacitorCalendar.deleteEventById) {
+                            await Capacitor.Plugins.CapacitorCalendar.deleteEventById({ id: task.calendarEventId });
+                        } else if (Capacitor.Plugins.CapacitorCalendar.deleteEventsById) {
+                            await Capacitor.Plugins.CapacitorCalendar.deleteEventsById({ ids: [task.calendarEventId] });
+                        }
+                        console.log('[Calendar] 已刪除行事曆事件 ID:', task.calendarEventId);
+                    } catch(e) { console.warn('[Calendar] 刪除行事曆事件失敗:', e); }
+                }
 
-            // 2. 取消排程的推播通知
-            if (window.Capacitor && Capacitor.Plugins?.LocalNotifications) {
-                try {
-                    const baseId = this._taskNotifId(task.id);
-                    await Capacitor.Plugins.LocalNotifications.cancel({
-                        notifications: [{ id: baseId }, { id: baseId + 1 }]
-                    });
-                } catch(e) { console.warn('[Calendar] 取消推播通知失敗:', e); }
+                // 2. 取消排程的推播通知
+                if (Capacitor.Plugins?.LocalNotifications) {
+                    try {
+                        const baseId = this._taskNotifId(task.id);
+                        await Capacitor.Plugins.LocalNotifications.cancel({
+                            notifications: [{ id: baseId }, { id: baseId + 1 }]
+                        });
+                    } catch(e) { console.warn('[Calendar] 取消推播通知失敗:', e); }
+                }
             }
 
             // 3. 更新系統狀態
@@ -61,6 +72,10 @@ window.SQ.Calendar = {
                 stateTask.calendarEventId  = null;
             }
             if (window.App) App.saveData();
+            
+            // 觸發 UI 更新 (讓按鈕馬上變回 🗓️ 且顏色變淡)
+            if (window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.Task.UPDATED);
+            
             window.SQ.Actions?.toast('🗓️ 已取消行事曆同步並移除紀錄');
             window.SQ.Audio?.play('toggle_off');
             return false;
@@ -115,31 +130,65 @@ window.SQ.Calendar = {
         return results.calendar || results.notification;
     },
 
-    /**
-     * 被動記錄：任務完成時自動寫入行事曆（當歷史紀錄）
-     */
-    logCompleted: async function(task) {
-        if (!task || !task.done) return;
+    //任務完成時：移動行事曆事件到今天，並取消未來的推播通知//
+
+    markAsDoneInCalendar: async function(task) {
+        // 👇 新增這段：針對電腦網頁測試環境的模擬輸出
         if (!window.Capacitor || !Capacitor.Plugins?.CapacitorCalendar) {
-            console.log('[Calendar] logCompleted 模擬:', task.title);
+            if (task.calendarSynced) {
+                console.log(`[Calendar] (模擬) 已取消未來的推播通知`);
+                console.log(`[Calendar] (模擬) 行事曆事件已移動並標記為完成`);
+            }
             return;
         }
+        
+        // 1. 取消推播通知 (避免未來還跳通知)
+        if (Capacitor.Plugins?.LocalNotifications) {
+            try {
+                const baseId = this._taskNotifId(task.id);
+                await Capacitor.Plugins.LocalNotifications.cancel({
+                    notifications: [{ id: baseId }, { id: baseId + 1 }]
+                });
+                console.log('[Calendar] 已取消未來的推播通知');
+            } catch(e) { console.warn('[Calendar] 取消通知失敗:', e); }
+        }
+
+        // 2. 處理行事曆事件的「移動與改名」
+        if (!task.calendarSynced || !Capacitor.Plugins?.CapacitorCalendar) return;
 
         try {
             const { CapacitorCalendar } = Capacitor.Plugins;
-            const now = new Date();
-            const end = new Date(now.getTime() + 30 * 60 * 1000);
 
-            await CapacitorCalendar.createEvent({
+            // 為了雙平台穩定性，我們用「先刪除舊事件，再建立新事件」來達成完美的「移動」效果
+            if (task.calendarEventId) {
+                if (CapacitorCalendar.deleteEventById) {
+                    await CapacitorCalendar.deleteEventById({ id: task.calendarEventId }).catch(() => {});
+                } else if (CapacitorCalendar.deleteEventsById) {
+                    await CapacitorCalendar.deleteEventsById({ ids: [task.calendarEventId] }).catch(() => {});
+                }
+            }
+
+            // 在「現在」建立一個已完成的紀錄 (佔用 30 分鐘區塊)
+            const now = new Date();
+            const end = new Date(now.getTime() + 30 * 60 * 1000); 
+            
+            const result = await CapacitorCalendar.createEvent({
                 title:     `✓ ${task.title}`,
                 location:  '',
-                notes:     `Questory 任務完成紀錄\n分類：${task.cat || '未分類'}\n獎勵：+${task.lastReward?.gold || 0}💰 +${task.lastReward?.exp || 0}✨`,
+                notes:     `完成時間：${now.toLocaleString()}\n分類：${task.cat || '未分類'}\n獎勵：+${task.lastReward?.gold || 0}💰 +${task.lastReward?.exp || 0}✨`,
                 startDate: now.getTime(),
                 endDate:   end.getTime(),
-                isAllDay:  false,
+                isAllDay:  false, // 變成有明確時間點的紀錄
             });
+
+            // 存下新的事件 ID，確保資料連貫
+            if (result && (result.eventId || result.id)) {
+                task.calendarEventId = String(result.eventId || result.id);
+            }
+            console.log('[Calendar] 行事曆事件已移動並標記為完成');
+
         } catch (e) {
-            console.warn('[Calendar] logCompleted 失敗:', e);
+            console.warn('[Calendar] 行事曆更新失敗:', e);
         }
     },
 

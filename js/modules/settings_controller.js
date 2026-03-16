@@ -111,9 +111,12 @@ window.SQ.Controller.Settings = {
             saveSettings: () => {
                 if (!window.SettingsEngine) return;
                 const draft = window.SQ.Temp.settingsDraft || {};
+                
+                // 👇 [補上這行] 強制清除任何殘留的 Modal 狀態，防止背景幽靈渲染
+                window.SQ.Temp.activeModal = null; 
+
                 const targetPage = window.SQ.Engine.Settings.applySettings(draft);
                 window.SQ.Temp.settingsDraft = {};
-                // 👇 [修復] 改用標準 API
                 window.SQ.Actions.closeModal('panel');
                 if (window.SQ.Actions.navigate) window.SQ.Actions.navigate(targetPage);
             },
