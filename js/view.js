@@ -165,7 +165,20 @@ ui.smart = {
         if (t.importance >= 3) badges += ui.atom.badgeBase({text:'🔥', style:'color:var(--color-warning); border:1px solid var(--color-warning); background:transparent;'});
         if (t.urgency >= 3) badges += ui.atom.badgeBase({text:'⚡', style:'color:var(--color-danger); border:1px solid var(--color-danger); background:transparent;'});
         if (t.recurrence) badges += ui.atom.badgeBase({text:'🔁', style:'color:var(--color-info); border:1px solid var(--color-info); background:transparent;'});
-        let skillIcons = (t.attrs && t.attrs.length > 0) ? `<span style="font-size:0.9rem; margin-left:4px; opacity:0.8;">${t.attrs.map(a => '💪').join('')}</span>` : '';
+        // 🌟 修正：精準讀取綁定技能的母屬性 icon
+        let skillIcons = '';
+        if (t.attrs && t.attrs.length > 0) {
+            const iconsHtml = t.attrs.map(skillName => {
+                // 1. 去技能庫找這個技能
+                const skillObj = (window.SQ.State.skills || []).find(s => s.name === skillName);
+                // 2. 透過技能的 parent 找母屬性的 icon (找不到就預設 💪)
+                const icon = (skillObj && skillObj.parent && window.SQ.State.attrs && window.SQ.State.attrs[skillObj.parent]) 
+                    ? window.SQ.State.attrs[skillObj.parent].icon 
+                    : '💪';
+                return icon;
+            }).join('');
+            skillIcons = `<span style="font-size:0.9rem; margin-left:4px; opacity:0.8;">${iconsHtml}</span>`;
+        }
         
         // 🌟 修正：將 #5d4037 改為 var(--color-pin, var(--text-muted))
         const pinHtml = t.pinned ? `<span style="margin-left:auto; font-size:1rem; color:var(--color-pin, var(--text-muted));">📌</span>` : `<span style="margin-left:auto;"></span>`;

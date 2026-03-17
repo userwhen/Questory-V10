@@ -47,8 +47,9 @@ window.SQ.View.Ach = {
             });
         }).join('');
 
+        // ✅ 同樣加上 position: sticky, top: 0, z-index: 20 以及背景色
         const achFilterArea = `
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+            <div style="position:sticky; top:0; z-index:20; background:var(--bg-panel); padding-bottom:10px; padding-top:4px; display:flex; align-items:center; gap:8px;">
                 <div style="flex:1; overflow:hidden;">
                     <div class="u-scroll-list" style="-webkit-overflow-scrolling:touch;">${filterBtnsHtml}</div>
                 </div>

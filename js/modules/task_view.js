@@ -29,7 +29,16 @@ window.SQ.View.Task = {
             const allCats = ['全部', ...((window.SQ.State.taskCats || []).filter(c => c !== '全部'))];
             const filterBtns = allCats.map(c => ui.atom.buttonBase({ label: c, theme: c === currentCat ? 'normal' : 'ghost', style: 'flex-shrink:0; border-radius:50px; padding:4px 12px;', action: 'setTaskFilter', actionVal: c })).join('');
             const calSyncBtn = ui.atom.buttonBase({ label:'📅', theme:'ghost', size:'sm', style:'flex-shrink:0; padding:4px 8px; font-size:1rem;', action:'openCalendarSync' });
-            const filterArea = `<div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;"><div style="flex:1; overflow:hidden;"><div class="u-scroll-list">${filterBtns}</div></div><div style="flex-shrink:0; display:flex; gap:4px;">${calSyncBtn}${ui.atom.buttonBase({ label:'📜 歷史', theme:'normal', size:'sm', action:'navigate', actionVal:'history' })}</div></div>`;
+            // ✅ 加上 position: sticky, top: 0, z-index: 20 以及背景色
+            const filterArea = `
+            <div style="position:sticky; top:0; z-index:20; background:var(--bg-panel); padding-bottom:10px; padding-top:4px; display:flex; align-items:center; gap:8px;">
+                <div style="flex:1; overflow:hidden;">
+                    <div class="u-scroll-list">${filterBtns}</div>
+                </div>
+                <div style="flex-shrink:0; display:flex; gap:4px;">
+                    ${calSyncBtn}${ui.atom.buttonBase({ label:'📜 歷史', theme:'normal', size:'sm', action:'navigate', actionVal:'history' })}
+                </div>
+            </div>`;
             const tasks = window.SQ.Engine.Task.getSortedTasks(currentCat);
             const listItems = tasks.length === 0 ? `<div class="ui-empty"><div class="ui-empty-icon">📭</div>暫無任務</div>` : `<div>${tasks.map(t => ui.smart.taskCard(t, false)).join('')}</div>`;
             contentHtml = filterArea + `<div style="padding-bottom:100px;">${listItems}</div>`;

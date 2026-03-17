@@ -425,7 +425,8 @@ window.SQ.Timer = {
                         id: 8888, 
                         title: '⏰ 時間到囉！', 
                         body: '你的計時已完成，快回來看！',
-                        schedule: { at: new Date(endMs) }, 
+                        // 👇 加上 allowWhileIdle: true，強制休眠時也要響鈴！
+                        schedule: { at: new Date(endMs), allowWhileIdle: true }, 
                         sound: 'default', 
                         channelId: 'quest-reminder' 
                     }]

@@ -138,7 +138,13 @@ input::placeholder, textarea::placeholder { color: var(--text-ghost); }
 #layer-full.active { opacity: 1; pointer-events: auto; }
 .page { display: none; opacity: 0; transition: opacity var(--t-fast) var(--ease-out); width: 100%; height: 100%; overflow: hidden; }
 .page.active { opacity: 1; }
-#page-story, #page-avatar { padding: 0 !important; background: var(--bg-panel); }
+/* 🌟 修正：為全螢幕頁面加上底部安全區域，防止被手機導航列遮擋 */
+#page-story, #page-avatar { 
+    /* 上、右、下 (安全距離)、左 */
+    padding: 0 0 var(--safe-bottom) 0 !important; 
+    background: var(--bg-panel); 
+    box-sizing: border-box; 
+}
 
 /* ==========================================================================
    4. 通用元件庫 

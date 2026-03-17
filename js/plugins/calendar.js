@@ -240,7 +240,7 @@ window.SQ.Calendar = {
             deadline.setHours(0, 0, 0, 0);
 
             const result = await CapacitorCalendar.createEvent({
-                title:     `[Questory] ${task.title}`,
+                title:     `${task.title} [Questory]`,
                 location:  '',
                 notes:     task.desc || '來自 Questory 的任務',
                 startDate: deadline.getTime(),
