@@ -41,9 +41,15 @@ window.SQ.Scanner = {
             document.body.classList.remove('sq-scanner-active');
             if (BSC.showBackground) await BSC.showBackground();
 
-            let barcode = null;
-            if (result.barcodes && result.barcodes.length > 0) barcode = result.barcodes[0].rawValue || result.barcodes[0].displayValue;
-            else if (result.hasContent && result.content) barcode = result.content;
+            // ✅ 確保這段解析邏輯能處理各種不同版本的掃描器回傳格式
+			let barcode = null;
+			if (result.barcodes && result.barcodes.length > 0) {
+				barcode = result.barcodes[0].rawValue || result.barcodes[0].displayValue;
+			} else if (result.hasContent && result.content) {
+				barcode = result.content;
+			} else if (typeof result === 'string') {
+				barcode = result;
+			}
 
             if (!barcode) { window.SQ.Actions?.toast('⚠️ 未能讀取條碼'); return null; }
 
@@ -158,8 +164,24 @@ window.SQ.Scanner = {
     },
 	
     scanAndAddToShop: async function() {
-        let result = await this.scan();
-        this._showShopImportModal(result);
+        try {
+            // 💡 已經把原本「關閉舊視窗」的代碼全刪了！
+            // 現在會直接在舊視窗之上，無縫啟動相機
+            
+            let result = await this.scan(); 
+
+            if (!result) return; 
+
+            if (result.barcode || result.found !== undefined) {
+                this._showShopImportModal(result);
+            } else {
+                window.SQ.Actions?.toast('❌ 無法解析條碼內容');
+            }
+
+        } catch (e) {
+            console.error('[Scanner Error]', e);
+            window.SQ.Actions?.toast('❌ 系統錯誤: ' + e.message);
+        }
     },
 
     _showShopImportModal: function(scanData) {
@@ -167,18 +189,31 @@ window.SQ.Scanner = {
         const barcode = scanData ? scanData.barcode : null; 
         const defaultName = isFound ? scanData.name : '';
         const defaultKcal = isFound && scanData.kcal ? scanData.kcal : '';
-        // 🌟 新增預設容量變數
         const defaultSize = '';
+        const isExternalData = isFound && scanData.brand !== '玩家共創庫';
+
+        // 🌟 改變作法：把目前的掃描狀態存入系統的全域變數，讓 Action 可以讀取
+        window.SQ.Temp = window.SQ.Temp || {};
+        window.SQ.Temp.scanData = { barcode, isFound, isExternalData, defaultName, defaultKcal };
 
         const overlay = document.createElement('div');
+        overlay.id = 'sq-import-overlay'; // 🌟 加上 ID 方便後續移除
         overlay.style.cssText = `position:fixed; inset:0; z-index:11000; background:rgba(10,10,18,0.95); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px;`;
 
         overlay.innerHTML = `
-            <div style="background:#1e1e24; padding:24px; border-radius:16px; width:100%; max-width:320px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
-                <div style="font-size:1.2rem; font-weight:800; color:#fff; margin-bottom:16px; text-align:center;">
-                    ${isFound ? '✅ 掃描成功！' : '✍️ 發現新物品！請建立'}
+            <div style="background:#1e1e24; padding:24px; border-radius:16px; width:100%; max-width:320px; box-shadow:0 10px 30px rgba(0,0,0,0.5); border:1px solid ${isExternalData ? '#f0a500' : 'transparent'};">
+                <div style="font-size:1.2rem; font-weight:800; color:#fff; margin-bottom:8px; text-align:center;">
+                    ${isFound ? '✅ 掃描成功' : '✍️ 發現新物品'}
                 </div>
-                ${!isFound ? '<div style="font-size:0.8rem; color:#f0a500; text-align:center; margin-bottom:12px;">(輸入資料可獲得 1顆免費鑽石 獎勵)</div>' : ''}
+                
+                ${isExternalData ? 
+                    `<div style="font-size:0.75rem; color:#f0a500; text-align:center; margin-bottom:16px; background:rgba(240,165,0,0.1); padding:8px; border-radius:8px;">
+                        💡 發現資料有誤？您可以直接在此修正。<br>提交正確資料同樣可獲得 💎 獎勵！
+                     </div>` : 
+                    `<div style="font-size:0.8rem; color:rgba(255,255,255,0.4); text-align:center; margin-bottom:16px;">
+                        (建立新商品可獲得 1 顆免費鑽石 💎)
+                     </div>`
+                }
                 
                 <label style="display:block; color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:4px;">商品名稱</label>
                 <input id="sq-import-name" type="text" value="${defaultName}" placeholder="例如：百事可樂" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#fff; margin-bottom:12px; box-sizing:border-box;">
@@ -195,49 +230,72 @@ window.SQ.Scanner = {
                 </div>
 
                 <div style="display:flex; gap:10px;">
-                    <button id="sq-import-cancel" style="flex:1; padding:12px; border-radius:50px; border:none; background:rgba(255,255,255,0.1); color:#fff; cursor:pointer;">取消</button>
-                    <button id="sq-import-confirm" style="flex:2; padding:12px; border-radius:50px; border:none; background:#4caf87; color:#fff; font-weight:bold; cursor:pointer;">📥 建立並上架</button>
+                    <button data-action="closeImport" style="flex:1; padding:12px; border-radius:50px; border:none; background:rgba(255,255,255,0.1); color:#fff; cursor:pointer;">取消</button>
+                    <button data-action="confirmImport" style="flex:2; padding:12px; border-radius:50px; border:none; background:#4caf87; color:#fff; font-weight:bold; cursor:pointer;">
+                        ${isExternalData ? '🚀 修正並上架' : '📥 建立並上架'}
+                    </button>
                 </div>
             </div>
         `;
         document.body.appendChild(overlay);
+    },// 2. 獨立出來的後端處理邏輯
+    _processImport: function() {
+        const temp = window.SQ.Temp.scanData;
+        if (!temp) return; // 防呆
 
-        document.getElementById('sq-import-cancel').onclick = () => overlay.remove();
-        document.getElementById('sq-import-confirm').onclick = () => {
-            const rawName = document.getElementById('sq-import-name').value.trim() || '未命名商品';
-            const size = document.getElementById('sq-import-size').value.trim();
-            const kcal = parseInt(document.getElementById('sq-import-kcal').value) || 0;
-            
-            // 🌟 自動組合名稱：如果有輸入容量，就自動加上括號
-            const finalName = size ? `${rawName} (${size})` : rawName;
-            
-            // 🌟 自動計算售價：熱量的一半，最低 10 金幣
-            const autoPrice = kcal > 0 ? Math.max(10, Math.floor(kcal * 0.5)) : 50;
+        const rawName = document.getElementById('sq-import-name').value.trim() || '未命名商品';
+        const size = document.getElementById('sq-import-size').value.trim();
+        const kcal = parseInt(document.getElementById('sq-import-kcal').value) || 0;
+        
+        const finalName = size ? `${rawName} (${size})` : rawName;
+        const autoPrice = kcal > 0 ? Math.max(10, Math.floor(kcal * 0.5)) : 50;
 
-            if (window.SQ.Engine?.Shop?.uploadItem) {
-                // 上架到商店
-                window.SQ.Engine.Shop.uploadItem({ name: finalName, price: autoPrice, category: '熱量', val: kcal, desc: `回復 ${kcal} kcal 熱量`, type: 'daily', maxQty: 99 });
-            }
+        // 上架到商店
+        if (window.SQ.Engine?.Shop?.uploadItem) {
+            window.SQ.Engine.Shop.uploadItem({ 
+                name: finalName, price: autoPrice, category: '熱量', 
+                val: kcal, desc: `回復 ${kcal} kcal 熱量`, type: 'daily', maxQty: 99 
+            });
+        }
+        
+        const isDataModified = (rawName !== temp.defaultName || kcal !== temp.defaultKcal);
+
+        // 寫入資料庫與發放獎勵
+        if (temp.barcode && (!temp.isFound || (temp.isExternalData && isDataModified))) { 
+            this._contributeToDatabase(temp.barcode, finalName, kcal); 
             
-            // 🌟 玩家貢獻回饋機制！
-            if (!isFound && barcode) { 
-                // 寫入 Supabase (連同組合好的名稱一起存進雲端)
-                this._contributeToDatabase(barcode, finalName, kcal); 
-                
-                // 發放獎勵
-                const gs = window.SQ.State;
-                if (gs) {
-                    gs.freeGem = (gs.freeGem || 0) + 1; 
-                    if (window.App) App.saveData();
-                    window.SQ.Actions?.toast(`🎉 感謝建檔！獲得 1 顆免費鑽石 💎`);
-                    if (window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
-                }
-            } else {
-                window.SQ.Actions?.toast(`✅ ${finalName} 已上架到商店！`);
+            const gs = window.SQ.State;
+            if (gs) {
+                gs.freeGem = (gs.freeGem || 0) + 1; 
+                if (window.App) App.saveData();
+                const msg = temp.isExternalData ? `✨ 感謝修正錯誤！獲得 1 顆免費鑽石 💎` : `🎉 感謝建檔！獲得 1 顆免費鑽石 💎`;
+                window.SQ.Actions?.toast(msg);
+                if (window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
             }
-            
-            if (window.SQ.View?.Shop?.render) window.SQ.View.Shop.render();
-            overlay.remove();
-        };
+        } else {
+            window.SQ.Actions?.toast(`✅ ${finalName} 已成功上架！`);
+        }
+        
+        // 成功後關閉所有相關視窗
+        if (window.SQ.Actions?.closeModal) window.SQ.Actions.closeModal('panel'); // 關閉底下的舊上架面板
+        if (window.SQ.Actions?.closeImport) window.SQ.Actions.closeImport();      // 關閉掃描深色面板
+        if (window.SQ.View?.Shop?.render) window.SQ.View.Shop.render();           // 重新渲染畫面
     }
 };
+// ============================================================================
+// 3. 把 Action 註冊到你的全域系統中 (接在大括號外面)
+// ============================================================================
+window.SQ.Actions = window.SQ.Actions || {};
+Object.assign(window.SQ.Actions, {
+    // 對應 取消按鈕 的 data-action="closeImport"
+    closeImport: () => {
+        const overlay = document.getElementById('sq-import-overlay');
+        if (overlay) overlay.remove();
+    },
+    // 對應 建立並上架按鈕 的 data-action="confirmImport"
+    confirmImport: () => {
+        if (window.SQ.Scanner && window.SQ.Scanner._processImport) {
+            window.SQ.Scanner._processImport();
+        }
+    }
+});

@@ -180,7 +180,7 @@
                     exp: 10,
                     tags: ["has_rested_recently", "cautious"]
                 },
-                next: {
+                nextScene: {
                     zh: "淺眠中，你的感官仍維持一定的警覺。<br>休息不算充分，但你沒有漏掉任何動靜。"
                 }
             },
@@ -225,7 +225,7 @@
                     exp: 12,
                     tags: ["observed"]
                 },
-                next: {
+                nextScene: {
                     zh: "平靜讓你得以仔細觀察四周。<br>你發現了{combo_item_simple}——不知是誰留下的。"
                 }
             }
@@ -272,7 +272,7 @@
                     exp: 15,
                     tags: ["looted_supply"]
                 },
-                next: {
+                nextScene: {
                     zh: "你只取走了一部分。<br>也許這個決定之後會有意義，也許不會——但你不後悔。"
                 }
             },
@@ -306,7 +306,7 @@
                     energy: 10,
                     tags: ["found_hidden_cache", "item_found"]
                 },
-                next: {
+                nextScene: {
                     zh: "裡面是{combo_item_desc}<br><br>" +
                         "你把它收好。這東西在這個地方出現，絕對不是偶然。"
                 }
@@ -325,7 +325,7 @@
                     exp: 20,
                     tags: ["found_hidden_cache", "item_found"]
                 },
-                next: {
+                nextScene: {
                     zh: "你先確認了沒有觸發機關，才謹慎打開。<br><br>" +
                         "裡面是{combo_item_desc}<br>" +
                         "謹慎讓你獲得了更多——精力和物品都完整到手。"
@@ -338,7 +338,7 @@
                     exp: 10,
                     tags: ["found_hidden_cache", "cautious"]
                 },
-                next: {
+                nextScene: {
                     zh: "你花了不少時間仔細搜查。<br>最後確認安全，但開啟時已經空了——有人比你早到過。"
                 }
             }
@@ -375,7 +375,7 @@
                     ],
                     exp: 20
                 },
-                next: {
+                nextScene: {
                     zh: "你把{chain_item}收好。<br>這改變了你接下來的選擇空間。"
                 }
             },
@@ -392,7 +392,7 @@
                     exp: 30,
                     varOps: [{ key: 'g_has_chain_item_hint', val: 0, op: '=' }]
                 },
-                next: {
+                nextScene: {
                     zh: "你等了一會兒，確認沒有人在監視，才取走{chain_item}。<br>" +
                         "謹慎是對的——這個地方沒有什麼是單純的偶然。"
                 }
@@ -430,7 +430,7 @@
                     varOps: [{ key: 'trust', val: 5, op: '+' }],
                     exp: 10
                 },
-                next: {
+                nextScene: {
                     zh: "你接過{combo_item_simple}。{item_use_effect}<br><br>" +
                         "對方已經消失在{env_feature}之後，沒有留下任何聯絡方式。"
                 }
@@ -443,7 +443,7 @@
                     tags: ["met_benefactor", "cautious"],
                     varOps: [{ key: 'trust', val: -5, op: '+' }]
                 },
-                next: {
+                nextScene: {
                     zh: "你婉拒了。對方沒有強求，只是點了點頭，轉身離開。<br>" +
                         "也許是對的選擇——也許你失去了某個機會。"
                 }
@@ -463,7 +463,7 @@
                     tags: ["met_benefactor", "has_testimony"],
                     varOps: [{ key: 'trust', val: 8, op: '+' }]
                 },
-                next: {
+                nextScene: {
                     zh: "對方猶豫了片刻，說出了一個名字——或者一個地點。<br>" +
                         "這條線索可能在之後派上用場。"
                 }
@@ -492,7 +492,7 @@
                     exp: 10,
                     varOps: [{ key: 'trust', val: 3, op: '+' }]
                 },
-                next: {
+                nextScene: {
                     zh: "對方開出的條件是：幫他帶走{combo_item_simple}，或者打探某人的下落。<br>" +
                         "作為回報，他給了你一些補給，還透露了一條你不知道的路線。"
                 }
@@ -517,7 +517,7 @@
                     tags: ["item_found"],
                     varOps: [{ key: 'trust', val: 5, op: '+' }]
                 },
-                next: {
+                nextScene: {
                     zh: "金幣讓對話變得簡單許多。<br>" +
                         "對方收下金幣，給了你{combo_item_simple}，沒有多說什麼。"
                 }
@@ -562,7 +562,7 @@
                     exp: 30,
                     tags: ["puzzle_solved", "item_found"]
                 },
-                next: {
+                nextScene: {
                     zh: "你花了一些時間，成功拆除了機關。<br><br>" +
                         "機關之後是{hidden_space_desc}——裡面有{combo_item_desc}"
                 }
@@ -580,7 +580,7 @@
                     exp: 20,
                     tags: ["item_found"]
                 },
-                next: {
+                nextScene: {
                     zh: "你賭對了。機關啟動的瞬間你已經滾過去了。<br>" +
                         "對面放著{combo_item_simple}，值得。"
                 }
@@ -614,7 +614,7 @@
                     energy: -8,
                     exp: 20
                 },
-                next: {
+                nextScene: {
                     zh: "你反應夠快，機關射出的東西只擦過了你的衣袖。<br>" +
                         "喘了幾口氣，繼續。"
                 }
@@ -631,7 +631,7 @@
                     energy: -12,
                     exp: 15
                 },
-                next: {
+                nextScene: {
                     zh: "機關啟動了，但你及時壓低身體，只受了輕傷。<br>" +
                         "代價是精力和一點自尊。"
                 }
@@ -643,7 +643,7 @@
                     energy: -20,
                     varOps: [{ key: 'curse_val', val: 10, op: '+' }]
                 },
-                next: {
+                nextScene: {
                     zh: "機關完整地砸在你身上。<br>" +
                         "你爬起來，渾身疼痛，繼續——沒有其他選項。"
                 }
@@ -680,7 +680,7 @@
                     exp: 25,
                     tags: ["observed", "item_found"]
                 },
-                next: {
+                nextScene: {
                     zh: "調查之後，你發現了{combo_item_desc}<br><br>" +
                         "這個地方曾經有人在此停留，也許比你早，也許為了等你。"
                 }
@@ -726,7 +726,7 @@
                     exp: 10,
                     tags: ["item_found"]
                 },
-                next: {
+                nextScene: {
                     zh: "{item_use_effect}<br><br>你不知道它的主人去了哪裡。"
                 }
             },
@@ -743,7 +743,7 @@
                     gold: 10,
                     tags: ["has_testimony", "observed"]
                 },
-                next: {
+                nextScene: {
                     zh: "腳印引導你找到了另一處藏物點。<br>" +
                         "裡面還有一些補給和{combo_item_simple}。"
                 }
@@ -799,7 +799,7 @@
                     exp: 15,
                     tags: ["took_suspicious_gold"]
                 },
-                next: {
+                nextScene: {
                     zh: "你取了一半。<br>也許這是測試，也許只是運氣。至少你沒有全拿。"
                 }
             },
@@ -811,7 +811,7 @@
                     energy: 5,
                     tags: ["took_suspicious_gold"]
                 },
-                next: {
+                nextScene: {
                     zh: "你沒有動它。<br>某種程度上，這個決定比金幣本身更值錢。"
                 }
             }
@@ -842,7 +842,7 @@
                 condition: { vars: [{ key: 'gold', val: 20, op: '>=' }] },
                 action: "advance_chain",
                 rewards: { gold: 40, exp: 15 },
-                next: {
+                nextScene: {
                     zh: "你贏了。對方爽快地給出了四十枚金幣，沒有耍賴。<br>" +
                         "「運氣不錯。」他說，眼神帶著一絲複雜的意味。"
                 }
@@ -857,7 +857,7 @@
                 condition: { vars: [{ key: 'gold', val: 20, op: '>=' }] },
                 action: "advance_chain",
                 rewards: { gold: -20 },
-                next: {
+                nextScene: {
                     zh: "你輸了。二十枚金幣就這樣換了個主人。<br>" +
                         "對方拍了拍你的肩膀。「下次。」"
                 }
@@ -901,7 +901,7 @@
                     gold: 15,
                     tags: ["read_inscription", "knowledge_found"]
                 },
-                next: {
+                nextScene: {
                     zh: "你花了一些時間，拼湊出大意——這段文字描述了一種古老的儀式，<br>" +
                         "或者說，一個出口的方向。某些東西在腦海中鬆動了。"
                 }
@@ -970,7 +970,7 @@
                     exp: 15,
                     tags: ["took_middle_path"]
                 },
-                next: {
+                nextScene: {
                     zh: "中間的路沒有地圖，只有你的直覺。<br>" +
                         "但有時候，直覺比任何指引都準確。"
                 }
@@ -1002,7 +1002,7 @@
                     exp: 15,
                     tags: ["did_backtrack", "observed"]
                 },
-                next: {
+                nextScene: {
                     zh: "這次的折返讓你多了{combo_item_simple}。<br>" +
                         "走錯路，有時候也有意外的收穫。"
                 }
@@ -1060,7 +1060,7 @@
                     exp: 20,
                     tags: ["item_found"]
                 },
-                next: {
+                nextScene: {
                     zh: "在緊張中維持觀察力，你看到了{hidden_space_desc}<br><br>" +
                         "裡面有{combo_item_simple}。高壓下的冷靜給了你報酬。"
                 }

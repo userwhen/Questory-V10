@@ -563,44 +563,54 @@
             }
         ],
         options: [
-            {
-                label: {
-                    zh: "這是真的警告，重新思考",
-                    jp: "本物の警告だ。計画を見直す",
-                    kr: "진짜 경고야. 계획을 다시 세우다"
+    // ── 選項一：聽從警告 ──────────────────────
+    {
+        label: {
+            zh: "這是真的警告，重新思考",
+            jp: "本物の警告だ。計画を見直す",
+            kr: "진짜 경고야. 계획을 다시 세우다"
+        },
+        action: "node_next",          // ← 改成 node_next，才會跳進 nextScene
+        rewards: {
+            tags: ["found_warning"],
+            varOps: [{ key: 'knowledge', val: 10, op: '+' }]
+        },
+        nextScene: {
+            dialogue: [{ text: { zh: "你環顧四周，選擇聽從建議。" } }],
+            options: [
+                {
+                    label: { zh: "趁天黑離開", jp: "暗くなる前に離れる", kr: "어둠이 내리기 전에 떠나다" },
+                    action: "advance_chain",
+                    rewards: {
+                        tags: ["found_warning"],
+                        varOps: [{ key: 'curse_val', val: 2, op: '+' }]
+                    }
                 },
-                action: "advance_chain",
-                rewards: {
-                    tags: ["found_warning"],
-                    varOps: [{ key: 'knowledge', val: 10, op: '+' }]
-                },
-				nextScene: {
-                    dialogue: [{
-                        text: { zh: "你環顧四週，選擇聽從建議。" }
-                    }],
-                    options: [
-                        {
-                            label: "趁天黑離開",
-                            action: "advance_chain",
-                            rewards: {
-                                tags: ['found_warning'],
-                                varOps: [{ key: 'curse_val', val: 2, op: '+' }]
-                            }
-                        },
-                        { label: "繼續搜查其他地方", action: "advance_chain",
-					rewards: {tags: ["found_warning"],
-                    varOps: [{ key: 'curse_val', val: 12, op: '+' }]
-						}
-				},],},
-            
-                label: "繼續，別在意這種東西",
-                action: "advance_chain",
-                rewards: {
-                    tags: ["found_warning"],
-                    varOps: [{ key: 'curse_val', val: 12, op: '+' }]
+                {
+                    label: { zh: "繼續搜查其他地方", jp: "他を調べ続ける", kr: "다른 곳을 계속 조사하다" },
+                    action: "advance_chain",
+                    rewards: {
+                        tags: ["found_warning"],
+                        varOps: [{ key: 'curse_val', val: 12, op: '+' }]
+                    }
                 }
-            }
-				]}
+            ]
+        }
+    },
+    // ── 選項二：無視警告 ──────────────────────
+    {
+        label: {
+            zh: "繼續，別在意這種東西",
+            jp: "続けよう、こんなもの気にしない",
+            kr: "계속 가자, 이런 건 신경 쓰지 마"
+        },
+        action: "advance_chain",
+        rewards: {
+            tags: ["found_warning"],
+            varOps: [{ key: 'curse_val', val: 12, op: '+' }]
+        }
+    }
+]}
     );
 
     // MIDDLE-通用-C：與其他倖存者遭遇（共用結構，偵探劇本也可觸發）

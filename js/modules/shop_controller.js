@@ -251,44 +251,11 @@ window.SQ.Controller.Shop = {
             },
 
             /* --- 掃描動作 --- */
-            startScan: async function() {
-                if (!window.SQ.Scanner) {
-                    if(window.SQ.Actions.toast) window.SQ.Actions.toast('❌ 掃描模組未載入');
-                    return;
-                }
-
-                const result = await window.SQ.Scanner.scan();
-
-                if (result && result.found) {
-                    const nameInput = document.getElementById('up-name');
-                    if (nameInput) {
-                        nameInput.value = result.name;
-                        nameInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-
-                    if (result.kcal) {
-                        const catSelect = document.getElementById('up-cat');
-                        if (catSelect) {
-                            catSelect.value = '熱量';
-                            // 同步更新 icon 為熱量分類 icon
-                            const newIcon = window.SQ.CATEGORY_ICONS['熱量'] || '🔥';
-                            const iconInput = document.getElementById('up-icon');
-                            const preview = document.getElementById('up-icon-preview');
-                            if (iconInput) iconInput.value = newIcon;
-                            if (preview) preview.textContent = newIcon;
-                            if (window.SQ.View.Shop.renderDynamicFields) {
-                                window.SQ.View.Shop.renderDynamicFields('熱量', result.kcal);
-                                
-                                // 👇 [新增] 延遲 50ms 等待欄位渲染完畢後，立刻自動計算價格！
-                                setTimeout(() => window.SQ.Actions.autoCalculatePrice(), 50);
-                            }
-                        }
-                    }
-                    
-                    if(window.SQ.Actions.toast) window.SQ.Actions.toast(`✅ 已識別：${result.name}`);
-                    window.SQ.Audio?.feedback('achievement'); 
-                } else if (result && !result.found) {
-                    if(window.SQ.Actions.toast) window.SQ.Actions.toast('⚠️ 找不到條碼資訊，請手動輸入');
+            startScan: () => {
+                if (window.SQ.Scanner && window.SQ.Scanner.scanAndAddToShop) {
+                    window.SQ.Scanner.scanAndAddToShop();
+                } else {
+                    window.SQ.Actions?.toast('❌ 掃描模組尚未載入');
                 }
             },
         });

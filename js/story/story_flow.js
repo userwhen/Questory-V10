@@ -1,4 +1,4 @@
-/* js/modules/story_flow.js - V79.0 (獨立模組)
+/* js/modules/story_flow.js - V79.1 (獨立模組 - 包含 Horror Patch)
  * 職責：流程與節點控制（播放場景、選項點擊、鏈進退、探索、打字機）
  * 依賴：story_core.js, story_state.js, story_map.js, story_generator.js
  * 載入順序：story_core → story_state → story_flow → story_generator → story_controller
@@ -219,14 +219,43 @@ Object.assign(window.SQ.Engine.Story, {
 
             if (passed && opt.rewards) this._distributeRewards(opt.rewards);
 
+            // ── [修改二] onFail：判定失敗時執行懲罰 ──────────────
+            if (!passed && opt.onFail) {
+                this._distributeRewards(opt.onFail);
+                if (opt.onFail.text) {
+                    const failLines = this._processText(opt.onFail.text);
+                    if (window.SQ.View.Story && window.SQ.View.Story.appendChunk) {
+                        failLines.forEach((line, i) =>
+                            window.SQ.View.Story.appendChunk(line, i === failLines.length - 1)
+                        );
+                    }
+                }
+            }
+
             if (opt.action === 'node_next') {
                 this._handleNodeJump(opt, passed);
+
+            // ── [修改一] node_self：留在同一個 hub 節點（箱庭迴圈）──
+            } else if (opt.action === 'node_self') {
+                const currentNode = window.SQ.Temp.currentSceneNode;
+                if (currentNode) {
+                    // 重播當前節點（會重新過濾 condition，search_count 減少後選項會自動消失）
+                    this.playSceneNode(currentNode);
+                } else {
+                    console.warn("⚠️ node_self：找不到 currentSceneNode，改為推進鏈");
+                    this.advanceChain();
+                }
+
             } else if (opt.action === 'investigate') {
                 if (opt.result) this.playSceneNode({ ...window.SQ.Temp.currentSceneNode, text: [opt.result], options: ts.storyOptions });
                 else this.playSceneNode(window.SQ.Temp.currentSceneNode);
+
             } else if (opt.action === 'advance_chain') {
                 const tags = passed ? (opt.nextTags || []) : (opt.failNextTags || []);
+                // ── [修改三] 在推進前，檢查 curse_val 是否觸發強制 climax ──
+                this._checkCurseOverflow();
                 this.advanceChain(tags);
+
             } else if (opt.action === 'finish_chain') {
                 let hasEndingScene = passed
                     ? (opt.nextScene || opt.nextSceneId)
@@ -297,7 +326,12 @@ Object.assign(window.SQ.Engine.Story, {
         window.SQ.Temp.storyCard        = null;
         window.SQ.Temp.lastHubNode      = null; // ✅ HUB 記憶清理
 
-        if (gs.story) { gs.story.tags = []; gs.story.vars = {}; gs.story.flags = {}; }
+        if (gs.story) { 
+            gs.story.tags = []; 
+            gs.story.vars = {}; 
+            gs.story.flags = {}; 
+            gs.story._curseOverflowTriggered = false; // [修改三對應] 清除強制跳躍 Flag
+        }
 
         window.SQ.Temp.isProcessing = false;
         window.SQ.Temp.lockInput    = false;
@@ -331,6 +365,8 @@ Object.assign(window.SQ.Engine.Story, {
             if (gs.story.skeletonHistory.length > 2) gs.story.skeletonHistory.shift();
 
             gs.story.chain = window.SQ.Engine.Generator.initChain(randomMode);
+			if (!gs.story.chain.tags.includes('learning')) {
+				gs.story.chain.tags.push('learning');}
 
             let initialBuilding = gs.story.chain.memory['env_building'] || "未知地點";
             let initialRoom     = window.SQ.Engine.Generator._expandGrammar("{env_room}", window.FragmentDB, gs.story.chain.memory);
@@ -350,6 +386,31 @@ Object.assign(window.SQ.Engine.Story, {
         this.playSceneNode(window.SQ.Engine.Generator.generate(nextTags, false));
     },
 
+    // ── [修改三] curse_val 強制 climax 檢查 ──────────────────────
+    _checkCurseOverflow: function() {
+        const gs = window.SQ.State;
+        if (!gs.story || !gs.story.chain) return;
+        if (gs.story._curseOverflowTriggered) return;  // 一局只觸發一次
+
+        const curseVal = (gs.story.vars && gs.story.vars.curse_val) || 0;
+        if (curseVal < 100) return;
+
+        const chain = gs.story.chain;
+        const climaxIdx = chain.stages.indexOf('climax');
+        if (climaxIdx === -1) return;  // 這個骨架沒有 climax，不處理
+
+        // 只有在還沒到 climax 的時候才強制跳
+        if (chain.currentStageIdx <= climaxIdx) {
+            console.warn(`💀 作祟值爆表（${curseVal}），強制跳至 climax！`);
+            gs.story._curseOverflowTriggered = true;
+            chain.currentStageIdx = climaxIdx;  // 指針強制設為 climax 位置
+
+            if (window.SQ.Actions && window.SQ.Actions.toast) {
+                window.SQ.Actions.toast("💀 作祟值爆表——它來了！");
+            }
+        }
+    },
+
     finishChain: function() {
         const gs = window.SQ.State;
         if (window.SQ.Engine.Map) window.SQ.Engine.Map.clear();
@@ -365,6 +426,7 @@ Object.assign(window.SQ.Engine.Story, {
             gs.story.tags = [];
 			gs.story.vars = {};
 			gs.story.flags = {};
+            gs.story._curseOverflowTriggered = false; // [修改三對應] 清除強制跳躍 Flag
 			console.log("🧹 區域變數、標籤與 flags 已清空");
         }
 
@@ -502,9 +564,9 @@ Object.assign(window.SQ.Engine.Story, {
     /**
      * _resolveDynamicText(str)
      * 展開字串中所有 {key} 佔位符：
-     *   1. 先查 chain.memory（固定記憶值）
-     *   2. 再查 FragmentDB.fragments，隨機挑一個 val，遞迴展開
-     *   3. 找不到的 key 原樣保留（顯示 {key}）
+     * 1. 先查 chain.memory（固定記憶值）
+     * 2. 再查 FragmentDB.fragments，隨機挑一個 val，遞迴展開
+     * 3. 找不到的 key 原樣保留（顯示 {key}）
      * 同時替換 story.vars 中的數值佔位符（如 {time_left}）。
      */
     _resolveDynamicText: function(str) {
@@ -551,9 +613,9 @@ Object.assign(window.SQ.Engine.Story, {
      * playDialogueChain(node)
      * 把 node.dialogue 陣列轉成打字機佇列播放。
      * 每個 dialogue 項目格式：
-     *   { text: "..." }               → 普通旁白
-     *   { text: {zh:"...", jp:"..."}} → 多語言旁白
-     *   { speaker: "角色", text: "..."} → 帶說話者的對話，渲染為加粗名字
+     * { text: "..." }               → 普通旁白
+     * { text: {zh:"...", jp:"..."}} → 多語言旁白
+     * { speaker: "角色", text: "..."} → 帶說話者的對話，渲染為加粗名字
      * 選項沿用 node.options，走相同的條件過濾流程。
      */
     playDialogueChain: function(node) {

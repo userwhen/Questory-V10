@@ -85,89 +85,91 @@ window.SQ.View.Story = {
     },
 
     updateDrawer: function() {
-    const container = document.getElementById('tag-drawer-container');
-    if (!container) return;
-
-    const gs       = window.SQ.State;
-    const myTags   = gs.story?.tags || [];
-    const tagDict  = (window.FragmentDB && window.FragmentDB.tagDict) ? window.FragmentDB.tagDict : {};
-
-    // 語言判斷：learning模式才用jp/kr，否則一律zh
-    const rawLang  = gs.settings && gs.settings.targetLang ? gs.settings.targetLang : 'zh';
-    const isLearning = gs.settings && gs.settings.learningMode;
-    const langToUse  = (isLearning && rawLang !== 'mix' && rawLang !== 'zh') ? rawLang : 'zh';
-
-    // 過濾規則
-    const hiddenPrefixes = ['struct_', 'route_', 'env_', 'learning', 'vibe_', 'trait_', 'meet_', 'goal_', 'train_', 'world_', 'motive_', 'curse_', 'bonus_'];
-    const coreThemes     = ['mystery', 'horror', 'romance', 'adventure', 'raising'];
-
-    const playerTags = myTags.filter(t => {
-        const label = typeof t === 'string' ? t : t.label;
-        if (!label) return false;
-        if (coreThemes.includes(label)) return false;
-        if (hiddenPrefixes.some(p => label.startsWith(p))) return false;
-        return true;
-    });
-
-    // 位置與路徑
-    const map         = window.SQ.Engine.Map;
-    const currentRoom = map && map.currentRoom;
-    const roomName    = currentRoom ? currentRoom.name : '未知區域';
-    const pathStr     = (map && map.map)
-        ? map.map.map(r => r.id === currentRoom?.id ? `📍[${r.name}]` : `🚪[${r.name}]`).join(' ─ ')
-        : '📍 無紀錄';
-
-    const statusHtml = `
-        <div style="margin-bottom:15px;">
-            <div style="font-size:1.1rem;font-weight:bold;color:var(--color-gold);margin-bottom:8px;">📍 ${roomName}</div>
-            <div style="font-size:0.85rem;color:var(--text-ghost);line-height:1.5;">🗺️ ${pathStr}</div>
-        </div>`;
-
-    // TAG 樣式對照
-    const tagStyles = {
-        'loc'   : { color: '--color-gold-dark',    bg: '--color-gold-soft' },
-        'status': { color: '--color-info',         bg: '--color-info-soft' },
-        'warn'  : { color: '--color-danger',       bg: '--color-danger-soft' },
-        'info'  : { color: '--color-correct',      bg: '--color-correct-soft' }
-    };
-
-    const tagsHtml = playerTags.length > 0
-        ? playerTags.map(t => {
-            const rawLabel   = typeof t === 'string' ? t : t.label;
-            const config     = tagDict[rawLabel] || { zh: rawLabel, type: 'info' };
-            const displayLabel = config[langToUse] || config['zh'] || rawLabel;
-            const style      = tagStyles[config.type || 'info'] || tagStyles.info;
-            return ui.atom.badgeBase({
-                text: displayLabel,
-                style: `color:var(${style.color});background:var(${style.bg});border-color:var(${style.color});`
-            });
-        }).join('')
-        : '<div style="color:var(--text-ghost);font-size:0.9rem;">尚無特殊狀態或道具</div>';
-
-    const drawerInnerHtml = `
-        <div style="display:flex;flex-direction:column;height:100%;color:var(--text-on-dark);">
-            <div style="flex-shrink:0;padding-bottom:8px;border-bottom:1px dashed rgba(255,255,255,0.2);margin-bottom:10px;">
-                <div style="font-size:1.1rem;font-weight:bold;color:var(--color-gold-soft);">📊 當前位置</div>
-            </div>
-            ${statusHtml}
-            <div style="flex-shrink:0;padding-bottom:8px;border-bottom:1px dashed rgba(255,255,255,0.2);margin-top:10px;margin-bottom:10px;">
-                <div style="font-size:1.1rem;font-weight:bold;color:var(--color-gold-soft);">🏷️ 已獲標籤</div>
-            </div>
-            <div style="flex:1;overflow-y:auto;padding-bottom:20px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;">
-                ${tagsHtml}
-            </div>
-        </div>`;
-
-    container.innerHTML = ui.composer.drawer({
-        isOpen:          window.SQ.Temp.isTagDrawerOpen || false,
-        contentHtml:     drawerInnerHtml,
-        toggleAction:    "toggleStoryDrawer",
-        height:          '40%',  // 【修改】從 '320px' 改為 '40%' (大約佔文字框的 1/3 到 1/2)
-        handleIconOpen:  '▼',
-        handleIconClose: '▲',
-        variant:         'story'
-    });
-},
+        const container = document.getElementById('tag-drawer-container');
+        if (!container) return;
+ 
+        const gs      = window.SQ.State;
+        const myTags  = gs.story?.tags || [];
+        const tagDict = (window.FragmentDB && window.FragmentDB.tagDict) ? window.FragmentDB.tagDict : {};
+ 
+        const rawLang    = gs.settings?.targetLang || 'zh';
+        const isLearning = gs.settings?.learningMode;
+        const langToUse  = (isLearning && rawLang !== 'mix' && rawLang !== 'zh') ? rawLang : 'zh';
+ 
+        const hiddenPrefixes = ['struct_', 'route_', 'env_', 'learning', 'vibe_', 'trait_', 'meet_', 'goal_', 'train_', 'world_', 'motive_', 'curse_', 'bonus_'];
+        const coreThemes     = ['mystery', 'horror', 'romance', 'adventure', 'raising'];
+ 
+        const playerTags = myTags.filter(t => {
+            const label = typeof t === 'string' ? t : t.label;
+            if (!label) return false;
+            if (coreThemes.includes(label)) return false;
+            if (hiddenPrefixes.some(p => label.startsWith(p))) return false;
+            return true;
+        });
+ 
+        // ── 位置資訊 ──────────────────────────────────────────
+        const map         = window.SQ.Engine.Map;
+        const currentRoom = map && map.currentRoom;
+        const roomName    = currentRoom ? currentRoom.name : '未知區域';
+        const pathStr     = (map && map.map && map.map.length > 0)
+            ? map.map.map(r => r.id === currentRoom?.id
+                ? `📍[${r.name}]`
+                : `🚪[${r.name}]`).join(' → ')
+            : '📍 無紀錄';
+ 
+        // ── 標籤 HTML ─────────────────────────────────────────
+        const tagStyles = {
+            'loc'   : { color: '--color-gold-dark',  bg: '--color-gold-soft'    },
+            'status': { color: '--color-info',        bg: '--color-info-soft'    },
+            'warn'  : { color: '--color-danger',      bg: '--color-danger-soft'  },
+            'info'  : { color: '--color-correct',     bg: '--color-correct-soft' }
+        };
+ 
+        const tagsHtml = playerTags.length > 0
+            ? playerTags.map(t => {
+                const rawLabel     = typeof t === 'string' ? t : t.label;
+                const config       = tagDict[rawLabel] || { zh: rawLabel, type: 'info' };
+                const displayLabel = config[langToUse] || config['zh'] || rawLabel;
+                const style        = tagStyles[config.type || 'info'] || tagStyles.info;
+                return ui.atom.badgeBase({
+                    text: displayLabel,
+                    style: `color:var(${style.color});background:var(${style.bg});border-color:var(${style.color});`
+                });
+            }).join('')
+            : '<div style="color:var(--text-ghost);font-size:0.9rem;">尚無特殊狀態或道具</div>';
+ 
+        // ── 整個內容：一個 div，overflow-y:auto，從頭捲到尾 ──
+        const drawerInnerHtml = `
+            <div style="
+                height: 100%;
+                overflow-y: auto;
+                overflow-x: hidden;
+                color: var(--text-on-dark);
+                padding: 10px 12px 24px;
+                box-sizing: border-box;
+            ">
+                <div style="font-size:0.75rem;letter-spacing:0.08em;color:var(--color-gold-soft);margin-bottom:4px;">📍 當前位置</div>
+                <div style="font-size:1rem;font-weight:bold;color:var(--color-gold);margin-bottom:2px;">${roomName}</div>
+                <div style="font-size:0.8rem;color:var(--text-ghost);line-height:1.5;margin-bottom:14px;">${pathStr}</div>
+ 
+                <div style="height:1px;background:rgba(255,255,255,0.1);margin-bottom:12px;"></div>
+ 
+                <div style="font-size:0.75rem;letter-spacing:0.08em;color:var(--color-gold-soft);margin-bottom:8px;">🏷️ 已獲標籤</div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;">
+                    ${tagsHtml}
+                </div>
+            </div>`;
+ 
+        container.innerHTML = ui.composer.drawer({
+            isOpen:          window.SQ.Temp.isTagDrawerOpen || false,
+            contentHtml:     drawerInnerHtml,
+            toggleAction:    "toggleStoryDrawer",
+            height:          '40%',
+            handleIconOpen:  '▼',
+            handleIconClose: '▲',
+            variant:         'story'
+        });
+    },
 
     clearScreen: function() {
     // 💡 保留第一行這句就好！這就是完美的清理邏輯
@@ -212,7 +214,15 @@ window.SQ.View.Story = {
         }, 20);
     },
 
-    appendInlineCheckResult: function(attrKey, total, isSuccess) { window.SQ.Temp.deferredHtml = (window.SQ.Temp.deferredHtml || "") + `<span style="color: var(--text-ghost); font-family: monospace, sans-serif; font-size: 0.95rem;">🎲 檢定 ${attrKey} (擲出 ${total})........ </span><span style="font-weight:bold; color:${isSuccess ? 'var(--color-correct)' : 'var(--color-danger)'};">${isSuccess ? '成功 ✅' : '失敗 ❌'}</span><br><br>`; },
+    appendInlineCheckResult: function(attrKey, total, isSuccess) {
+        const resultHtml =
+            `<div style="margin-top:6px; font-family:monospace, sans-serif; font-size:0.9rem; line-height:1.8;">` +
+            `<span style="color:var(--text-ghost);">🎲 檢定 ${attrKey}（擲出 ${total}）......</span><br>` +
+            `<span style="font-weight:bold; color:${isSuccess ? 'var(--color-correct)' : 'var(--color-danger)'};">` +
+            `${isSuccess ? '✅ 成功' : '❌ 失敗'}</span>` +
+            `</div><br>`;
+        window.SQ.Temp.deferredHtml = (window.SQ.Temp.deferredHtml || "") + resultHtml;
+    },
 
     showOptions: function(options) {
     const container = document.getElementById('story-actions');

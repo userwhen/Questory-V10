@@ -247,10 +247,15 @@ Object.assign(window.SQ.Engine.Story, {
     },
 
     _registerSubScene: function(subNode) {
-        if (subNode && !subNode.id) {
+        if (!subNode) return;
+        if (!window.StoryData) window.StoryData = {};
+        if (!window.StoryData.sceneMap) window.StoryData.sceneMap = {};
+ 
+        // 沒有 id 就先給一個
+        if (!subNode.id) {
             subNode.id = `sub_${Date.now()}_${Math.floor(Math.random() * 999)}`;
-            window.StoryData.sceneMap[subNode.id] = subNode;
         }
+        window.StoryData.sceneMap[subNode.id] = subNode;
     },
 
     _shuffle: function(arr) {
