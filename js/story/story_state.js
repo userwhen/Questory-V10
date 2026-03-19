@@ -130,11 +130,20 @@ Object.assign(window.SQ.Engine.Story, {
         }
 
         if (rewards.tags) {
-            rewards.tags.forEach(tag => {
-                const finalTag = this._resolveDynamicText(tag);
-                if (!gs.story.tags.includes(finalTag)) gs.story.tags.push(finalTag);
-            });
-        }
+		rewards.tags.forEach(tag => {
+			const finalTag = this._resolveDynamicText(tag);
+			if (!gs.story.tags.includes(finalTag)) {
+				gs.story.tags.push(finalTag);
+				// 翻譯 tag 名稱顯示
+				const tagDict = (window.FragmentDB && window.FragmentDB.tagDict) ? window.FragmentDB.tagDict : {};
+				const config = tagDict[finalTag];
+				if (config && config.zh) {
+					msgs.push(`🏷️ ${config.zh}`);
+				}
+				// 不在字典裡的 tag 就不顯示（隱藏系統標籤如 route_xxx）
+			}
+		});
+	}
 
         if (rewards.removeTags) {
             rewards.removeTags.forEach(tag => {
@@ -197,10 +206,16 @@ Object.assign(window.SQ.Engine.Story, {
             });
         }
 
-        // Toast
-        if (msgs.length > 0 && window.SQ.Actions && window.SQ.Actions.toast) {
-            window.SQ.Actions.toast(msgs.join('　'));
-        }
+        if (msgs.length > 0) {
+			const rewardHtml =
+				`<div style="margin-top:12px;padding-top:8px;` +
+				`border-top:1px solid rgba(255,255,255,0.08);` +
+				`font-size:0.85rem;color:var(--text-ghost);line-height:1.8;">` +
+				msgs.map(m => `<span style="margin-right:10px;">${m}</span>`).join('') +
+				`</div>`;
+			// 存起來，等 showOptions 時再插入（此時 clearScreen 已執行完畢）
+			window.SQ.Temp.pendingRewardHtml = (window.SQ.Temp.pendingRewardHtml || '') + rewardHtml;
+		}
 
         // View 更新
         if (window.SQ.View.Story && window.SQ.View.Story.updateTopBar) {

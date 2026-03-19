@@ -276,7 +276,13 @@ Object.assign(window.SQ.Engine.Generator, {
             } else if (type.includes('ending')) {
                 opts.push({ label: "結束冒險", action: "finish_chain" });
             } else {
-                opts.push({ label: "繼續...", action: "advance_chain" });
+                // 🌟 箱庭防脫離機制：如果地圖存在，預設不給「繼續(advance_chain)」
+                // 留空陣列，讓 story_flow.js 接手並自動注入「地圖按鈕」
+                if (window.SQ.Engine.Map && window.SQ.Engine.Map.map.length > 0) {
+                    // 故意留空
+                } else {
+                    opts.push({ label: "繼續...", action: "advance_chain" });
+                }
             }
         }
 

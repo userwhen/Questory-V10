@@ -37,7 +37,7 @@ window.SQ.Controller.Story = {
             else window.SQ.EventBus.emit(E.System.NAVIGATE, 'story');
             
             const gs = window.SQ.State;
-            const hasActiveChain = gs && gs.story && gs.story.chain && gs.story.chain.history.length > 0;
+            const hasActiveChain = gs && gs.story && gs.story.chain && gs.story.chain.history && gs.story.chain.history.length > 0;
             const hasActiveNode = gs && gs.story && gs.story.currentNode;
 
             if (hasActiveChain || hasActiveNode) {

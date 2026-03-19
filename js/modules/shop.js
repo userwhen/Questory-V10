@@ -18,6 +18,7 @@ window.SQ.Engine.Shop = {
             { id: 'sys_relax', name: '休閒時光', price: 250, currency: 'gold', maxQty: 99, category: '時間', val: 15, icon: '🎮', desc: '15分鐘的休閒時間', type: 'daily' },
             { id: 'sys_money', name: '小錢袋', price: 250, currency: 'gold', maxQty: 99, category: '金錢', val: 250, icon: '💰', desc: '獲得 250 金幣', type: 'daily' },
             { id: 'sys_ticket', name: '放鬆券', price: 250, currency: 'gold', maxQty: 99, category: '其他', val: 0, icon: '🎫', desc: '可以做一件讓自己放鬆的事情', type: 'daily' },
+			{ id: 'sys_rename', name: '更名券', price: 250, currency: 'gem', maxQty: 1, category: '其他', val: 0, icon: '🏷️', desc: '可以修改一次冒險者暱稱', type: 'daily' },
             { id: 'sys_stamina_s', name: '精力藥水小', price: 10, currency: 'gem', maxQty: 99, category: '其他', val: 30, icon: '🧪', desc: '回復 30 點精力', type: 'daily' },
             { id: 'sys_stamina_m', name: '精力藥水中', price: 20, currency: 'gem', maxQty: 99, category: '其他', val: 60, icon: '⚗️', desc: '回復 60 點精力', type: 'daily' },
             { id: 'sys_stamina_l', name: '精力藥水大', price: 30, currency: 'gem', maxQty: 99, category: '其他', val: 100, icon: '💉', desc: '精力完全恢復', type: 'daily' }

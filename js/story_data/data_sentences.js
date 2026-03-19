@@ -79,7 +79,7 @@
         sentence_encounter: [
             { val: "一個黑影從{env_feature}竄了出來！仔細一看，是{combo_person_appearance}！" },
             { val: "你猛然回頭，赫然發現{combo_person_appearance}正盯著你。" },
-            { val: "伴隨著一聲異響，{combo_person_appearance}擋住了你的去路！" }
+            { val: "伴隨著一聲異響，一團黑影擋住了你的去路！" }
         ],
 
         sentence_tension: [

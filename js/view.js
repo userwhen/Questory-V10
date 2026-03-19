@@ -337,7 +337,7 @@ view.renderSystemModal = (type, msg, defVal = '') => {
 view.initHUD = (data) => {
     let container = document.getElementById('hud');
     if (!container) { container = document.createElement('div'); container.id = 'hud'; document.getElementById('app-frame').appendChild(container); }
-    const avatarHtml = `<div id="hud-avatar" class="u-avatar" data-action="navigate" data-val="stats" style="cursor:pointer;">⏳</div>`;
+    const avatarHtml = `<div id="hud-avatar" class="u-avatar" data-action="openProfile" style="cursor:pointer;">⏳</div>`;
     const gemFree = ui.atom.badgeBase({text: '💎 <span id="hud-gem-free">0</span>', style: 'color:var(--color-info); background:var(--color-info-soft); border-color:var(--color-info);'});
     const gemPaid = ui.atom.badgeBase({text: '💠 <span id="hud-gem-paid">0</span>', style: 'color:var(--color-info); background:var(--color-info-soft); border-color:var(--color-info);'});
     const goldBadge = ui.atom.badgeBase({text: '💰 <span id="hud-gold">0</span>', style: 'color:var(--color-gold); background:var(--color-gold-soft); border-color:var(--color-gold);'});
@@ -348,7 +348,7 @@ view.initHUD = (data) => {
 view.updateHUD = (data) => {
     if (!data) data = window.SQ.State || {};
     const setText = (id, val) => { const el = document.getElementById(id); if(el) el.innerHTML = val; };
-    setText('hud-name', data.name || 'Commander'); setText('hud-lv', data.lv || 1); setText('hud-gem-free', data.freeGem || 0); setText('hud-gem-paid', data.paidGem || 0); setText('hud-gold', data.gold || 0);
+	setText('hud-name', data.userName || data.name || 'Commander'); setText('hud-lv', data.lv || 1); setText('hud-gem-free', data.freeGem || 0); setText('hud-gem-paid', data.paidGem || 0); setText('hud-gold', data.gold || 0);
     const expContainer = document.getElementById('hud-exp-container');
     if (expContainer) {
         const pct = Math.min(100, Math.max(0, ((data.exp || 0) / ((data.lv || 1) * 100)) * 100));
@@ -357,6 +357,57 @@ view.updateHUD = (data) => {
     if (window.Assets && window.Assets.getCharImgTag) {
         const avEl = document.getElementById('hud-avatar'); if (avEl) avEl.innerHTML = window.Assets.getCharImgTag('hud-avatar-img', 'width:100%;height:100%;object-fit:cover;');
     }
+};
+
+view.renderProfile = (data) => {
+    // 寫法與 updateHUD 看齊
+    if (!data) data = window.SQ.State || {};
+    const gs = data;
+    if (!gs) return;
+
+    // 抓取頭像與加入日期
+    const avatarHtml = window.Assets?.getCharImgTag ? window.Assets.getCharImgTag('profile-avatar-img', 'width:100%; height:100%; object-fit:cover;') : '🧍';
+    const joinDate = gs.installDate ? new Date(gs.installDate).toLocaleDateString() : '剛剛';
+
+    // 🌟 利用 ui.atom.buttonBase 簡化編輯按鈕
+    const editBtn = ui.atom.buttonBase({ 
+        icon: '✏️', 
+        theme: 'ghost', 
+        action: 'clickRename', 
+        // 👇 在最後面加上 position: relative; top: 4px; (數字越大越往下)
+        style: 'padding:0px; font-size:0.8rem; border:none; background:transparent; box-shadow:none; position:relative; top:2px;' 
+    });
+
+    const bodyHtml = `
+        <div style="display:flex; flex-direction:column; align-items:center; padding:10px 0;">
+            <div style="width:100px; height:100px; border-radius:50%; border:3px solid var(--color-gold); margin-bottom:15px; overflow:hidden; background:var(--bg-box); box-shadow:var(--shadow-md);">
+                ${avatarHtml}
+            </div>
+
+            <div style="display:flex; align-items:center; width:100%; margin-bottom:20px;">
+                <div style="flex:1;"></div>
+                <div style="font-size:1.4rem; font-weight:800; color:var(--text); text-align:center; white-space:nowrap; margin-left: 15px;">
+                    ${gs.userName || '冒險者'}
+                </div>
+                <div style="flex:1; display:flex; justify-content:flex-start; padding-left:5px;">
+                    ${editBtn}
+                </div>
+            </div>
+
+            <div style="width:100%; display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
+                ${ui.atom.cardBase({ style:'text-align:center; padding:12px;', children: `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">目前等級</div><div style="font-size:1.2rem; font-weight:800; color:var(--color-gold-dark);">Lv.${gs.lv || 1}</div>` })}
+                ${ui.atom.cardBase({ style:'text-align:center; padding:12px;', children: `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">連續登入</div><div style="font-size:1.2rem; font-weight:800; color:var(--color-info);">${gs.loginStreak || 1} 天</div>` })}
+                ${ui.atom.cardBase({ style:'grid-column:span 2; text-align:center; padding:12px;', children: `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">加入時間</div><div style="font-size:1rem; font-weight:700; color:var(--text-2);">${joinDate}</div>` })}
+            </div>
+
+            <div style="text-align:center; padding:10px; background:var(--bg-track); border-radius:var(--radius-sm); width:100%; box-sizing:border-box; border:1px dashed var(--border);">
+                <div style="font-size:0.7rem; color:var(--text-ghost); margin-bottom:4px;">玩家專屬 UID</div>
+                <div style="font-size:0.85rem; color:var(--text-muted); font-family:monospace; letter-spacing:1px;">${gs.userId || '尚未生成'}</div>
+            </div>
+        </div>
+    `;
+
+    if (ui && ui.modal) ui.modal.render('👤 冒險者檔案', bodyHtml, null, 'overlay');
 };
 
 view.renderMain = () => {

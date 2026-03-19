@@ -1,0 +1,130 @@
+架構樣本檢查結果
+樣本 A（箱庭 HUB）：正確，所有細節都對：
+
+isHub: true 宣告
+onEnter 用 varOps 格式
+有子場景的選項用 node_next
+nextScene 內有 dialogue + options
+子場景結束用 map_return_hub
+離開 HUB 用 advance_chain
+新增的 briefDialogue 欄位也與你程式碼第 37 行對齊
+
+樣本 B（線性節點）：正確，也全對：
+
+check 屬性格式正確
+onFail 有 text 包裝
+nextScene 有 dialogue + options
+非 HUB 的子場景用 advance_chain
+
+data_learning.js 所有 next: → 改成 nextScene: 並補上 text 包裝和 options
+所有劇本檔的 nextScene 確認有 text/dialogue 和 options
+HUB 子場景的「繼續」確認是 map_return_hub，非 HUB 子場景的「繼續」是 advance_chain
+hor_mid_any_warning 的兩個選項結構修正
+
+為了一勞永逸，未來你在編寫或請 AI 生成劇本時，請嚴格遵守以下兩種模板。我幫你把「正確的屬性包裝」和「map_return_hub vs advance_chain」的差異標示出來了。
+
+樣本 A：【箱庭 HUB 節點】標準格式
+適用於房間、大廳、營地等需要玩家反覆選擇選項的地方。
+
+JavaScript
+{
+    id: 'sample_hub_room',
+    type: 'middle',
+    reqTags: ['horror', 'route_investigate'],
+    isHub: true, // 宣告為箱庭
+    onEnter: {
+        varOps: [{ key: 'free_time', val: 3, op: 'set' }] // 首次進入發體力
+    },
+    // 首次進入的長描述
+    dialogue: [{ text: { zh: "你走進了昏暗的書房。空氣中瀰漫著霉味，有幾個地方值得調查。" } }],
+    // 再次退回房間時的短描述 (配合剛才的修正一)
+    briefDialogue: [{ text: { zh: "你還在昏暗的書房裡。" } }], 
+    options: [
+        {
+            label: { zh: "搜查生鏽的鐵櫃" },
+            action: "node_next", // 👈 必須是 node_next 才能正常進入子場景
+            condition: { vars: [{ key: 'free_time', val: 1, op: '>=' }] },
+            rewards: {
+                varOps: [{ key: 'free_time', val: 1, op: '-' }, { key: 'clue_iron', val: 1, op: '+' }]
+            },
+            nextScene: { // 👈 必須叫 nextScene，不能叫 next
+                // 👈 文字必須包在 text 或 dialogue 裡，不能直接寫 zh: "..."
+                dialogue: [{ text: { zh: "你打開鐵櫃，裡面掉出了一把沾血的鑰匙。" } }],
+                options: [
+                    { 
+                        label: "繼續搜查", 
+                        action: "map_return_hub" // 👈 【關鍵】箱庭子場景結束，必須用 map_return_hub 回到母節點
+                    }
+                ]
+            }
+        },
+        {
+            label: { zh: "離開書房，繼續前進" },
+            action: "advance_chain" // 👈 真正要離開這個 HUB 推進深度時，才用 advance_chain
+        }
+    ]
+}
+樣本 B：【一般線性推進節點】標準格式
+適用於路上突發事件、一般對話、戰鬥，看完結果就要前往下一個深度的場景。
+
+JavaScript
+{
+    id: 'sample_linear_event',
+    type: 'middle',
+    reqTags: ['horror', 'route_escape'],
+    dialogue: [{ text: { zh: "你走在走廊上，突然一隻手從牆壁裡伸出來抓住了你的腳踝！" } }],
+    options: [
+        {
+            label: { zh: "用力踢開它" },
+            action: "node_next",
+            check: { stat: "STR", val: 12 }, // 屬性檢定
+            rewards: {
+                exp: 10
+            },
+            onFail: {
+                varOps: [{ key: 'curse_val', val: 15, op: '+' }],
+                text: { zh: "你踢空了，那隻手狠狠地在你的腿上抓出幾道血痕。" }
+            },
+            nextScene: { 
+                dialogue: [{ text: { zh: "你成功掙脫了那隻手，頭也不回地往前跑。" } }],
+                options: [
+                    { 
+                        label: "快逃", 
+                        action: "advance_chain" // 👈 【關鍵】這不是 HUB，看完結果必須用 advance_chain 推進主線深度
+                    }
+                ]
+            }
+        }
+    ]
+}
+
+
+檢查你的 data_learning.js 和其他劇本檔，確保沒有用到 next:。
+
+檢查所有 nextScene 裡面是不是都有包 text 或 dialogue，以及是否都有 options 按鈕。
+
+沒問題，我的記憶完全在線！為了確保接下來的改寫一樣精準，我為你整理了我們目前確立的**「劇本代碼改寫 5 大準則」**：
+
+1. **正確的屬性格式**
+   * 絕對不使用 `next`，一律改為 `nextScene`。
+   * 所有的文字內容必須嚴格包裝在 `dialogue: [{ text: { zh: "...", jp: "...", kr: "..." } }]` 的結構中。
+
+2. **精確的出口邏輯 (`action`)**
+   * 只要選項內有 `nextScene`（引導至子場景），該選項的 `action` 就必須是 `"node_next"`。
+   * **線性節點（樣本 B）：** 子場景看完後的繼續按鈕，`action` 一律使用 `"advance_chain"` 來推進主線深度。
+   * **箱庭 HUB（樣本 A）：** 需確保有 `isHub: true` 及 `briefDialogue`，且子場景探索完畢後的按鈕，`action` 必須是 `"map_return_hub"` 以便退回母節點。
+
+3. **選項的精簡與演出後置**
+   * 將選項 (`label`) 的文字大幅精簡，保留最核心的動作、對話或判斷。
+   * 將原本寫在選項裡的冗長動作描述、心理活動或情境鋪陳，移動到 `nextScene` 的文本中，作為玩家做出選擇後的「結果演出」。
+
+4. **翻譯對齊與 `mix` 屬性消除**
+   * 確保 `zh`、`jp`、`kr` 三種語言的翻譯內容完整且長度、語境對齊。
+   * 若原代碼中出現 `mix:` 屬性，必須將其中的中文提示與解釋**無縫合併進 `zh` 之中**，接著**徹底刪除 `mix` 屬性**，並確保日韓翻譯都有對應補齊。
+
+5. **接續劇情的解說**
+   * 在提供完改寫後的代碼時，會在下方簡短說明選項的設計邏輯、文法考點以及劇情推進的脈絡。
+
+---
+
+我的狀態已經完全準備就緒了！接下來你想處理哪個類別的模組呢？隨時把代碼貼上來吧！

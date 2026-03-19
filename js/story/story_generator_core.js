@@ -38,13 +38,27 @@ Object.assign(window.SQ.Engine.Generator, {
         const finalPool = eligible.length > 0 ? eligible : pool;
 
         // Step 2: 計算加權
-        // 基礎權重 = 1，每多一個與 contextTags 匹配的 tag，權重 +2
+        const gs = window.SQ.State;
+        const memory = (gs.story && gs.story.chain && gs.story.chain.memory) ? gs.story.chain.memory : {};
+        
         const weighted = finalPool.map(entry => {
+            let weight = 1;
+            
+            // 劇情標籤加權 (原有邏輯)
             const entryTags = [];
             if (entry.tag)  entryTags.push(...(Array.isArray(entry.tag)  ? entry.tag  : [entry.tag]));
             if (entry.tags) entryTags.push(...(Array.isArray(entry.tags) ? entry.tags : [entry.tags]));
-            const matchCount = entryTags.filter(t => ctx.includes(t)).length;
-            return { entry, weight: 1 + matchCount * 2 };
+            weight += entryTags.filter(t => ctx.includes(t)).length * 2;
+            
+            // 🌟 風味標籤加權 (新邏輯：比對 memory 中的 world_vibe_tag 或 env_weather_tag)
+            if (entry.worldTag && (entry.worldTag === memory['world_vibe_tag'] || entry.worldTag === memory['global_world_vibe_tag'])) {
+                weight += 3; // 風味相符，大幅增加抽中機率
+            }
+            if (entry.envTag && entry.envTag === memory['env_weather_tag']) {
+                weight += 3;
+            }
+
+            return { entry, weight: weight };
         });
 
         // Step 3: 加權隨機
@@ -61,6 +75,8 @@ Object.assign(window.SQ.Engine.Generator, {
     // 3. 啟動新冒險 (initChain)
     // ============================================================
     initChain: function(skeletonKey = null, themeTag = null) {
+        let memory = {};         // 👈 補上這行
+        let initialTags = [];
 
         // 1. 決定骨架
         let selectedSkeleton = skeletonKey;
@@ -71,8 +87,6 @@ Object.assign(window.SQ.Engine.Generator, {
 
         const skel    = this.skeletons[selectedSkeleton];
         let mainTag   = themeTag || selectedSkeleton;
-        let initialTags = [];
-        let memory    = {};
 
         // 2. 抽全域種子
         if (this.globalSeeds) {
@@ -84,8 +98,10 @@ Object.assign(window.SQ.Engine.Generator, {
                 if (Array.isArray(pool) && pool.length > 0) {
                     const pick = pool[Math.floor(Math.random() * pool.length)];
                     if (pick && typeof pick === 'object') {
-                        if (pick.tag)  initialTags.push(...(Array.isArray(pick.tag)  ? pick.tag  : [pick.tag]));
-                        if (pick.tags) initialTags.push(...(Array.isArray(pick.tags) ? pick.tags : [pick.tags]));
+                        // 🌟 修正：worldTag/envTag 只存進 memory，不推進 initialTags
+                        if (pick.worldTag) memory[`${key}_worldTag`] = pick.worldTag;
+                        if (pick.envTag)   memory[`${key}_envTag`]   = pick.envTag;
+                        // 舊格式的 tag 欄位也不推進（防止污染）
                         memory[key] = pick.val;
                     } else {
                         memory[key] = pick;
@@ -109,14 +125,16 @@ Object.assign(window.SQ.Engine.Generator, {
                     const pick = pool[Math.floor(Math.random() * pool.length)];
                     let val;
                     if (pick && typeof pick === 'object' && pick.val) {
-                        if (pick.tag)  initialTags.push(...(Array.isArray(pick.tag)  ? pick.tag  : [pick.tag]));
-                        if (pick.tags) initialTags.push(...(Array.isArray(pick.tags) ? pick.tags : [pick.tags]));
+                        // 🌟 修正：骨架種子的 tag 同樣只存 memory，不推進 initialTags
+                        if (pick.worldTag) memory[`${key}_worldTag`] = pick.worldTag;
+                        if (pick.envTag)   memory[`${key}_envTag`]   = pick.envTag;
+                        // 舊格式的 tag 欄位不推進
                         val = pick.val.zh || pick.val;
                     } else {
                         val = pick;
                     }
                     if (typeof val === 'string' && val.includes('{')) {
-                        val = this._expandGrammar(val, window.FragmentDB, memory, 0, initialTags);
+                        val = this._expandGrammar(val, window.FragmentDB, memory, 0, null);
                     }
                     memory[key] = val;
                 }
@@ -132,23 +150,30 @@ Object.assign(window.SQ.Engine.Generator, {
 
                 let pool = window.FragmentDB.fragments[poolName] || [];
                 if (pool.length > 0) {
-                    let validPool = pool;
-                    if (requiredTags.length > 0) {
-                        validPool = pool.filter(item => {
+                    let validPool = pool.filter(item => {
+                        // 1. 檢查 requiredTags (必須包含)
+                        if (requiredTags.length > 0) {
                             let itemTags = [];
                             if (item.tag)  itemTags.push(...(Array.isArray(item.tag)  ? item.tag  : [item.tag]));
                             if (item.tags) itemTags.push(...(Array.isArray(item.tags) ? item.tags : [item.tags]));
-                            return requiredTags.every(t => itemTags.includes(t));
-                        });
-                    }
+                            if (!requiredTags.every(t => itemTags.includes(t))) return false;
+                        }
+
+                        // 2. 檢查 excludeTags (與當前世界種子 initialTags 衝突則排除)
+                        let itemExcludeTags = [];
+                        if (item.excludeTags) itemExcludeTags.push(...(Array.isArray(item.excludeTags) ? item.excludeTags : [item.excludeTags]));
+                        if (itemExcludeTags.length > 0 && initialTags) {
+                            if (itemExcludeTags.some(t => initialTags.includes(t))) return false;
+                        }
+
+                        return true;
+                    });
+                    
                     if (validPool.length === 0) validPool = pool;
 
                     const pick = validPool[Math.floor(Math.random() * validPool.length)];
                     let val    = pick.val.zh || pick.val;
-                    if (val.includes('{')) val = this._expandGrammar(val, window.FragmentDB, memory, 0, initialTags);
-
-                    if (pick.tag)  initialTags.push(...(Array.isArray(pick.tag)  ? pick.tag  : [pick.tag]));
-                    if (pick.tags) initialTags.push(...(Array.isArray(pick.tags) ? pick.tags : [pick.tags]));
+                    if (val.includes('{')) val = this._expandGrammar(val, window.FragmentDB, memory, 0, null);
 
                     memory[roleKey] = val;
                     console.log(`👤 抽出角色 [${roleKey}]: ${val}`);
@@ -200,9 +225,28 @@ Object.assign(window.SQ.Engine.Generator, {
         const playerTags = (gs.story && gs.story.tags) ? gs.story.tags : [];
         const mergedTags = [...new Set([...chain.tags, ...playerTags])];
 
-        if (chain.currentStageIdx >= chain.stages.length) return null;
-
-        let targetType = chain.stages[chain.currentStageIdx];
+        let targetType;
+		if (chain.currentStageIdx >= chain.stages.length - 2) {
+			// 已到達 climax/end 的固定區段，照舊走
+			targetType = chain.stages[chain.currentStageIdx];
+		} else if (chain.currentStageIdx === 0) {
+			targetType = 'start';
+		} else {
+			// 動態決定：計算進入 climax 的機率
+			const tension = this._getTensionValue(chain);
+			const baseClimaxChance = 0.15;                    // 基礎 15% 機率
+			const depthBonus = chain.depth * 0.05;             // 每深一層 +5%
+			const tensionBonus = tension >= 80 ? 0.4           // 高壓 +40%
+							   : tension >= 50 ? 0.2 : 0;      // 中壓 +20%
+			const climaxChance = Math.min(0.85, baseClimaxChance + depthBonus + tensionBonus);
+			
+			targetType = Math.random() < climaxChance ? 'climax' : 'middle';
+			
+			// 如果抽中 climax，把指針推到倒數第二格（確保接著是 end）
+			if (targetType === 'climax') {
+				chain.currentStageIdx = chain.stages.length - 2;
+			}
+		}
 
         const currentStats = {
             ...(gs.attrs || {}),
@@ -247,6 +291,17 @@ Object.assign(window.SQ.Engine.Generator, {
             onEnter:  template.onEnter
         };
     },
+	_getTensionValue: function(chain) {
+    const vars = (window.SQ.State && window.SQ.State.story && window.SQ.State.story.vars) || {};
+    const tensionKey = {
+        horror:    'curse_val',
+        mystery:   'tension',
+        romance:   'pressure',
+        raising:   'stress',
+        adventure: 'skill_points'  // adventure 反向，另外處理
+    }[chain.skeleton] || 'curse_val';
+    return Number(vars[tensionKey]) || 0;
+},
 
     // ============================================================
     // 5. 文法展開器（_expandGrammar）- V85 情境感知升級版

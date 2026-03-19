@@ -12,7 +12,7 @@ function register(scene) {
 }
 
 // ============================================================
-// 1. 冒險者模式內容 (Adventurer Content)
+// 1. 冒險者模式內容 (Adventurer Content) - 固定劇本
 // ============================================================
 
     // ============================================================
@@ -21,31 +21,47 @@ function register(scene) {
     register({
         id: 'campus_archive_hub',
         dialogue: [
-            { text: "【第一幕：重返地獄】" },
-            { text: "你收到了一封詭異的同學會邀請函，來到了廢棄已久的舊校舍。" },
-            { text: "但一踏入檔案室，身後的電子門就自動落鎖了。" },
-            { speaker: "校內廣播", text: "『歡迎回到地獄。十年前的那樁命案，今天該做個了結了。』" },
-            { text: "門上有個磁卡感應器。你必須找到出路。" }
+            { text: { zh: "【第一幕：重返地獄】", jp: "【第一幕：地獄への帰還】", kr: "【제1막: 지옥으로의 귀환】" } },
+            { text: { 
+                zh: "你收到了一封詭異的同學會邀請函，來到了廢棄已久的舊校舍。", 
+                jp: "不気味な同窓会の招待状を受け取り、廃墟となった旧校舎にやってきた。", 
+                kr: "기괴한 동창회 초대장을 받고, 오랫동안 버려진 구교사로 찾아왔다." 
+            } },
+            { text: { 
+                zh: "但一踏入檔案室，身後的電子門就自動落鎖了。", 
+                jp: "しかし資料室に足を踏み入れた途端、背後の電子ドアが自動的にロックされた。", 
+                kr: "하지만 기록실에 발을 들이자마자, 등 뒤의 전자문이 자동으로 잠겼다." 
+            } },
+            { speaker: { zh: "校內廣播", jp: "校内放送", kr: "교내 방송" }, text: { 
+                zh: "『歡迎回到地獄。十年前的那樁命案，今天該做個了結了。』", 
+                jp: "『地獄へようこそ。十年前のあの殺人事件、今日こそ決着をつけるべきだ。』", 
+                kr: "『지옥에 온 것을 환영한다. 10년 전 그 살인 사건, 오늘 결판을 내야지.』" 
+            } },
+            { text: { 
+                zh: "門上有個磁卡感應器。你必須找到出路。", 
+                jp: "ドアには磁気カードリーダーがある。出口を見つけなければ。", 
+                kr: "문에는 마그네틱 카드 인식기가 있다. 출구를 찾아야 한다." 
+            } }
         ],
         options: [
-            { label: "🚪 檢查電子門", action: "node_next", nextSceneId: 'campus_archive_door' },
-            { label: "🗄️ 翻找舊辦公桌", action: "node_next", nextSceneId: 'campus_archive_desk' },
+            { label: { zh: "🚪 檢查電子門", jp: "🚪 電子ドアを調べる", kr: "🚪 전자문 확인" }, action: "node_next", nextSceneId: 'campus_archive_door' },
+            { label: { zh: "🗄️ 翻找舊辦公桌", jp: "🗄️ 古い机を探る", kr: "🗄️ 낡은 책상 뒤지기" }, action: "node_next", nextSceneId: 'campus_archive_desk' },
             { 
                 label: {
                     zh: "刷入沾血的學生證",
-                    jp: "血染めの学生証を入れる",
-                    kr: "피 묻은 학생증을 넣다"
+                    jp: "血染めの学生証をかざす",
+                    kr: "피 묻은 학생증을 인식시키다"
                 },
                 condition: { tags: ['campus_has_id'] }, 
                 style: "primary",
                 action: "node_next", 
                 nextScene: {
                     dialogue: [
-                        { text: "「逼——」綠燈亮起，厚重的電子門緩緩滑開。" },
-                        { text: "你走進了陰森的走廊，來到了當年案發的美術教室。" }
+                        { text: { zh: "「逼——」綠燈亮起，厚重的電子門緩緩滑開。", jp: "「ピーッ」と緑色のランプが点灯し、分厚い電子ドアがゆっくりとスライドして開いた。", kr: "「삐——」 녹색불이 켜지며, 두꺼운 전자문이 천천히 열렸다." } },
+                        { text: { zh: "你走進了陰森的走廊，來到了當年案發的美術教室。", jp: "薄暗い廊下を進み、当時の事件現場である美術室へと辿り着いた。", kr: "당신은 음산한 복도를 지나, 당시 사건이 발생했던 미술실에 도착했다." } }
                     ],
                     rewards: { gold: 5 },
-                    options: [{ label: "進入美術教室", action: "node_next", nextSceneId: 'campus_art_hub' }]
+                    options: [{ label: { zh: "進入美術教室", jp: "美術室に入る", kr: "미술실 진입" }, action: "node_next", nextSceneId: 'campus_art_hub' }]
                 }
             }
         ]
@@ -53,7 +69,13 @@ function register(scene) {
 
     register({
         id: 'campus_archive_door',
-        text: "強化玻璃製成的電子門，沒有把手。旁邊的感應器閃爍著紅燈。",
+        dialogue: [{
+            text: {
+                zh: "強化玻璃製成的電子門，沒有把手。旁邊的感應器閃爍著紅燈。",
+                jp: "強化ガラス製の電子ドア。取っ手はない。横のセンサーが赤く点滅している。",
+                kr: "강화유리로 된 전자문, 손잡이는 없다. 옆의 인식기가 빨간색으로 깜빡이고 있다."
+            }
+        }],
         options: [
             { 
                 label: {
@@ -64,35 +86,41 @@ function register(scene) {
                 check: { stat: 'STR', val: 7 }, 
                 action: "node_next",
                 nextScene: { 
-                    dialogue: [{ text: "你掄起滅火器猛砸，但防爆玻璃只留下了一點白痕，反而震得你虎口發麻。只能找磁卡了。" }], 
-                    options: [{label: "返回", action: "node_next", nextSceneId: 'campus_archive_hub'}] 
+                    dialogue: [{ text: { zh: "你掄起滅火器猛砸，但防爆玻璃只留下了一點白痕，反而震得你虎口發麻。看來只能找磁卡了。", jp: "消火器を振り下ろして激しく叩きつけたが、防爆ガラスには白い傷がついただけで、反動で手が痺れた。磁気カードを探すしかないようだ。", kr: "소화기를 휘둘러 세게 내리쳤지만, 방폭 유리에는 작은 하얀 흠집만 남았고 반동으로 손만 저렸다. 아무래도 마그네틱 카드를 찾아야 할 것 같다." } }], 
+                    options: [{ label: { zh: "返回", jp: "戻る", kr: "돌아가기" }, action: "node_next", nextSceneId: 'campus_archive_hub' }] 
                 }, 
                 failScene: { 
-                    text: "滅火器太重了，你不小心砸到了自己的腳，痛得冷汗直流。", 
-                    rewards: { varOps: [{key:'energy', val:10, op:'-'}] },
-                    options: [{label: "咬牙忍痛返回", action: "node_next", nextSceneId: 'campus_archive_hub'}] 
+                    dialogue: [{ text: { zh: "滅火器太重了，你不小心砸到了自己的腳，痛得冷汗直流。", jp: "消火器が重すぎた。誤って自分の足に落としてしまい、冷や汗が出るほどの激痛が走った。", kr: "소화기가 너무 무거웠다. 실수로 자신의 발을 찍어버렸고, 식은땀이 날 정도로 극심한 고통이 밀려왔다." } }], 
+                    rewards: { varOps: [{key:'energy', val: 10, op:'-'}] },
+                    options: [{ label: { zh: "咬牙忍痛返回", jp: "痛みを堪えて戻る", kr: "고통을 참고 돌아가기" }, action: "node_next", nextSceneId: 'campus_archive_hub' }] 
                 } 
             },
-            { label: "返回", action: "node_next", nextSceneId: 'campus_archive_hub' }
+            { label: { zh: "返回", jp: "戻る", kr: "돌아가기" }, action: "node_next", nextSceneId: 'campus_archive_hub' }
         ]
     });
 
     register({
         id: 'campus_archive_desk',
-        text: "這是當年訓導主任的桌子。抽屜被上了鎖，但木頭已經腐朽，你用力一扯就拉開了。",
+        dialogue: [{
+            text: {
+                zh: "這是當年訓導主任的桌子。抽屜被上了鎖，但木頭已經腐朽，你用力一扯就拉開了。",
+                jp: "当時の生徒指導主任の机だ。引き出しには鍵がかかっていたが、木が腐っていたため、力を入れて引くと簡単に開いた。",
+                kr: "당시 학생주임의 책상이다. 서랍은 잠겨 있었지만, 나무가 썩어 있어 힘껏 잡아당기자 쉽게 열렸다."
+            }
+        }],
         options: [
             { 
-                label: "檢查抽屜內部", 
+                label: { zh: "檢查抽屜內部", jp: "引き出しの中を調べる", kr: "서랍 안쪽 확인" }, 
                 condition: { noTag: 'campus_has_id' }, 
                 action: "node_next", 
                 nextScene: {
-                    text: "在沒收物品區，你找到了一張【沾血的學生證】。照片上的女孩，正是十年前死去的那個學生。",
+                    dialogue: [{ text: { zh: "在沒收物品區，你找到了一張【沾血的學生證】。照片上的女孩，正是十年前死去的那個學生。", jp: "没収品エリアで【血染めの学生証】を見つけた。写真の少女は、十年前亡くなったあの生徒だった。", kr: "압수품 구역에서 【피 묻은 학생증】을 찾았다. 사진 속 소녀는 10년 전 죽은 바로 그 학생이었다." } }],
                     rewards: { tags: ['campus_has_id'] },
-                    options: [{ label: "收起學生證", action: "node_next", nextSceneId: 'campus_archive_hub' }]
+                    options: [{ label: { zh: "收起學生證", jp: "学生証をしまう", kr: "학생증 챙기기" }, action: "node_next", nextSceneId: 'campus_archive_hub' }]
                 }
             },
-            { label: "只剩一堆廢紙了", condition: { tags: ['campus_has_id'] }, action: "node_next", nextSceneId: 'campus_archive_hub' },
-            { label: "返回", action: "node_next", nextSceneId: 'campus_archive_hub' }
+            { label: { zh: "只剩一堆廢紙了", jp: "ただの紙くずだ", kr: "폐지만 남았다" }, condition: { tags: ['campus_has_id'] }, action: "node_next", nextSceneId: 'campus_archive_hub' },
+            { label: { zh: "返回", jp: "戻る", kr: "돌아가기" }, action: "node_next", nextSceneId: 'campus_archive_hub' }
         ]
     });
 
@@ -102,27 +130,27 @@ function register(scene) {
     register({
         id: 'campus_art_hub',
         dialogue: [
-            { text: "【第二幕：無聲的墜落】" },
-            { text: "美術教室的窗戶大開著，寒風呼嘯。" },
-            { speaker: "校內廣播", text: "『十年前，她就是從這裡掉下去的。警方判定是跳樓自殺。』" },
-            { speaker: "校內廣播", text: "『但她患有嚴重的懼高症，連靠近窗戶都不敢。現場也沒有掙扎推擠的痕跡。告訴我，她為什麼會掉下去？』" },
-            { text: "廣播室的門鎖上了，你需要對著監視器說出當年的真相。" }
+            { text: { zh: "【第二幕：無聲的墜落】", jp: "【第二幕：無音の墜落】", kr: "【제2막: 소리 없는 추락】" } },
+            { text: { zh: "美術教室的窗戶大開著，寒風呼嘯。", jp: "美術室の窓は大きく開け放たれ、冷たい風が吹き込んでいる。", kr: "미술실의 창문이 활짝 열려 있고, 찬 바람이 휘몰아친다." } },
+            { speaker: { zh: "校內廣播", jp: "校内放送", kr: "교내 방송" }, text: { zh: "『十年前，她就是從這裡掉下去的。警方判定是跳樓自殺。』", jp: "『十年前、彼女はここから落ちた。警察は飛び降り自殺と断定した。』", kr: "『10년 전, 그녀는 여기서 떨어졌지. 경찰은 투신자살로 판정했고.』" } },
+            { speaker: { zh: "校內廣播", jp: "校内放送", kr: "교내 방송" }, text: { zh: "『但她患有嚴重的懼高症，連靠近窗戶都不敢。現場也沒有掙扎推擠的痕跡。告訴我，她為什麼會掉下去？』", jp: "『しかし彼女は重度の高所恐怖症で、窓に近づくことすらできなかった。現場に争った形跡もない。教えてくれ、なぜ彼女は落ちたのだ？』", kr: "『하지만 그녀는 심한 고소공포증이 있어서 창문 근처에 가는 것조차 무서워했어. 현장엔 몸싸움의 흔적도 없었지. 말해봐, 그녀는 왜 떨어진 걸까?』" } },
+            { text: { zh: "廣播室的門鎖上了，你需要對著監視器說出當年的真相。", jp: "放送室のドアは施錠されている。監視カメラに向かって、当時の真相を語らなければならない。", kr: "방송실 문은 잠겨 있다. 감시 카메라를 향해 당시의 진실을 말해야 한다." } }
         ],
         options: [
             { 
-                label: "🔍 調查窗外的景象", action: "node_next", 
+                label: { zh: "🔍 調查窗外的景象", jp: "🔍 窓の外の景色を調べる", kr: "🔍 창밖의 풍경 조사" }, action: "node_next", 
                 nextScene: { 
-                    text: "窗外是五樓高的懸崖。但在窗台斜下方大約一公尺處，有一根粗壯的老榕樹樹枝，上面似乎有被人用鋸子鋸過一半的痕跡。",
+                    dialogue: [{ text: { zh: "窗外是五樓高的懸崖。但在窗台斜下方大約一公尺處，有一根粗壯的老榕樹樹枝，上面似乎有被人用鋸子鋸過一半的痕跡。", jp: "窓の外は5階の高さの崖だ。しかし窓枠の斜め下約1メートルのところに太いガジュマルの枝があり、何者かによってノコギリで半分切り込みが入れられたような痕跡がある。", kr: "창밖은 5층 높이의 낭떠러지다. 하지만 창턱 비스듬히 아래 약 1미터 지점에 굵은 벵갈고무나무 가지가 있는데, 누군가 톱으로 절반쯤 썰어놓은 흔적이 보인다." } }],
                     rewards: { tags: ['campus_clue_branch'] },
-                    options: [{ label: "記下線索", action: "node_next", nextSceneId: 'campus_art_hub' }]
+                    options: [{ label: { zh: "記下線索", jp: "手がかりを記録する", kr: "단서 기록" }, action: "node_next", nextSceneId: 'campus_art_hub' }]
                 }
             },
             { 
-                label: "🔍 調查受害者的畫布", action: "node_next", 
+                label: { zh: "🔍 調查受害者的畫布", jp: "🔍 被害者のキャンバスを調べる", kr: "🔍 피해자의 캔버스 조사" }, action: "node_next", 
                 nextScene: { 
-                    text: "畫布上用凌亂的筆觸寫著：『把日記還給我！那是我的命！求求你們！』。",
+                    dialogue: [{ text: { zh: "畫布上用凌亂的筆觸寫著：『把日記還給我！那是我的命！求求你們！』。", jp: "キャンバスには乱れた筆致でこう書かれていた：『日記を返して！あれは私の命なの！お願いだから！』", kr: "캔버스 위에는 어지러운 필치로 적혀 있다: 『내 일기장 돌려줘! 그건 내 목숨이야! 제발 부탁이야!』" } }],
                     rewards: { tags: ['campus_clue_diary'] },
-                    options: [{ label: "記下線索", action: "node_next", nextSceneId: 'campus_art_hub' }]
+                    options: [{ label: { zh: "記下線索", jp: "手がかりを記録する", kr: "단서 기록" }, action: "node_next", nextSceneId: 'campus_art_hub' }]
                 }
             },
             { 
@@ -135,13 +163,13 @@ function register(scene) {
                 style: "primary", action: "node_next", 
                 nextScene: {
                     dialogue: [
-                        { text: "你將「被鋸過的樹枝」與「被搶走的日記」連結在一起，毛骨悚然的真相浮現。" },
-                        { speaker: "你", text: "「這根本不是自殺！霸凌者搶走了她的日記，故意掛在窗外那根樹枝上！」" },
-                        { speaker: "你", text: "「她為了拿回比命還重要的日記，克服了懼高症，踩上了那根樹枝。但霸凌者早就把樹枝鋸斷了一半... 樹枝斷裂，她就這樣摔了下去。」" },
-                        { speaker: "校內廣播", text: "『...沒錯。那是場殘忍的謀殺。進來廣播室吧，他們都在這裡。』" }
+                        { text: { zh: "你將「被鋸過的樹枝」與「被搶走的日記」連結在一起，毛骨悚然的真相浮現。", jp: "「切り込みを入れられた枝」と「奪われた日記」を結びつけると、身の毛のよだつような真相が浮かび上がった。", kr: "당신은 '톱질 된 나뭇가지'와 '빼앗긴 일기장'을 연결했고, 소름 끼치는 진실이 수면 위로 떠올랐다." } },
+                        { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「這根本不是自殺！霸凌者搶走了她的日記，故意掛在窗外那根樹枝上！」", jp: "「これは自殺なんかじゃない！いじめっ子が彼女の日記を奪い、わざと窓の外のあの枝に引っ掛けたんだ！」", kr: "「이건 자살이 아니야! 괴롭히던 녀석들이 일기장을 뺏어서, 일부러 창밖 나뭇가지에 걸어둔 거라고!」" } },
+                        { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「她為了拿回比命還重要的日記，克服了懼高症，踩上了那根樹枝。但霸凌者早就把樹枝鋸斷了一半... 樹枝斷裂，她就這樣摔了下去。」", jp: "「彼女は命より大切な日記を取り戻すため、高所恐怖症を克服してあの枝を踏んだ。しかしいじめっ子は事前に枝を半分ノコギリで切っていた……枝は折れ、彼女はそのまま転落したんだ」", kr: "「그녀는 목숨보다 중요한 일기장을 되찾기 위해, 고소공포증을 극복하고 저 나뭇가지를 밟았어. 하지만 가해자들은 이미 나뭇가지를 절반쯤 썰어두었지... 가지가 부러지면서, 그녀는 그대로 추락한 거야.」" } },
+                        { speaker: { zh: "校內廣播", jp: "校内放送", kr: "교내 방송" }, text: { zh: "『...沒錯。那是場殘忍的謀殺。進來廣播室吧，他們都在這裡。』", jp: "『……その通りだ。あれは残酷な殺人だった。放送室へ入れ。奴らは全員ここにいる』", kr: "『...맞아. 그건 잔인한 살인이었지. 방송실로 들어와, 녀석들이 전부 여기에 있으니까.』" } }
                     ],
                     rewards: { gold: 10 },
-                    options: [{ label: "推開廣播室的門", action: "node_next", nextSceneId: 'campus_broadcast_hub' }] 
+                    options: [{ label: { zh: "推開廣播室的門", jp: "放送室のドアを開ける", kr: "방송실 문 밀어 열기" }, action: "node_next", nextSceneId: 'campus_broadcast_hub' }] 
                 }
             }
         ]
@@ -153,420 +181,419 @@ function register(scene) {
     register({
         id: 'campus_broadcast_hub',
         dialogue: [
-            { text: "【最終幕：霸凌者的狂言】" },
-            { text: "廣播室裡，三個當年的校園風雲人物被綁在椅子上：班長、啦啦隊長、不良少年。他們的脖子上綁著定時炸彈。" },
-            { speaker: "校內廣播", text: "『當年把樹枝鋸斷的真兇，就在他們三個之中。』" },
-            { speaker: "校內廣播", text: "『規則很簡單：真兇為了活命，口中絕無半句實話；而另外兩個幫兇已經嚇破膽了，只敢說實話。』" },
-            { text: "找出那個滿嘴謊言的真兇，處決他，你就能走。" }
+            { text: { zh: "【最終幕：霸凌者的狂言】", jp: "【最終幕：いじめっ子の狂言】", kr: "【최종막: 가해자들의 망언】" } },
+            { text: { zh: "廣播室裡，三個當年的校園風雲人物被綁在椅子上：班長、啦啦隊長、不良少年。他們的脖子上綁著定時炸彈。", jp: "放送室には、当時の学校の人気者3人が椅子に縛り付けられていた。委員長、チアリーダー、不良少年。彼らの首には時限爆弾が巻かれている。", kr: "방송실 안, 당시 학교의 유명 인사 세 명이 의자에 묶여 있다: 반장, 치어리더, 불량소년. 그들의 목에는 시한폭탄이 매달려 있다." } },
+            { speaker: { zh: "校內廣播", jp: "校内放送", kr: "교내 방송" }, text: { zh: "『當年把樹枝鋸斷的真兇，就在他們三個之中。』", jp: "『当時、枝をノコギリで切った真犯人は、その3人の中にいる』", kr: "『당시 나뭇가지를 썰어버린 진범은, 저 세 명 중에 있지.』" } },
+            { speaker: { zh: "校內廣播", jp: "校内放送", kr: "교내 방송" }, text: { zh: "『規則很簡單：真兇為了活命，口中絕無半句實話；而另外兩個幫兇已經嚇破膽了，只敢說實話。』", jp: "『ルールは簡単だ。真犯人は生き延びるため、口から出る言葉はすべて嘘だ。あとの2人の共犯者はすでに肝を冷やしており、真実しか話さない』", kr: "『규칙은 아주 간단해. 진범은 살기 위해 절대 진실을 말하지 않아. 하지만 나머지 두 공범은 이미 겁에 질려서 진실만을 말하지.』" } },
+            { text: { zh: "找出那個滿嘴謊言的真兇，處決他，你就能走。", jp: "嘘にまみれた真犯人を見つけ出し、処刑しろ。そうすれば君は帰れる。", kr: "거짓말을 일삼는 진범을 찾아내 처형하라. 그럼 너는 살아서 나갈 수 있다." } }
         ],
         options: [
-            { label: "審問 班長", condition: { noTag: 'campus_info_a' }, action: "node_next", nextSceneId: 'campus_wolf_a' },
-            { label: "審問 啦啦隊長", condition: { noTag: 'campus_info_b' }, action: "node_next", nextSceneId: 'campus_wolf_b' },
-            { label: "審問 不良少年", condition: { noTag: 'campus_info_c' }, action: "node_next", nextSceneId: 'campus_wolf_c' },
+            { label: { zh: "審問 班長", jp: "委員長を尋問する", kr: "반장 심문" }, condition: { noTag: 'campus_info_a' }, action: "node_next", nextSceneId: 'campus_wolf_a' },
+            { label: { zh: "審問 啦啦隊長", jp: "チアリーダーを尋問する", kr: "치어리더 심문" }, condition: { noTag: 'campus_info_b' }, action: "node_next", nextSceneId: 'campus_wolf_b' },
+            { label: { zh: "審問 不良少年", jp: "不良少年を尋問する", kr: "불량소년 심문" }, condition: { noTag: 'campus_info_c' }, action: "node_next", nextSceneId: 'campus_wolf_c' },
             {
-                label: "💡 整合證詞與邏輯",
+                label: { zh: "💡 整合證詞與邏輯", jp: "💡 証言と論理を統合する", kr: "💡 증언과 논리 통합" },
                 condition: { tags: ['campus_info_a', 'campus_info_b', 'campus_info_c'] },
                 action: "node_next",
                 nextScene: {
-                    text: [
-                        "你在腦海中快速推演三個人的供詞：",
-                        "1. 若【啦啦隊長】是真兇（她說謊）：她說「不良少年無辜」是謊言，代表不良少年其實有罪。但不良少年已自承是幫兇並非主謀，不可能同時又是另一個真兇——真兇只有一人，矛盾！啦啦隊長不是真兇。",
-                        "2. 若【不良少年】是真兇（他說謊）：他說「班長才是拿鋸子的人」是謊言，代表班長是無辜的。但班長卻說「啦啦隊長幹的」——若班長說的是實話，那真兇又變成啦啦隊長。與第 1 條矛盾！不良少年也不是真兇。",
-                        "3. 若【班長】是真兇（他說謊）：他說「是啦啦隊長幹的」是謊言，啦啦隊長無辜。啦啦隊長說「不良少年無辜」是實話，不良少年無辜。不良少年說「班長才是真兇」是實話，指向班長。——完美自洽。",
-                        "結論清晰：說謊的只有班長。"
+                    dialogue: [
+                        { text: { zh: "你在腦海中快速推演三個人的供詞：", jp: "頭の中で素早く3人の供述を推論した：", kr: "머릿속으로 빠르게 세 사람의 진술을 추론해 본다:" } },
+                        { text: { zh: "1. 若【啦啦隊長】是真兇（她說謊）：她說「不良少年無辜」是謊言，代表不良少年其實有罪。但不良少年已自承是幫兇並非主謀，不可能同時又是另一個真兇——真兇只有一人，矛盾！啦啦隊長不是真兇。", jp: "1. 【チアリーダー】が真犯人（彼女が嘘つき）の場合：「不良少年は無実」という証言が嘘になり、不良少年は有罪となる。しかし不良少年は自ら共犯だと認めており、同時に真犯人にはなり得ない——真犯人は一人のみ。矛盾！チアリーダーは真犯人ではない。", kr: "1. 만약 【치어리더】가 진범이라면(거짓말을 한다면): 그녀가 말한 '불량소년은 무고하다'가 거짓이 되므로 불량소년은 유죄가 된다. 하지만 불량소년은 자신이 주동자가 아닌 공범이라 자백했고, 진범은 단 한 명이므로 모순! 치어리더는 진범이 아니다." } },
+                        { text: { zh: "2. 若【不良少年】是真兇（他說謊）：他說「班長才是拿鋸子的人」是謊言，代表班長是無辜的。但班長卻說「啦啦隊長幹的」——若班長說的是實話，那真兇又變成啦啦隊長。與第 1 條矛盾！不良少年也不是真兇。", jp: "2. 【不良少年】が真犯人（彼が嘘つき）の場合：「委員長がノコギリを持っていた」という証言が嘘になり、委員長は無実となる。しかし委員長は「チアリーダーがやった」と言っている。委員長が真実を話しているなら、真犯人はチアリーダーとなる。第1条と矛盾！不良少年も真犯人ではない。", kr: "2. 만약 【불량소년】이 진범이라면(거짓말을 한다면): 그가 말한 '반장이 톱을 들었다'는 거짓말이 되어 반장은 무고해진다. 하지만 반장은 '치어리더가 했다'고 말했다. 반장의 말이 진실이라면 진범은 치어리더가 된다. 1번 추론과 모순! 불량소년도 진범이 아니다." } },
+                        { text: { zh: "3. 若【班長】是真兇（他說謊）：他說「是啦啦隊長幹的」是謊言，啦啦隊長無辜。啦啦隊長說「不良少年無辜」是實話，不良少年無辜。不良少年說「班長才是真兇」是實話，指向班長。——完美自洽。", jp: "3. 【委員長】が真犯人（彼が嘘つき）の場合：「チアリーダーがやった」という証言が嘘になり、チアリーダーは無実。チアリーダーの「不良少年は無実」という証言は真実となり、不良少年は無実。不良少年の「委員長が真犯人だ」という証言は真実となり、委員長を指し示す。——完全に辻褄が合う。", kr: "3. 만약 【반장】이 진범이라면(거짓말을 한다면): 그가 말한 '치어리더가 했다'는 거짓말이 되고, 치어리더는 무고해진다. 치어리더가 '불량소년은 무고하다'라고 한 말은 진실이 되어 불량소년도 무고해진다. 불량소년이 '반장이 진범'이라고 한 말은 진실이 되어 반장을 가리킨다. ——완벽하게 앞뒤가 맞는다." } },
+                        { text: { zh: "結論清晰：說謊的只有班長。", jp: "結論は明らかだ。嘘をついているのは委員長のみ。", kr: "결론은 명확하다. 거짓말을 하는 사람은 반장뿐이다." } }
                     ],
-                    options: [{ label: "我知道誰在說謊了", action: "node_next", nextSceneId: 'campus_broadcast_hub' }]
+                    options: [{ label: { zh: "我知道誰在說謊了", jp: "誰が嘘をついているか分かった", kr: "누가 거짓말을 하는지 알겠어" }, action: "node_next", nextSceneId: 'campus_broadcast_hub' }]
                 }
             },
-            { label: "⚖️ 啟動炸彈引爆器 (投票)", action: "node_next", nextSceneId: 'campus_wolf_vote' }
+            { label: { zh: "⚖️ 啟動炸彈引爆器 (投票)", jp: "⚖️ 爆弾起爆装置を起動 (投票)", kr: "⚖️ 폭탄 기폭 장치 가동 (투표)" }, action: "node_next", nextSceneId: 'campus_wolf_vote' }
         ]
     });
 
     register({
         id: 'campus_wolf_a',
-        dialogue: [{ speaker: "班長", text: "「我沒有鋸樹枝！是啦啦隊長幹的，她一直嫉妒死者！」" }],
-        options: [{ label: "紀錄證詞", action: "node_next", rewards: { tags: ['campus_info_a'] }, nextSceneId: 'campus_broadcast_hub' }]
+        dialogue: [{ speaker: { zh: "班長", jp: "委員長", kr: "반장" }, text: { zh: "「我沒有鋸樹枝！是啦啦隊長幹的，她一直嫉妒死者！」", jp: "「僕は枝なんて切ってない！チアリーダーがやったんだ、あいつはずっと被害者を嫉妬してた！」", kr: "「난 나뭇가지 안 썰었어! 치어리더가 한 거야, 걘 항상 피해자를 질투했어!」" } }],
+        options: [{ label: { zh: "紀錄證詞", jp: "証言を記録", kr: "증언 기록" }, action: "node_next", rewards: { tags: ['campus_info_a'] }, nextSceneId: 'campus_broadcast_hub' }]
     });
 
     register({
         id: 'campus_wolf_b',
-        dialogue: [{ speaker: "啦啦隊長", text: "「班長在說謊！不良少年絕對是無辜的，案發時他在幫我買飲料！」" }],
-        options: [{ label: "紀錄證詞", action: "node_next", rewards: { tags: ['campus_info_b'] }, nextSceneId: 'campus_broadcast_hub' }]
+        dialogue: [{ speaker: { zh: "啦啦隊長", jp: "チアリーダー", kr: "치어리더" }, text: { zh: "「班長在說謊！不良少年絕對是無辜的，案發時他在幫我買飲料！」", jp: "「委員長は嘘をついてる！不良少年は絶対に無実よ、事件の時彼は私に飲み物を買ってくれてたんだから！」", kr: "「반장이 거짓말하는 거야! 불량소년은 절대 무고해, 사건 당시 걘 내 음료수를 사러 갔었어!」" } }],
+        options: [{ label: { zh: "紀錄證詞", jp: "証言を記録", kr: "증언 기록" }, action: "node_next", rewards: { tags: ['campus_info_b'] }, nextSceneId: 'campus_broadcast_hub' }]
     });
 
     register({
         id: 'campus_wolf_c',
-        dialogue: [{ speaker: "不良少年", text: "「我頂多只負責搶日記...但我發誓，班長才是那個拿鋸子的人！」" }],
-        options: [{ label: "紀錄證詞", action: "node_next", rewards: { tags: ['campus_info_c'] }, nextSceneId: 'campus_broadcast_hub' }]
+        dialogue: [{ speaker: { zh: "不良少年", jp: "不良少年", kr: "불량소년" }, text: { zh: "「我頂多只負責搶日記...但我發誓，班長才是那個拿鋸子的人！」", jp: "「俺はせいぜい日記を奪ったくらいだ……でも誓うよ、委員長こそがノコギリを持っていた奴だ！」", kr: "「난 기껏해야 일기장을 뺏은 것뿐이야... 하지만 맹세컨대, 반장이 톱을 들고 있던 녀석이야!」" } }],
+        options: [{ label: { zh: "紀錄證詞", jp: "証言を記録", kr: "증언 기록" }, action: "node_next", rewards: { tags: ['campus_info_c'] }, nextSceneId: 'campus_broadcast_hub' }]
     });
 
     register({
         id: 'campus_wolf_vote',
-        text: "炸彈的倒數計時剩下最後十秒。你必須按下其中一人的引爆鈕。",
+        dialogue: [{
+            text: {
+                zh: "炸彈的倒數計時剩下最後十秒。你必須按下其中一人的引爆鈕。",
+                jp: "爆弾のカウントダウンは残り10秒。誰か一人の起爆ボタンを押さなければならない。",
+                kr: "폭탄의 카운트다운이 마지막 10초를 남겨두고 있다. 당신은 누군가 한 명의 기폭 버튼을 눌러야 한다."
+            }
+        }],
         options: [
             { 
-                label: "引爆 班長 的炸彈", 
+                label: { zh: "引爆 班長 的炸彈", jp: "委員長の爆弾を起爆", kr: "반장의 폭탄 기폭" }, 
                 style: "danger", action: "node_next", 
                 nextScene: { 
                     dialogue: [
-                        { text: "你按下了班長的按鈕。「轟——！」血肉橫飛中，另外兩人的炸彈隨之解除。" },
-                        { speaker: "校內廣播", text: "『恭喜你，完美的邏輯閉環。這就是遲來的正義。』" },
-                        { text: "廣播室的後門打開了，清晨的陽光照亮了這座罪惡的校園。\n【結局：遲來的審判者】" }
+                        { text: { zh: "你按下了班長的按鈕。「轟——！」血肉橫飛中，另外兩人的炸彈隨之解除。", jp: "あなたは委員長のボタンを押した。「ドカーン——！」血肉が飛び散る中、残る二人の爆弾は解除された。", kr: "당신은 반장의 버튼을 눌렀다. 「쾅——!」 피와 살점이 튀는 가운데, 나머지 두 사람의 폭탄은 해제되었다." } },
+                        { speaker: { zh: "校內廣播", jp: "校内放送", kr: "교내 방송" }, text: { zh: "『恭喜你，完美的邏輯閉環。這就是遲來的正義。』", jp: "『おめでとう、完璧な論理のループだ。これこそが遅れてきた正義だ。』", kr: "『축하해, 완벽한 논리적 결론이야. 이것이 바로 뒤늦은 정의지.』" } },
+                        { text: { zh: "廣播室的後門打開了，清晨的陽光照亮了這座罪惡的校園。<br>【結局：遲來的審判者】", jp: "放送室の裏口が開き、朝の光がこの罪深き校舎を照らし出した。<br>【結末：遅れてきた裁き人】", kr: "방송실 뒷문이 열리고, 아침 햇살이 이 죄악의 캠퍼스를 비춘다.<br>【엔딩: 뒤늦은 심판자】" } }
                     ],
                     rewards: { gold: 100, title: "復仇之刃", removeTags: ['campus_has_id', 'campus_clue_branch', 'campus_clue_diary', 'campus_info_a', 'campus_info_b', 'campus_info_c'] }, 
-                    options: [{ label: "走出校園 (結束)", action: "finish_chain" }] 
+                    options: [{ label: { zh: "走出校園 (結束)", jp: "校舎を出る (終了)", kr: "캠퍼스를 나서다 (종료)" }, action: "finish_chain" }] 
                 } 
             },
             { 
-                label: {
-                    zh: "引爆啦啦隊長的炸彈",
-                    jp: "チアリーダーの爆弾を起爆する",
-                    kr: "치어리더의 폭탄을 폭발시키다"
-                },
+                label: { zh: "引爆 啦啦隊長 的炸彈", jp: "チアリーダーの爆弾を起爆", kr: "치어리더의 폭탄 기폭" },
                 action: "node_next", 
                 nextScene: { 
                     dialogue: [
-                        { text: "啦啦隊長被炸成了碎片... 但緊接著，你腳下的地板閃爍起紅光。" },
-                        { speaker: "校內廣播", text: "『太遺憾了，你成了幫凶的替死鬼。』" },
-                        { text: "巨大的爆炸吞噬了整個廣播室...\n【結局：邏輯死胡同】" }
+                        { text: { zh: "啦啦隊長被炸成了碎片... 但緊接著，你腳下的地板閃爍起紅光。", jp: "チアリーダーは爆発で粉々になった……しかしその直後、あなたの足元の床が赤く点滅し始めた。", kr: "치어리더는 폭발로 산산조각이 났다... 하지만 그 직후, 당신 발밑의 바닥이 빨간빛으로 깜빡이기 시작한다." } },
+                        { speaker: { zh: "校內廣播", jp: "校内放送", kr: "교내 방송" }, text: { zh: "『太遺憾了，你成了幫凶的替死鬼。』", jp: "『残念だったね。君は共犯者の身代わりになったんだ』", kr: "『유감이군, 네가 공범의 희생양이 되어버리다니.』" } },
+                        { text: { zh: "巨大的爆炸吞噬了整個廣播室...<br>【結局：邏輯死胡同】", jp: "巨大な爆発が放送室全体を飲み込んだ……<br>【結末：論理の袋小路】", kr: "거대한 폭발이 방송실 전체를 집어삼킨다...<br>【엔딩: 논리의 막다른 길】" } }
                     ],
                     rewards: { removeTags: ['campus_has_id', 'campus_clue_branch', 'campus_clue_diary', 'campus_info_a', 'campus_info_b', 'campus_info_c'] },
-                    options: [{ label: "葬身火海", action: "finish_chain" }] 
+                    options: [{ label: { zh: "葬身火海", jp: "炎に葬られる", kr: "화염 속에 묻히다" }, action: "finish_chain" }] 
                 } 
             },
             { 
-                label: {
-                    zh: "引爆不良少年的炸彈",
-                    jp: "不良少年の爆弾を起爆する",
-                    kr: "불량소년의 폭탄을 폭발시키다"
-                },
+                label: { zh: "引爆 不良少年 的炸彈", jp: "不良少年の爆弾を起爆", kr: "불량소년의 폭탄 기폭" },
                 action: "node_next", 
                 nextScene: { 
                     dialogue: [
-                        { text: "不良少年被炸成了碎片... 但緊接著，你腳下的地板閃爍起紅光。" },
-                        { speaker: "校內廣播", text: "『太遺憾了，你成了幫凶的替死鬼。』" },
-                        { text: "巨大的爆炸吞噬了整個廣播室...\n【結局：錯誤的直覺】" }
+                        { text: { zh: "不良少年被炸成了碎片... 但緊接著，你腳下的地板閃爍起紅光。", jp: "不良少年は爆発で粉々になった……しかしその直後、あなたの足元の床が赤く点滅し始めた。", kr: "불량소년은 폭발로 산산조각이 났다... 하지만 그 직후, 당신 발밑의 바닥이 빨간빛으로 깜빡이기 시작한다." } },
+                        { speaker: { zh: "校內廣播", jp: "校内放送", kr: "교내 방송" }, text: { zh: "『太遺憾了，你成了幫凶的替死鬼。』", jp: "『残念だったね。君は共犯者の身代わりになったんだ』", kr: "『유감이군, 네가 공범의 희생양이 되어버리다니.』" } },
+                        { text: { zh: "巨大的爆炸吞噬了整個廣播室...<br>【結局：錯誤的直覺】", jp: "巨大な爆発が放送室全体を飲み込んだ……<br>【結末：誤った直感】", kr: "거대한 폭발이 방송실 전체를 집어삼킨다...<br>【엔딩: 잘못된 직감】" } }
                     ],
                     rewards: { removeTags: ['campus_has_id', 'campus_clue_branch', 'campus_clue_diary', 'campus_info_a', 'campus_info_b', 'campus_info_c'] },
-                    options: [{ label: "葬身火海", action: "finish_chain" }] 
+                    options: [{ label: { zh: "葬身火海", jp: "炎に葬られる", kr: "화염 속에 묻히다" }, action: "finish_chain" }] 
                 } 
             },
-            { label: "等等，我再想想", action: "node_next", nextSceneId: 'campus_broadcast_hub' }
+            { label: { zh: "等等，我再想想", jp: "待って、もう少し考える", kr: "잠깐, 다시 생각해볼게" }, action: "node_next", nextSceneId: 'campus_broadcast_hub' }
         ]
     });
 
-// --- B. 快遞驚魂 (Delivery) ---
-register({
-    id: 'delivery_start',
-    dialogue: [
-        { speaker: "旁白", text: "{atom_weather}，雨水順著雨衣的帽簷滑落... 這裡安靜得不正常。" },
-        { speaker: "你", text: "有人在嗎？快遞。" },
-        { speaker: "旁白", text: "沒有回應。但我能感覺到，門後似乎有什麼東西在動..." }
-    ],
-    options: [{ label: "繼續等待...", action: "node_next", nextSceneId: 'delivery_choice' }]
-});
-
-register({
-    id: 'delivery_choice',
-    text: [
-        "備註欄寫著紅字：『必須親手交付，絕不能帶回。』",
-        "時間是晚上 11:58。還有兩分鐘。",
-        "那股腐敗的甜膩氣味，似乎就是從門縫裡飄出來的..."
-    ],
-    options: [
-        // 補上 action: "node_next"
-        { label: "直接推門進去 (STR檢定)", action: "node_next", check: { stat: 'STR', val: 6 }, nextSceneId: 'route_a_enter', failScene: { text: "門鎖住了，你撞不開。", options: [{label:"離開", action:"finish_chain"}]} },
-        { label: "大喊名字", action: "node_next", nextSceneId: 'route_b_shout' },
-        { label: "拍照走人", action: "node_next", nextSceneId: 'route_c_leave' }
-    ]
-});
-
-register({ 
-    id: 'route_a_enter', 
-    // 補上 speaker: "旁白"
-    dialogue: [
-        { speaker: "旁白", text: "推開門，客廳擺滿了顯示雜訊的電視機..." },
-        { speaker: "旁白", text: "不祥的預感讓你渾身寒顫，" },
-        { speaker: "旁白", text: "餘光中，一雙乾枯腐敗，如同枯骨的手從黑暗緩緩伸出..." }
-    ],  
-    options: [
-        // 補上 action: "node_next"
-        { label: "奮力開門逃跑 (STR檢定)", action: "node_next", check: { stat: 'STR', val: 6 }, nextSceneId: 'leave01', failScene: { text: "門鎖住了，你撞不開。", options: [{ label: "無助的等候死亡", action: "node_next", nextSceneId: 'dead01' }]}},
-        { label: "無助的等候死亡", action: "node_next", nextSceneId: 'dead01' }
-    ]
-});
-
-register({ 
-    id: 'route_b_shout',
-    // 補上 speaker
-    dialogue: [
-        { speaker: "隔壁老太太", text: "那個人已經死了三天了！" },
-        { speaker: "旁白", text: "不祥的預感讓你渾身寒顫，" },
-        { speaker: "旁白", text: "那麼從門內傳來的陣陣詭異笑聲是...?" }
-    ],
-    options: [
-        { label: "恐懼抓住你的腳步，但你深知這裡並不宜久留...", action: "node_next", nextSceneId: 'leave01' }
-    ]
-});
-        
-register({ 
-    id: 'route_c_leave', 
-    text: "你試圖下樓，卻發現一直在四樓鬼打牆...", 
-    options: [{label:"加快腳步離開", action: "node_next", nextSceneId: 'leave01' }] 
-});
-
-register({ 
-    id: 'dead01', 
-    text: "你雙眼緊閉，祈禱著痛苦能快點過去...", 
-    options: [{label:"結束一切", action:"finish_chain"}] 
-});
-
-register({ 
-    id: 'leave01', 
-    text: "腎上腺素幫助你逃離了令人恐懼的老舊國宅...", 
-    options: [{label:"離開這裡", action:"finish_chain"}] 
-});
-
 // ============================================================
-// 5. 新增劇本：告解室的最後一小時 (The Confessional)
+// 📦 冒險者模式：固定劇本 (Fixed Scripts)
 // ============================================================
 
-// --- 序章：冒牌神父 ---
-register({
-    id: 'confessional_start',
-    text: [
-        "【第一章：冒牌神父】",
-        "教堂的彩色玻璃窗被颱風拍打得格格作響，像是有無數隻手試圖從外面的黑暗中闖進來。",
-        "你低頭看著身上這件寬大的黑色聖袍，領口還帶著一股樟腦丸的陳舊氣味。",
-        "你叫陳默，一個正在被通緝的詐欺犯。為了躲避豪雨和警方的路檢，你撬開了這間無人教堂的後門。"
-    ],
-    options: [
-        { 
-            label: "喝一口聖壇上的紅酒", 
-            action: "node_next", 
-            nextScene: {
-                text: "劣質的葡萄酸澀味在舌尖蔓延。就在你準備喝第二口的時候，大門發出了刺耳的摩擦聲——吱呀！",
-                options: [{ label: "有人來了！", action: "node_next", nextSceneId: 'confessional_encounter' }]
-            }
-        }
-    ]
-});
-
-register({
-    id: 'confessional_encounter',
-    dialogue: [
-        {text:"一個全身濕透的女人跌跌撞撞地闖了進來。"},
-        {text:"她穿著昂貴但沾滿泥濘的風衣，臉色蒼白如紙，眼神渙散。"},
-        {text:"她看見了你身上的聖袍，撲通一聲跪在告解室前。"},
-        { speaker: "女人", text: "神父……我有罪。" },
-        { speaker: "你", text: "（壓低嗓音）孩子，這麼晚了，教堂已經關門了。" },
-        { speaker: "女人", text: "不，請聽我說。我剛才……殺了人。" }
-    ],
-    options: [
-        { 
-            label: "握緊藏在腰後的折疊刀", 
-            action: "node_next", 
-            nextSceneId: 'confessional_poison_reveal' 
-        }
-    ]
-});
-
-// --- 轉折：毒發宣告 ---
-register({
-    id: 'confessional_poison_reveal',
-    dialogue: [
-        { speaker: "你", text: "你殺了誰？" },
-        { speaker: "女人", text: "我殺了這裡的神父。十分鐘前，我在那瓶紅酒裡下了足以殺死一頭大象的氰化物。" },
-		{text:"匡噹！你手中的酒杯掉在地上摔得粉碎。"},
-		{text:"深紅色的液體潑灑在鞋子上，像極了血。"},
-		{text:"女人看著地上的碎片，嘴角勾起一抹詭異的微笑。"}
-    ],
-    options: [
-        { 
-            label: "什麼...？！", 
-            action: "node_next", 
-            nextScene: {
-                text: "女人平靜地說：「毒發時間是一小時。現在，您還有五十分鐘。」",
-                // 獲得中毒狀態 TAG
-                rewards: { tags: ['poisoned'] },
-                options: [{ label: "逼問解藥！", action: "node_next", nextSceneId: 'confessional_interrogation' }]
-            } 
-        }
-    ]
-});
-
-// --- 發展：死亡博弈 ---
-register({
-    id: 'confessional_interrogation',
-    dialogue: [
-        {text:"【第二章：死亡倒數】"},
-        {text:"恐懼像冰水一樣澆透了全身。喉嚨開始發緊——是心理作用？還是毒藥生效了？"},
-        {text:"你衝過去揪住她的衣領，但她眼神鋒利，毫無懼色。"},
-        { speaker: "女人", text: "這是一個考驗。如果您是真的神父，上帝會拯救您。" },
-        { speaker: "你", text: "別裝神弄鬼！解藥在哪裡？" },
-        { speaker: "女人", text: "解藥在我的車上。但我設定了密碼鎖，四十分鐘後自動銷毀。" },
-        { speaker: "女人", text: "幫我完成一個『儀式』，聽完我真正的告解並赦免我，我就給你解藥。" }
-    ],
-    options: [
-        { 
-            label: {
-                zh: "只能聽她說了",
-                jp: "彼女の話を聞くしかない",
-                kr: "그녀의 말을 들을 수밖에 없다"
-            },
-            action: "node_next", 
-            nextSceneId: 'confessional_truth' 
-        }
-    ]
-});
-
-register({
-    id: 'confessional_truth',
-    dialogue: [
-                { text: { zh: "【第三章：致命的真相】" } },
-                { text: { zh: "時間流逝，你的手指開始發麻，視線邊緣出現模糊。" } },
-                { text: { zh: "女人講述了一個關於丈夫外遇、黑幫棄屍點以及外科醫生丈夫的故事。" } },
-                { text: { zh: "就在這時——咚、咚、咚。" } },
-                { text: { zh: "教堂後門傳來了沈重的敲擊聲。" } },
-                { speaker: "女人", text: { zh: "（縮成一團）他們來了。我丈夫，還有那個神父。他們回來『清理』了。" } },
-                { speaker: "你", text: { zh: "該死...還有二十分鐘..." } }
-            ],
-    options: [
-        // 這裡是結局分歧點
-        // 選項 A: 壞結局
-        { 
-            label: "把女人交出去換解藥", 
-            action: "node_next", 
-            nextSceneId: 'confessional_end_bad' 
-        },
-        // 選項 B: 真結局 (需要智力檢定或觀察)
-        { 
-            label: {
-                zh: "等等——這邏輯不對",
-                jp: "待って——この論理はおかしい",
-                kr: "잠깐——이 논리는 이상해"
-            },
-            action: "node_next",
-            check: { stat: 'INT', val: 7 },
-            nextSceneId: 'confessional_end_true',
-            failScene: { text: "你的大腦一片混亂，無法思考細節...", options: [{label:"只能拼了！(轉向戰鬥)", action:"node_next", nextSceneId:'confessional_end_action'}]}
-        },
-        // 選項 C: 戰鬥結局 (模擬中毒視角)
-        { 
-            label: {
-                zh: "相信她，聯手反殺",
-                jp: "彼女を信じ共に反撃する",
-                kr: "그녀를 믿고 함께 반격하다"
-            },
-            action: "node_next", 
-            nextSceneId: 'confessional_end_action' 
-        }
-    ]
-});
-
-// --- 結局 A：虛假的救贖 (Bad End) ---
-register({
-    id: 'confessional_end_bad',
-    dialogue: [
-                { text: { zh: "你打開門，向門外的黑影高喊：「我抓住了她！給我解藥！」" } },
-                { text: { zh: "進來的是個戴眼鏡的男人，他微笑著遞給你一支針筒。" } },
-                { text: { zh: "你迫不及待地注射，卻發現身體瞬間失去了力氣——那是肌肉鬆弛劑。" } },
-                { speaker: "丈夫", text: { zh: "親愛的，今晚的獵物素質不錯。" } },
-                { speaker: "女人", text: { zh: "（蹲在你耳邊）可惜，神父的演技太差了。" } }
-            ],
-    options: [
-        { 
-            label: {
-                zh: "意識陷入黑暗",
-                jp: "意識が暗闇に落ちる",
-                kr: "의식이 어둠 속으로 빠져들다"
-            },
-            action: "finish_chain", 
-            rewards: { removeTags: ['poisoned'] } 
-        }
-    ]
-});
-
-// --- 結局 B：真正的神父 (True End) ---
-register({
-    id: 'confessional_end_true',
-    dialogue: [
-                { text: { zh: "你猛地踢開告解室的門，一把扯下聖壇下的地毯，露出了一個通風口。" } },
-                { text: { zh: "你冷冷地看著驚恐的女人。" } },
-                { speaker: "你", text: { zh: "根本沒有毒酒。" } },
-                { speaker: "你", text: { zh: "我是詐欺犯，我懂氰化物。高濃度氰化物的致死時間不超過五分鐘，根本不需要等一小時。你說的一小時只是為了讓我乖乖配合你演這場戲！" } },
-                { speaker: "你", text: { zh: "我手指發麻是因為淋雨發燒，不是中毒。你需要的不是赦免——你需要有人替你擋住門外那些人！" } },
-                { speaker: "女人", text: { zh: "你..." } }
-            ],
-    options: [
-        {
-            label: "從通風口逃走",
-            action: "node_next",
-            nextScene: {
-                text: [
-                    "門外的人破門而入——是警察。",
-                    "原來女人才是黑寡婦殺手，她殺了真神父並藏屍，卻剛好撞見你。",
-                    "你在雨中回頭看了一眼教堂，警車的紅藍光在夜色中閃爍。"
-                ],
-                dialogue: [
-                    { speaker: "你", text: "這世上沒有神，只有為了活下去而編造謊言的惡魔。阿門。" }
-                ],
-                options: [{ 
-                    label: {
-                        zh: "逃出生天",
-                        jp: "生き延びて逃げ出す",
-                        kr: "살아서 탈출하다"
-                    },
-                    action: "finish_chain", 
-                    rewards: { gold: 50,removeTags: ['poisoned'] } 
-                }]
-            }
-        }
-    ]
-});
-
-// --- 結局 C：血色黎明 (Action End) ---
-register({
-    id: 'confessional_end_action',
-    dialogue: [
-                { text: { zh: "「相信我。」你看著她。「我不是神父，你也清楚。但他們來者不善，我們現在是同一條船上的。」" } },
-                { text: { zh: "她遲疑了兩秒，然後點頭。" } },
-                { text: { zh: "你利用教堂的地形，推倒了雕像，並點燃了聖油。" } },
-                { text: { zh: "當入侵者闖入時，你們兩個人聯手，展開了一場混亂的搏鬥。" } },
-                { text: { zh: "你受了重傷，但他們付出了更大的代價。" } },
-                { speaker: "你", text: { zh: "呼...呼...解藥...給我..." } },
-                { speaker: "女人", text: { zh: "（沉默片刻，從包包裡掏出一個藥瓶）...我從來沒有下毒。酒裡什麼都沒有。對不起，我撒謊了。" } },
-                { text: { zh: "你把藥瓶扔到一邊，苦笑著靠在聖壇上。原來那只是一場把你當棋子的謊言——但你還是選擇了賭一把。" } }
-            ],
-    options: [
-        {
-            label: "喝下藥水",
-            action: "node_next",
-            nextScene: {
-                dialogue: [
-                            { text: { zh: "你舉起那瓶藥水，然後放下了。" } },
-                            { text: { zh: "「算了。」" } },
-                            { text: { zh: "女人拿起她的包包，在門口停頓了一下。「謝謝你。」她消失在晨光中。" } },
-                            { text: { zh: "你靠在聖壇上，看著窗外的第一縷晨光。什麼都沒有——沒有解藥，沒有酬勞，沒有答案。" } },
-                            { speaker: "你", text: { zh: "至少……這場雨停了。" } }
-                        ],
-                options: [{ 
-                    label: {
-                        zh: "在晨光中閉上眼",
-                        jp: "朝の光の中で目を閉じる",
-                        kr: "아침 빛 속에서 눈을 감다"
-                    },
-                    action: "finish_chain", 
-                    rewards: { removeTags: ['poisoned'] } 
-                }]
-            }
-        }
-    ]
-});
-
-// ============================================================
-    // 🌃 序幕：潛入深淵財閥
     // ============================================================
+    // 1. 快遞驚魂 (Delivery)
+    // ============================================================
+    register({
+        id: 'delivery_start',
+        type: 'start', // 標註為起始節點
+        dialogue: [
+            { speaker: { zh: "旁白", jp: "ナレーション", kr: "내레이션" }, text: { zh: "{atom_weather}，雨水順著雨衣的帽簷滑落... 這裡安靜得不正常。", jp: "{atom_weather}、雨水がレインコートのつばを伝って落ちる……ここは異常なほど静かだ。", kr: "{atom_weather}, 우비 모자챙을 따라 빗물이 흘러내린다... 이곳은 비정상적으로 조용하다." } },
+            { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「有人在嗎？快遞。」", jp: "「誰かいますか？お届け物です」", kr: "「계십니까? 택배입니다.」" } },
+            { speaker: { zh: "旁白", jp: "ナレーション", kr: "내레이션" }, text: { zh: "沒有回應。但我能感覺到，門後似乎有什麼東西在動...", jp: "返事はない。しかし、ドアの向こうで何かが動いている気配がする……", kr: "대답은 없다. 하지만 문 너머에서 무언가 움직이는 기척이 느껴진다..." } }
+        ],
+        options: [{ label: { zh: "繼續等待...", jp: "待ち続ける…", kr: "계속 기다리다..." }, action: "node_next", nextSceneId: 'delivery_choice' }]
+    });
+
+    register({
+        id: 'delivery_choice',
+        dialogue: [
+            { text: { zh: "包裹的備註欄寫著紅字：『必須親手交付，絕不能帶回。』", jp: "荷物の備考欄には赤い文字でこう書かれている：『必ず手渡しすること。絶対に持ち帰ってはならない』", kr: "택배 비고란에 붉은 글씨로 적혀 있다: 『반드시 직접 전달할 것. 절대 다시 가져오지 말 것.』" } },
+            { text: { zh: "時間是晚上 11:58。還有兩分鐘。", jp: "時刻は夜の11時58分。あと2分。", kr: "시간은 밤 11시 58분. 2분 남았다." } },
+            { text: { zh: "那股腐敗的甜膩氣味，似乎就是從門縫裡飄出來的...", jp: "あの腐ったような甘ったるい匂いは、どうやらドアの隙間から漂ってきているようだ……", kr: "그 부패한 듯 달착지근한 냄새는, 아무래도 문틈에서 새어 나오는 것 같다..." } }
+        ],
+        options: [
+            { 
+                label: { zh: "直接推門進去", jp: "そのままドアを押し開ける", kr: "그냥 문을 밀고 들어가다" }, 
+                action: "node_next", 
+                check: { stat: 'STR', val: 6 }, 
+                nextSceneId: 'route_a_enter', 
+                onFail: { 
+                    text: { zh: "門被死死鎖住了，你用盡全力撞擊，門卻紋風不動。那股腐臭味讓你作嘔。", jp: "ドアは固く閉ざされている。全力で体当たりしたが、ピクリともしない。腐臭が吐き気を催させる。", kr: "문이 꽉 잠겨 있다. 온 힘을 다해 부딪혀 보았지만 꿈쩍도 하지 않는다. 썩은 냄새에 구역질이 난다." } 
+                },
+                failScene: { // 檢定失敗後的導向
+                    options: [{ label: { zh: "放棄離開", jp: "諦めて離れる", kr: "포기하고 떠나다" }, action: "finish_chain" }] 
+                } 
+            },
+            { label: { zh: "大喊名字", jp: "大声で名前を呼ぶ", kr: "큰 소리로 이름 부르기" }, action: "node_next", nextSceneId: 'route_b_shout' },
+            { label: { zh: "拍照走人", jp: "写真を撮って立ち去る", kr: "사진 찍고 떠나기" }, action: "node_next", nextSceneId: 'route_c_leave' }
+        ]
+    });
+
+    register({ 
+        id: 'route_a_enter', 
+        dialogue: [
+            { speaker: { zh: "旁白", jp: "ナレーション", kr: "내레이션" }, text: { zh: "你用力推開門。身後的鐵門立刻「砰」地一聲猛然關上並反鎖！", jp: "力を込めてドアを開けた。直後、背後の鉄の扉が「バンッ！」と激しい音を立てて閉まり、ロックされた！", kr: "힘껏 문을 밀고 들어갔다. 등 뒤의 철문이 즉시 '쾅' 소리를 내며 거칠게 닫히더니 잠겨버렸다!" } },
+            { speaker: { zh: "旁白", jp: "ナレーション", kr: "내레이션" }, text: { zh: "客廳裡擺滿了顯示著雪花雜訊的老舊電視機...", jp: "リビングには、砂嵐が映る古いテレビが敷き詰められている……", kr: "거실에는 노이즈 화면이 켜진 낡은 TV들이 가득 놓여 있다..." } },
+            { speaker: { zh: "旁白", jp: "ナレーション", kr: "내레이션" }, text: { zh: "不祥的預感讓你渾身發寒。餘光中，一雙乾枯腐敗、如同枯骨的手從黑暗處緩緩伸出...", jp: "不吉な予感に全身が粟立つ。視界の隅で、枯れ骨のように干からびて腐った両手が、暗闇からゆっくりと伸びてきた……", kr: "불길한 예감에 온몸에 한기가 돈다. 시야 한구석에서, 마른 뼈처럼 바짝 마르고 썩은 두 손이 어둠 속에서 천천히 뻗어 나온다..." } }
+        ],  
+        options: [
+            { 
+                label: { zh: "奮力開門逃跑", jp: "全力でドアを開けて逃げる", kr: "필사적으로 문 열고 도망치기" }, 
+                action: "node_next", 
+                check: { stat: 'STR', val: 6 }, 
+                nextSceneId: 'leave01', 
+                onFail: { 
+                    text: { zh: "門鎖死卡住了！你拼命轉動喇叭鎖，但恐懼剝奪了你的力氣。那雙手抓住了你的腳踝...", jp: "ドアの鍵が完全にロックされている！必死にドアノブを回すが、恐怖で力が入らない。その手があなたの足首を掴んだ……", kr: "문이 꽉 잠겨버렸다! 필사적으로 손잡이를 돌려보지만, 공포가 힘을 앗아갔다. 그 두 손이 당신의 발목을 잡았다..." } 
+                },
+                failScene: { 
+                    options: [{ label: { zh: "無助地等候死亡", jp: "無力に死を待つ", kr: "무력하게 죽음을 기다리다" }, action: "node_next", nextSceneId: 'dead01' }] 
+                } 
+            },
+            { label: { zh: "放棄掙扎，等候死亡", jp: "抵抗を諦め、死を待つ", kr: "저항을 포기하고 죽음을 기다리다" }, action: "node_next", nextSceneId: 'dead01' }
+        ]
+    });
+
+    register({ 
+        id: 'route_b_shout',
+        dialogue: [
+            { speaker: { zh: "隔壁老太太", jp: "隣の老婆", kr: "옆집 할머니" }, text: { zh: "「別喊了！那戶人家... 那個人已經死了三天了！」", jp: "「叫ぶのはおよし！その家の人……あの人はもう3日も前に死んでるんだよ！」", kr: "「그만 소리쳐! 그 집 사람... 그 사람은 이미 3일 전에 죽었어!」" } },
+            { speaker: { zh: "旁白", jp: "ナレーション", kr: "내레이션" }, text: { zh: "老太太恐懼地關上了門。不祥的預感讓你渾身寒顫。", jp: "老婆は怯えたようにドアを閉めた。不吉な予感に全身が震える。", kr: "할머니는 겁에 질려 문을 닫아버렸다. 불길한 예감에 온몸에 한기가 돈다." } },
+            { speaker: { zh: "旁白", jp: "ナレーション", kr: "내레이션" }, text: { zh: "如果裡面的人死了三天... 那麼此刻從門縫內傳來的陣陣詭異笑聲，到底是誰發出的？", jp: "中の人間が3日前に死んでいるのなら……今、ドアの隙間から漏れてくる不気味な笑い声は、一体誰のものだ？", kr: "안에 있는 사람이 죽은 지 3일이나 지났다면... 지금 문틈에서 들려오는 기괴한 웃음소리는 대체 누가 내는 거지?" } }
+        ],
+        options: [
+            { label: { zh: "恐懼抓住你的腳步，快逃", jp: "恐怖に駆られ、逃げ出す", kr: "공포에 사로잡혀 도망치다" }, action: "node_next", nextSceneId: 'leave01' }
+        ]
+    });
+        
+    register({ 
+        id: 'route_c_leave', 
+        dialogue: [
+            { text: { zh: "你決定不管這份詭異的包裹，拍了張照片就轉身下樓。", jp: "この不気味な荷物に関わるのはやめようと決め、写真を撮ってすぐに階段を降りた。", kr: "당신은 이 기괴한 택배를 신경 쓰지 않기로 하고, 사진을 찍은 뒤 곧장 계단을 내려갔다." } },
+            { text: { zh: "然而，你往下走了三層樓，卻發現牆上漆著的數字依然是『4』。你遇到了鬼打牆...", jp: "しかし、3階分も降りたはずなのに、壁に描かれた数字は依然として『4』のままだった。怪異に囚われてしまった……", kr: "하지만 세 층이나 내려갔음에도, 벽에 칠해진 숫자는 여전히 『4』였다. 귀신에 홀린 것이다..." } }
+        ],
+        options: [{ label: { zh: "閉上眼狂奔", jp: "目を閉じて狂ったように走る", kr: "눈을 질끈 감고 미친 듯이 달리다" }, action: "node_next", nextSceneId: 'leave01' }] 
+    });
+
+    register({ 
+        id: 'dead01', 
+        dialogue: [{ text: { zh: "你雙眼緊閉，刺骨的寒意爬上了你的脖頸。你只能祈禱著痛苦能快點過去...", jp: "両目を固く閉じると、刺すような寒気が首筋に這い上がってきた。痛みが早く過ぎ去ることを祈るしかない……", kr: "두 눈을 질끈 감자, 뼛속까지 시린 한기가 목덜미를 타고 기어오른다. 고통이 빨리 지나가기만을 기도할 뿐이다..." } }],
+        options: [{ label: { zh: "結束一切", jp: "すべてを終わらせる", kr: "모든 것을 끝내다" }, action: "finish_chain" }] 
+    });
+
+    register({ 
+        id: 'leave01', 
+        dialogue: [{ text: { zh: "腎上腺素飆升，你跌跌撞撞地逃離了那棟令人窒息的老舊國宅。大雨依然下著，但你覺得活著真好。", jp: "アドレナリンが沸き上がり、息の詰まるような古い団地から転がるように逃げ出した。大雨は降り続いているが、生きていて良かったと心から思えた。", kr: "아드레날린이 치솟았고, 숨 막히는 낡은 임대아파트에서 비틀거리며 도망쳤다. 폭우는 여전히 쏟아지고 있지만, 살아있다는 게 참 좋다고 느껴진다." } }],
+        options: [{ label: { zh: "離開這裡", jp: "ここを離れる", kr: "이곳을 떠나다" }, action: "finish_chain", rewards: { exp: 30 } }] 
+    });
+
+    // ============================================================
+    // 2. 告解室的最後一小時 (The Confessional)
+    // ============================================================
+
+    // --- 序章：冒牌神父 ---
+    register({
+        id: 'confessional_start',
+        type: 'start',
+        dialogue: [
+            { text: { zh: "【第一章：冒牌神父】", jp: "【第一章：偽神父】", kr: "【제1장: 가짜 신부】" } },
+            { text: { zh: "教堂的彩色玻璃窗被颱風拍打得格格作響，像是有無數隻手試圖從外面的黑暗中闖進來。", jp: "教会のステンドグラスが台風でガタガタと鳴っている。まるで無数の手が外の暗闇から侵入しようとしているかのようだ。", kr: "교회의 스테ンド글라스가 태풍에 덜컹거린다. 마치 수많은 손이 밖의 어둠 속에서 뚫고 들어오려는 것 같다." } },
+            { text: { zh: "你低頭看著身上這件寬大的黑色聖袍，領口還帶著一股樟腦丸的陳舊氣味。", jp: "自分がいま身にまとっている、だぼだぼの黒い修道服を見下ろす。襟元からは防虫剤の古臭い匂いがする。", kr: "자신이 입고 있는 헐렁한 검은색 사제복을 내려다본다. 목깃에서는 방충제의 퀴묵은 냄새가 난다." } },
+            { text: { zh: "你叫陳默，一個正在被通緝的詐欺犯。為了躲避豪雨和警方的路檢，你撬開了這間無人教堂的後門。", jp: "お前の名は陳黙（チェン・モォ）、指名手配中の詐欺師だ。豪雨と警察の検問から逃れるため、この無人の教会の裏口をこじ開けたのだ。", kr: "당신의 이름은 천모(陳默), 수배 중인 사기꾼이다. 폭우와 경찰의 검문을 피하기 위해, 이 빈 교회의 뒷문을 따고 들어왔다." } }
+        ],
+        options: [
+            { 
+                label: { zh: "喝一口聖壇上的紅酒", jp: "祭壇の赤ワインを一口飲む", kr: "제단의 성혈(적포도주)을 한 모금 마시다" }, 
+                action: "node_next", 
+                nextScene: {
+                    dialogue: [{ text: { zh: "劣質的葡萄酸澀味在舌尖蔓延。就在你準備喝第二口的時候，大門發出了刺耳的摩擦聲——吱呀！", jp: "質の悪いブドウの渋みが舌に広がる。2口目を飲もうとしたその時、正面の扉が甲高い摩擦音を立てた——ギィィィッ！", kr: "싸구려 포도의 떫은맛이 혀끝에 맴돈다. 두 모금째를 마시려는 순간, 정문에서 날카로운 마찰음이 들려왔다——끼익!" } }],
+                    options: [{ label: { zh: "有人來了！", jp: "誰か来た！", kr: "누군가 왔다!" }, action: "node_next", nextSceneId: 'confessional_encounter' }]
+                }
+            }
+        ]
+    });
+
+    register({
+        id: 'confessional_encounter',
+        dialogue: [
+            { text: { zh: "一個全身濕透的女人跌跌撞撞地闖了進來。", jp: "全身ずぶ濡れの女が、よろめきながら飛び込んできた。", kr: "온몸이 흠뻑 젖은 여자가 비틀거리며 뛰어 들어왔다." } },
+            { text: { zh: "她穿著昂貴但沾滿泥濘的風衣，臉色蒼白如紙，眼神渙散。", jp: "高価だが泥だらけのトレンチコートを着ており、顔面は紙のように蒼白で、焦点が定まっていない。", kr: "비싸지만 진흙투성이가 된 트렌치코트를 입고, 얼굴은 백지장처럼 창백하며 초점이 없다." } },
+            { text: { zh: "她看見了你身上的聖袍，撲通一聲跪在告解室前。", jp: "彼女はあなたの修道服を見るなり、ドサリと告解室の前にひざまずいた。", kr: "그녀는 당신의 사제복을 보더니, 고해소 앞에 털썩 무릎을 꿇었다." } },
+            { speaker: { zh: "女人", jp: "女", kr: "여자" }, text: { zh: "「神父……我有罪。」", jp: "「神父様……私には罪があります」", kr: "「신부님…… 제게는 죄가 있습니다.」" } },
+            { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "（壓低嗓音）「孩子，這麼晚了，教堂已經關門了。」", jp: "（声を潜めて）「迷える子よ、こんな夜更けだ。教会はもう閉まっている」", kr: "(목소리를 낮추며) 「자매님, 이렇게 늦은 시간엔 교회가 문을 닫습니다.」" } },
+            { speaker: { zh: "女人", jp: "女", kr: "여자" }, text: { zh: "「不，請聽我說。我剛才……殺了人。」", jp: "「いいえ、聞いてください。私は先ほど……人を殺しました」", kr: "「아뇨, 제발 들어주세요. 제가 방금…… 사람을 죽였어요.」" } }
+        ],
+        options: [
+            { 
+                label: { zh: "握緊藏在腰後的折疊刀", jp: "腰の裏の折りたたみナイフを握る", kr: "허리 뒤에 숨긴 접이식 칼을 꽉 쥐다" }, 
+                action: "node_next", 
+                nextSceneId: 'confessional_poison_reveal' 
+            }
+        ]
+    });
+
+    // --- 轉折：毒發宣告 ---
+    register({
+        id: 'confessional_poison_reveal',
+        dialogue: [
+            { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「你殺了誰？」", jp: "「誰を殺したんだ？」", kr: "「누굴 죽였습니까?」" } },
+            { speaker: { zh: "女人", jp: "女", kr: "여자" }, text: { zh: "「我殺了這裡的神父。十分鐘前，我在那瓶紅酒裡下了足以殺死一頭大象的氰化物。」", jp: "「ここの神父様です。10分前、あの赤ワインに象一頭を殺せるほどのシアン化物を入れました」", kr: "「이곳의 신부님을 죽였어요. 10분 전, 저 적포도주에 코끼리 한 마리를 죽일 만큼의 시안화물을 넣었거든요.」" } },
+            { text: { zh: "匡噹！你手中的酒杯掉在地上摔得粉碎。", jp: "ガシャーン！あなたの手にあったワイングラスが床に落ちて粉々に砕け散った。", kr: "쨍그랑! 당신의 손에 들려있던 와인잔이 바닥에 떨어져 산산조각 났다." } },
+            { text: { zh: "深紅色的液體潑灑在鞋子上，像極了血。", jp: "深紅の液体が靴に飛び散る。それは血に酷似していた。", kr: "진홍색 액체가 구두에 튀었다. 마치 피와 같았다." } },
+            { text: { zh: "女人看著地上的碎片，嘴角勾起一抹詭異的微笑。", jp: "女は床の破片を見つめ、口元に不気味な笑みを浮かべた。", kr: "여자는 바닥의 조각들을 보며, 입가에 기괴한 미소를 지었다." } }
+        ],
+        options: [
+            { 
+                label: { zh: "什麼...？！", jp: "なんだと……？！", kr: "뭐라고...벌써 마셨는데?!" }, 
+                action: "node_next", 
+                nextScene: {
+                    dialogue: [{ text: { zh: "女人平靜地說：「毒發時間是一小時。現在，您還有五十分鐘。」", jp: "女は静かに言った：「毒が回るまで一時間。あなたにはあと五十分残されています」", kr: "여자가 평온하게 말했다: 「독이 퍼지는 시간은 1시간입니다. 이제, 당신에겐 50분이 남았네요.」" } }],
+                    rewards: { tags: ['poisoned'] }, // 獲得中毒狀態 TAG
+                    options: [{ label: { zh: "逼問解藥！", jp: "解毒剤を吐かせる！", kr: "해독제를 추궁하다!" }, action: "node_next", nextSceneId: 'confessional_interrogation' }]
+                } 
+            }
+        ]
+    });
+
+    // --- 發展：死亡博弈 ---
+    register({
+        id: 'confessional_interrogation',
+        dialogue: [
+            { text: { zh: "【第二章：死亡倒數】", jp: "【第二章：死のカウントダウン】", kr: "【제2장: 죽음의 카운트다운】" } },
+            { text: { zh: "恐懼像冰水一樣澆透了全身。喉嚨開始發緊——是心理作用？還是毒藥生效了？", jp: "氷水のような恐怖が全身を貫いた。喉が詰まるような気がする——気のせいか？それとも毒が効き始めたのか？", kr: "공포가 얼음물처럼 온몸을 적셨다. 목구멍이 조여오기 시작한다——심리적인 것인가? 아니면 독이 퍼지고 있는 것인가?" } },
+            { text: { zh: "你衝過去揪住她的衣領，但她眼神鋒利，毫無懼色。", jp: "あなたは飛びかかって彼女の胸ぐらを掴んだが、その目は鋭く、恐れの色は全くない。", kr: "당신은 달려가 그녀의 멱살을 잡았지만, 그녀의 눈빛은 매서웠고 조금의 두려움도 없었다." } },
+            { speaker: { zh: "女人", jp: "女", kr: "여자" }, text: { zh: "「這是一個考驗。如果您是真的神父，上帝會拯救您。」", jp: "「これは試練です。もしあなたが本物の神父様なら、神が救ってくださるでしょう」", kr: "「이건 시험입니다. 만약 당신이 진짜 신부님이라면, 신께서 구원해 주시겠죠.」" } },
+            { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「別裝神弄鬼！解藥在哪裡？」", jp: "「ふざけるな！解毒剤はどこだ？」", kr: "「수작 부리지 마! 해독제는 어디 있어?」" } },
+            { speaker: { zh: "女人", jp: "女", kr: "여자" }, text: { zh: "「解藥在我的車上。但我設定了密碼鎖，四十分鐘後自動銷毀。」", jp: "「解毒剤は私の車の中に。でもパスワードロックをかけ、四十分後に自動破棄されるよう設定しています」", kr: "「해독제는 제 차에 있습니다. 하지만 비밀번호 자물쇠를 걸어두었고, 40분 뒤 자동 폐기되도록 설정했죠.」" } },
+            { speaker: { zh: "女人", jp: "女", kr: "여자" }, text: { zh: "「幫我完成一個『儀式』，聽完我真正的告解並赦免我，我就給你解藥。」", jp: "「私の『儀式』を完成させる手伝いをしてください。私の本当の告解を聞き、赦しを与えてくれれば、解毒剤を渡します」", kr: "「제가 '의식'을 완성하도록 도와주세요. 제 진짜 고해를 듣고 저를 사면해 주신다면, 해독제를 드리죠.」" } }
+        ],
+        options: [
+            { 
+                label: { zh: "只能聽她說了", jp: "彼女の話を聞くしかない", kr: "그녀의 말을 들을 수밖에 없다" }, 
+                action: "node_next", 
+                nextSceneId: 'confessional_truth' 
+            }
+        ]
+    });
+
+    register({
+        id: 'confessional_truth',
+        dialogue: [
+            { text: { zh: "【第三章：致命的真相】", jp: "【第三章：致命的な真相】", kr: "【제3장: 치명적인 진실】" } },
+            { text: { zh: "時間流逝，你的手指開始發麻，視線邊緣出現模糊。", jp: "時間が過ぎる。指先が痺れ始め、視界の端がぼやけてきた。", kr: "시간이 흐르며, 손가락이 저리기 시작하고 시야 가장자리가 흐릿해진다." } },
+            { text: { zh: "女人講述了一個關於丈夫外遇、黑幫棄屍點以及外科醫生丈夫的駭人故事。", jp: "女は、夫の浮気、マフィアの死体遺棄現場、そして外科医の夫にまつわる恐ろしい物語を語った。", kr: "여자는 남편의 외도, 갱단의 시체 유기 장소, 그리고 외과의사 남편에 관한 소름 끼치는 이야기를 털어놓았다." } },
+            { text: { zh: "就在這時——咚、咚、咚。", jp: "その時だ——ドン、ドン、ドン。", kr: "바로 그때——쾅, 쾅, 쾅." } },
+            { text: { zh: "教堂後門傳來了沈重的敲擊聲。還有金屬摩擦的聲音。", jp: "教会の裏口から重いノックの音が響いた。さらに金属が擦れる音も聞こえる。", kr: "교회 뒷문에서 무거운 타격음이 들려왔다. 쇠가 긁히는 소리도 들린다." } },
+            { speaker: { zh: "女人", jp: "女", kr: "여자" }, text: { zh: "（縮成一團）「他們來了。我丈夫，還有黑幫的人。他們回來『清理』了。」", jp: "（丸くなりながら）「彼らが来た。夫と、マフィアの奴らだわ。『掃除』に戻ってきたのよ」", kr: "(몸을 웅크리며) 「그들이 왔어요. 내 남편과 갱단 놈들. '청소'하러 돌아온 거예요.」" } },
+            { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「該死...還有二十分鐘...」", jp: "「クソッ……あと二十分しかないのに……」", kr: "「젠장... 아직 20분이나 남았는데...」" } }
+        ],
+        options: [
+            // 選項 A: 壞結局
+            { 
+                label: { zh: "把女人交出去換解藥", jp: "女を差し出して解毒剤と交換する", kr: "여자를 넘기고 해독제와 교환하다" }, 
+                action: "node_next", 
+                nextSceneId: 'confessional_end_bad' 
+            },
+            // 選項 B: 真結局 (需要智力檢定)
+            { 
+                label: { zh: "等等——這邏輯不對！", jp: "待って——この論理はおかしい！", kr: "잠깐——이 논리는 이상해!" }, 
+                action: "node_next",
+                check: { stat: 'INT', val: 7 },
+                nextSceneId: 'confessional_end_true',
+                onFail: { text: { zh: "你的大腦一片混亂，手指的麻痺感讓你無法思考細節...", jp: "頭の中が混乱し、指の痺れで細部まで思考が回らない……", kr: "머릿속이 혼란스럽고, 손가락의 마비감 때문에 세부적인 것을 생각할 수가 없다..." } },
+                failScene: { options: [{ label: { zh: "只能拼了！(轉向戰鬥)", jp: "やるしかない！(戦闘へ)", kr: "싸울 수밖에 없어! (전투로 전환)" }, action: "node_next", nextSceneId: 'confessional_end_action' }] }
+            },
+            // 選項 C: 戰鬥結局
+            { 
+                label: { zh: "相信她，聯手反殺", jp: "彼女を信じ、共に反撃する", kr: "그녀를 믿고 함께 반격하다" }, 
+                action: "node_next", 
+                nextSceneId: 'confessional_end_action' 
+            }
+        ]
+    });
+
+    // --- 結局 A：虛假的救贖 (Bad End) ---
+    register({
+        id: 'confessional_end_bad',
+        type: 'end',
+        dialogue: [
+            { text: { zh: "你猛地推開門，將女人推了出去，向門外的黑影高喊：「我抓住了她！給我解藥！」", jp: "ドアを勢いよく開け、女を突き飛ばして外の黒影に向かって叫んだ。「捕まえておいた！解毒剤をよこせ！」", kr: "당신은 거칠게 문을 열고 여자를 밀쳐낸 뒤, 밖의 검은 그림자를 향해 소리쳤다: 「내가 잡았어! 해독제를 줘!」" } },
+            { text: { zh: "進來的是個戴金絲眼鏡的男人，他微笑著遞給你一支針筒。", jp: "入ってきたのは金縁の眼鏡をかけた男で、微笑みながら一本の注射器を差し出した。", kr: "들어온 사람은 금테 안경을 쓴 남자였고, 그는 미소 지으며 당신에게 주사기를 건넸다." } },
+            { text: { zh: "你迫不及待地給自己注射，卻發現身體瞬間失去了最後一絲力氣——那是高濃度的肌肉鬆弛劑。", jp: "藁にもすがる思いで自分に注射したが、その瞬間、体から最後の力が抜け落ちた——それは高濃度の筋弛緩剤だった。", kr: "다급하게 자신에게 주사했지만, 그 순간 몸의 마지막 힘까지 빠져나가는 것을 느꼈다——그것은 고농도 근육 이완제였다." } },
+            { speaker: { zh: "丈夫", jp: "夫", kr: "남편" }, text: { zh: "「親愛的，今晚的獵物素質不錯。」", jp: "「ハニー、今夜の獲物はなかなか良いね」", kr: "「여보, 오늘 밤 사냥감은 꽤 괜찮은걸.」" } },
+            { speaker: { zh: "女人", jp: "女", kr: "여자" }, text: { zh: "（蹲在你耳邊）「可惜，這位神父的演技太差了。」", jp: "（あなたの耳元にしゃがみ込み）「残念ね、この神父様の演技は下手すぎたわ」", kr: "(당신 귓가에 쪼그려 앉으며) 「아쉽네, 이 신부님은 연기가 너무 어설펐어.」" } }
+        ],
+        options: [
+            { 
+                label: { zh: "意識陷入黑暗", jp: "意識が暗闇に落ちる", kr: "의식이 어둠 속으로 빠져들다" }, 
+                action: "finish_chain", 
+                rewards: { removeTags: ['poisoned'] } 
+            }
+        ]
+    });
+
+    // --- 結局 B：真正的神父 (True End) ---
+    register({
+        id: 'confessional_end_true',
+        type: 'end',
+        dialogue: [
+            { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「根本沒有毒酒。」", jp: "「毒入りワインなんて、最初からない」", kr: "「독이 든 와인 따윈 애초에 없었어.」" } },
+            { text: { zh: "你冷冷地看著驚恐的女人。", jp: "恐怖に顔を歪める女を冷ややかに見下ろす。", kr: "당신은 경악한 여자를 차갑게 내려다본다." } },
+            { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「我是詐欺犯，我懂氰化物。高濃度氰化物的致死時間不超過五分鐘，根本不需要等一小時。你編這個謊，只是為了把我困在這裡當替死鬼！」", jp: "「俺は詐欺師だ。シアン化物のことは知ってる。高濃度のシアン化物の致死時間は5分以内だ、1時間も待つ必要はない。お前は俺を身代わりに仕立てるために嘘をついたんだ！」", kr: "「난 사기꾼이야. 시안화물에 대해선 잘 알지. 고농도 시안화물의 치사 시간은 5분을 넘지 않아. 1시간씩이나 기다릴 필요가 없지. 네가 꾸며낸 이 거짓말은, 그저 날 여기 가둬두고 희생양으로 삼으려는 수작일 뿐이야!」" } },
+            { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「我手指發麻是因為淋雨發燒，不是中毒。你需要的不是赦免——你需要有人替你擋住門外那些警察！」", jp: "「指が痺れるのは雨に濡れて熱があるからだ、毒じゃない。お前が必要なのは赦しじゃない——外にいる警察の盾になる人間だ！」", kr: "「손가락이 저린 건 비를 맞고 열이 나서 그런 거지, 독 때문이 아니야. 네게 필요한 건 사면이 아니지——문 밖의 경찰들을 막아줄 고기 방패가 필요한 거잖아!」" } },
+            { speaker: { zh: "女人", jp: "女", kr: "여자" }, text: { zh: "「你...你到底是誰？！」", jp: "「あなた……一体何者なの？！」", kr: "「너... 도대체 정체가 뭐야?!」" } }
+        ],
+        options: [
+            {
+                label: { zh: "踢開通風口逃走", jp: "通気口を蹴破り逃げる", kr: "환풍구를 걷어차고 도망치다" },
+                action: "node_next",
+                nextScene: {
+                    dialogue: [
+                        { text: { zh: "你猛地扯下聖壇下的地毯，踢開隱蔽的通風口鑽了進去。就在同時，門外的人破門而入——大批特警持槍衝進了教堂。", jp: "祭壇の下の絨毯を剥ぎ取り、隠された通気口を蹴り開けて潜り込んだ。同時に、外の人間がドアを破って突入してきた——銃を構えた特殊部隊だ。", kr: "당신은 제단 밑의 양탄자를 홱 걷어내고, 숨겨진 환풍구를 걷어차 열어 그 안으로 파고들었다. 동시에, 문밖의 사람들이 문을 부수고 들어왔다——총을 든 대규모 경찰 병력이었다." } },
+                        { text: { zh: "原來女人才是黑寡婦殺手，她殺了真神父並藏屍，卻剛好撞見你這個來躲雨的假神父。", jp: "女こそがブラックウィドウ（連続殺人鬼）だったのだ。本物の神父を殺して死体を隠した直後、雨宿りに来た偽神父のあなたと鉢合わせたというわけだ。", kr: "알고 보니 여자야말로 블랙위도우 연쇄살인마였다. 진짜 신부를 죽이고 시체를 숨긴 직후, 비를 피하러 온 가짜 신부인 당신과 딱 마주친 것이다." } },
+                        { text: { zh: "你在大雨中從暗巷爬出，看著教堂外閃爍的警車紅藍燈光，點燃了一根微濕的菸。", jp: "豪雨の中、暗い路地裏へ這い出した。教会の外で点滅するパトカーの赤と青のランプを見つめながら、少し湿ったタバコに火をつけた。", kr: "당신은 폭우 속에서 어두운 골목으로 기어 나왔고, 교회 밖에서 번쩍이는 경찰차의 붉고 푸른 불빛을 바라보며 약간 젖은 담배에 불을 붙였다." } },
+                        { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「這世上沒有神，只有為了活下去而編造謊言的惡魔。阿門。」", jp: "「この世に神はいない。生き延びるために嘘を編み出す悪魔がいるだけだ。アーメン」", kr: "「이 세상에 신은 없어. 살아남기 위해 거짓말을 지어내는 악마들만 있을 뿐이지. 아멘.」" } }
+                    ],
+                    options: [{ 
+                        label: { zh: "逃出生天", jp: "生き延びて逃げ出す", kr: "살아서 탈출하다" }, 
+                        action: "finish_chain", 
+                        rewards: { gold: 50, removeTags: ['poisoned'] } 
+                    }]
+                }
+            }
+        ]
+    });
+
+    // --- 結局 C：血色黎明 (Action End) ---
+    register({
+        id: 'confessional_end_action',
+        type: 'end',
+        dialogue: [
+            { text: { zh: "「相信我。」你看著她。「我不是神父，你也清楚。但他們來者不善，我們現在是同一條船上的。」", jp: "「信じろ」彼女を見つめる。「俺は神父じゃない、お前も分かってるだろ。だが奴らは敵だ、今は俺たち同じ船に乗ってるんだ」", kr: "「날 믿어.」 당신은 그녀를 바라보았다. 「난 신부가 아니야, 당신도 잘 알잖아. 하지만 저놈들은 불청객이고, 우린 지금 같은 배를 탔어.」" } },
+            { text: { zh: "她遲疑了兩秒，然後堅定地點頭。", jp: "彼女は2秒躊躇した後、力強く頷いた。", kr: "그녀는 2초간 머뭇거리더니, 이내 결연히 고개를 끄덕였다." } },
+            { text: { zh: "你利用教堂的狹窄地形，推倒了巨大的十字架雕像，並砸碎酒瓶點燃了聖油。", jp: "教会の狭い地形を利用し、巨大な十字架の像を押し倒し、ワインボトルを割って聖油に火を放った。", kr: "당신은 교회의 좁은 지형을 이용해 거대한 십자가 조각상을 무너뜨리고, 와인병을 깨뜨려 성유에 불을 붙였다." } },
+            { text: { zh: "當入侵者闖入時，你們兩個人聯手，在火光中展開了一場混亂且血腥的搏鬥。", jp: "侵入者が押し入ってきた時、二人は共闘し、炎の中で混沌と血に塗れた死闘を繰り広げた。", kr: "침입자들이 들이닥쳤을 때, 두 사람은 힘을 합쳐 불길 속에서 혼란스럽고 피 튀기는 혈투를 벌였다." } },
+            { text: { zh: "十分鐘後，大火蔓延。你受了重傷，腹部被刺了一刀，但那些黑幫分子付出了生命的代價。", jp: "10分後、火の手が回る。あなたは腹部を刺され重傷を負ったが、マフィアの連中は命でその代償を支払った。", kr: "10분 뒤, 불길이 번졌다. 당신은 복부에 칼이 찔려 중상을 입었지만, 갱단 놈들은 목숨으로 그 대가를 치렀다." } },
+            { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「呼...呼...解藥...給我...」", jp: "「ハァ……ハァ……解毒剤……よこせ……」", kr: "「헉... 헉... 해독제... 줘...」" } },
+            { speaker: { zh: "女人", jp: "女", kr: "여자" }, text: { zh: "（沉默片刻，從包包裡掏出一個小玻璃瓶）「...我從來沒有下毒。酒裡什麼都沒有。對不起，我撒謊了。」", jp: "（少し沈黙し、バッグから小さな小瓶を取り出す）「……最初から毒なんて入れてないの。ワインには何も入ってないわ。ごめんなさい、嘘をついたの」", kr: "(잠시 침묵하더니, 가방에서 작은 유리병을 꺼낸다) 「...애초에 독 같은 건 넣지 않았어요. 와인엔 아무것도 없었어요. 미안해요, 제가 거짓말을 했네요.」" } },
+            { text: { zh: "你接過那個裝著自來水的藥瓶，苦笑了一聲，將它扔進火海。原來那只是一場把你當棋子的謊言——但你還是選擇了這場賭局。", jp: "水道水が入ったその小瓶を受け取ると、あなたは苦笑いしてそれを炎の中へ放り投げた。所詮は自分を駒にするための嘘だった——しかし、あなた自身がこの賭けに乗ったのだ。", kr: "당신은 수돗물이 든 그 병을 건네받고 쓴웃음을 지으며 불길 속으로 던져버렸다. 결국 당신을 장기말로 삼기 위한 거짓말이었지만——그래도 당신은 이 도박을 선택했다." } }
+        ],
+        options: [
+            {
+                label: { zh: "在晨光中離開", jp: "朝の光の中へ去る", kr: "아침 빛을 받으며 떠나다" },
+                action: "node_next",
+                nextScene: {
+                    dialogue: [
+                        { text: { zh: "女人拿起她的包包，在燃燒的門口停頓了一下。「謝謝你。」她沒有回頭，消失在清晨的薄霧中。", jp: "女はバッグを手に取り、燃え盛る出入り口で少し立ち止まった。「ありがとう」振り返ることなく、彼女は早朝の霧の中へ消えていった。", kr: "여자는 가방을 챙겨 들고, 불타는 문 앞에서 잠시 멈춰 섰다. 「고마워요.」 그녀는 뒤돌아보지 않은 채 이른 아침의 옅은 안개 속으로 사라졌다." } },
+                        { text: { zh: "你捂著傷口靠在殘破的聖壇上，看著窗外透進的第一縷晨光。什麼都沒有——沒有解藥，沒有酬勞，沒有赦免。", jp: "傷口を押さえながら崩れた祭壇にもたれかかり、窓から差し込む一筋の朝日を見つめる。何もない——解毒剤も、報酬も、赦しも。", kr: "상처를 움켜쥔 채 부서진 제단에 기대어, 창문으로 스며드는 첫 아침 햇살을 바라본다. 아무것도 없다——해독제도, 보수도, 사면도." } },
+                        { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「至少……這場雨停了。」", jp: "「少なくとも……雨は上がったな」", kr: "「적어도... 비는 그쳤군.」" } }
+                    ],
+                    options: [{ 
+                        label: { zh: "閉上雙眼", jp: "目を閉じる", kr: "두 눈을 감다" }, 
+                        action: "finish_chain", 
+                        rewards: { removeTags: ['poisoned'] } 
+                    }]
+                }
+            }
+        ]
+    });
+// ============================================================
+// 🌃 序幕：潛入深淵財閥 (Spy / Cyberpunk Heist)
+// ============================================================
     register({
         id: 'spy_root_entry',
         entry: true, // 劇情入口
@@ -575,37 +602,49 @@ register({
                 { key: 'time_left', val: 7, op: 'set' },      // 任務剩餘時間
                 { key: 'hack_progress', val: 0, op: 'set' },  // 破解進度
                 { key: 'alert_level', val: 0, op: 'set' },    // 安保警報值
-                { key: 'lover_affection', val: 0, op: 'set' } // 戀人好感度
+                { key: 'lover_affection', val: 0, op: 'set' } // 戀人信任度/好感度
             ]
         },
         dialogue: [
-            { text: "【任務代號：溫柔陷阱】" },
-            { text: "你潛入了深淵財閥的頂層辦公室。終端機閃爍著冷光，裡面藏著足以摧毀這個企業的機密。" },
-            { speaker: "伊芙", text: "「快點，我拖不了警衛太久。」" },
-            { text: "伊芙，財閥總裁的私人秘書，也是你在這裡唯一的內應。她正靠在門邊，眼神複雜地看著你。" }
+            { text: { zh: "【任務代號：深淵凝視】", jp: "【作戦コード：深淵の凝視】", kr: "【작전명: 심연의 응시】" } },
+            { text: { 
+                zh: "你潛入了深淵財閥的頂層辦公室。終端機閃爍著冰冷的藍光，裡面藏著足以顛覆這個龐大帝國的血腥機密。", 
+                jp: "深淵財閥の最上階オフィスに潜入した。端末が冷たい青光りを放っている。その中には、この巨大帝国を転覆させるに足る血塗られた機密が隠されている。", 
+                kr: "당신은 심연 재벌의 최상층 사무실에 잠입했다. 단말기가 차가운 푸른빛을 깜빡이고 있다. 그 안에는 이 거대한 제국을 전복시킬 만한 피비린내 나는 기밀이 숨겨져 있다." 
+            } },
+            { speaker: { zh: "伊芙", jp: "イヴ", kr: "이브" }, text: { 
+                zh: "「快點，安保系統的輪詢還有七分鐘就會掃描到這裡。」", 
+                jp: "「急いで。セキュリティシステムの巡回スキャンがここに来るまであと7分よ」", 
+                kr: "「서둘러, 보안 시스템의 순환 스캔이 여기까지 오려면 7분 남았어.」" 
+            } },
+            { text: { 
+                zh: "伊芙，財閥總裁的私人秘書，也是你唯一的內應。她蒼白的手指微微發抖，眼神複雜地看著你。她賭上了自己的性命。", 
+                jp: "イヴ。財閥総帥の個人秘書であり、あなたにとって唯一の内通者だ。彼女の蒼白な指先は微かに震え、複雑な瞳であなたを見つめている。彼女は自分の命を賭けているのだ。", 
+                kr: "이브, 재벌 총수의 개인 비서이자 당신의 유일한 내부 조력자. 그녀의 창백한 손가락이 미세하게 떨리고 있으며, 복잡한 눈빛으로 당신을 바라보고 있다. 그녀는 자신의 목숨을 걸었다." 
+            } }
         ],
         options: [
-            { label: "開始行動", action: "node_next", nextSceneId: 'spy_main_loop' }
+            { label: { zh: "開始駭入", jp: "ハッキング開始", kr: "해킹 시작" }, action: "node_next", nextSceneId: 'spy_main_loop' }
         ]
     });
 
     // ============================================================
-    // 💻 核心迴圈：駭客任務 vs 戀人互動
+    // 💻 核心迴圈：駭客任務 vs 信任互動
     // ============================================================
     register({
         id: 'spy_main_loop',
         dialogue: [
-            { text: "【系統狀態】" },
-            { text: "⏳ 剩餘時間：{time_left} 分鐘" },
-            { text: "💾 破解進度：{hack_progress}%" },
-            { text: "⚠️ 警報等級：{alert_level}%" },
-            { text: "💖 伊芙好感：{lover_affection}" },
-            { text: "你要怎麼利用這寶貴的一分鐘？" }
+            { text: { zh: "【系統狀態】", jp: "【システムステータス】", kr: "【시스템 상태】" } },
+            { text: { zh: "⏳ 剩餘時間：{time_left} 分鐘", jp: "⏳ 残り時間：{time_left} 分", kr: "⏳ 남은 시간: {time_left} 분" } },
+            { text: { zh: "💾 破解進度：{hack_progress}%", jp: "💾 解析進捗：{hack_progress}%", kr: "💾 해킹 진척도: {hack_progress}%" } },
+            { text: { zh: "⚠️ 警報等級：{alert_level}%", jp: "⚠️ 警戒レベル：{alert_level}%", kr: "⚠️ 경보 등급: {alert_level}%" } },
+            { text: { zh: "💖 信任羈絆：{lover_affection}", jp: "💖 信頼の絆：{lover_affection}", kr: "💖 신뢰 유대감: {lover_affection}" } },
+            { text: { zh: "你要怎麼利用這寶貴的一分鐘？", jp: "この貴重な1分間をどう使う？", kr: "이 소중한 1분을 어떻게 활용할 것인가?" } }
         ],
         options: [
             // 🛑 優先級 1: 警報爆表 (強制登出)
             {
-                label: "⚠️ 警報大作！",
+                label: { zh: "⚠️ 警報大作！", jp: "⚠️ 警報発動！", kr: "⚠️ 경보 발생!" },
                 style: "danger",
                 condition: { vars: [{ key: 'alert_level', val: 100, op: '>=' }] },
                 action: "node_next",
@@ -613,11 +652,7 @@ register({
             },
             // 🛑 優先級 2: 時間耗盡 (強制結算)
             {
-                label: {
-                    zh: "時間耗盡，準備撤退",
-                    jp: "時間切れ。撤退を準備する",
-                    kr: "시간 소진. 철수 준비"
-                },
+                label: { zh: "時間耗盡，準備撤退", jp: "時間切れ。撤退を準備する", kr: "시간 소진. 철수 준비" },
                 condition: { 
                     vars: [
                         { key: 'time_left', val: 1, op: '<' },
@@ -632,16 +667,12 @@ register({
             // 🛠️ 行動 A：駭客入侵 (推進度，增警報)
             // ==================
             { 
-                label: {
-                    zh: "植入木馬",
-                    jp: "トロイの木馬を植え込む",
-                    kr: "트로이 목마를 심다"
-                },
+                label: { zh: "靜默植入後門", jp: "バックドアの静音展開", kr: "백도어 조용히 심기" },
                 condition: { 
                     vars: [
                         { key: 'time_left', val: 1, op: '>=' },
                         { key: 'alert_level', val: 100, op: '<' },
-                        { key: 'hack_progress', val: 100, op: '<' } // 進度滿了就隱藏
+                        { key: 'hack_progress', val: 100, op: '<' }
                     ]
                 }, 
                 action: "node_next", 
@@ -653,16 +684,16 @@ register({
                     ] 
                 },
                 nextScene: {
-                    dialogue: [{ text: "代碼如瀑布般刷過螢幕，你成功截取了一部分數據。但防火牆開始產生反應了。" }],
-                    options: [{label: "繼續", action: "node_next", nextSceneId: 'spy_main_loop'}]
+                    dialogue: [{ text: { 
+                        zh: "代碼如瀑布般刷過螢幕，你成功截取了一部分加密數據。但防火牆的追蹤演算法開始向這個節點收束了。", 
+                        jp: "コードが滝のように画面を流れ、暗号化データの一部を傍受した。しかしファイアウォールの追跡アルゴリズムがこのノードに収束し始めている。", 
+                        kr: "코드가 폭포수처럼 화면을 스쳐 지나가고, 암호화된 데이터 일부를 성공적으로 가로챘다. 하지만 방화벽의 추적 알고리즘이 이 노드로 좁혀오기 시작했다." 
+                    } }],
+                    options: [{ label: { zh: "繼續", jp: "続ける", kr: "계속" }, action: "node_next", nextSceneId: 'spy_main_loop' }]
                 } 
             },
             { 
-                label: {
-                    zh: "暴力破解",
-                    jp: "ブルートフォース攻撃",
-                    kr: "무차별 대입 공격"
-                },
+                label: { zh: "暴力破解 (高風險)", jp: "ブルートフォース攻撃 (高リスク)", kr: "무차별 대입 (고위험)" },
                 style: "danger",
                 condition: { 
                     vars: [
@@ -680,20 +711,20 @@ register({
                     ] 
                 },
                 nextScene: {
-                    dialogue: [{ text: "你強行突破了核心防火牆！警報燈瞬間閃爍，你聽到了遠處傳來警衛的腳步聲！" }],
-                    options: [{label: "繼續", action: "node_next", nextSceneId: 'spy_main_loop'}]
+                    dialogue: [{ text: { 
+                        zh: "你捨棄了隱蔽性，強行撕裂了核心防火牆！數據大量湧入，但警報燈瞬間亮起黃燈，遠處已經隱約傳來安保人員的腳步聲！", 
+                        jp: "隠密性を捨て、コアファイアウォールを強引に引き裂いた！データが大量に流れ込むが、警報ランプが黄色に点滅し、遠くから警備員の足音が微かに聞こえ始めた！", 
+                        kr: "은밀함을 포기하고 핵심 방화벽을 강제로 찢어버렸다! 데이터가 쏟아져 들어오지만, 경보등이 순식간에 노란색으로 깜빡이고 멀리서 경비원들의 발소리가 어렴풋이 들려온다!" 
+                    } }],
+                    options: [{ label: { zh: "爭分奪秒", jp: "一分一秒を争う", kr: "분초를 다투다" }, action: "node_next", nextSceneId: 'spy_main_loop' }]
                 } 
             },
 
             // ==================
-            // 💖 行動 B：戀人互動 (降警報，增好感)
+            // 💖 行動 B：信任互動 (降警報，增好感)
             // ==================
             { 
-                label: {
-                    zh: "拜託伊芙掩護",
-                    jp: "イヴに援護を頼む",
-                    kr: "이브에게 엄호를 부탁하다"
-                },
+                label: { zh: "請求伊芙覆蓋權限", jp: "イヴに権限の上書きを頼む", kr: "이브에게 권한 덮어쓰기 요청" },
                 condition: { 
                     vars: [
                         { key: 'time_left', val: 1, op: '>=' },
@@ -709,16 +740,15 @@ register({
                     ] 
                 },
                 nextScene: {
-                    dialogue: [{ speaker: "伊芙", text: "「真是拿你沒辦法...」她透過內部通訊器發布了假指令，成功引開了警衛。" }],
-                    options: [{label: "繼續", action: "node_next", nextSceneId: 'spy_main_loop'}]
+                    dialogue: [
+                        { speaker: { zh: "伊芙", jp: "イヴ", kr: "이브" }, text: { zh: "「把我的生物權限接進去。別讓我失望。」", jp: "「私の生体認証アクセスを繋いで。失望させないでね」", kr: "「내 생체 권한을 연결해. 날 실망시키지 마.」" } },
+                        { text: { zh: "她冷靜地在終端機上輸入了自己的高級密碼，偽造了虛假的存取記錄，成功將安保系統的注意力引開。", jp: "彼女は冷静に端末へ自分の上位パスワードを入力し、偽のアクセス記録を作成して、セキュリティシステムの注意を見事に逸らした。", kr: "그녀는 차분하게 단말기에 자신의 고급 비밀번호를 입력하고, 가짜 접속 기록을 만들어 보안 시스템의 주의를 성공적으로 돌렸다." } }
+                    ],
+                    options: [{ label: { zh: "繼續", jp: "続ける", kr: "계속" }, action: "node_next", nextSceneId: 'spy_main_loop' }]
                 } 
             },
             { 
-                label: {
-                    zh: "將她拉入懷中",
-                    jp: "彼女を引き寄せ抱きしめる",
-                    kr: "그녀를 품으로 끌어당기다"
-                },
+                label: { zh: "安撫她緊繃的情緒", jp: "彼女の緊張を解きほぐす", kr: "그녀의 긴장을 풀어주다" },
                 condition: { 
                     vars: [
                         { key: 'time_left', val: 2, op: '>=' },
@@ -735,11 +765,11 @@ register({
                 },
                 nextScene: {
                     dialogue: [
-                        { text: "你停下手中的鍵盤，將伊芙拉過來深吻。" },
-                        { speaker: "伊芙", text: "「唔...你瘋了嗎？現在還在任務中...」" },
-                        { text: "她雖然嘴上抱怨，但身體卻誠實地靠在你懷裡，甚至順手幫你關閉了辦公室的紅外線掃描網。" }
+                        { text: { zh: "你察覺到她因極度恐懼而粗重的呼吸。你停下鍵盤上的手，轉身握住她冰冷顫抖的雙手。", jp: "極度の恐怖による彼女の荒い息遣いに気づいた。あなたはキーボードを叩く手を止め、振り返って彼女の冷たく震える両手を握りしめた。", kr: "극도의 공포로 인한 그녀의 거친 숨소리를 눈치챘다. 당신은 키보드를 치던 손을 멈추고, 돌아서서 그녀의 차갑게 떨리는 두 손을 맞잡았다." } },
+                        { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「如果失敗了，我們會一起承擔。但我不會讓那種事發生。」", jp: "「もし失敗したら、共にすべてを背負う。だが、そんなことにはさせない」", kr: "「만약 실패한다면, 우리가 함께 책임질 거야. 하지만 그런 일이 일어나게 두진 않아.」" } },
+                        { text: { zh: "伊芙看著你的眼睛，原本渙散的眼神逐漸堅定。她深吸一口氣，不僅幫你關閉了辦公室的紅外線網，還主動切斷了走廊的監視器。", jp: "イヴはあなたの目を見つめ、揺らいでいた瞳に次第に強い意志が宿った。彼女は深呼吸をし、オフィスの赤外線網を解除しただけでなく、自ら廊下の監視カメラも切断してくれた。", kr: "이브는 당신의 눈을 바라보았고, 흔들리던 눈빛이 점차 단호해졌다. 그녀는 심호흡을 하더니, 사무실의 적외선 망을 꺼주었을 뿐만 아니라 자진해서 복도의 감시 카메라도 차단해 주었다." } }
                     ],
-                    options: [{label: "繼續", action: "node_next", nextSceneId: 'spy_main_loop'}]
+                    options: [{ label: { zh: "羈絆加深", jp: "絆が深まる", kr: "유대감 형성" }, action: "node_next", nextSceneId: 'spy_main_loop' }]
                 } 
             },
 
@@ -747,11 +777,7 @@ register({
             // 🚪 提前撤退
             // ==================
             {
-                label: {
-                    zh: "主動撤退",
-                    jp: "自ら撤退する",
-                    kr: "스스로 철수하다"
-                },
+                label: { zh: "中止任務，立刻撤退", jp: "任務を中止し、即座に撤退する", kr: "임무 중단, 즉각 철수" },
                 condition: { 
                     vars: [
                         { key: 'time_left', val: 1, op: '>=' },
@@ -770,13 +796,14 @@ register({
     register({
         id: 'spy_bad_end_alert',
         dialogue: [
-            { text: "【刺耳的警報聲響徹雲霄】" },
-            { text: "武裝無人機破窗而入，紅色的雷射瞄準器鎖定了你的眉心。" },
-            { speaker: "伊芙", text: "「太遲了...」她絕望地看著你，隨後被衝進來的特工按倒在地。" },
-            { text: "你什麼都沒得到，還連累了她。" }
+            { text: { zh: "【刺耳的警報聲劃破了死寂的夜空】", jp: "【耳をつんざく警報音が静寂の夜空を切り裂いた】", kr: "【귀를 찢는 경보음이 적막한 밤하늘을 갈랐다】" } },
+            { text: { zh: "防爆門瞬間鎖死。武裝無人機破窗而入，無數道紅色的雷射瞄準器鎖定了你們的眉心。", jp: "防爆扉が瞬時にロックされた。武装ドローンが窓を突き破り、無数の赤いレーザーサイトがあなたたちの眉間を捉えた。", kr: "방폭문이 순식간에 잠겼다. 무장 드론이 창문을 부수고 들어왔고, 수많은 붉은 레이저 조준기가 당신들의 미간을 겨냥했다." } },
+            { speaker: { zh: "伊芙", jp: "イヴ", kr: "이브" }, text: { zh: "「太遲了...」", jp: "「遅かったわね……」", kr: "「너무 늦었어...」" } },
+            { text: { zh: "她絕望地閉上眼睛，隨後被全副武裝的特工狠狠按倒在地。你試圖拔槍，但巨大的電擊瞬間剝奪了你的意識。", jp: "彼女は絶望して目を閉じ、直後に完全武装のエージェントに激しく床に押さえつけられた。銃を抜こうとしたが、巨大な電撃が瞬時にあなたの意識を奪った。", kr: "그녀는 절망하며 눈을 감았고, 이내 완전 무장한 요원들에게 거칠게 바닥에 짓눌렸다. 당신은 총을 뽑으려 했지만, 거대한 전기 충격이 순식간에 당신의 의식을 앗아갔다." } },
+            { text: { zh: "任務徹底失敗。你不仅什麼都沒得到，還把她拖入了深淵。", jp: "任務は完全に失敗した。何も得られなかっただけでなく、彼女をも深淵に引きずり込んでしまった。", kr: "임무는 철저히 실패했다. 당신은 아무것도 얻지 못했을 뿐만 아니라, 그녀마저 심연으로 끌어들이고 말았다." } }
         ],
         options: [
-            { label: "雙手抱頭投降", action: "finish_chain", rewards: { energy: -20 } }
+            { label: { zh: "淪為階下囚", jp: "囚われの身となる", kr: "포로로 전락하다" }, action: "finish_chain", rewards: { energy: -20 } }
         ]
     });
 
@@ -786,18 +813,14 @@ register({
     register({
         id: 'spy_calculate_ending',
         dialogue: [
-            { text: "任務結束了。" },
-            { text: "伊芙已在頂樓停機坪等著你。她看到你出現，鬆了口氣——或者，沉默地別開臉。" },
-            { text: "現在，是檢視成果的時候..." }
+            { text: { zh: "任務結束了。", jp: "任務は終わった。", kr: "임무가 끝났다." } },
+            { text: { zh: "伊芙已經在頂樓的停機坪等著你。她看著你走近的腳步，眼神中帶著無言的詢問。", jp: "イヴはすでに屋上のヘリポートであなたを待っていた。近づく足音を見つめる彼女の目には、無言の問いかけがあった。", kr: "이브는 이미 옥상 헬기장에서 당신을 기다리고 있었다. 다가오는 당신의 발걸음을 바라보는 그녀의 눈빛에는 무언의 질문이 담겨 있다." } },
+            { text: { zh: "現在，是揭曉這場豪賭結果的時候了...", jp: "今こそ、この大博打の結果を明かす時だ……", kr: "이제, 이 큰 도박의 결과를 확인할 시간이다..." } }
         ],
         options: [
-            // 結局 S：資料拿滿 + 伊芙好感度滿 (完美特務)
+            // 結局 S：資料拿滿 + 信任度滿 (完美特務 - 破曉的共犯)
             {
-                label: {
-                    zh: "查看成果【完美路線】",
-                    jp: "成果を確認【完璧ルート】",
-                    kr: "성과 확인【완벽 루트】"
-                },
+                label: { zh: "查看成果【完美路線】", jp: "成果を確認【完璧ルート】", kr: "성과 확인【완벽 루트】" },
                 condition: { 
                     vars: [
                         { key: 'hack_progress', val: 100, op: '>=' },
@@ -807,22 +830,19 @@ register({
                 style: "primary", action: "node_next",
                 nextScene: { 
                     dialogue: [
-                        { text: "【結局 S：名利雙收的夜奔】" },
-                        { text: "你不僅下載了摧毀財閥的所有數據，還緊緊握住了伊芙的手。" },
-                        { speaker: "伊芙", text: "「這下我真的成共犯了... 以後你要養我一輩子。」" },
-                        { text: "直升機消失在夜色中。你贏得了一切。" }
+                        { text: { zh: "【結局 S：破曉的共犯】", jp: "【結末 S：夜明けの共犯者】", kr: "【엔딩 S: 새벽의 공범자】" } },
+                        { text: { zh: "你不僅完整下載了足以讓財閥分崩離析的核心數據，還向她伸出了手。", jp: "財閥を崩壊させるに足るコアデータを完全にダウンロードしただけでなく、あなたは彼女に手を差し伸べた。", kr: "당신은 재벌을 붕괴시킬 핵심 데이터를 온전히 다운로드했을 뿐만 아니라, 그녀에게 손을 내밀었다." } },
+                        { speaker: { zh: "伊芙", jp: "イヴ", kr: "이브" }, text: { zh: "「我們再也回不去了。」", jp: "「私たち、もう戻れないわね」", kr: "「우린 두 번 다시 돌아갈 수 없어.」" } },
+                        { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「這正是我們想要的，不是嗎？」", jp: "「これこそが俺たちの望んだことだろ？」", kr: "「이게 바로 우리가 원했던 거잖아?」" } },
+                        { text: { zh: "她緊緊握住你的手。直升機在警報聲響起前騰空而起，消失在破曉的夜色中。你贏得了一切。", jp: "彼女はあなたの手を強く握り返した。警報が鳴り響く前にヘリコプターは飛び立ち、夜明けの空へと消えていった。あなたはすべてを手に入れた。", kr: "그녀는 당신의 손을 꽉 맞잡았다. 헬기는 경보가 울리기 전에 솟아올라, 여명이 밝아오는 밤하늘 속으로 사라졌다. 당신은 모든 것을 얻었다." } }
                     ],
                     rewards: { gold: 50, title: "夜城傳奇" }, 
-                    options: [{label: "結束", action: "finish_chain"}] 
+                    options: [{ label: { zh: "結束", jp: "終了", kr: "종료" }, action: "finish_chain" }] 
                 }
             },
             // 結局 A：資料拿滿，但忽略了伊芙 (冷血間諜)
             {
-                label: {
-                    zh: "查看成果【任務完成】",
-                    jp: "成果を確認【任務完了】",
-                    kr: "성과 확인【임무 완료】"
-                },
+                label: { zh: "查看成果【任務完成】", jp: "成果を確認【任務完了】", kr: "성과 확인【임무 완료】" },
                 condition: { 
                     vars: [
                         { key: 'hack_progress', val: 100, op: '>=' },
@@ -832,22 +852,18 @@ register({
                 action: "node_next",
                 nextScene: { 
                     dialogue: [
-                        { text: "【結局 A：冷血的勝利】" },
-                        { text: "你成功竊取了所有數據。但當你坐上直升機時，伊芙卻停在了門外。" },
-                        { speaker: "伊芙", text: "「你心裡只有任務，對吧？再見了。」" },
-                        { text: "你成為了富豪，但你永遠失去了她。" }
+                        { text: { zh: "【結局 A：冷血的利刃】", jp: "【結末 A：冷血な刃】", kr: "【엔딩 A: 냉혈한 칼날】" } },
+                        { text: { zh: "你向雇主發送了完整的數據。但當你準備登上直升機時，伊芙卻停在了陰影中。", jp: "雇い主へ完全なデータを送信した。しかしヘリコプターに乗り込もうとした時、イヴは影の中で立ち止まった。", kr: "고용주에게 완벽한 데이터를 전송했다. 하지만 헬기에 오르려는 순간, 이브는 그림자 속에 멈춰 섰다." } },
+                        { speaker: { zh: "伊芙", jp: "イヴ", kr: "이브" }, text: { zh: "「我到底在期待什麼...你眼裡只有任務，我不過是一把好用的鑰匙罷了。再見。」", jp: "「私、一体何を期待してたのかしら……あなたの目には任務しかない。私はただの便利な鍵でしかなかったのね。さようなら」", kr: "「나 도대체 뭘 기대한 걸까... 네 눈엔 임무밖에 없었어. 난 그저 쓰기 편한 열쇠였을 뿐이야. 안녕.」" } },
+                        { text: { zh: "她轉身走回了大樓，準備迎接財閥殘酷的清算。你完成了任務，成為了富豪，但你的身邊空無一人。", jp: "彼女は背を向けビルの中へ戻っていった。財閥の残酷な粛清を受ける覚悟で。あなたは任務を完遂し大金持ちになったが、その傍らには誰もいない。", kr: "그녀는 몸을 돌려 건물 안으로 걸어 들어갔고, 재벌의 잔혹한 숙청을 맞이할 준비를 했다. 당신은 임무를 완수하고 부자가 되었지만, 당신의 곁엔 아무도 없다." } }
                     ],
                     rewards: { gold: 30,  title: "無情特務" }, 
-                    options: [{label: "結束", action: "finish_chain"}] 
+                    options: [{ label: { zh: "結束", jp: "終了", kr: "종료" }, action: "finish_chain" }] 
                 }
             },
-            // 結局 B：資料沒拿滿，但贏得伊芙的心 (愛美人不愛江山)
+            // 結局 B：資料沒拿滿，但贏得信任 (愛美人不愛江山)
             {
-                label: {
-                    zh: "查看成果【關係線】",
-                    jp: "成果を確認【関係ルート】",
-                    kr: "성과 확인【관계 루트】"
-                },
+                label: { zh: "查看成果【關係線】", jp: "成果を確認【関係ルート】", kr: "성과 확인【관계 루트】" },
                 condition: { 
                     vars: [
                         { key: 'hack_progress', val: 100, op: '<' },
@@ -857,21 +873,18 @@ register({
                 action: "node_next",
                 nextScene: { 
                     dialogue: [
-                        { text: "【結局 B：亡命鴛鴦】" },
-                        { text: "數據並不完整，這次任務算不上成功。但伊芙毫不猶豫地跟著你跳上了直升機。" },
-                        { speaker: "伊芙", text: "「沒有那些錢也沒關係... 只要我們在一起。」" }
+                        { text: { zh: "【結局 B：亡命之徒】", jp: "【結末 B：逃亡者】", kr: "【엔딩 B: 도망자】" } },
+                        { text: { zh: "數據並不完整，雇主絕對不會放過你。但當你向伊芙說明情況時，她卻毫不猶豫地跟著你跳上了直升機。", jp: "データは不完全だ。雇い主があなたを見逃すことは絶対にない。しかしイヴに状況を説明すると、彼女は躊躇うことなくあなたに続いてヘリに飛び乗った。", kr: "데이터는 불완전했고, 고용주는 절대 당신을 가만두지 않을 것이다. 하지만 이브에게 상황을 설명하자, 그녀는 망설임 없이 당신을 따라 헬기에 뛰어올랐다." } },
+                        { speaker: { zh: "伊芙", jp: "イヴ", kr: "이브" }, text: { zh: "「我們現在沒有籌碼，被黑白兩道通緝了。」", jp: "「これで私たちは手札を失い、裏社会からも表社会からも追われる身ね」", kr: "「이제 우린 협상 카드도 없고, 양쪽 세계 모두에게 수배되었어.」" } },
+                        { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「至少我們還活著。抓緊了。」", jp: "「少なくともまだ生きている。しっかり捕まってろ」", kr: "「적어도 아직 살아있잖아. 꽉 잡아.」" } }
                     ],
-                    rewards: { gold: 20, }, 
-                    options: [{label: "結束", action: "finish_chain"}] 
+                    rewards: { gold: 20 }, 
+                    options: [{ label: { zh: "結束", jp: "終了", kr: "종료" }, action: "finish_chain" }] 
                 }
             },
             // 結局 C：任務失敗，且好感度不足 (一事無成)
             {
-                label: {
-                    zh: "查看成果【一事無成】",
-                    jp: "成果を確認【何も成せず】",
-                    kr: "성과 확인【아무것도 못 함】"
-                },
+                label: { zh: "查看成果【任務失敗】", jp: "成果を確認【任務失敗】", kr: "성과 확인【임무 실패】" },
                 condition: { 
                     vars: [
                         { key: 'hack_progress', val: 100, op: '<' },
@@ -881,1067 +894,478 @@ register({
                 action: "node_next",
                 nextScene: { 
                     dialogue: [
-                        { text: "【結局 C：狼狽的逃兵】" },
-                        { text: "資料沒下載完，伊芙也對你的無能感到失望，獨自留在了大樓裡收拾殘局。" },
-                        { text: "你兩手空空地逃回了貧民窟，準備迎接雇主的怒火。" }
+                        { text: { zh: "【結局 C：深淵的祭品】", jp: "【結末 C：深淵の生贄】", kr: "【엔딩 C: 심연의 제물】" } },
+                        { text: { zh: "你沒能拿到關鍵資料，而伊芙看著你的眼神充滿了失望與冰冷。她拒絕與你同行，毫不留情地切斷了所有的通訊。", jp: "コアデータを入手できず、あなたを見るイヴの目には失望と冷たさが満ちていた。彼女は同行を拒否し、容赦なくすべての通信を遮断した。", kr: "핵심 자료를 얻지 못했고, 당신을 바라보는 이브의 눈빛은 실망과 차가움으로 가득했다. 그녀는 동행을 거부했고, 가차 없이 모든 통신을 끊어버렸다." } },
+                        { text: { zh: "你兩手空空、像一條喪家之犬般逃回了貧民窟。你知道，財閥的殺手和憤怒的雇主，今晚就會找上門來。", jp: "手ぶらのまま、負け犬のようにスラム街へと逃げ帰った。今夜中には、財閥の刺客と怒り狂った雇い主が扉を叩きに来るだろう。", kr: "빈손으로 패배한 개처럼 빈민가로 도망쳐 왔다. 오늘 밤, 재벌의 암살자와 분노한 고용주가 당신을 찾아올 것이라는 걸 안다." } }
                     ],
                     rewards: { energy: -10 }, 
-                    options: [{label: "結束", action: "finish_chain"}] 
+                    options: [{ label: { zh: "結束", jp: "終了", kr: "종료" }, action: "finish_chain" }] 
                 }
             }
         ]
     });
-	
 // ============================================================
-// 1. 全局初始化 (Initialization)
+// 🌹 劇本一：豪門血玫瑰 (私生子復仇)
 // ============================================================
-register({
-    id: 'rose_start1',
-    entry: true, // 入口標記
-    onEnter: { 
-        varOps: [
-            { key: 'sanity', val: 100, op: 'set' },   // SAN值 (驚悚要素)
-            { key: 'prestige', val: 10, op: 'set' },  // 威望 (宮鬥要素)
-            { key: 'gold', val: 50, op: 'set' },      // 金錢 (交易要素)
-            { key: 'favor_butler', val: 0, op: 'set' }, // 好感度 (戀愛要素)
-            { key: 'time_left', val: 5, op: 'set' }   // 回合數 (養成限制)
-        ],
-        rewards: { removeTags: ['has_key', 'evidence_poison', 'gift_jade'] } // 重置道具
-    },
-    text: [
-        "【序章：囚鳥】",
-        "頭痛欲裂。你緩緩睜開眼，發現自己躺在冰冷潮濕的石板地上。",
-        "空氣中瀰漫著陳年紅酒與血腥氣息混合的腥味",
-		"遠處傳來雷聲，彷彿是這座深宅大院的低吼。",
-        "其實你是被召回家族的私生子，本該參加今晚的家主壽宴，此刻卻身陷囹圄。"
-    ],
-    options: [
-        { label: "掙扎著站起來", action: "node_next", nextSceneId: 'rose_cellar_1' }
-    ]
-});
 
-// ============================================================
-// 1. 全局初始化
-// ============================================================
-register({
-    id: 'rose_start2',
-    entry: true,
-    onEnter: { 
-        varOps: [
-            // 初始化數值 (移除 msg 以關閉 Toast)
-            { key: 'sanity', val: 90, op: 'set' },      // 精神略低，因為剛醒來
-            { key: 'prestige', val: 0, op: 'set' },
-            { key: 'favor_butler', val: 0, op: 'set' },
-            { key: 'time_left', val: 6, op: 'set' },
-            { key: 'gold', val: 50, op: 'add' }         // 獲得初始資金
-        ],
-        // 清除舊存檔的標籤
-        rewards: { removeTags: ['has_key', 'evidence_poison', 'heir_approved', 'secret_passage'] }
-    },
-    text: [
-        "【序章：囚鳥】",
-        "……滴答……滴答……",
-        "冰冷的水滴落在眉心，強烈的暈眩感讓你忍不住乾嘔。",
-        "你試圖移動，卻發現手腳僵硬。這裡不是你溫暖的臥室，而是充滿霉味與鐵鏽氣息的黑暗空間。",
-        "記憶如碎片般閃回：雷雨夜、家主壽宴的邀請函、馬車上的迷香……以及昏迷前聽到的最後一句話：",
-        "「處理乾淨點，今晚過後，羅斯家族只需要一位繼承人。」"
-    ],
-    options: [
-        { label: "咬牙撐起身體，觀察四周", action: "node_next", nextSceneId: 'rose_cellar_1' }
-    ]
-});
-
-// ============================================================
-// 2. 第一章：死寂地窖 (擴充環境描寫)
-// ============================================================
-register({
-    id: 'rose_cellar_1',
-    dialogue: [
-                { text: { zh: "這是一個被家族遺棄多年的地下酒窖。牆壁上滲出的水漬像是一張張哭泣的臉。" } },
-                { text: { zh: "微弱的燭光在風中搖曳，隨時可能熄滅。" } },
-                { text: { zh: "面前是一扇厚重的橡木門，門鎖早已鏽跡斑斑。" } },
-                { text: { zh: "而在角落的酒桶旁，蜷縮著一具穿著僕人制服的白骨，對方的手指呈現出詭異的扭曲狀，似乎死前正死死抓著什麼希望。" } }
+    // --- 序章與地窖 ---
+    register({
+        id: 'rose_start',
+        type: 'start',
+        entry: true,
+        onEnter: { 
+            varOps: [
+                { key: 'sanity', val: 90, op: 'set' },      // 精神值 (恐懼/冷靜)
+                { key: 'prestige', val: 0, op: 'set' },     // 威望 (家族影響力)
+                { key: 'favor_butler', val: 0, op: 'set' }, // 管家好感度
+                { key: 'time_left', val: 5, op: 'set' },    // 距離午夜還有 5 小時
+                { key: 'gold', val: 50, op: 'set' }         // 初始資金
             ],
-            options: [
-                // [A] 搜查屍體
-                { 
-                    label: {
-                        zh: "檢查那具白骨",
-                        jp: "白骨を調べる",
-                        kr: "백골을 조사하다"
-                    },
-                    // 條件：沒有 has_key 標籤時才出現
-                    condition: { noTag: 'has_key' },
-                    action: "node_next", 
-                    // 當玩家按下這個選項時，直接給予獎勵
-                    rewards: { 
-                        tags: ['has_key'], 
-                        varOps: [{key:'sanity', val:5, op:'-'}] 
-                    },
-                    // 並且跳轉到這個內建的場景
-                    nextScene: { 
-                        dialogue: [
-                            { text: { zh: "你強忍著恐懼與噁心，靠近那具屍體。制服上的銘牌寫著「老湯姆」——那是小時候唯一給過你糖果的僕人。" } },
-                            { text: { zh: "你掰開他僵硬的指骨，清脆的斷裂聲在寂靜的地窖中格外刺耳。" } },
-                            { text: { zh: "一枚冰冷的【黃銅鑰匙】滑落在你掌心。" } },
-                            { speaker: "你", text: { zh: "抱歉了，湯姆。" } }
-                        ],
-                        // 拿完鑰匙後，回到地窖首頁 (因為已經有了 has_key，所以這個選項會消失)
-                        options: [{ label: "返回", action: "node_next", nextSceneId: 'rose_cellar_1' }]
-                    }
+            rewards: { removeTags: ['has_key', 'evidence_poison', 'heir_approved', 'secret_passage'] }
+        },
+        dialogue: [
+            { text: { zh: "【序章：泥沼中的私生子】", jp: "【序章：泥沼の私生児】", kr: "【서장: 진흙탕 속의 사생아】" } },
+            { text: { 
+                zh: "……滴答……冰冷的水滴落在眉心，強烈的暈眩感讓你忍不住乾嘔。", 
+                jp: "……ポツン……冷たい水滴が眉間に落ち、強烈な目眩に思わず吐き気を催す。", 
+                kr: "……똑똑…… 차가운 물방울이 미간에 떨어지고, 강렬한 현기증에 헛구역질이 난다." 
+            } },
+            { text: { 
+                zh: "記憶如碎片般閃回：雷雨夜、家主壽宴的邀請函、馬車上的迷香……以及昏迷前聽到的最後一句話：", 
+                jp: "記憶がフラッシュバックする。雷雨の夜、当主の誕生祝いの招待状、馬車での迷い香……そして意識を失う直前に聞いた言葉：", 
+                kr: "기억이 파편처럼 스쳐 지나간다. 뇌우가 쏟아지던 밤, 가주의 생일 연회 초대장, 마차 안의 미향…… 그리고 의식을 잃기 전 들은 마지막 한마디:" 
+            } },
+            { speaker: { zh: "某個冷酷的聲音", jp: "冷酷な声", kr: "냉혹한 목소리" }, text: { 
+                zh: "「處理乾淨點。今晚過後，羅斯家族只需要一位繼承人。」", 
+                jp: "「綺麗に片付けろ。今夜以降、ローズ家に後継者は一人でいい」", 
+                kr: "「깔끔하게 처리해. 오늘 밤 이후로, 로즈 가문의 후계자는 한 명이면 충분하니까.」" 
+            } }
+        ],
+        options: [{ label: { zh: "咬牙撐起身體", jp: "歯を食いしばり起き上がる", kr: "이를 악물고 몸을 일으키다" }, action: "node_next", nextSceneId: 'rose_cellar_1' }]
+    });
+
+    register({
+        id: 'rose_cellar_1',
+        dialogue: [
+            { text: { zh: "這是一個被廢棄的地下酒窖。角落的酒桶旁，蜷縮著一具穿著僕人制服的白骨。白骨的手指呈現出扭曲狀，死死抓著地板。", jp: "ここは廃棄された地下のワインセラーだ。隅の樽のそばに、使用人の制服を着た白骨がうずくまっている。白骨の指は歪に曲がり、床を死に物狂いで掴んでいる。", kr: "이곳은 버려진 지하 와인 저장고다. 구석의 와인통 옆에 하인 제복을 입은 백골이 웅크리고 있다. 백골의 손가락은 기괴하게 비틀린 채 바닥을 꽉 쥐고 있다." } }
+        ],
+        options: [
+            { 
+                label: { zh: "檢查那具白骨", jp: "白骨を調べる", kr: "백골 조사" }, 
+                condition: { noTag: 'has_key' },
+                action: "node_next", 
+                rewards: { tags: ['has_key'], varOps: [{key:'sanity', val:5, op:'-'}] },
+                nextScene: { 
+                    dialogue: [
+                        { text: { zh: "制服上的銘牌寫著「老湯姆」——那是小時候唯一沒用異樣眼光看過你的僕人。你掰開他僵硬的指骨，一枚冰冷的【黃銅鑰匙】滑落掌心。", jp: "制服のネームプレートには「老トム」とある——幼い頃、唯一あなたを偏見の目で見なかった使用人だ。硬直した指の骨を開くと、冷たい【真鍮の鍵】が掌に落ちた。", kr: "제복의 명찰에는 '늙은 톰'이라고 적혀 있다——어릴 적 유일하게 당신을 이상한 눈으로 보지 않았던 하인이다. 뻣뻣하게 굳은 손가락 뼈를 벌리자, 차가운 【황동 열쇠】가 손바닥에 떨어졌다." } }
+                    ],
+                    options: [{ label: { zh: "為他闔上雙眼", jp: "彼の目を閉じさせる", kr: "그의 눈을 감겨주다" }, action: "node_next", nextSceneId: 'rose_cellar_1' }]
+                }
+            },
+            { 
+                label: { zh: "用黃銅鑰匙開門", jp: "真鍮の鍵でドアを開ける", kr: "황동 열쇠로 문 열기" }, 
+                condition: { hasTag: 'has_key' },
+                action: "node_next", 
+                nextScene: { 
+                    dialogue: [{ text: { zh: "吱呀一聲，沉重的木門豁然而開。外面是富麗堂皇的長廊。你拍去身上的塵土，從現在起，你是獵人。", jp: "ギィィと重い木のドアが開いた。外は豪華絢爛な廊下だ。あなたは服の埃を払い落とした。今から、あなたが狩人だ。", kr: "끼익 소리와 함께 무거운 나무문이 열렸다. 밖은 화려한 복도다. 당신은 몸의 먼지를 털어냈다. 지금부터 당신은 사냥꾼이다." } }],
+                    options: [{ label: { zh: "步入宴會廳", jp: "宴会場へ足を踏み入れる", kr: "연회장 진입" }, action: "node_next", nextSceneId: 'rose_hub' }]
+                }
+            }
+        ]
+    });
+
+    // --- 核心樞紐：宴會廳 (HUB) ---
+    register({
+        id: 'rose_hub',
+        isHub: true, // 標記為系統辨識的 Hub
+        dialogue: [
+            { text: { zh: "【宴會廳】", jp: "【宴会場】", kr: "【연회장】" } },
+            { text: { zh: "水晶吊燈灑下光輝。衣香鬢影間，沒人注意到角落裡剛從地窖爬出來的你。家主書房的鐘聲每小時敲響一次，那是死亡的倒數。", jp: "シャンデリアが光を振り撒く。着飾った人々の中で、地下室から這い出してきたあなたに気づく者はいない。当主の書斎の鐘が1時間ごとに鳴る。死のカウントダウンだ。", kr: "샹들리에가 빛을 뿌린다. 화려하게 차려입은 사람들 사이에서, 지하에서 막 기어 나온 당신을 눈치챈 사람은 없다. 가주 서재의 종소리가 매시간 울린다. 그것은 죽음의 카운트다운이다." } },
+            { text: { zh: "⏳ 距離午夜審判還有： {time_left} 小時\n📊 威望 {prestige} | 理智 {sanity} | 金幣 {gold}", jp: "⏳ 真夜中の審判まで残り： {time_left} 時間\n📊 威信 {prestige} | 正気 {sanity} | 金貨 {gold}", kr: "⏳ 자정의 심판까지 남은 시간: {time_left} 시간\n📊 위신 {prestige} | 이성 {sanity} | 금화 {gold}" } }
+        ],
+        options: [
+            // 🛑 結局判定 (時間耗盡)
+            {
+                label: { zh: "午夜鐘聲響起", jp: "真夜中の鐘が鳴り響く", kr: "자정의 종소리가 울리다" },
+                style: "danger",
+                condition: { vars: [{ key: 'time_left', val: 0, op: '<=' }] },
+                action: "node_next",
+                nextSceneId: 'rose_climax'
+            },
+            // 行動選項 (確保有剩餘時間)
+            {
+                label: { zh: "散播大少爺的謠言", jp: "長男の噂を流す", kr: "큰도련님의 소문을 퍼뜨리다" },
+                condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
+                action: "node_next",
+                rewards: { varOps: [{key:'time_left', val:1, op:'-'}, {key:'prestige', val:10, op:'+'}] },
+                nextScene: { 
+                    dialogue: [{ text: { zh: "你若無其事地在旁支長老們的圈子裡，提起了大少爺在賭場的巨額虧損。謠言像病毒一樣擴散，你的影響力悄悄提升。", jp: "あなたは分家の長老たちの輪の中で、長男のカジノでの巨額の損失をさりげなく話題に出した。噂はウイルスの様に広まり、あなたの影響力が密かに高まった。", kr: "당신은 방계 장로들의 무리 속에서, 큰도련님이 카지노에서 잃은 거액의 돈에 대해 아무렇지 않게 언급했다. 소문은 바이러스처럼 퍼졌고, 당신의 영향력은 은밀히 상승했다." } }], 
+                    options: [{label: { zh: "退回人群", jp: "人混みに戻る", kr: "인파 속으로 물러나다" }, action: "map_return_hub"}] 
+                }
+            },
+            {
+                label: { zh: "尋找管家塞巴斯", jp: "執事セバスを探す", kr: "집사 세바스찬 찾기" },
+                condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
+                action: "node_next",
+                nextSceneId: 'rose_butler_interaction'
+            },
+            {
+                label: { zh: "走向大少爺", jp: "長男に近づく", kr: "큰도련님에게 다가가다" },
+                condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
+                action: "node_next",
+                nextSceneId: 'rose_brother_fight'
+            },
+            {
+                label: { zh: "進入圖書室尋找線索", jp: "書斎で手がかりを探す", kr: "서재에서 단서 찾기" },
+                condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
+                action: "node_next",
+                nextSceneId: 'rose_library'
+            },
+            {
+                label: { zh: "強闖家主書房", jp: "当主の部屋に押し入る", kr: "가주의 방에 강제로 들어가다" },
+                style: "primary",
+                condition: { vars: [{ key: 'prestige', val: 30, op: '>=' }, { key: 'time_left', val: 1, op: '>=' }] },
+                action: "node_next",
+                nextSceneId: 'rose_master_meet'
+            }
+        ]
+    });
+
+    // --- 子場景：管家與大少爺 ---
+    register({
+        id: 'rose_butler_interaction',
+        dialogue: [
+            { text: { zh: "你在陰影處找到了年輕的管家。他看到你時眼底閃過一絲驚訝，隨即遞上一條手帕：「三少爺，您身上的泥土味……會熏到客人的。」", jp: "陰に若い執事を見つけた。彼はあなたを見ると一瞬驚き、すぐにハンカチを差し出した。「三男様、その泥の匂い……お客様の迷惑になりますよ」", kr: "당신은 그늘에서 젊은 집사를 찾아냈다. 그는 당신을 보고 순간 놀란 기색을 보이더니, 이내 손수건을 건넸다. 「셋째 도련님, 그 흙냄새…… 손님들에게 불쾌감을 줄 겁니다.」" } }
+        ],
+        options: [
+            {
+                label: { zh: "花錢買大少爺的情報", jp: "金で長男の情報を買う", kr: "돈으로 큰도련님의 정보를 사다" },
+                condition: { noTag: 'evidence_poison', vars: [{ key: 'gold', val: 30, op: '>=' }] },
+                action: "node_next",
+                rewards: { gold: -30, tags: ['evidence_poison'], varOps: [{key:'time_left', val:1, op:'-'}] },
+                nextScene: { 
+                    dialogue: [{ text: { zh: "塞巴斯收下金幣，將一張藥單塞進你袖口：「這是大少爺購買氰化物的收據。今晚的壽宴，恐怕不只是慶祝。」", jp: "セバスは金貨を受け取り、薬の領収書をあなたの袖に滑り込ませた。「長男様がシアン化物を購入した領収書です。今夜の宴は、ただの祝いではないでしょう」", kr: "세바스찬은 금화를 챙기고, 약 영수증을 당신의 소매에 밀어 넣었다. 「큰도련님이 시안화물을 구매한 영수증입니다. 오늘 밤 연회는 그저 축하만 하는 자리가 아닐 겁니다.」" } }], 
+                    options: [{label: { zh: "足夠了", jp: "これで十分だ", kr: "이걸로 충분해" }, action: "node_next", nextSceneId: 'rose_hub'}] 
+                }
+            },
+            {
+                label: { zh: "握住他的手，拉近距離", jp: "彼の手を握り距離を縮める", kr: "그의 손을 잡고 거리를 좁히다" },
+                check: { stat: 'CHR', val: 6 },
+                action: "node_next",
+                rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
+                onFail: { text: { zh: "他禮貌但冷硬地抽回了手：「請自重，老爺正在看著這邊。」氣氛降至冰點。", jp: "彼は礼儀正しくも冷たく手を引いた。「ご自重ください。旦那様が見ておられます」空気は氷点下に達した。", kr: "그는 정중하지만 차갑게 손을 빼냈다. 「자중하십시오. 어르신께서 이쪽을 보고 계십니다.」 분위기가 얼어붙었다." } },
+                nextScene: { 
+                    dialogue: [
+                        { text: { zh: "你接過手帕，指尖故意在他掌心劃過，靠在他耳邊低語：「比起這群吃人的怪物，我更願意信任你。」", jp: "ハンカチを受け取り、指先で彼の掌をわざとなぞり、耳元で囁いた。「この人喰いの怪物どもより、君の方を信頼しているよ」", kr: "당신은 손수건을 받으며, 손가락 끝으로 그의 손바닥을 일부러 스치고는 귓가에 속삭였다. 「이 식인 괴물들보다, 난 널 더 신뢰해.」" } },
+                        { text: { zh: "塞巴斯的呼吸亂了半拍，耳根泛紅：「……我不討厭您的信任，少爺。」", jp: "セバスは一瞬呼吸を乱し、耳を赤くした。「……その信頼、嫌いではありませんよ、坊ちゃん」", kr: "세바스찬의 호흡이 순간 흐트러지고, 귀끝이 붉어졌다. 「……그 신뢰, 싫지는 않군요, 도련님.」" } }
+                    ], 
+                    rewards: { varOps: [{key:'favor_butler', val:30, op:'+'}] },
+                    options: [{label: { zh: "適可而止", jp: "引き際をわきまえる", kr: "적당히 멈추다" }, action: "node_next", nextSceneId: 'rose_hub'}] 
+                }
+            },
+            { label: { zh: "離開", jp: "離れる", kr: "떠나다" }, action: "node_next", nextSceneId: 'rose_hub' }
+        ]
+    });
+
+    register({
+        id: 'rose_brother_fight',
+        dialogue: [
+            { text: { zh: "你主動走向大少爺。他穿著訂製的燕尾服，端著酒杯冷冷地看著你。", jp: "自ら長男に近づいた。オーダーメイドの燕尾服を着た彼は、グラスを手に冷ややかにあなたを見つめている。", kr: "당신은 스스로 큰도련님에게 다가갔다. 맞춤 연미복을 입은 그는 와인잔을 든 채 차갑게 당신을 쳐다본다." } },
+            { speaker: { zh: "大少爺", jp: "長男", kr: "큰도련님" }, text: { zh: "「地窖的門鎖壞了嗎？還是說，這就是私生子引以為傲的生存本能？像老鼠一樣鑽出來。」", jp: "「地下室の鍵が壊れたのか？それとも、私生児の誇るべき生存本能か？ネズミのように這い出してくるとはな」", kr: "「지하실 문이 고장 났나? 아니면, 이게 사생아가 자랑하는 생존 본능인가? 쥐새끼처럼 기어 나오다니.」" } }
+        ],
+        options: [
+            {
+                label: { zh: "用言語精準刺痛他", jp: "言葉で的確に彼を刺す", kr: "말 로 날카롭게 찌르다" },
+                check: { stat: 'INT', val: 7 },
+                action: "node_next",
+                rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
+                onFail: { 
+                    rewards: { varOps: [{key:'sanity', val:10, op:'-'}] },
+                    text: { zh: "你試圖反擊，但他的氣場過於強大，幾句話就將你貶得一文不值。周圍傳來刺耳的嘲笑聲。", jp: "反撃しようとしたが、彼の威圧感に押され、言葉に詰まった。周囲から耳障りな嘲笑が聞こえてくる。", kr: "반격하려 했지만 그의 기세에 눌려 더듬거렸다. 주변에서 귀에 거슬리는 조롱 섞인 웃음이 들려온다." } 
                 },
-                
-                // [B] 暴力破門 
-                { 
-                    label: {
-                        zh: "用身體撞開木門",
-                        jp: "体で木のドアを撞き破る",
-                        kr: "몸으로 나무문을 박살 내다"
-                    },
-                    check: { stat: 'STR', val: 8 }, 
-                    action: "node_next", // 記得加上 action
-                    nextScene: { 
-                        dialogue: [
-                            { text: { zh: "你後退幾步，深吸一口氣，將全身的力量集中在肩膀上。" } },
-                            { text: { zh: "「砰！」" } },
-                            { text: { zh: "伴隨著腐朽木屑的飛濺，橡木門發出一聲哀鳴，轟然倒塌。你揉了揉發痛的肩膀，眼神堅定。" } }
-                        ], 
-                        options: [{label: "衝出地窖", action: "node_next", nextSceneId: 'rose_hallway'}] 
-                    }, 
-                    failScene: { 
-                        dialogue: [
-                            { text: { zh: "你狠狠撞向大門，但對方比想像中更堅固。" } },
-                            { text: { zh: "劇痛從肩膀傳遍全身，你狼狽地跌坐在地，揚起一陣灰塵。這扇門在嘲笑你的無力。" } }
-                        ],
-                        // 撞門失敗扣除 SAN 值
-                        rewards: { varOps: [{key:'sanity', val:5, op:'-'}] },
-                        // 失敗後留在原地
-                        options: [{ label: "揉揉肩膀站起來", action: "node_next", nextSceneId: 'rose_cellar_1' }]
-                    }
-				},
-				{ 
-                    label: "用鑰匙開鎖", 
-                    condition: { hasTag: 'has_key' },
-                    action: "node_next", 
-                    nextScene: { 
-                        dialogue: [
-                            { text: { zh: "你把鑰匙插入鎖孔的瞬間，老湯姆的臉在腦海中閃過。" } },
-                            { text: { zh: "你在心裡發了個誓：等這一切結束，一定回來替他討回公道。" } },
-                            { text: { zh: "吱呀一聲，鏽蝕的門鎖在黃銅鑰匙的帶動下緩緩讓步，沉重的木門豁然而開。" } }
-                        ],
-                        options: [{ label: "衝出地窖", action: "node_next", nextSceneId: 'rose_hallway' }]
-                    }
-                },
-    ]
-});
-
-// 過渡場景：長廊
-register({
-    id: 'rose_hallway',
-    text: [
-        "推開門的瞬間，刺眼的光線讓你瞇起了眼。",
-        "你跌跌撞撞地爬出地窖，外面是富麗堂皇的長廊。紅地毯柔軟得像沼澤，牆上的油畫中，歷代家主正冷漠地注視著你這位私生子。",
-        "遠處傳來悠揚的小提琴聲與賓客的談笑聲。掛鐘指向八點，距離決定繼承人的時刻已經不遠了。",
-        "你拍去身上的塵土，整理好凌亂的衣領。從現在起，你是獵人，不是獵物。"
-    ],
-    options: [
-        { label: "推開宴會廳大門，入局", action: "node_next", nextSceneId: 'rose_hub0' }
-    ]
-});
-register({
-    id: 'rose_hub0',
-    text: [
-        "【宴會廳】",
-        "水晶吊燈灑下金色的光輝，香檳塔折射著奢靡的色彩。衣香鬢影之間，沒人注意到角落裡那個剛從地獄爬回來的人。",
-        "大少爺正在人群中心高談闊論，享受著恭維。",
-        "家主書房的鐘聲每隔一小時就會敲響，那是倒數的喪鐘。",
-        "------------------------------",
-        "⏳ 距離審判還有： {time_left} 時辰",
-        "📊 當前局勢：威望 {prestige} | 理智 {sanity} | 金幣 {gold} | 💕管家好感 {favor_butler}"
-    ],
-    options: [
-        // [A] 結局判定
-        {
-            label: {
-                zh: "午夜鐘聲響起",
-                jp: "真夜中の鐘が鳴り響く",
-                kr: "자정의 종소리가 울리다"
+                nextScene: { 
+                    dialogue: [
+                        { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「大哥的臉色不太好。是因為父親的遺囑還沒簽字，還是因為你挪用公款填補賭債的事快瞞不住了？」", jp: "「兄さん、顔色が悪いですね。父上の遺言にまだサインがないからですか？それとも、カジノの借金を会社の金で埋め合わせたのがバレそうだからですか？」", kr: "「형님, 안색이 안 좋으시네요. 아버지의 유언장에 아직 사인이 없어서인가요? 아니면 카지노 빚을 회사 돈으로 메운 게 들통날까 봐서인가요?」" } },
+                        { text: { zh: "大少爺的眼神瞬間變得陰鷙，酒杯在他手中幾近捏碎。你的從容讓周圍的風向開始改變。", jp: "長男の目は瞬時に険しくなり、手にあるグラスが割れんばかりに握りしめられた。あなたの余裕の態度に、周囲の風向きが変わり始めた。", kr: "큰도련님의 눈빛이 순식간에 험악해졌고, 손에 든 와인잔이 깨질 듯 쥐어졌다. 당신의 여유로운 태도에 주변의 기류가 변하기 시작했다." } }
+                    ], 
+                    rewards: { varOps: [{key:'prestige', val:20, op:'+'}] },
+                    options: [{label: { zh: "優雅離開", jp: "優雅に立ち去る", kr: "우아하게 떠나다" }, action: "node_next", nextSceneId: 'rose_hub'}] 
+                }
             },
-            style: "danger",
-            condition: { vars: [{ key: 'time_left', val: 0, op: '<=' }] },
-            action: "node_next",
-            nextSceneId: 'rose_climax'
-        },
+            { label: { zh: "不與他計較", jp: "相手にしない", kr: "상대하지 않다" }, action: "node_next", nextSceneId: 'rose_hub' }
+        ]
+    });
 
-        // [B] 社交 (增加具體情境)
-        {
-            label: {
-                zh: "融入貴族圈子",
-                jp: "貴族の輪に溶け込む",
-                kr: "귀족 무리에 섞이다"
+    register({
+        id: 'rose_library',
+        dialogue: [{ text: { zh: "巨大的桃花心木書架直通天花板。這裡或許藏著能保命的東西。", jp: "巨大なマホガニーの書棚が天井まで届いている。ここには命を守る何かが隠されているかもしれない。", kr: "거대한 마호가니 책장이 천장까지 닿아 있다. 이곳엔 목숨을 지켜줄 무언가가 숨겨져 있을지도 모른다." } }],
+        options: [
+            {
+                label: { zh: "翻找建築圖紙", jp: "建築図面を探す", kr: "건축 도면 찾기" },
+                condition: { noTag: 'secret_passage' },
+                check: { stat: 'INT', val: 7 },
+                action: "node_next",
+                rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
+                onFail: { text: { zh: "書海浩瀚，你翻得頭昏腦脹，除了灰塵什麼也沒找到。", jp: "膨大な書物に目が回り、埃以外には何も見つけられなかった。", kr: "방대한 책더미에 어지러움만 느끼고, 먼지 외에는 아무것도 찾지 못했다." } },
+                nextScene: {
+                    dialogue: [{ text: { zh: "在一本《家族建築史》夾層中，你發現了一張發黃的藍圖。上面標記著廚房壁爐後方有一條通往暗河的走私密道。（獲得標籤：逃生密道）", jp: "『家族建築史』の間に、黄ばんだ図面を見つけた。厨房の暖炉の裏に、地下の川へ続く密輸用の隠し通路が記されている。（タグ獲得：逃走用密道）", kr: "《가문 건축사》 사이에 끼어 있던 누렇게 바랜 도면을 발견했다. 주방 벽난로 뒤에 지하 강으로 이어지는 밀수용 비밀 통로가 표시되어 있다. (태그 획득: 탈출용 비밀 통로)" } }],
+                    rewards: { tags: ['secret_passage'] },
+                    options: [{label: { zh: "收好圖紙", jp: "図面をしまう", kr: "도면 챙기기" }, action: "node_next", nextSceneId: 'rose_hub'}]
+                }
             },
-            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
-            action: "node_next",
-            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
-            nextScene: { 
-                text: "你端起一杯紅酒，掩飾住嘴角的冷笑，走向了家族的旁支長老們。\n你若無其事地提起了大少爺最近在賭場的巨額虧損，以及幾筆不明的賬目。\n\n長老們的臉色變了。謠言像病毒一樣在宴會廳擴散。", 
-                rewards: { varOps: [{key:'prestige', val:10, op:'+'}] },
-                options: [{label:"深藏功與名，退回人群", action:"node_next", nextSceneId:'rose_hub0'}] 
+            { label: { zh: "返回", jp: "戻る", kr: "돌아가기" }, action: "node_next", nextSceneId: 'rose_hub' }
+        ]
+    });
+
+    register({
+        id: 'rose_master_meet',
+        dialogue: [
+            { text: { zh: "書房裡瀰漫著濃重的血腥味與藥味。年邁的家主坐在皮椅上，劇烈地咳嗽。", jp: "書斎には濃い血の匂いと薬の匂いが充満している。年老いた当主が革張りの椅子に座り、激しく咳き込んでいる。", kr: "서재에는 짙은 피 냄새와 약 냄새가 진동한다. 늙은 가주가 가죽 의자에 앉아 심하게 기침을 하고 있다." } },
+            { speaker: { zh: "家主", jp: "当主", kr: "가주" }, text: { zh: "「私生子...你來做什麼？想看我死沒死透嗎？」", jp: "「私生児……何をしに来た？私が死んだかどうか見に来たのか？」", kr: "「사생아 녀석... 넌 여긴 웬일이냐? 내가 죽었나 확인하러 왔느냐?」" } }
+        ],
+        options: [
+            {
+                label: { zh: "呈上大少爺買毒的證據", jp: "長男の毒購入の証拠を提出する", kr: "큰도련님의 독 구매 증거 제출" },
+                condition: { hasTag: 'evidence_poison' },
+                action: "node_next",
+                rewards: { tags: ['heir_approved'], varOps: [{key:'time_left', val:1, op:'-'}] },
+                nextScene: { 
+                    dialogue: [
+                        { text: { zh: "家主顫抖著手看完那張藥單，整個人彷彿蒼老了十歲。", jp: "当主は震える手で薬の領収書を見た後、まるで10歳も老け込んだように見えた。", kr: "가주는 떨리는 손으로 약 영수증을 확인한 후, 마치 10년은 더 늙어버린 듯했다." } },
+                        { speaker: { zh: "家主", jp: "当主", kr: "가주" }, text: { zh: "「逆子……為了權力，連最後的體面都不要了。」", jp: "「愚息め……権力のためなら、最後の体面すら捨てるというのか」", kr: "「패륜아 같은 놈…… 권력을 위해서라면 마지막 체면마저 내다 버리는구나.」" } },
+                        { text: { zh: "他從手指上取下一枚象徵權力的翡翠扳指，重重拍在你手裡：「活下去。清理門戶。家族交給你了。」", jp: "彼は権力の象徴である翡翠の指輪を指から外し、あなたの手に重々しく乗せた。「生き延びろ。一族を掃除しろ。お前に任せる」", kr: "그는 권력의 상징인 비취 가락지를 손가락에서 빼어 당신의 손에 무겁게 쥐여주었다. 「살아남아라. 가문을 청소해. 가문은 네게 맡기마.」" } }
+                    ], 
+                    options: [{label: { zh: "戴上扳指", jp: "指輪をはめる", kr: "가락지를 끼다" }, action: "node_next", nextSceneId: 'rose_hub'}]
+                }
+            },
+            {
+                label: { zh: "無言退下", jp: "無言で下がる", kr: "말없이 물러나다" },
+                action: "node_next",
+                nextScene: {
+                    dialogue: [{ text: { zh: "你沒有籌碼，只能退出書房。你錯失了掌握主動權的機會。", jp: "手札がない以上、書斎を出るしかない。あなたは主導権を握る機会を逃した。", kr: "카드가 없는 당신은 서재에서 물러날 수밖에 없었다. 주도권을 쥘 기회를 놓쳤다." } }],
+                    options: [{label: { zh: "返回宴會", jp: "宴会場に戻る", kr: "연회장으로 돌아가기" }, action: "node_next", nextSceneId: 'rose_hub'}]
+                }
             }
-        },
+        ]
+    });
 
-        // [C] 管家線
-        {
-            label: "🌹 尋找那位年輕管家",
-            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
-            action: "node_next",
-            nextSceneId: 'rose_butler_interaction'
-        },
-
-        // [D] 對峙線
-        {
-            label: {
-                zh: "主動走向大少爺",
-                jp: "坊ちゃんに自ら近づく",
-                kr: "도련님에게 스스로 다가가다"
+    // --- 終章：高潮與結局 ---
+    register({
+        id: 'rose_climax',
+        type: 'climax',
+        dialogue: [
+            { text: { zh: "【終章：午夜喪鐘】", jp: "【終章：真夜中の弔鐘】", kr: "【종장: 자정의 조종】" } },
+            { text: { zh: "午夜十二點。鐘聲敲響的瞬間，書房傳來家主毒發身亡的慘叫，全場大亂。", jp: "真夜中の12時。鐘が鳴った瞬間、書斎から当主が毒死する悲鳴が響き、会場は大混乱に陥った。", kr: "자정 12시. 종소리가 울리는 순간, 서재에서 가주가 독살당하는 비명이 들려오고 장내는 대혼란에 빠졌다." } },
+            { speaker: { zh: "大少爺", jp: "長男", kr: "큰도련님" }, text: { zh: "「是他！我親眼看到這個私生子進了書房！是他毒死了父親！」", jp: "「あいつだ！あの私生児が書斎に入るのをこの目で見た！あいつが父上を毒殺したんだ！」", kr: "「저놈이다! 저 사생아가 서재에 들어가는 걸 내 두 눈으로 똑똑히 봤어! 저놈이 아버지를 독살한 거다!」" } },
+            { text: { zh: "衛兵拔劍衝入，將你團團包圍。這是決定生死的最後一刻。", jp: "衛兵が剣を抜き、あなたを完全に包囲した。これが生死を分ける最後の瞬間だ。", kr: "위병들이 검을 뽑아 들고 당신을 겹겹이 포위했다. 생사를 가를 마지막 순간이다." } }
+        ],
+        options: [
+            {
+                label: { zh: "高舉翡翠扳指反殺！", jp: "翡翠の指輪を高く掲げ反撃！", kr: "비취 가락지를 높이 들고 반격!" },
+                style: "primary",
+                condition: { hasTag: 'heir_approved' },
+                action: "node_next",
+                nextScene: { 
+                    dialogue: [
+                        { text: { zh: "「家主信物在此！誰敢造次？」你厲聲喝道，將大少爺買毒的證據摔在他臉上。", jp: "「当主の証がここにある！誰が逆らうというのだ？」あなたは一喝し、長男の毒購入の証拠を彼の顔に叩きつけた。", kr: "「가주의 신표가 여기 있다! 누가 감히 반항하느냐?」 당신은 매섭게 호통치며 큰도련님이 독을 구매한 증거를 그의 얼굴에 내던졌다." } },
+                        { text: { zh: "局勢瞬間逆轉。衛兵將劍鋒轉向了臉色慘白的大少爺。你踏著血跡，坐上了那個冰冷的主位。", jp: "形勢は一瞬で逆転した。衛兵たちは顔面蒼白の長男へ剣先を向けた。あなたは血痕を踏み越え、冷たい当主の座に腰を下ろした。", kr: "전세가 순식간에 역전되었다. 위병들은 얼굴이 새하얘진 큰도련님에게 검끝을 돌렸다. 당신은 핏자국을 밟고 차가운 가주의 자리에 앉았다." } },
+                        { text: { zh: "【結局 S：血色權杖】", jp: "【結末 S：血塗られた権杖】", kr: "【엔딩 S: 피로 물든 권장】" } }
+                    ],
+                    rewards: { gold: 200, title: "豪門家主" },
+                    options: [{label: { zh: "統御家族", jp: "一族を統治する", kr: "가문 통치" }, action: "finish_chain"}]
+                }
             },
-            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
-            action: "node_next",
-            nextSceneId: 'rose_brother_fight'
-        },
-        {
-            label: {
-                zh: "前往露台",
-                jp: "テラスに向かう",
-                kr: "테라스로 향하다"
+            {
+                label: { zh: "與管家殺出重圍", jp: "執事と共に血路を開く", kr: "집사와 함께 포위망 돌파" },
+                style: "danger",
+                condition: { vars: [{ key: 'favor_butler', val: 30, op: '>=' }] },
+                action: "node_next",
+                nextScene: { 
+                    dialogue: [
+                        { text: { zh: "燈光突然熄滅——是塞巴斯切斷了電源。一隻溫暖的手在黑暗中抓住了你：「少爺，這邊！」", jp: "突然照明が消えた——セバスが電源を切ったのだ。暗闇の中で温かい手があなたを掴んだ。「坊ちゃん、こちらへ！」", kr: "갑자기 조명이 꺼졌다——세바스찬이 전원을 차단한 것이다. 어둠 속에서 따뜻한 손이 당신을 잡았다: 「도련님, 이쪽입니다!」" } },
+                        { text: { zh: "你們跳上停在後門的汽車。你回頭看了一眼燃燒的莊園，那裡埋葬了你的過去，但身邊的人，是你的未來。", jp: "二人は裏口に停まっていた車に飛び乗った。振り返ると屋敷が燃えている。あそこには過去が埋葬されたが、隣にいる彼があなたの未来だ。", kr: "두 사람은 뒷문에 세워둔 차에 뛰어올랐다. 당신은 불타는 저택을 뒤돌아보았다. 그곳에는 당신의 과거가 묻혔지만, 곁에 있는 사람은 당신의 미래다." } },
+                        { text: { zh: "【結局 A：私奔的夜鴞】", jp: "【結末 A：駆け落ちの夜梟】", kr: "【엔딩 A: 도망친 올빼미】" } }
+                    ],
+                    rewards: { gold: 100, title: "自由之鳥" },
+                    options: [{label: { zh: "消失在夜色中", jp: "夜の闇へ消える", kr: "밤의 어둠 속으로 사라지다" }, action: "finish_chain"}]
+                }
             },
-            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
-            action: "node_next",
-            nextSceneId: 'rose_terrace'
-        },
-        {
-            label: {
-                zh: "進入圖書室",
-                jp: "書斎に入る",
-                kr: "서재로 들어가다"
+            {
+                label: { zh: "鑽入密道逃生", jp: "隠し通路から逃げる", kr: "비밀 통로로 도망치다" },
+                condition: { hasTag: 'secret_passage' },
+                action: "node_next",
+                nextScene: {
+                    dialogue: [
+                        { text: { zh: "趁著混亂，你撞碎窗戶，順著早已記下的路線滾入廚房壁爐後的暗道。", jp: "混乱に乗じて窓を割り、あらかじめ覚えておいたルートに沿って厨房の暖炉裏の隠し通路へ転がり込んだ。", kr: "혼란한 틈을 타 창문을 부수고, 미리 외워둔 경로를 따라 주방 벽난로 뒤의 비밀 통로로 굴러 들어갔다." } },
+                        { text: { zh: "你在潮濕的下水道中狂奔。當你看著黎明升起，你知道復仇的火種還未熄滅。", jp: "湿った下水道をがむしゃらに走った。夜明けを見た時、復讐の火種はまだ消えていないと確信した。", kr: "축축한 하수도 안을 미친 듯이 달렸다. 떠오르는 여명을 바라보며, 복수의 불씨가 아직 꺼지지 않았음을 깨달았다." } },
+                        { text: { zh: "【結局 B：潛伏的流亡者】", jp: "【結末 B：潜伏する亡命者】", kr: "【엔딩 B: 잠복한 망명자】" } }
+                    ],
+                    options: [{label: { zh: "等待復仇之日", jp: "復讐の日を待つ", kr: "복수의 날을 기다리다" }, action: "finish_chain"}]
+                }
             },
-            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
-            action: "node_next",
-            nextSceneId: 'rose_library'
-        },
-        {
-            label: {
-                zh: "去偏廳賭一把",
-                jp: "副間でギャンブルする",
-                kr: "별실에서 도박하다"
-            },
-            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
-            action: "node_next",
-            nextSceneId: 'rose_gamble'
-        },
-        // [E] 晉見家主
-        {
-            label: {
-                zh: "強闖家主書房",
-                jp: "当主の書斎に強引に入る",
-                kr: "가주 서재에 강제로 들어가다"
-            },
-            style: "primary",
-            condition: { 
-                vars: [
-                    { key: 'prestige', val: 50, op: '>=' },
-                    { key: 'time_left', val: 1, op: '>=' }
-                ]
-            },
-            action: "node_next",
-            nextSceneId: 'rose_master_meet'
-        },
-        {
-            label: {
-                zh: "強闖書房【威望不足】",
-                jp: "書斎に強引に入る【威信不足】",
-                kr: "서재 강제 침입【위신 부족】"
-            },
-            style: "disabled",
-            condition: { vars: [{ key: 'prestige', val: 50, op: '<' }] },
-            action: "locked",
-            msg: "門口的保鏢冷冷地看著你：「私生子沒有資格進去。」"
-        }
-    ]
-});
+            {
+                label: { zh: "無力辯解", jp: "弁明できず", kr: "변명할 힘이 없다" },
+                action: "node_next",
+                nextScene: { 
+                    dialogue: [
+                        { text: { zh: "憤怒的人群淹沒了你的聲音。在混亂的暴力中，你的意識逐漸模糊。你成為了家族權力鬥爭中又一個無名的犧牲品。", jp: "怒れる群衆があなたの声を掻き消した。暴力の嵐の中、意識が次第に遠のく。あなたは権力闘争の無名の犠牲者となった。", kr: "분노한 군중이 당신의 목소리를 집어삼켰다. 혼란스러운 폭력 속에서 의식이 점차 흐려진다. 당신은 가문 권력 투쟁의 이름 없는 희생양이 되었다." } },
+                        { text: { zh: "【結局 C：無名之鬼】", jp: "【結末 C：名もなき亡霊】", kr: "【엔딩 C: 이름 없는 원혼】" } }
+                    ],
+                    rewards: { energy: -20 },
+                    options: [{label: { zh: "陷入黑暗", jp: "闇に落ちる", kr: "어둠 속으로" }, action: "finish_chain"}]
+                }
+            }
+        ]
+    });
+	// ============================================================
+// 🎭 劇本二：獵殺綠茶的遊戲 (現代背叛與反殺)
 // ============================================================
-// 3. 第二章：豪門夜宴 (HUB - 增加氛圍描述)
-// ============================================================
-register({
-    id: 'rose_hub',
-    text: [
-        "【宴會廳】",
-        "⏳ 距離審判還有： {time_left} 時辰",
-        "📊 當前局勢：威望 {prestige} | 理智 {sanity} | 金幣 {gold} | 💕管家好感 {favor_butler}"
-    ],
-    options: [
-        // [A] 結局判定
-        {
-            label: {
-                zh: "午夜鐘聲響起",
-                jp: "真夜中の鐘が鳴り響く",
-                kr: "자정의 종소리가 울리다"
-            },
-            style: "danger",
-            condition: { vars: [{ key: 'time_left', val: 0, op: '<=' }] },
-            action: "node_next",
-            nextSceneId: 'rose_climax'
-        },
 
-        // [B] 社交
-        {
-            label: {
-                zh: "融入貴族圈子",
-                jp: "貴族の輪に溶け込む",
-                kr: "귀족 무리에 섞이다"
-            },
-            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
-            action: "node_next",
-            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
-            nextScene: { 
-                text: "你端起一杯紅酒，掩飾住嘴角的冷笑，走向了家族的旁支長老們。\n你若無其事地提起了大少爺最近在賭場的巨額虧損，以及幾筆不明的賬目。\n\n長老們的臉色變了。謠言像病毒一樣在宴會廳擴散。", 
-                rewards: { varOps: [{key:'prestige', val:10, op:'+'}] },
-                options: [{label:"深藏功與名，退回人群", action:"node_next", nextSceneId:'rose_hub'}] 
-            }
-        },
-
-        // [C] 管家線
-        {
-            label: "🌹 尋找那位年輕管家",
-            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
-            action: "node_next",
-            nextSceneId: 'rose_butler_interaction'
-        },
-
-        // [D] 對峙線
-        {
-            label: {
-                zh: "主動走向大少爺",
-                jp: "坊ちゃんに自ら近づく",
-                kr: "도련님에게 스스로 다가가다"
-            },
-            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
-            action: "node_next",
-            nextSceneId: 'rose_brother_fight'
-        },
-        {
-            label: {
-                zh: "前往露台",
-                jp: "テラスに向かう",
-                kr: "테라스로 향하다"
-            },
-            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
-            action: "node_next",
-            nextSceneId: 'rose_terrace'
-        },
-        {
-            label: {
-                zh: "進入圖書室",
-                jp: "書斎に入る",
-                kr: "서재로 들어가다"
-            },
-            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
-            action: "node_next",
-            nextSceneId: 'rose_library'
-        },
-        {
-            label: {
-                zh: "去偏廳賭一把",
-                jp: "副間でギャンブルする",
-                kr: "별실에서 도박하다"
-            },
-            condition: { vars: [{ key: 'time_left', val: 1, op: '>=' }] },
-            action: "node_next",
-            nextSceneId: 'rose_gamble'
-        },
-        // [E] 晉見家主
-        {
-            label: {
-                zh: "強闖家主書房",
-                jp: "当主の書斎に強引に入る",
-                kr: "가주 서재에 강제로 들어가다"
-            },
-            style: "primary",
-            condition: { 
-                vars: [
-                    { key: 'prestige', val: 50, op: '>=' },
-                    { key: 'time_left', val: 1, op: '>=' }
-                ]
-            },
-            action: "node_next",
-            nextSceneId: 'rose_master_meet'
-        },
-        {
-            label: {
-                zh: "強闖書房【威望不足】",
-                jp: "書斎強闖【威信不足】",
-                kr: "서재 강제 침입【위신 부족】"
-            },
-            style: "disabled",
-            condition: { vars: [{ key: 'prestige', val: 50, op: '<' }] },
-            action: "locked",
-            msg: "門口的保鏢冷冷地看著你：「私生子沒有資格進去。」"
-        }
-    ]
-});
-
-// ============================================================
-// 子場景擴充：管家的誘惑
-// ============================================================
-register({
-    id: 'rose_butler_interaction',
-    text: [
-        "你穿過人群，在陰影處找到了那位年輕英俊的管家——塞巴斯。",
-        "他正在擦拭銀質餐具，看到你時，眼底閃過一絲驚訝，隨即化為玩味的笑意。",
-        "「哎呀，三少爺。您身上的泥土味……可是會熏到客人的。」他遞給你一條潔白的手帕。"
-    ],
-    options: [
-        // 交易線：變得更貪婪
-        {
-            label: {
-                zh: "「我要買大少爺的命」",
-                jp: "「坊ちゃんの命を買う」",
-                kr: "「도련님의 목숨을 사겠다」"
-            },
-            condition: { 
-                noTag: 'evidence_poison',
-                var: { key: 'gold', val: 30, op: '>=' }
-            },
-            action: "node_next",
-            rewards: { 
-                gold: -30, 
-                tags: ['evidence_poison'],
-                varOps: [{key:'time_left', val:1, op:'-'}]
-            },
-            nextScene: { 
-                text: "塞巴斯收起金幣，動作優雅得像在表演魔術。\n\n「命我給不了，但這個……或許您用得上。」\n他將一張皺巴巴的藥單塞進你的袖口，低聲耳語：「這是大少爺從黑市購買砒霜的收據。今晚的壽宴，恐怕不只是慶祝那麼簡單。」", 
-                options: [{label:"這足夠了", action:"node_next", nextSceneId:'rose_hub'}]
-            }
-        },
-        
-        // 戀愛線：增加肢體接觸描寫
-        {
-            label: {
-                zh: "接過手帕，觸碰指尖",
-                jp: "ハンカチを受け取り指先に触れる",
-                kr: "손수건을 받으며 손가락 끝에 닿다"
-            },
-            check: { stat: 'CHR', val: 6 },
-            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
-            nextScene: { 
-                text: "你接過手帕，指尖故意在他掌心輕輕劃過。塞巴斯的動作停滯了一瞬，呼吸亂了半拍。\n\n你靠近他，在他耳邊輕笑：「比起這些虛偽的貴族，我更願意信任你，塞巴斯。」\n\n他低下頭，掩飾住泛紅的耳根：「……我不討厭您的信任，少爺。」", 
-                rewards: { varOps: [{key:'favor_butler', val:20, op:'+'}] },
-                options: [{label:"曖昧的氛圍恰到好處", action:"node_next", nextSceneId:'rose_hub'}] 
-            },
-            failScene: {
-                text: "你試圖調情，但塞巴斯禮貌地後退了一步，眼神恢復了冰冷。\n「請自重，少爺。老爺正在看著這邊。」\n氣氛變得尷尬起來。",
-                options: [{label:"悻悻然離開", action:"node_next", nextSceneId:'rose_hub'}]
-            }
-        },
-
-        // 密道線：增加緊張感
-        {
-            label: {
-                zh: "「如果我失敗了……」",
-                jp: "「もし失敗したら……」",
-                kr: "「만약 내가 실패한다면……」"
-            },
-            condition: { vars: [{ key: 'favor_butler', val: 40, op: '>=' }] },
-            action: "node_next",
-            rewards: { 
-                tags: ['secret_passage'],
-                varOps: [{key:'time_left', val:1, op:'-'}] 
-            },
-            nextScene: {
-                text: "塞巴斯的神情變得嚴肅。他左右環顧，確認無人後，將一張手繪地圖塞進你的口袋。\n\n「別死在這裡。」他的聲音很輕，卻帶著顫抖，「如果情況失控，廚房壁爐後有一條通往河邊的密道。船我已經準備好了。」",
-                options: [{label:"點頭致謝", action:"node_next", nextSceneId:'rose_hub'}]
-            }
-        },
-        
-        { label: "沒什麼，只是路過", action: "node_next", nextSceneId: 'rose_hub' }
-    ]
-});
-
-// ============================================================
-// 子場景擴充：兄弟鬩牆
-// ============================================================
-register({
-    id: 'rose_brother_fight',
-    text: [
-        "你走向人群中心。大少爺看到了你，手中的酒杯猛地頓住。",
-        "他推開身邊的舞伴，帶著一身酒氣大步走來，臉上掛著猙獰的笑。",
-        "「喲，這不是我們的小老鼠嗎？地窖的空氣不適合你嗎？竟然爬到這種場合來丟人現眼！」",
-        "周圍的賓客安靜下來，都在等著看這場好戲。"
-    ],
-    options: [
-        {
-            label: {
-                zh: "忍氣吞聲",
-                jp: "怒りをこらえる",
-                kr: "울분을 삼키다"
-            },
-            action: "node_next",
-            rewards: { 
-                varOps: [{key:'sanity', val:20, op:'-'}, {key:'time_left', val:1, op:'-'}] 
-            },
-            nextScene: { 
-                text: "你緊握雙拳，指甲深深嵌入掌心。你低下頭，任由他在眾人面前羞辱你。\n\n「這就對了，私生子就該有私生子的樣子。」大少爺得意地將一杯酒潑在你腳邊，大笑離去。\n\n雖然屈辱，但你成功讓他放鬆了警惕。", 
-                options: [{label:"擦乾鞋子，等待時機", action:"node_next", nextSceneId:'rose_hub'}]
-            }
-        },
-        {
-            label: {
-                zh: "智慧反擊",
-                jp: "知恵で反撃する",
-                kr: "지혜로 반격하다"
-            },
-            check: { stat: 'INT', val: 7 },
-            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
-            nextScene: { 
-                text: "你沒有生氣，反而優雅地舉杯，聲音不大卻清晰地傳遍全場：\n\n「大哥，您看起來很緊張？是因為賭場的債主追得太緊，還是因為……您給父親準備的『壽禮』見不得光？」\n\n大少爺的臉色瞬間煞白。周圍的賓客開始竊竊私語，懷疑的種子已經種下。", 
-                rewards: { varOps: [{key:'prestige', val:20, op:'+'}] },
-                options: [{label:"微笑著看著他落荒而逃", action:"node_next", nextSceneId:'rose_hub'}] 
-            },
-            failScene: {
-                text: "你試圖反駁，但在大少爺強大的氣場下結結巴巴。他無情地打斷了你，並嘲笑你的出身。\n賓客們發出刺耳的哄笑聲，你的顏面掃地。",
-                rewards: { varOps: [{key:'prestige', val:10, op:'-'}] },
-                options: [{label:"狼狽地退回角落", action:"node_next", nextSceneId:'rose_hub'}]
-            }
-        }
-    ]
-});
-
-// ============================================================
-// 子場景擴充：風暴前的寧靜 (家主書房)
-// ============================================================
-register({
-    id: 'rose_master_meet',
-    text: [
-        "書房裡瀰漫著濃重的藥味。年邁的家主坐在皮椅上，正劇烈地咳嗽，手帕上滿是鮮血。",
-        "他渾濁的眼睛盯著你，聲音沙啞：「你來做什麼？如果你也是來要錢的，就滾出去。」"
-    ],
-    options: [
-        {
-            label: {
-                zh: "呈上大少爺買毒的證據",
-                jp: "坊ちゃんの毒購入の証拠を提出する",
-                kr: "도련님이 독을 산 증거를 제출하다"
-            },
-            condition: { hasTag: 'evidence_poison' },
-            action: "node_next",
-            rewards: { 
-                tags: ['heir_approved'], 
-                varOps: [{key:'time_left', val:1, op:'-'}] 
-            },
-            nextScene: { 
-                text: "你將那張皺巴巴的藥單放在桌上。家主顫抖著手拿起，看完後，整個人彷彿蒼老了十歲。\n\n「逆子……咳咳……那個逆子！」\n\n他從手指上取下一枚象徵權力的翡翠扳指，重重地拍在你手裡。\n「活下去……殺了那個逆子……羅斯家族，交給你了。」", 
-                options: [{label:"戴上扳指，眼神蛻變", action:"node_next", nextSceneId:'rose_hub'}]
-            }
-        },
-        {
-            label: "只是問安 (無證據)",
-            action: "node_next",
-            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
-            nextScene: {
-                text: "你沒有足夠的籌碼。家主失望地閉上眼，揮手讓你出去。\n「優柔寡斷，難成大器。」\n你錯失了最後的機會。",
-                options: [{label:"不甘地退出書房", action:"node_next", nextSceneId:'rose_hub'}]
-            }
-        }
-    ]
-});
-
-// ============================================================
-// 4. 終章：血色黎明 (結局描寫強化)
-// ============================================================
-register({
-    id: 'rose_climax',
-    text: [
-        "【終章：審判時刻】",
-        "午夜十二點。鐘聲敲響的瞬間，宴會廳爆發出一陣驚恐的尖叫。",
-        "家主倒在主位上，口吐白沫，已經斷了氣。",
-        "「是他！」大少爺第一時間跳出來，指著你的鼻子，表情猙獰而誇張，「我親眼看到這個私生子從書房出來！是他毒死了父親！」",
-        "衛兵拔劍衝入，賓客們驚恐後退。所有人的目光都聚焦在你身上。",
-        "這是你最後的機會。"
-    ],
-    options: [
-        // 結局 A: 權力的頂峰
-        {
-            label: {
-                zh: "舉起信物，反殺！",
-                jp: "家主の証を掲げ反撃する",
-                kr: "가주의 신표를 들어 반격하다"
-            },
-            style: "primary",
-            condition: { hasTag: 'heir_approved' },
-            action: "node_next",
-            nextScene: { 
-                text: "面對指控，你沒有慌張。你緩緩舉起右手，那枚翡翠扳指在燈光下散發著寒光。\n\n「家主信物在此！誰敢造次？」你厲聲喝道，氣勢壓倒了全場。\n隨即，你甩出了大少爺購買砒霜的證據。\n\n局勢瞬間逆轉。衛兵們遲疑片刻，將劍鋒轉向了臉色慘白的大少爺。\n你坐在了那張沾血的椅子上，俯瞰著被拖走的大哥。你贏了，但你的心也和這扳指一樣冰冷了。\n\n【結局：血色權杖】\n(達成條件：獲得家主認可)",
-                rewards: { gold: 200, title: "豪門家主" },
-                options: [{label: "就此翻篇", action: "finish_chain"}]
-            }
-        },
-        
-        // 結局 B: 愛情的逃亡
-        {
-            label: "🌹 與塞巴斯殺出重圍",
-            style: "danger",
-            condition: { vars: [{ key: 'favor_butler', val: 50, op: '>=' }] },
-            action: "node_next",
-            nextScene: { 
-                text: "「動手！」你大喊一聲。\n\n燈光突然熄滅——是塞巴斯切斷了電源。黑暗中，槍聲響起，精準地擊倒了靠近你的衛兵。\n一隻溫暖的手抓住了你：「少爺，這邊！」\n\n火光與混亂中，你們跳上了停在後門的汽車。你回頭看了一眼燃燒的莊園，那裡埋葬了你的過去，但身邊的人，是你的未來。\n\n【結局：亂世鴛鴦】\n(達成條件：管家好感 > 50)",
-                rewards: { gold: 120, title: "私奔貴族" },
-                options: [{label: "消失在夜色裡", action: "finish_chain"}]
-            }
-        },
-
-        // 結局 C: 苟且偷生
-        {
-            label: {
-                zh: "鑽入密道逃跑",
-                jp: "隠し通路に滑り込み逃げる",
-                kr: "비밀 통로로 파고들어 도망치다"
-            },
-            condition: { hasTag: 'secret_passage' },
-            action: "node_next",
-            nextScene: {
-                text: "你深知大勢已去，趁著眾人混亂之際，滾進了壁爐後的暗門。\n\n你在潮濕的密道中狂奔，身後是衛兵的追殺聲。當你爬出下水道，看著黎明升起，你發現自己雖然一無所有，但至少還活著。\n復仇的火種，還未熄滅。\n\n【結局：流亡者】\n(達成條件：發現密道)",
-                rewards: { gold: 50 },
-                options: [{label: "在黎明中重新出發", action: "finish_chain"}]
-            }
-        },
-
-        // 結局 D: 悲劇
-        {
-            label: "無力辯解...",
-            action: "node_next",
-            nextScene: { 
-                text: "你試圖張嘴辯解，但憤怒的人群淹沒了你的聲音。\n「殺死弒父兇手！」\n\n在混亂的暴力中，你的意識逐漸模糊。你失敗了，成為了家族鬥爭中又一個無名的犧牲品。\n\n【結局：無名之鬼】",
-                rewards: { energy: -20 },
-                options: [{label: "就此沉入黑暗", action: "finish_chain"}]
-            }
-        }
-    ]
-});
-
-register({
-    id: 'rose_terrace',
-    text: [
-        "【露台】",
-        "你推開落地窗，冷冽的夜風撲面而來，吹散了宴會廳的脂粉氣。",
-        "欄杆外是漆黑的懸崖，遠處的海浪聲隱約可聞。",
-        "角落裡，兩個喝醉的家族長老正在抽煙，似乎在談論什麼秘密。"
-    ],
-    options: [
-        // 選項 A: 偷聽 (獲得情報)
-        {
-            label: {
-                zh: "躲在陰影處偷聽",
-                jp: "陰に潜んで盗み聞きする",
-                kr: "그늘에 숨어 엿듣다"
-            },
-            check: { stat: 'INT', val: 6 },
-            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
-            nextScene: {
-                text: "你屏住呼吸，聽到長老低聲說道：\n「老爺子的遺囑藏在『那幅畫』後面...就是畫著『獨眼巨人』的那幅。」\n(獲得情報：遺囑位置)",
-                rewards: { tags: ['info_will_location'] },
-                options: [{label: "記在心裡，返回宴會", action: "node_next", nextSceneId: 'rose_hub'}]
-            },
-            failScene: {
-                text: "你靠得太近，不小心踢到了花盆。\n「誰在那裡？！」\n長老們警覺地閉上了嘴並離開了。你什麼都沒聽到。",
-                options: [{label: "尷尬地返回", action: "node_next", nextSceneId: 'rose_hub'}]
-            }
-        },
-        // 選項 B: 休息 (恢復 SAN)
-        {
-            label: {
-                zh: "獨自吹風冷靜",
-                jp: "一人で風に当たり落ち着く",
-                kr: "혼자 바람을 맞으며 진정하다"
-            },
-            action: "node_next",
-            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
-            nextScene: {
-                text: "你看著遠處的燈塔，深吸了一口冰冷的空氣。\n混亂的思緒逐漸清晰，恐懼感也消退了不少。",
-                rewards: { varOps: [{key:'sanity', val:10, op:'+'}] },
-                options: [{label: "精神飽滿地返回", action: "node_next", nextSceneId: 'rose_hub'}]
-            }
-        },
-        { label: "返回宴會廳", action: "node_next", nextSceneId: 'rose_hub' }
-    ]
-});
-register({
-    id: 'rose_library',
-    text: [
-        "【圖書室】",
-        "巨大的桃花心木書架直通天花板，空氣中瀰漫著舊紙張的味道。",
-        "這裡平時鮮有人至，是尋找家族黑歷史的最佳場所。"
-    ],
-    options: [
-        // 選項 A: 尋找地圖 (替代管家線的密道獲取方式)
-        {
-            label: {
-                zh: "翻找建築圖紙",
-                jp: "建築図面を探し出す",
-                kr: "건축 도면을 뒤져 찾다"
-            },
-            condition: { noTag: 'secret_passage' }, // 只有沒地圖時才顯示
-            check: { stat: 'INT', val: 7 },
-            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
-            nextScene: {
-                text: "在一本厚重的《家族建築史》夾層中，你發現了一張發黃的藍圖。\n上面標記著廚房壁爐後方有一條通往河邊的走私密道。\n(獲得標籤：逃生密道)",
-                rewards: { tags: ['secret_passage'] },
-                options: [{label: "收好圖紙", action: "node_next", nextSceneId: 'rose_hub'}]
-            },
-            failScene: {
-                text: "書海浩瀚，你翻得頭昏腦脹，除了灰塵什麼也沒找到。",
-                rewards: { varOps: [{key:'sanity', val:5, op:'-'}] },
-                options: [{label: "放棄尋找", action: "node_next", nextSceneId: 'rose_hub'}]
-            }
-        },
-        // 選項 B: 閱讀戰術書 (提升能力)
-        {
-            label: {
-                zh: "閱讀《權力博弈論》",
-                jp: "『権力の駆け引き』を読む",
-                kr: "《권력 게임론》을 읽다"
-            },
-            action: "node_next",
-            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
-            nextScene: {
-                text: "你閱讀了關於談判與施壓的章節，感覺對人心的掌控力提升了。",
-                rewards: { varOps: [{key:'prestige', val:5, op:'+'}] },
-                options: [{label: "合上書本", action: "node_next", nextSceneId: 'rose_hub'}]
-            }
-        },
-        { label: "離開圖書室", action: "node_next", nextSceneId: 'rose_hub' }
-    ]
-});register({
-    id: 'rose_gamble',
-    text: [
-        "【偏廳賭桌】",
-        "煙霧繚繞的偏廳裡，幾個紈褲子弟正在玩撲克。",
-        "桌上堆滿了金幣和籌碼。這是快速獲取資金的地方，也是深淵。"
-    ],
-    options: [
-        // 選項 A: 參與賭局
-        {
-            label: {
-                zh: "加入牌局",
-                jp: "カードゲームに加わる",
-                kr: "카드 게임에 참가하다"
-            },
-            condition: { vars: [{ key: 'gold', val: 10, op: '>=' }] },
-            check: { stat: 'LUK', val: 5 }, // 運氣檢定
-            rewards: { 
-                gold: -10, // 入場費
-                varOps: [{key:'time_left', val:1, op:'-'}] 
-            },
-            nextScene: {
-                text: "你的運氣好得驚人！連續幾把同花順讓其他人看得目瞪口呆。\n你面前的籌碼堆成了小山。\n(金幣 +50)",
-                rewards: { gold: 50, varOps: [{key:'prestige', val:5, op:'+'}] },
-                options: [{label: "見好就收", action: "node_next", nextSceneId: 'rose_hub'}]
-            },
-            failScene: {
-                text: "今晚幸運女神沒有站在你這邊。\n你輸光了手裡的籌碼，還被旁人嘲笑了一番。",
-                rewards: { varOps: [{key:'sanity', val:5, op:'-'}] },
-                options: [{label: "灰溜溜地離開", action: "node_next", nextSceneId: 'rose_hub'}]
-            }
-        },
-        // 選項 B: 出千 (高風險)
-        {
-            label: {
-                zh: "嘗試出千",
-                jp: "イカサマを試みる",
-                kr: "속임수를 시도하다"
-            },
-            check: { stat: 'AGI', val: 8 },
-            rewards: { varOps: [{key:'time_left', val:1, op:'-'}] },
-            nextScene: {
-                text: "你的手指靈活地換了底牌。沒有人發現破綻。\n你大殺四方，贏走了桌上所有的錢！\n(金幣 +100)",
-                rewards: { gold: 100 },
-                options: [{label: "趕緊溜走", action: "node_next", nextSceneId: 'rose_hub'}]
-            },
-            failScene: {
-                text: "「他在袖子裡藏牌！」\n一聲大喝，你被憤怒的賭徒們圍毆了一頓，扔出了偏廳。\n(精力扣除)",
-                rewards: { energy: -10, varOps: [{key:'prestige', val:20, op:'-'}] },
-                options: [{label: "狼狽爬起", action: "node_next", nextSceneId: 'rose_hub'}]
-            }
-        },
-        { label: "沒興趣", action: "node_next", nextSceneId: 'rose_hub' }
-    ]
-});
-
-register({
+    register({
         id: 'drama_root_entry',
+        type: 'start',
         entry: true, 
         onEnter: { 
             varOps: [
                 { key: 'md_trust', val: 50, op: 'set' },     // 未婚夫信任度
-                { key: 'md_rep', val: 50, op: 'set' },       // 正宮氣場/名聲
+                { key: 'md_rep', val: 50, op: 'set' },       // 正宮威望
                 { key: 'md_stress', val: 0, op: 'set' },     // 崩潰值
-                { key: 'md_evidence', val: 0, op: 'set' }    // 收集到的鐵證
+                { key: 'md_evidence', val: 0, op: 'set' }    // 鐵證數量
             ]
         },
         dialogue: [
-            { text: "【第一幕：微小的刺】" },
-            { text: "你坐進未婚夫明浩的車裡，敏銳地聞到了一股不屬於你的香水味。" },
-            { text: "更刺眼的是，副駕駛座的縫隙裡，夾著一根亞麻色的長髮。而你是俐落的黑色短髮。" },
-            { speaker: "明浩", text: "「怎麼了？今天公司剛來了個實習生若微，笨手笨腳的，我順路載她去辦手續，你別多想。」" },
-            { text: "明浩的語氣很自然，但你知道，戰爭已經開始了。" }
+            { text: { zh: "【第一幕：微小的刺】", jp: "【第一幕：微かな棘】", kr: "【제1막: 미세한 가시】" } },
+            { text: { zh: "你坐進未婚夫明浩的車裡，敏銳地聞到了一股不屬於你的廉價香水味。", jp: "婚約者の明浩（ミンハオ）の車に乗り込むと、自分のものではない安っぽい香水の匂いを鋭く察知した。", kr: "약혼자 밍하오의 차에 타자마자, 당신의 것이 아닌 싸구려 향수 냄새를 예민하게 알아챘다." } },
+            { text: { zh: "更刺眼的是，副駕駛座的縫隙裡，夾著一根亞麻色的長髮。而你是俐落的黑色短髮。", jp: "さらに目についたのは、助手席の隙間に挟まった亜麻色の長い髪だ。あなたはショートの黒髪である。", kr: "더 눈에 띄는 것은, 조수석 틈새에 끼어 있는 옅은 갈색의 긴 머리카락이다. 당신은 깔끔한 검은색 단발머리인데 말이다." } },
+            { speaker: { zh: "明浩", jp: "明浩", kr: "밍하오" }, text: { zh: "「怎麼了？今天公司剛來了個實習生叫若微，笨手笨腳的，我順路載她去辦手續，你別多想。」", jp: "「どうかした？今日、若微（ルオウェイ）っていうドジなインターンが入ってきてね。手続きに行くついでに乗せただけだ。深く考えないでくれ」", kr: "「왜 그래? 오늘 회사에 루오웨이라는 인턴이 새로 왔는데, 워낙 어설퍼서 수속 밟으러 가는 길에 태워준 것뿐이야. 오해하지 마.」" } },
+            { text: { zh: "明浩的語氣很自然。但你知道，這場不見血的戰爭已經開始了。", jp: "明浩の口調はごく自然だった。しかしあなたは悟った。血の流れない戦争が、すでに始まったのだと。", kr: "밍하오의 말투는 매우 자연스러웠다. 하지만 당신은 알고 있다. 피 없는 전쟁이 이미 시작되었다는 것을." } }
         ],
         options: [
             { 
-                label: {
-                    zh: "當場發作，質問他",
-                    jp: "その場で爆発し問い詰める",
-                    kr: "그 자리에서 폭발해 따지다"
-                },
+                label: { zh: "當場發作質問", jp: "その場で問い詰める", kr: "그 자리에서 따져 묻다" }, 
                 action: "node_next", 
                 rewards: { varOps: [{ key: 'md_trust', val: 10, op: '-' }, { key: 'md_stress', val: 10, op: '-' }] },
                 nextScene: {
                     dialogue: [
-                        { speaker: "你", text: "「順路載人需要讓她坐副駕？還噴這麼濃的香水？」" },
-                        { speaker: "明浩", text: "「你現在怎麼變得這麼神經質？她才二十歲，剛畢業的小妹妹而已！」" },
-                        { text: "明浩顯然覺得你在無理取鬧，氣氛降至冰點。但你發洩了情緒，心裡舒服了點。" }
+                        { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「順路載人需要讓她坐副駕？還噴這麼濃的香水？」", jp: "「ついでに乗せるのに助手席に座らせる必要が？しかもこんなにキツい香水をつけて？」", kr: "「가는 길에 태워준 거면서 조수석에 앉혀? 그것도 이렇게 독한 향수를 뿌리고?」" } },
+                        { speaker: { zh: "明浩", jp: "明浩", kr: "밍하오" }, text: { zh: "「你現在怎麼變得這麼神經質？她才二十歲，剛畢業的小妹妹而已！」", jp: "「最近どうしてそんなに神経質なんだ？彼女はまだ20歳、卒業したばかりの子供じゃないか！」", kr: "「너 요새 왜 이렇게 신경질적으로 변했어? 걘 이제 겨우 스무 살, 갓 졸업한 꼬맹이라고!」" } },
+                        { text: { zh: "明浩顯然覺得你在無理取鬧，氣氛降至冰點。但你發洩了情緒，心裡舒服了點。", jp: "明浩は明らかにあなたが言いがかりをつけていると感じ、車内の空気は凍りついた。しかし感情を発散させたことで、胸のつかえは少し取れた。", kr: "밍하오는 명백히 당신이 억지를 부린다고 생각했고, 분위기는 얼어붙었다. 하지만 감정을 표출한 덕분에 마음은 조금 편해졌다." } }
                     ],
-                    options: [{label: "抵達公司", action: "node_next", nextSceneId: 'drama_act2_pantry'}]
+                    options: [{label: { zh: "抵達公司", jp: "会社に到着", kr: "회사 도착" }, action: "node_next", nextSceneId: 'drama_act2_pantry'}]
                 } 
             },
             { 
-                label: {
-                    zh: "溫柔微笑，偷偷記下",
-                    jp: "優しく微笑みながらそっとメモする",
-                    kr: "부드럽게 웃으며 몰래 메모하다"
-                },
-                action: "node_next", 
-                rewards: { varOps: [{ key: 'md_rep', val: 10, op: '+' }, { key: 'md_stress', val: 20, op: '+' }] },
-                nextScene: {
-                    dialogue: [
-                        { speaker: "你", text: "「沒事，只是覺得這香水味挺廉價的。下次讓她坐後座吧，免得弄髒了你的真皮座椅。」" },
-                        { text: "明浩愣了一下，隨後笑著點頭。你隱忍著噁心，表面上維持著正宮的大度。" }
-                    ],
-                    options: [{label: "抵達公司", action: "node_next", nextSceneId: 'drama_act2_pantry'}]
-                } 
-            },
-            { 
-                label: {
-                    zh: "假裝沒事，暗中備份記錄",
-                    jp: "平静を装いこっそりバックアップ",
-                    kr: "아무렇지 않은 척 몰래 백업하다"
-                },
+                label: { zh: "暗中備份行車紀錄", jp: "こっそりドラレコをバックアップ", kr: "몰래 블랙박스 백업" }, 
                 style: "primary",
                 action: "node_next", 
                 rewards: { varOps: [{ key: 'md_evidence', val: 1, op: '+' }, { key: 'md_stress', val: 10, op: '+' }] },
                 nextScene: {
                     dialogue: [
-                        { text: "你什麼也沒說，只是趁明浩下車買咖啡時，拔走了行車紀錄器的記憶卡。" },
-                        { text: "你不會打沒有把握的仗。" }
+                        { text: { zh: "你溫柔地笑了笑，什麼也沒說。趁明浩下車買咖啡時，你迅速拔走了行車紀錄器的記憶卡。", jp: "あなたは優しく微笑み、何も言わなかった。明浩がコーヒーを買いに車を降りた隙に、素早くドライブレコーダーのSDカードを抜き取った。", kr: "당신은 부드럽게 웃으며 아무 말도 하지 않았다. 밍하오가 커피를 사러 차에서 내린 틈을 타, 재빨리 블랙박스의 메모리 카드를 빼냈다." } },
+                        { text: { zh: "你從不打沒有把握的仗。這份屈辱轉化為壓力，也化作了你的武器。", jp: "あなたは勝算のない戦いは決してしない。この屈辱はプレッシャーへと変わり、あなたの武器となった。", kr: "당신은 승산 없는 싸움은 절대 하지 않는다. 이 굴욕감은 압박감으로 변했고, 곧 당신의 무기가 되었다." } }
                     ],
-                    options: [{label: "抵達公司", action: "node_next", nextSceneId: 'drama_act2_pantry'}]
+                    options: [{label: { zh: "抵達公司", jp: "会社に到着", kr: "회사 도착" }, action: "node_next", nextSceneId: 'drama_act2_pantry'}]
                 } 
             }
         ]
     });
 
-    // ============================================================
-    // ☕ 第二幕：茶水間的誣陷 (經典綠茶橋段)
-    // ============================================================
+    // --- 第二幕：茶水間的誣陷 ---
     register({
         id: 'drama_act2_pantry',
         dialogue: [
-            { text: "【第二幕：茶水間的眼淚】" },
-            { text: "下午，你在公司茶水間碰到了那個叫「若微」的實習生。" },
-            { text: "她長著一張楚楚可憐的臉。看到你進來，她突然故意將手中的熱咖啡潑到自己裙子上，然後發出誇張的尖叫聲！" },
-            { text: "「啊！好燙！」" },
-            { text: "明浩和幾個高管立刻衝了進來。" },
-            { speaker: "若微", text: "「明浩哥... 姐姐可能是不小心的，你別怪她... 我知道姐姐不喜歡我...」她紅著眼眶，瑟瑟發抖地看著你。" }
+            { text: { zh: "【第二幕：茶水間的眼淚】", jp: "【第二幕：給湯室の涙】", kr: "【제2막: 탕비실의 눈물】" } },
+            { text: { zh: "下午，你在公司茶水間碰到了那個叫「若微」的實習生。她長著一張楚楚可憐的臉。", jp: "午後、会社の給湯室で「若微」というインターンに遭遇した。彼女はいかにも可憐な顔立ちをしている。", kr: "오후, 회사 탕비실에서 '루오웨이'라는 인턴과 마주쳤다. 그녀는 청순하고 가련한 얼굴을 하고 있다." } },
+            { text: { zh: "看到你進來，她突然故意將手中的熱咖啡潑到自己裙子上，然後發出誇張的尖叫聲！", jp: "あなたが部屋に入るのを見るなり、彼女は突然手に持っていた熱いコーヒーをわざと自分のスカートにこぼし、大袈裟な悲鳴を上げた！", kr: "당신이 들어오는 것을 보자, 그녀는 갑자기 손에 든 뜨거운 커피를 일부러 자기 치마에 쏟고는 과장된 비명을 질렀다!" } },
+            { speaker: { zh: "若微", jp: "若微", kr: "루오웨이" }, text: { zh: "「明浩哥！姐姐可能是不小心的，你別怪她... 我知道姐姐不喜歡我...」她紅著眼眶，看著衝進來的明浩與高管。", jp: "「明浩さん！お姉さんはわざとじゃないんです、責めないで……私が嫌われてるのは分かってます……」彼女は目を赤くして、駆けつけてきた明浩と役員たちを見つめた。", kr: "「밍하오 오빠! 언니가 실수하신 걸 거예요, 언니 원망하지 마세요... 언니가 절 안 좋아하시는 건 알지만...」 그녀는 눈시울을 붉히며, 뛰어 들어온 밍하오와 임원들을 바라보았다." } }
         ],
         options: [
-            // 🛑 崩潰檢定：如果壓力太高，強制失控
             {
-                label: "理智斷線！",
-                condition: { vars: [{ key: 'md_stress', val: 30, op: '>=' }] },
-                style: "danger", action: "node_next",
-                nextScene: {
-                    dialogue: [
-                        { text: "積壓的怒火瞬間爆發！你衝上前狠狠甩了若微一巴掌！" },
-                        { text: "「你這個滿嘴謊言的賤人！」" },
-                        { text: "全場嘩然。明浩鐵青著臉把你拉開。若微躲在明浩身後，嘴角勾起一抹得意的暗笑。" },
-                        { text: "你徹底落入了她的圈套，成了一個瘋婆子。" }
-                    ],
-                    rewards: { varOps: [{ key: 'md_trust', val: 40, op: '-' }, { key: 'md_rep', val: 50, op: '-' }] },
-                    options: [{ label: "被強行請出公司", action: "node_next", nextSceneId: 'drama_climax_gala' }]
-                }
-            },
-            // ✅ 正常應對
-            {
-                label: {
-                    zh: "冷笑，反客為主",
-                    jp: "冷笑して主導権を奪う",
-                    kr: "냉소하며 주도권을 빼앗다"
-                },
-                condition: { vars: [{ key: 'md_stress', val: 30, op: '<' }] },
+                label: { zh: "冷笑，反客為主", jp: "冷笑して主導権を奪う", kr: "냉소하며 주도권 빼앗기" },
                 action: "node_next",
                 rewards: { varOps: [{ key: 'md_rep', val: 20, op: '+' }, { key: 'md_trust', val: 10, op: '+' }] },
                 nextScene: {
                     dialogue: [
-                        { speaker: "你", text: "「若微妹妹，這杯咖啡是你自己泡的吧？水溫頂多40度，燙得著你嗎？」" },
-                        { text: "你上前抽了幾張紙巾，動作優雅地拍在她身上。「演技太差，回頭讓明總給你報個培訓班吧。」" },
-                        { text: "周圍的高管忍不住笑出聲。若微臉一陣紅一陣白，明浩也覺得她有些做作了。" }
+                        { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「若微妹妹，這杯咖啡是你自己泡的吧？溫水壺的水溫頂多40度，燙得著你嗎？」", jp: "「若微ちゃん、このコーヒーは自分で淹れたのよね？ポットの温度はせいぜい40度よ、火傷するかしら？」", kr: "「루오웨이 씨, 이 커피 본인이 직접 탄 거죠? 온수기 물 온도가 기껏해야 40도인데, 데일 리가 있나요?」" } },
+                        { text: { zh: "你上前抽了幾張紙巾，動作優雅地拍在她身上。「演技太差，回頭讓明總給你報個培訓班吧。」", jp: "ティッシュを数枚引き出し、優雅な仕草で彼女の服を叩いた。「演技が下手すぎるわ。後で明社長に演技指導のクラスでも申し込んでもらいなさい」", kr: "당신은 다가가 휴지를 몇 장 뽑아, 우아한 동작으로 그녀의 옷을 닦아주었다. 「연기가 너무 어설프네. 이따 밍 대표님한테 연기 학원이라도 끊어달라고 해요.」" } },
+                        { text: { zh: "周圍的高管忍不住笑出聲。若微臉一陣紅一陣白，明浩也覺得她有些做作了。", jp: "周囲の役員たちは思わず吹き出した。若微の顔は赤くなったり青くなったりし、明浩も彼女が少しわざとらしいと感じたようだ。", kr: "주변 임원들은 참지 못하고 웃음을 터뜨렸다. 루오웨이의 얼굴은 붉으락푸르락해졌고, 밍하오 역시 그녀가 좀 가식적이라고 느꼈다." } }
                     ],
-                    options: [{ label: "轉身離開", action: "node_next", nextSceneId: 'drama_climax_gala' }]
+                    options: [{ label: { zh: "轉身離開", jp: "振り返って立ち去る", kr: "돌아서서 떠나다" }, action: "node_next", nextSceneId: 'drama_climax_gala' }]
                 }
             },
             {
-                label: {
-                    zh: "調出茶水間監視器",
-                    jp: "給湯室の監視カメラを引き出す",
-                    kr: "주방 CCTV를 끌어내다"
-                },
+                label: { zh: "調出錄影打臉", jp: "録画を出し論破する", kr: "녹화본으로 반박" },
                 style: "primary",
-                condition: { 
-                    vars: [
-                        { key: 'md_stress', val: 30, op: '<' },
-                        { key: 'md_evidence', val: 1, op: '>=' } // 必須在上一關有拔行車紀錄器或懂得蒐證
-                    ]
-                },
+                condition: { vars: [{ key: 'md_evidence', val: 1, op: '>=' }] },
                 action: "node_next",
                 rewards: { varOps: [{ key: 'md_evidence', val: 1, op: '+' }, { key: 'md_trust', val: 20, op: '+' }] },
                 nextScene: {
                     dialogue: [
-                        { speaker: "你", text: "「既然你說是我推的，那我們看監視器吧。我剛剛進來時順手按了手機錄影。」" },
-                        { text: "你點開畫面，清清楚楚錄下了若微自己往身上潑咖啡的瞬間。" },
-                        { text: "明浩的臉色瞬間沉了下來。「若微，去財務部結算你的實習薪水，明天不用來了。」" }
+                        { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「既然你說是我推的，那我們看影片吧。我剛剛進來時順手按了手機錄影。」", jp: "「私が押したって言うなら、動画を見ましょう。さっき入ってきた時、たまたまスマホで録画してたの」", kr: "「제가 밀었다고 하니, 어디 영상을 한번 볼까요. 아까 들어올 때 무심코 핸드폰 녹화 버튼을 눌렀거든요.」" } },
+                        { text: { zh: "你點開畫面，清清楚楚錄下了若微自己往身上潑咖啡的瞬間。", jp: "画面を再生すると、若微が自分でコーヒーをかぶる瞬間がはっきりと映っていた。", kr: "화면을 재생하자, 루오웨이가 자기 몸에 직접 커피를 쏟는 순간이 아주 선명하게 녹화되어 있었다." } },
+                        { text: { zh: "明浩的臉色瞬間沉了下來。「若微，去財務部結算你的實習薪水，明天不用來了。」", jp: "明浩の顔色が一瞬で沈んだ。「若微、財務部でインターンの給与を精算してこい。明日はもう来なくていい」", kr: "밍하오의 얼굴이 순식간에 어두워졌다. 「루오웨이, 재무부 가서 인턴 월급 정산해. 내일부터 안 나와도 돼.」" } }
                     ],
-                    options: [{ label: "大獲全勝", action: "node_next", nextSceneId: 'drama_climax_gala' }]
+                    options: [{ label: { zh: "大獲全勝", jp: "大勝利", kr: "완벽한 승리" }, action: "node_next", nextSceneId: 'drama_climax_gala' }]
                 }
             }
         ]
     });
 
-    // ============================================================
-    // 🥂 第三幕：高潮 (董事會晚宴)
-    // ============================================================
+    // --- 第三幕：高潮與結局 ---
     register({
         id: 'drama_climax_gala',
+        type: 'climax',
         dialogue: [
-            { text: "【最終幕：逼宮的籌碼】" },
-            { text: "集團年度晚宴。你與明浩穿著禮服出席。" },
-            { text: "就在即將宣佈你們婚訊時，被開除的若微突然闖入會場！" },
-            { speaker: "若微", text: "她手裡舉著一張超音波單，哭得梨花帶雨：「明浩哥！我懷了你的孩子！你不能娶這個狠毒的女人！」" },
-            { text: "全場閃光燈狂閃，董事會的元老們議論紛紛。明浩面色慘白，震驚地看著若微，又看向你。" },
-            { text: "這是決定命運的時刻。" }
+            { text: { zh: "【最終幕：逼宮的籌碼】", jp: "【最終幕：追い詰める切り札】", kr: "【최종막: 벼랑 끝의 승부수】" } },
+            { text: { zh: "集團年度晚宴。你與明浩穿著禮服出席。就在即將宣佈你們婚訊時，被開除的若微突然闖入會場！", jp: "グループの年次晩餐会。あなたと明浩はドレスアップして出席した。婚約を発表しようとしたその時、解雇された若微が突然会場に乱入した！", kr: "그룹 연례 만찬. 당신과 밍하오는 예복을 입고 참석했다. 두 사람의 결혼 소식을 발표하려던 찰나, 해고된 루오웨이가 갑자기 회장에 난입했다!" } },
+            { speaker: { zh: "若微", jp: "若微", kr: "루오웨이" }, text: { zh: "她手裡舉著一張超音波單，哭得梨花帶雨：「明浩哥！我懷了你的孩子！你不能娶這個狠毒的女人！」", jp: "彼女はエコー写真の紙を掲げ、涙ながらに訴えた。「明浩さん！私、あなたの子を妊娠したの！こんな冷酷な女と結婚しちゃダメ！」", kr: "그녀는 초음파 사진을 치켜들고, 눈물을 펑펑 흘리며 소리쳤다: 「밍하오 오빠! 나 오빠 아이를 가졌어! 이런 독한 여자랑 결혼하면 안 돼!」" } },
+            { text: { zh: "全場閃光燈狂閃，董事會的元老們議論紛紛。明浩面色慘白，震驚地看著若微，又看向你。", jp: "会場中でフラッシュが焚かれ、取締役会の重鎮たちがざわめく。明浩は顔面蒼白になり、ショックを受けた様子で若微とあなたを交互に見た。", kr: "회장 전체에 플래시가 미친 듯이 터지고, 이사회 원로들이 수군거리기 시작한다. 밍하오는 새하얗게 질린 얼굴로 경악하며 루오웨이와 당신을 번갈아 쳐다본다." } }
         ],
         options: [
-            { label: "進行最終反擊", action: "node_next", nextSceneId: 'drama_ending_calculate' }
-        ]
-    });
-
-    // ============================================================
-    // 🏆 結局判定
-    // ============================================================
-    register({
-        id: 'drama_ending_calculate',
-        dialogue: [{ text: "面對若微的逼宮，你的應對是..." }],
-        options: [
-            // 🌟 結局 S：鐵證如山 (完美反殺)
+            // 🌟 結局 S：鐵證如山
             {
-                label: {
-                    zh: "甩出鐵證！",
-                    jp: "鉄の証拠を叩きつける",
-                    kr: "철통 증거를 내던지다"
-                },
-                condition: { 
-                    vars: [
-                        { key: 'md_evidence', val: 2, op: '>=' },
-                        { key: 'md_rep', val: 60, op: '>=' }
-                    ]
-                },
+                label: { zh: "甩出致命鐵證！", jp: "致命的な鉄壁の証拠を叩きつける！", kr: "치명적인 철통 증거 내던지기!" },
+                condition: { vars: [{ key: 'md_evidence', val: 1, op: '>=' }] },
                 style: "primary", action: "node_next",
                 nextScene: { 
                     dialogue: [
-                        { text: "【結局 S：女王的處刑】" },
-                        { text: "你冷笑著走向大螢幕，將手機連上投影。" },
-                        { speaker: "你", text: "「懷孕？你上個月才去酒吧跟別人開房，行車紀錄器裡還有你跟同伙炫耀要『仙人跳』明浩的錄音！」" },
-                        { text: "鐵證如山，若微癱軟在地。明浩對你心悅誠服，徹底將集團半數股份轉讓給你以表忠心。" }
+                        { text: { zh: "【結局 S：女王的處刑】", jp: "【結末 S：女王の処刑】", kr: "【엔딩 S: 여왕의 처형】" } },
+                        { text: { zh: "你冷笑著走向大螢幕，將手機連上投影。", jp: "冷笑しながら巨大スクリーンの前へ歩み寄り、スマホをプロジェクターに接続した。", kr: "당신은 냉소하며 대형 스크린으로 걸어가, 핸드폰을 프로젝터에 연결했다." } },
+                        { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「懷孕？行車紀錄器裡可是清清楚楚錄下了，你跟同伙炫耀要怎麼對明浩『仙人跳』的錄音！」", jp: "「妊娠？ドラレコには、あなたが仲間とどうやって明浩を『美人局』にかけるか自慢気に話している音声がバッチリ録音されてるわよ！」", kr: "「임신? 블랙박스에는 네가 일당들과 어떻게 밍하오를 '꽃뱀' 수법으로 엮을 건지 떠벌리는 음성이 아주 똑똑히 녹음되어 있던데!」" } },
+                        { text: { zh: "鐵證如山，若微癱軟在地，被保安拖走。明浩對你心悅誠服，徹底將集團半數股份轉讓給你以表忠心。", jp: "鉄壁の証拠を前に若微は崩れ落ち、警備員に引きずり出された。明浩はあなたに完全に平伏し、忠誠の証としてグループの株式の半分を譲渡した。", kr: "철통같은 증거 앞에 루오웨이는 바닥에 주저앉았고, 경호원들에게 끌려나갔다. 밍하오는 당신에게 완전히 복종하며, 충성의 표시로 그룹 지분의 절반을 당신에게 양도했다." } }
                     ],
                     rewards: { gold: 100, title: "豪門鐵腕正宮" }, 
-                    options: [{label: "欣賞她的慘狀", action: "finish_chain"}] 
+                    options: [{label: { zh: "掌控全局", jp: "局面を掌握する", kr: "전국 장악" }, action: "finish_chain"}] 
                 }
             },
-            // 🌟 結局 A：獨自美麗 (踢走渣男)
+            // 🌟 結局 A：獨自美麗
             {
-                label: {
-                    zh: "冷靜提分手",
-                    jp: "冷静に別れを告げる",
-                    kr: "냉정하게 이별을 고하다"
-                },
-                condition: { 
-                    vars: [{ key: 'md_rep', val: 70, op: '>=' }]
-                },
+                label: { zh: "冷靜提分手退出", jp: "冷静に別れを告げ身を引く", kr: "냉정하게 이별을 고하고 물러나다" },
+                condition: { vars: [{ key: 'md_rep', val: 60, op: '>=' }] },
                 action: "node_next",
                 nextScene: { 
                     dialogue: [
-                        { text: "【結局 A：清醒的獵手】" },
-                        { speaker: "你", text: "「既然他這麼喜歡照顧小妹妹，那就讓給妳吧。不過，集團的客戶名單和核心技術，我都帶走了。」" },
-                        { text: "你懶得陷入這種低級的泥淖。憑藉著你在業界累積的名聲，你自立門戶。" },
-                        { text: "半年後，明浩的公司被你打得瀕臨破產，而他和若微每天為了錢爭吵不休。" }
+                        { text: { zh: "【結局 A：清醒的獵手】", jp: "【結末 A：目覚めた狩人】", kr: "【엔딩 A: 깨어난 사냥꾼】" } },
+                        { speaker: { zh: "你", jp: "あなた", kr: "당신" }, text: { zh: "「既然他這麼喜歡照顧小妹妹，那就讓給妳吧。不過，集團的核心客戶名單，我都帶走了。」", jp: "「彼がそんなに若い子のお世話をしたいなら、譲ってあげるわ。でも、グループの重要顧客リストは私が全部持っていくから」", kr: "「그가 그렇게 어린 동생 돌보는 걸 좋아하니, 너한테 양보할게. 하지만 그룹의 핵심 고객 명단은 내가 전부 가져가겠어.」" } },
+                        { text: { zh: "你懶得陷入這種低級的泥淖，踩著高跟鞋頭也不回地離開。半年後，明浩的公司瀕臨破產，而你已自立門戶成了業界女王。", jp: "こんな低レベルな泥沼に関わるのはご免だ。ハイヒールを鳴らし、振り返ることなく立ち去った。半年後、明浩の会社は倒産寸前となり、あなたは独立して業界の女王となっていた。", kr: "이런 저급한 진흙탕에 빠지기 싫었던 당신은, 하이힐 구두 소리를 내며 뒤도 돌아보지 않고 떠났다. 반년 후, 밍하오의 회사는 파산 위기에 처했고, 당신은 독립하여 업계의 여왕이 되었다." } }
                     ],
                     rewards: { gold: 80, title: "獨立大女主" }, 
-                    options: [{label: "踩著高跟鞋離開", action: "finish_chain"}] 
+                    options: [{label: { zh: "獨自美麗", jp: "気高く生きる", kr: "홀로 눈부시게" }, action: "finish_chain"}] 
                 }
             },
-            // 🌟 結局 B：隱忍保位 (傳統正宮)
+            // 💀 結局 C：被綠茶逼退
             {
-                label: {
-                    zh: "安撫董事會",
-                    jp: "取締役会をなだめる",
-                    kr: "이사회를 달래다"
-                },
-                condition: { 
-                    vars: [{ key: 'md_trust', val: 50, op: '>=' }]
-                },
-                action: "node_next",
-                nextScene: { 
-                    dialogue: [
-                        { text: "【結局 B：黃金鳥籠】" },
-                        { text: "你大方地站出來，表示會給這個女孩一筆安家費，並平息了公關危機。" },
-                        { text: "明浩感激你的大度，如期與你完婚。若微被拿錢打發，永遠消失了。" },
-                        { text: "你保住了正宮的位置和無盡的財富，但每當深夜，你看著身邊的男人，心裡總覺得有一根拔不掉的刺。" }
-                    ],
-                    rewards: { gold: 30 }, 
-                    options: [{label: "維持豪門體面", action: "finish_chain"}] 
-                }
-            },
-            // 💀 結局 C：淨身出戶 (失敗)
-            {
-                label: {
-                    zh: "崩潰大哭",
-                    jp: "崩れ落ちて泣き崩れる",
-                    kr: "무너져 엉엉 울다"
-                },
-                condition: { 
-                    vars: [
-                        { key: 'md_evidence', val: 2, op: '<' },
-                        { key: 'md_rep', val: 70, op: '<' },
-                        { key: 'md_trust', val: 50, op: '<' }
-                    ]
-                },
+                label: { zh: "崩潰大哭", jp: "泣き崩れる", kr: "무너져 엉엉 울다" },
                 style: "danger", action: "node_next",
                 nextScene: { 
                     dialogue: [
-                        { text: "【結局 C：敗犬的退場】" },
-                        { text: "你沒有證據反駁，之前的歇斯底里已經讓明浩對你失去耐心。" },
-                        { speaker: "明浩", text: "「我們解除婚約吧。我不能讓我的骨肉流落在外。」" },
-                        { text: "你被趕出了公司。若微穿著你挑的禮服，挽著明浩的手臂，對著你露出了勝利的微笑。" }
+                        { text: { zh: "【結局 C：敗犬的退場】", jp: "【結末 C：負け犬の退場】", kr: "【엔딩 C: 패배자의 퇴장】" } },
+                        { text: { zh: "你沒有任何證據反駁，只能在台上崩潰失控。明浩對你徹底失去耐心，擋在了若微面前。", jp: "反論する証拠が何もなく、あなたはステージの上でパニックになり泣き叫んだ。明浩はあなたに完全に見切りをつけ、若微を庇うように前に立った。", kr: "반박할 증거가 아무것도 없는 당신은, 무대 위에서 무너져 통제력을 잃고 울부짖었다. 밍하오는 당신에게 완전히 인내심을 잃고 루오웨이 앞을 막아섰다." } },
+                        { speaker: { zh: "明浩", jp: "明浩", kr: "밍하오" }, text: { zh: "「我們解除婚約吧。我不能讓我的骨肉流落在外。」", jp: "「婚約は破棄しよう。自分の血を分けた子供を路頭に迷わせるわけにはいかない」", kr: "「우리 파혼하자. 내 핏줄이 밖에서 떠돌게 놔둘 순 없어.」" } },
+                        { text: { zh: "你被趕出了公司。若微挽著明浩的手臂，對著你露出了勝利的暗笑。", jp: "あなたは会社を追い出された。若微は明浩の腕にしがみつきながら、あなたに向けて勝利の嘲笑を浮かべた。", kr: "당신은 회사에서 쫓겨났다. 루오웨이는 밍하오의 팔짱을 낀 채 당신을 향해 승리의 미소를 지었다." } }
                     ],
                     rewards: { energy: -20 }, 
-                    options: [{label: "狼狽離開", action: "finish_chain"}] 
+                    options: [{label: { zh: "狼狽離開", jp: "惨めに去る", kr: "비참하게 떠나다" }, action: "finish_chain"}] 
                 }
             }
         ]

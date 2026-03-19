@@ -143,22 +143,58 @@ window.SQ.Controller.Shop = {
                 let price = 0;
 
                 if (cat === '熱量') {
-                    const kcal = parseInt(document.getElementById('up-val-cal')?.value || 0);
-                    price = Math.floor(kcal * 0.5); // 比例：1 Kcal = 0.5 金幣
-                } else if (cat === '時間') {
+                    const kcalEl = document.getElementById('up-val-cal');
+                    const sizeEl = document.getElementById('up-val-size');
+                    const hintEl = document.getElementById('up-ratio-hint');
+
+                    // 👇 使用 Math.round(parseFloat(...)) 取代 parseInt，實現四捨五入
+                    let displayKcal = Math.round(parseFloat(kcalEl?.value || 0));
+
+                    if (kcalEl && sizeEl && sizeEl.value) {
+                        const baseKcal = Math.round(parseFloat(kcalEl.getAttribute('data-base-kcal') || 0));
+                        const baseSize = Math.round(parseFloat(sizeEl.getAttribute('data-base-size') || 0));
+                        const inputSize = Math.round(parseFloat(sizeEl.value || 0));
+
+                        if (baseKcal > 0 && baseSize > 0 && inputSize > 0) {
+                            
+                            if (document.activeElement === sizeEl) {
+                                // 玩家在編輯容量 -> 幫他按比例算熱量
+                                displayKcal = Math.round((inputSize / baseSize) * baseKcal);
+                                kcalEl.value = displayKcal; 
+                                if (hintEl) hintEl.innerText = `💡 比例換算：約 ${displayKcal} Kcal`;
+                                
+                            } else if (document.activeElement === kcalEl) {
+                                // 玩家在手動修正熱量 -> 更新系統的基準記憶
+                                kcalEl.setAttribute('data-base-kcal', kcalEl.value);
+                                displayKcal = Math.round(parseFloat(kcalEl.value || 0));
+                                if (hintEl) hintEl.innerText = `💡 已更新基準熱量`;
+                                
+                            } else {
+                                // 剛載入時的自動計算
+                                displayKcal = Math.round((inputSize / baseSize) * baseKcal);
+                                kcalEl.value = displayKcal;
+                                if (hintEl) hintEl.innerText = `💡 換算後約 ${displayKcal} Kcal`;
+                            }
+                        } else {
+                            if (hintEl) hintEl.innerText = '';
+                        }
+                    } else {
+                        if (hintEl) hintEl.innerText = '';
+                    }
+
+                    price = Math.round(displayKcal * 0.5); // 1 Kcal = 0.5 金幣 (四捨五入)
+                } 
+                else if (cat === '時間') {
                     const h = parseInt(document.getElementById('up-time-h')?.value || 0);
                     const m = parseInt(document.getElementById('up-time-m')?.value || 0);
                     const totalMins = (h * 60) + m;
-                    price = Math.floor(totalMins * 10); // 比例：1 分鐘 = 10 金幣
-                } else if (cat === '金錢') {
-                    const gold = parseInt(document.getElementById('up-val-gold')?.value || 0);
-                    price = gold; // 比例：1:1 等值
+                    price = Math.floor(totalMins * 10);
+                } 
+                else if (cat === '金錢') {
+                    price = parseInt(document.getElementById('up-val-gold')?.value || 0);
                 }
 
-                // 只有在非「其他」分類時，才覆蓋畫面上的價格
-                if (cat !== '其他') {
-                    priceEl.value = price;
-                }
+                if (cat !== '其他') { priceEl.value = price; }
             },
 
             submitUpload: () => {
@@ -169,7 +205,25 @@ window.SQ.Controller.Shop = {
                 if (!name || !price) { if(window.SQ.Actions.toast) window.SQ.Actions.toast('❌ 資訊不完整'); return; }
                 
                 let val = '';
-                if (cat === '熱量') val = document.getElementById('up-val-cal')?.value;
+                let finalName = name;
+
+                if (cat === '熱量') {
+                    const kcalEl = document.getElementById('up-val-cal');
+                    const sizeEl = document.getElementById('up-val-size');
+                    let finalKcal = parseInt(kcalEl?.value || 0);
+
+                    // 🌟 如果玩家有填寫分裝量，我們用算好的熱量上架，並自動在名稱後方加上標記
+                    if (kcalEl && sizeEl && sizeEl.value) {
+                        const baseKcal = parseInt(kcalEl.getAttribute('data-base-kcal') || 0);
+                        const baseSize = parseInt(sizeEl.getAttribute('data-base-size') || 0);
+                        const inputSize = parseInt(sizeEl.value);
+                        if (baseKcal > 0 && baseSize > 0 && inputSize > 0) {
+                            finalKcal = Math.floor((inputSize / baseSize) * baseKcal);
+                            finalName = `${name} (${inputSize}ml)`; // 自動改名：蘋果汁 (50ml)
+                        }
+                    }
+                    val = finalKcal;
+                }
                 else if (cat === '金錢') val = document.getElementById('up-val-gold')?.value;
                 else if (cat === '時間') {
                     const h = parseInt(document.getElementById('up-time-h')?.value || 0);
@@ -188,7 +242,7 @@ window.SQ.Controller.Shop = {
                     : (window.SQ.CATEGORY_ICONS[cat] || '📦');
 
                 const success = window.SQ.Engine.Shop.uploadItem({
-                    name: name,
+                    name: finalName,
                     icon: icon,
                     price: parseInt(price),
                     desc: document.getElementById('up-desc').value,

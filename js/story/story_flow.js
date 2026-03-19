@@ -13,7 +13,6 @@ Object.assign(window.SQ.Engine.Story, {
     // 🗺️ [SECTION 2] FLOW & NAVIGATION
     // ============================================================
     playSceneNode: function(node) {
-        // ✅ 修復突然結束：如果沒有節點，判斷是該結束劇本還是抽新卡
         if (!node) { 
             const gs = window.SQ.State;
             if (gs.story && gs.story.chain) {
@@ -26,6 +25,22 @@ Object.assign(window.SQ.Engine.Story, {
 
         let activeNode = { ...node };
 
+        // ✅ 修正一：提早判斷並註冊 HUB，避免被 dialogue 提早 return 跳過
+        if (activeNode.isHub) {
+            window.SQ.Temp.lastHubNode = { ...activeNode };
+            const flagKey = `visited_${activeNode.id || 'temp'}`;
+            const gs2 = window.SQ.State;
+            if (!gs2.story.flags) gs2.story.flags = {};
+            if (gs2.story.flags[flagKey]) {
+                activeNode.text = activeNode.briefText || activeNode.text;
+                // 加入 briefDialogue 判斷，讓重返房間時不用再看一次超長對話
+                activeNode.dialogue = activeNode.briefDialogue || activeNode.dialogue;
+            } else {
+                gs2.story.flags[flagKey] = true;
+            }
+        }
+
+        // 如果有 dialogue，導向對話播放器 (現在 HUB 已經安全註冊了)
         if (activeNode.dialogue && activeNode.dialogue.length > 0) {
             this.playDialogueChain(activeNode);
             return;
@@ -35,22 +50,11 @@ Object.assign(window.SQ.Engine.Story, {
             activeNode.id = `gen_${Date.now()}_${Math.floor(Math.random() * 9999)}`;
         }
 
-        // 【雙態 HUB】首次完整描述，重訪只顯示 briefText
-        if (activeNode.isHub) {
-            const flagKey = `visited_${activeNode.id}`;
-            const gs = window.SQ.State;
-            if (!gs.story.flags) gs.story.flags = {};
-            if (gs.story.flags[flagKey]) {
-                activeNode.text = activeNode.briefText || activeNode.text;
-            } else {
-                gs.story.flags[flagKey] = true;
-            }
-        }
 		// 【同步 chain tags → story.tags】
 		const gs = window.SQ.State;
 
 		// 觸發進入事件
-		if (activeNode.onEnter) {
+		if (activeNode.onEnter && !window.SQ.Temp._isNodeSelfReplay) {
 			this._distributeRewards(activeNode.onEnter);
 		}
 
@@ -77,7 +81,7 @@ Object.assign(window.SQ.Engine.Story, {
         const gsLang = window.SQ.State;
         const currentLang = (gsLang.settings && gsLang.settings.targetLang && gsLang.settings.targetLang !== 'mix') ? gsLang.settings.targetLang : 'zh';
 
-        // 處理選項（條件過濾 + 語系解析 + 變數替換）
+        // 處理選項（條件過濾 + 語系解析 + 變數替換 + 自動修正）
         let options = (activeNode.options || [])
             .filter(opt => this._checkCondition(opt.condition))
             .map(opt => {
@@ -86,14 +90,33 @@ Object.assign(window.SQ.Engine.Story, {
                 if (typeof labelStr === 'object' && labelStr !== null) {
                     labelStr = labelStr[currentLang] || labelStr['zh'] || Object.values(labelStr)[0] || "未命名";
                 }
+
+                // 🌟 自動修正機制：如果帶有子場景，卻誤寫成 advance_chain，強制轉為 node_next
+                let finalAction = opt.action || 'node_next';
+                let hasSubScene = (opt.nextScene || opt.failScene || opt.nextSceneId || opt.failSceneId);
+                
+                if (hasSubScene && finalAction === 'advance_chain') {
+                    finalAction = 'node_next';
+                    console.log(`🔧 自動修正: 選項 [${labelStr}] 包含子場景，action 已強制轉為 node_next`);
+                }
                 
                 // 2. 送入引擎替換 {lover} 等變數
                 return {
                     ...opt,
                     label:  this._resolveDynamicText(labelStr),
-                    action: opt.action || 'node_next'
+                    action: finalAction
                 };
             });
+
+        // 🌟 【新增】：強制同步劇本地點與 UI 地圖名稱
+        if (window.SQ.Engine.Map && gsLang.story.chain && gsLang.story.chain.memory && gsLang.story.chain.memory['env_room']) {
+            if (!window.SQ.Engine.Map.currentRoom) {
+                window.SQ.Engine.Map.currentRoom = { id: 'room_auto', name: gsLang.story.chain.memory['env_room'] };
+            } else {
+                window.SQ.Engine.Map.currentRoom.name = gsLang.story.chain.memory['env_room'];
+            }
+            window.SQ.Engine.Map.updateLocationString();
+        }
 
         // 地圖按鈕注入：只有 isHub 節點才顯示完整地圖按鈕
         if (activeNode.isHub) {
@@ -103,8 +126,18 @@ Object.assign(window.SQ.Engine.Story, {
             }
         }
 
-        if (options.length === 0 && !node.noDefaultExit) {
-            options.push({ label: "離開", action: "finish_chain", style: "primary" });
+        // 🌟 修正：只有「非 HUB」的劇情才會洗牌，保護箱庭選單固定順序
+        if (options.length > 1 && !activeNode.isHub && activeNode.id !== 'root_hub') {
+            options = this._shuffle(options);
+        }
+
+        // 🌟 修正：事件結束時自動顯示地圖按鈕把玩家留住
+        if (options.length === 0 && !activeNode.noDefaultExit) {
+            if (window.SQ.Engine.Map && window.SQ.Engine.Map.map.length > 0 && window.SQ.Temp.lastHubNode) {
+                options = window.SQ.Engine.Map.injectMapOptions(options);
+            } else {
+                options.push({ label: "離開", action: "finish_chain", style: "primary" });
+            }
         }
 
         window.SQ.Temp.storyQueue     = processedText;
@@ -124,6 +157,9 @@ Object.assign(window.SQ.Engine.Story, {
     // 🖱️ SELECT OPTION
     // ============================================================
     selectOption: function(idx) {
+		// 確保每一次點擊都是乾淨的，清空上一動可能殘留的獎勵 HTML
+        window.SQ.Temp.pendingRewardHtml = null; 
+
         if (window.SQ.Temp.isProcessing) {
             console.warn("⛔ 點擊被攔截：系統忙碌中");
             return;
@@ -188,14 +224,61 @@ Object.assign(window.SQ.Engine.Story, {
 
                 window.SQ.Temp.deferredHtml = (window.SQ.Temp.deferredHtml || "") + inlineHtml;
 
-                // ✅ 行為分流：開新門 → 推進劇情 / 退回 → 重播 HUB
-                if (opt.action === 'map_explore_new') {
-                    this.advanceChain();
-                } else {
-                    // map_move_to 或 map_return_hub → 重播最後的 HUB，不推進劇情
-                    const hubNode = window.SQ.Temp.lastHubNode;
-                    if (hubNode) this.playSceneNode(hubNode);
+                // 🌟 【新增】時間/次數耗盡攔截器
+                const gs = window.SQ.State;
+                const exploreCount = (gs.story.vars && gs.story.vars.explore_count !== undefined) ? gs.story.vars.explore_count : 
+                                     ((gs.story.vars && gs.story.vars.free_time !== undefined) ? gs.story.vars.free_time : 999);
+
+                // 如果次數歸零，強制進入「時間到了」的過渡劇情，並將指針指向 climax
+                if (exploreCount <= 0 && gs.story.chain) {
+                    const chain = gs.story.chain;
+                    const climaxIdx = chain.stages.indexOf('climax');
+                    if (climaxIdx !== -1) chain.currentStageIdx = climaxIdx;
+
+                    const timeUpNode = {
+                        id: 'time_up_transition',
+                        text: "時間到了……周圍的氣氛突然改變，你已經沒有機會再四處探索了。",
+                        options: [{ label: "迎接命運", action: "advance_chain", style: "danger" }]
+                    };
+                    
+                    this.playSceneNode(timeUpNode);
+                    if (window.App) App.saveData();
+                    return;
                 }
+				// ✅ 地圖行為分流（各自獨立處理）
+                if (opt.action === 'map_explore_new') {
+                    const gs = window.SQ.State;
+                    if (gs.story && gs.story.chain && gs.story.chain.memory && window.SQ.Engine.Map.currentRoom) {
+                        gs.story.chain.memory['env_room'] = window.SQ.Engine.Map.currentRoom.name;
+                    }
+                    
+                    // 扣除次數
+                    if (gs.story.vars && gs.story.vars.explore_count !== undefined) {
+                        gs.story.vars.explore_count--;
+                    } else if (gs.story.vars && gs.story.vars.free_time !== undefined) {
+                        gs.story.vars.free_time--;
+                    }
+
+                    // 🌟 核心修復：改用 generate 產生一個 middle 節點，但不推進主線 stage 指針
+                    const node = window.SQ.Engine.Generator.generate([], false);
+                    if (gs.story.chain) {
+                        gs.story.chain.currentStageIdx = Math.max(0, gs.story.chain.currentStageIdx - 1);
+                        gs.story.chain.depth = Math.max(0, gs.story.chain.depth - 1);
+                    }
+                    this.playSceneNode(node);
+
+                } else if (opt.action === 'map_move_to' || opt.action === 'map_return_hub') {
+                    // 退回舊房間或返回 HUB
+                    const hubNode = window.SQ.Temp.lastHubNode;
+                    if (hubNode) {
+                        window.SQ.Temp._isNodeSelfReplay = true;
+                        this.playSceneNode(hubNode);
+                        window.SQ.Temp._isNodeSelfReplay = false;
+                    } else {
+                        this.advanceChain();
+                    }
+                }
+
                 if (window.App) App.saveData();
                 return;
             }
@@ -239,8 +322,10 @@ Object.assign(window.SQ.Engine.Story, {
             } else if (opt.action === 'node_self') {
                 const currentNode = window.SQ.Temp.currentSceneNode;
                 if (currentNode) {
-                    // 重播當前節點（會重新過濾 condition，search_count 減少後選項會自動消失）
+                    // 加上防護旗標，告訴 playSceneNode 這是重播，不要再給 onEnter 獎勵
+                    window.SQ.Temp._isNodeSelfReplay = true;
                     this.playSceneNode(currentNode);
+                    window.SQ.Temp._isNodeSelfReplay = false;
                 } else {
                     console.warn("⚠️ node_self：找不到 currentSceneNode，改為推進鏈");
                     this.advanceChain();
@@ -302,13 +387,34 @@ Object.assign(window.SQ.Engine.Story, {
     // ============================================================
     resumeStory: function() {
         const gs = window.SQ.State;
-        if (window.SQ.Temp.currentSceneNode) {
-            this.playSceneNode(window.SQ.Temp.currentSceneNode);
-        } else if (gs.story.currentNode) {
-            if (!gs.story.chain && gs.story.savedChain) {
-                gs.story.chain = this._deepClone(gs.story.savedChain);
-            }
-            this.playSceneNode(gs.story.currentNode);
+ 
+        // 🌟 核心修復：一進來就先確保 chain 被還原，絕對不能等判斷節點才還原！
+        if (!gs.story.chain && gs.story.savedChain) {
+            gs.story.chain = this._deepClone(gs.story.savedChain);
+        }
+
+        // 過渡節點偵測：如果存的節點是「探索中...」這類無選項過渡節點，直接跳過
+        const isTransitionNode = (node) => {
+            if (!node) return false;
+            const hasNoOptions = !node.options || node.options.length === 0;
+            const hasNoExit    = node.noDefaultExit === true;
+            return hasNoOptions && hasNoExit;
+        };
+ 
+        const memNode  = window.SQ.Temp.currentSceneNode;
+        const saveNode = gs.story.currentNode;
+ 
+        if (memNode && !isTransitionNode(memNode)) {
+            this.playSceneNode(memNode);
+        } else if (saveNode && !isTransitionNode(saveNode)) {
+            this.playSceneNode(saveNode);
+        } else if (gs.story.chain) {
+            // 有鏈但沒有可恢復的節點（被過渡節點蓋掉），重新 generate 當前 stage
+            console.warn("⚠️ resumeStory：偵測到過渡節點，重新生成當前場景");
+            // 退一格 index 讓 generate 重新生成同一個 stage
+            if (gs.story.chain.currentStageIdx > 0) gs.story.chain.currentStageIdx--;
+            if (gs.story.chain.depth > 0) gs.story.chain.depth--;
+            this.advanceChain([]);
         } else {
             this.finishChain();
         }
@@ -330,11 +436,12 @@ Object.assign(window.SQ.Engine.Story, {
             gs.story.tags = []; 
             gs.story.vars = {}; 
             gs.story.flags = {}; 
-            gs.story._curseOverflowTriggered = false; // [修改三對應] 清除強制跳躍 Flag
+            gs.story._curseOverflowTriggered = false; 
         }
 
         window.SQ.Temp.isProcessing = false;
         window.SQ.Temp.lockInput    = false;
+        window.SQ.Temp.pendingRewardHtml = null; // ← 加入這行
 
         if (window.SQ.Actions && window.SQ.Actions.toast) window.SQ.Actions.toast("🗑️ 已放棄目前的冒險");
         if (window.SQ.View.Story) window.SQ.View.Story.renderIdle();
@@ -365,8 +472,13 @@ Object.assign(window.SQ.Engine.Story, {
             if (gs.story.skeletonHistory.length > 2) gs.story.skeletonHistory.shift();
 
             gs.story.chain = window.SQ.Engine.Generator.initChain(randomMode);
-			if (!gs.story.chain.tags.includes('learning')) {
-				gs.story.chain.tags.push('learning');}
+            const gsForLearn = window.SQ.State;
+            // 只有在設定中有開啟學習模式 (或有解鎖) 時，才加入 learning 標籤
+            if (gsForLearn.settings && gsForLearn.settings.learningMode) {
+                if (!gs.story.chain.tags.includes('learning')) {
+                    gs.story.chain.tags.push('learning');
+                }
+            }
 
             let initialBuilding = gs.story.chain.memory['env_building'] || "未知地點";
             let initialRoom     = window.SQ.Engine.Generator._expandGrammar("{env_room}", window.FragmentDB, gs.story.chain.memory);
@@ -388,12 +500,21 @@ Object.assign(window.SQ.Engine.Story, {
 
     // ── [修改三] curse_val 強制 climax 檢查 ──────────────────────
     _checkCurseOverflow: function() {
-        const gs = window.SQ.State;
-        if (!gs.story || !gs.story.chain) return;
-        if (gs.story._curseOverflowTriggered) return;  // 一局只觸發一次
+		const gs = window.SQ.State;
+		if (!gs.story || !gs.story.chain) return;
+		if (gs.story._curseOverflowTriggered) return;
 
-        const curseVal = (gs.story.vars && gs.story.vars.curse_val) || 0;
-        if (curseVal < 100) return;
+		// 根據骨架決定要監控哪個變數
+		const tensionKey = {
+			horror:    'curse_val',
+			mystery:   'tension',
+			romance:   'pressure',
+			raising:   'stress'
+			// adventure 是反向，skill_points 越低越危險，另外處理
+		}[gs.story.chain.skeleton] || 'curse_val';
+
+		const val = (gs.story.vars && gs.story.vars[tensionKey]) || 0;
+		if (val < 100) return;
 
         const chain = gs.story.chain;
         const climaxIdx = chain.stages.indexOf('climax');
@@ -426,9 +547,11 @@ Object.assign(window.SQ.Engine.Story, {
             gs.story.tags = [];
 			gs.story.vars = {};
 			gs.story.flags = {};
-            gs.story._curseOverflowTriggered = false; // [修改三對應] 清除強制跳躍 Flag
+            gs.story._curseOverflowTriggered = false; 
 			console.log("🧹 區域變數、標籤與 flags 已清空");
         }
+        
+        window.SQ.Temp.pendingRewardHtml = null; // ← 加入這行
 
         if (window.SQ.View.Story) window.SQ.View.Story.renderIdle();
         if (window.App) App.saveData();
@@ -512,13 +635,19 @@ Object.assign(window.SQ.Engine.Story, {
         if (ts.storyStep < ts.storyQueue.length) {
             let html   = ts.storyQueue[ts.storyStep];
             let isLast = (ts.storyStep === ts.storyQueue.length - 1);
-            if (window.SQ.View.Story) window.SQ.View.Story.appendChunk(html, isLast);
+            
+            // 🌟 修正：把 showOptions 放進回呼函式，確保打字機播完才顯示按鈕與獎勵
+            if (window.SQ.View.Story && window.SQ.View.Story.appendChunk) {
+                window.SQ.View.Story.appendChunk(html, isLast, () => {
+                    if (isLast) {
+                        ts.isWaitingInput = false;
+                        if (window.SQ.View.Story.showOptions) {
+                            window.SQ.View.Story.showOptions(ts.storyOptions);
+                        }
+                    }
+                });
+            }
             ts.storyStep++;
-        }
-
-        if (ts.storyStep >= ts.storyQueue.length) {
-            ts.isWaitingInput = false;
-            if (window.SQ.View.Story) window.SQ.View.Story.showOptions(ts.storyOptions);
         }
     },
 
@@ -526,12 +655,7 @@ Object.assign(window.SQ.Engine.Story, {
     // 📝 TEXT PROCESSING
     // ============================================================
 
-    /**
-     * _processText(raw)
-     * 把節點的 text 欄位（字串 / 字串陣列 / 物件{zh,jp,...}）
-     * 統一轉成 HTML 字串陣列，供 storyQueue 逐段播放。
-     * 同時呼叫 _resolveDynamicText 展開 {fragment} 佔位符。
-     */
+    // _processText(raw)把節點的 text 欄位（字串 / 字串陣列 / 物件{zh,jp,...}）統一轉成 HTML 字串陣列，供 storyQueue 逐段播放。同時呼叫 _resolveDynamicText 展開 {fragment} 佔位符。
     _processText: function(raw) {
         if (!raw) return [];
 
@@ -629,13 +753,19 @@ Object.assign(window.SQ.Engine.Story, {
             }
             txt = this._resolveDynamicText(String(txt || ''));
 
-            // 🌟 核心修改區塊：判斷是否為旁白
+            // 判斷是否為旁白
             if (item.speaker && item.speaker !== "旁白") {
-                // 如果有說話者，且不是旁白，渲染為「<b>角色</b>：文字」
-                return `<b>${item.speaker}</b>：${txt}`;
+                let speakerName = item.speaker;
+                // 支援 speaker 也是多語言物件
+                if (typeof speakerName === 'object' && speakerName !== null) {
+                    const gs = window.SQ.State;
+                    const lang = (gs.settings && gs.settings.targetLang) || 'zh';
+                    speakerName = speakerName[lang] || speakerName['zh'] || '';
+                }
+                return `<b>${speakerName}</b>：${txt}`;
             }
             
-            // 如果 speaker 是 "旁白"，或是根本沒有 speaker，就只顯示對話內容
+            // 👇 凶手就是漏了這行！如果不是上述條件，必須把 txt 回傳！
             return txt;
 
         }).filter(s => s.trim() !== '');
@@ -645,7 +775,10 @@ Object.assign(window.SQ.Engine.Story, {
         const gs = window.SQ.State;
         if (!gs.story) return;
 
-        if (node.onEnter) this._distributeRewards(node.onEnter);
+        // ✅ 修正二-A：加上防護旗標，避免對話節點重播時無限發獎勵
+        if (node.onEnter && !window.SQ.Temp._isNodeSelfReplay) {
+            this._distributeRewards(node.onEnter);
+        }
 
         // 確保子場景都被註冊
         if (node.options) {
@@ -661,6 +794,7 @@ Object.assign(window.SQ.Engine.Story, {
         const gsLang = window.SQ.State;
         const currentLang = (gsLang.settings && gsLang.settings.targetLang && gsLang.settings.targetLang !== 'mix') ? gsLang.settings.targetLang : 'zh';
 
+        // 處理選項（條件過濾 + 語系解析 + 變數替換 + 自動修正）
         let options = (node.options || [])
             .filter(opt => this._checkCondition(opt.condition))
             .map(opt => {
@@ -669,18 +803,37 @@ Object.assign(window.SQ.Engine.Story, {
                 if (typeof labelStr === 'object' && labelStr !== null) {
                     labelStr = labelStr[currentLang] || labelStr['zh'] || Object.values(labelStr)[0] || "未命名";
                 }
+
+                // 🌟 自動修正機制：如果帶有子場景，卻誤寫成 advance_chain，強制轉為 node_next
+                let finalAction = opt.action || 'node_next';
+                let hasSubScene = (opt.nextScene || opt.failScene || opt.nextSceneId || opt.failSceneId);
+                
+                if (hasSubScene && finalAction === 'advance_chain') {
+                    finalAction = 'node_next';
+                    console.log(`🔧 自動修正: 選項 [${labelStr}] 包含子場景，action 已強制轉為 node_next`);
+                }
                 
                 // 2. 送入引擎替換 {lover} 等變數
                 return {
                     ...opt,
                     label:  this._resolveDynamicText(labelStr),
-                    action: opt.action || 'node_next'
+                    action: finalAction
                 };
             });
+			
+		// 🌟 修正：只有「非 HUB」的劇情才會洗牌
+                if (options.length > 1 && !node.isHub && node.id !== 'root_hub') {
+                    options = this._shuffle(options);
+                }
 
-        if (options.length === 0 && !node.noDefaultExit) {
-            options.push({ label: "繼續", action: "finish_chain", style: "primary" });
-        }
+                // 🌟 修正：事件結束時自動顯示地圖按鈕把玩家留住
+                if (options.length === 0 && !node.noDefaultExit) {
+                    if (window.SQ.Engine.Map && window.SQ.Engine.Map.map.length > 0 && window.SQ.Temp.lastHubNode) {
+                        options = window.SQ.Engine.Map.injectMapOptions(options);
+                    } else {
+                        options.push({ label: "離開", action: "finish_chain", style: "primary" });
+                    }
+                }
 
         window.SQ.Temp.currentSceneNode  = node;
         window.SQ.Temp.storyCard         = node;

@@ -24,17 +24,18 @@ Object.assign(window.SQ.Engine.Story, {
         const gs   = window.SQ.State || window.GlobalState;
         const lang = (gs && gs.settings && gs.settings.targetLang) || 'zh';
 
-        switch (lang) {
-            case 'jp':
-                return textObj.jp || textObj.zh || '';
-            case 'kr':
-                return textObj.kr || textObj.zh || '';
-            case 'mix':
-                if (textObj.mix) return textObj.mix;
-                return this._buildMixText(textObj);
-            case 'zh':
-            default:
-                return textObj.zh || '';
+        // 🌟 升級版 MIX：整個文本隨機抽取一種語言顯示，不再逐句穿插
+        if (lang === 'mix') {
+            const availableLangs = ['zh', 'jp', 'kr'].filter(l => textObj[l]);
+            if (availableLangs.length === 0) return textObj.zh || '';
+            const randomLang = availableLangs[Math.floor(Math.random() * availableLangs.length)];
+            return textObj[randomLang];
+        } else if (lang === 'jp') {
+            return textObj.jp || textObj.zh || '';
+        } else if (lang === 'kr') {
+            return textObj.kr || textObj.zh || '';
+        } else {
+            return textObj.zh || '';
         }
     },
 
@@ -60,31 +61,7 @@ Object.assign(window.SQ.Engine.Story, {
             return labelObj.zh || '';
         }
     },
-
-    _buildMixText: function(textObj) {
-        const zh      = textObj.zh || '';
-        const foreign = textObj.jp || textObj.kr || '';
-        if (!foreign) return zh;
-
-        const zhParts      = zh.split(/<br\s*\/?>/i).filter(s => s.trim());
-        const foreignParts = foreign.split(/<br\s*\/?>/i).filter(s => s.trim());
-        const result       = [];
-        const maxLen       = Math.max(zhParts.length, foreignParts.length);
-
-        for (let i = 0; i < maxLen; i++) {
-            const useForeign = (Math.random() < 0.3) && foreignParts[i];
-            if (useForeign) {
-                result.push(foreignParts[i]);
-            } else if (zhParts[i]) {
-                result.push(zhParts[i]);
-            } else if (foreignParts[i]) {
-                result.push(foreignParts[i]);
-            }
-        }
-
-        return result.join('<br>');
-    },
-
+	
     resolveDialogueText: function(textObj) {
         const resolved = this.resolveText(textObj);
         if (this._processText && typeof this._processText === 'function') {
@@ -148,97 +125,6 @@ Object.assign(window.SQ.Engine.Story, {
 
         if (onContinue) onContinue();
     },
-
-
-    // ──────────────────────────────────────────────
-    // 📚 dialogue 系統支援
-    // ──────────────────────────────────────────────
-
-    playDialogueChain: function(node) {
-        const gs   = window.SQ.State;
-        const view = window.SQ.View && window.SQ.View.Story;
-
-        if (!node.dialogue || node.dialogue.length === 0) {
-            this.playSceneNode({ ...node, dialogue: undefined });
-            return;
-        }
-
-        let dialogueIndex = 0;
-
-        const playNext = () => {
-            if (dialogueIndex >= node.dialogue.length) {
-                if (view && view.showOptions) view.showOptions(window.SQ.Temp.storyOptions);
-                return;
-            }
-
-            const dialogueItem = node.dialogue[dialogueIndex];
-            dialogueIndex++;
-
-            let text = '';
-            if (dialogueItem.text) {
-                if (typeof dialogueItem.text === 'string') {
-                    text = this._resolveDynamicText ? this._resolveDynamicText(dialogueItem.text) : dialogueItem.text;
-                } else {
-                    const resolved = this.resolveText(dialogueItem.text);
-                    text = this._resolveDynamicText ? this._resolveDynamicText(resolved) : resolved;
-                }
-            }
-
-            const processedArr = this._processText ? this._processText(text) : [text];
-            const isLastDialogue = (dialogueIndex >= node.dialogue.length);
-
-            window.SQ.Temp.storyQueue     = processedArr;
-            window.SQ.Temp.storyStep      = 0;
-            window.SQ.Temp.isWaitingInput = true;
-            window.SQ.Temp.isProcessing   = false;
-
-            if (view && view.clearScreen) view.clearScreen();
-
-            if (isLastDialogue) {
-                let options = (node.options || [])
-                    .filter(opt => this._checkCondition(opt.condition))
-                    .map(opt => {
-                        // 🌟 [新增] 讓對話系統也支援多語言按鈕
-                        let rawLabel = opt.label;
-                        if (typeof rawLabel === 'object' && rawLabel !== null) {
-                            rawLabel = this.resolveLabel ? this.resolveLabel(rawLabel) : (rawLabel.zh || "");
-                        }
-                        return {
-                            ...opt,
-                            label:  this._resolveDynamicText ? this._resolveDynamicText(rawLabel) : rawLabel,
-                            action: opt.action || 'node_next'
-                        };
-                    });
-
-                if (node.isHub) {
-                    window.SQ.Temp.lastHubNode = { ...node };
-                    if (window.SQ.Engine.Map && window.SQ.Engine.Map.map.length > 0) {
-                        options = window.SQ.Engine.Map.injectMapOptions(options);
-                    }
-                }
-
-                if (options.length === 0 && !node.noDefaultExit) {
-                    options.push({ label: "離開", action: "finish_chain", style: "primary" });
-                }
-
-                window.SQ.Temp.storyOptions = options;
-                window.SQ.Temp._dialogueNextCallback = null; 
-            } else {
-                window.SQ.Temp._dialogueNextCallback = playNext;
-            }
-
-            this.playNextChunk();
-        };
-
-        const safeNode = this._sanitizeNodeForSave ? this._sanitizeNodeForSave(node) : node;
-        window.SQ.State.story.currentNode = safeNode;
-        window.SQ.Temp.currentSceneNode   = node;
-        window.SQ.Temp.storyCard          = node;
-
-        if (view && view.clearScreen) view.clearScreen();
-        playNext();
-    },
-
     // ──────────────────────────────────────────────
     // 📚 螺旋式單字學習
     // ──────────────────────────────────────────────

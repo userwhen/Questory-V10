@@ -107,17 +107,13 @@ window.SQ.View.Story = {
             return true;
         });
  
-        // ── 位置資訊 ──────────────────────────────────────────
         const map         = window.SQ.Engine.Map;
         const currentRoom = map && map.currentRoom;
         const roomName    = currentRoom ? currentRoom.name : '未知區域';
         const pathStr     = (map && map.map && map.map.length > 0)
-            ? map.map.map(r => r.id === currentRoom?.id
-                ? `📍[${r.name}]`
-                : `🚪[${r.name}]`).join(' → ')
+            ? map.map.map(r => r.id === currentRoom?.id ? `📍[${r.name}]` : `🚪[${r.name}]`).join(' → ')
             : '📍 無紀錄';
  
-        // ── 標籤 HTML ─────────────────────────────────────────
         const tagStyles = {
             'loc'   : { color: '--color-gold-dark',  bg: '--color-gold-soft'    },
             'status': { color: '--color-info',        bg: '--color-info-soft'    },
@@ -138,26 +134,13 @@ window.SQ.View.Story = {
             }).join('')
             : '<div style="color:var(--text-ghost);font-size:0.9rem;">尚無特殊狀態或道具</div>';
  
-        // ── 整個內容：一個 div，overflow-y:auto，從頭捲到尾 ──
         const drawerInnerHtml = `
-            <div style="
-                height: 100%;
-                overflow-y: auto;
-                overflow-x: hidden;
-                color: var(--text-on-dark);
-                padding: 10px 12px 24px;
-                box-sizing: border-box;
-            ">
-                <div style="font-size:0.75rem;letter-spacing:0.08em;color:var(--color-gold-soft);margin-bottom:4px;">📍 當前位置</div>
-                <div style="font-size:1rem;font-weight:bold;color:var(--color-gold);margin-bottom:2px;">${roomName}</div>
-                <div style="font-size:0.8rem;color:var(--text-ghost);line-height:1.5;margin-bottom:14px;">${pathStr}</div>
- 
-                <div style="height:1px;background:rgba(255,255,255,0.1);margin-bottom:12px;"></div>
- 
+            <div style="height:100%;overflow-y:auto;overflow-x:hidden;color:var(--text-on-dark);padding:10px 12px 24px;box-sizing:border-box;">
+                <div style="font-size:0.8rem;color:var(--color-gold);font-weight:bold;margin-bottom:2px;">📍 當前位置：${roomName}</div>
+                <div style="font-size:0.75rem;color:var(--text-ghost);line-height:1.5;margin-bottom:12px;">${pathStr}</div>
+                <div style="height:1px;background:rgba(255,255,255,0.1);margin-bottom:10px;"></div>
                 <div style="font-size:0.75rem;letter-spacing:0.08em;color:var(--color-gold-soft);margin-bottom:8px;">🏷️ 已獲標籤</div>
-                <div style="display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;">
-                    ${tagsHtml}
-                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;">${tagsHtml}</div>
             </div>`;
  
         container.innerHTML = ui.composer.drawer({
@@ -189,13 +172,18 @@ window.SQ.View.Story = {
     if (wrap) wrap.scrollTop = 0;
 },
 
-    appendChunk: function(htmlContent, isLastChunk) {
+    appendChunk: function(htmlContent, isLastChunk, onCompleteCallback) {
         const box = document.getElementById('story-content'); const wrap = document.getElementById('story-text-box'); const cursor = document.getElementById('story-cursor'); if (!box || !wrap) return;
         let finalHtml = htmlContent; if (window.SQ.Temp.deferredHtml) { finalHtml = window.SQ.Temp.deferredHtml + finalHtml; window.SQ.Temp.deferredHtml = null; }
         if (cursor) cursor.style.display = 'none';
         let justCleared = false; if (box.innerHTML.trim() !== "" && box.offsetHeight > (wrap.clientHeight * 0.7)) { box.innerHTML = ''; wrap.scrollTop = 0; justCleared = true; }
         const div = document.createElement('div'); div.style.marginBottom = '15px'; div.style.opacity = '0.9'; div.style.position = 'relative'; box.appendChild(div);
-        this.typeWriter(div, finalHtml, justCleared, () => { div.style.opacity = '1'; if (cursor) { cursor.style.display = 'inline-block'; cursor.innerHTML = isLastChunk ? '➤' : '▼'; div.appendChild(cursor); } });
+        this.typeWriter(div, finalHtml, justCleared, () => { 
+            div.style.opacity = '1'; 
+            if (cursor) { cursor.style.display = 'inline-block'; cursor.innerHTML = isLastChunk ? '➤' : '▼'; div.appendChild(cursor); } 
+            // 🌟 新增：打字結束後，通知引擎可以顯示獎勵與選項了！
+            if (onCompleteCallback) onCompleteCallback(); 
+        });
     },
 
     typeWriter: function(element, htmlContent, justCleared, onComplete) {
@@ -227,6 +215,21 @@ window.SQ.View.Story = {
     showOptions: function(options) {
     const container = document.getElementById('story-actions');
     if (!container) return;
+
+    // ✅ 獎勵顯示：打字機播完、按鈕出現前，插到 story-content 末尾
+    if (window.SQ.Temp.pendingRewardHtml) {
+        const box = document.getElementById('story-content');
+        if (box) {
+            const div = document.createElement('div');
+            div.innerHTML = window.SQ.Temp.pendingRewardHtml;
+            box.appendChild(div);
+            // 捲到底讓玩家看到
+            const wrap = document.getElementById('story-text-box');
+            if (wrap) wrap.scrollTop = wrap.scrollHeight;
+        }
+        window.SQ.Temp.pendingRewardHtml = null;
+    }
+
     if (!options || options.length === 0) {
         return container.innerHTML = '<div style="color:var(--text-ghost); text-align:center;">(沒有可用選項)</div>';
     }
@@ -309,29 +312,35 @@ window.SQ.View.Story = {
 
     const wrap = document.getElementById('story-text-box');
     if (wrap) wrap.scrollTop = wrap.scrollHeight;
+	if (this.updateDrawer) this.updateDrawer();
 },
 
     renderIdle: function() {
-    this.clearScreen();
-    const box = document.getElementById('story-content');
-    const actBox = document.getElementById('story-actions');
-    const gs = window.SQ.State;
-
-    // 🌟 清除狀態列
-    const oldBar = document.getElementById('story-status-bar');
-    if (oldBar) oldBar.remove();
-
-    if ((window.SQ.Temp.currentSceneNode) || (gs.story && (gs.story.currentNode || gs.story.chain))) {
-        if(box) box.innerHTML = `<div style="text-align:center; padding-top:40px; color:var(--color-gold);">⚠️ 檢測到未完成的冒險</div>`;
-        if(actBox) actBox.innerHTML = 
-            ui.atom.buttonBase({ label: "▶ 繼續冒險", theme: 'correct', action: 'resumeStory', style: 'width:100%; max-width:400px; margin:0 auto 10px; padding:14px; font-size:1.1rem;' }) + 
-            ui.atom.buttonBase({ label: "🗑️ 放棄並重新開始", theme: 'danger', action: 'abandonStory', style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1.1rem;' });
-    } else {
-        if(box) box.innerHTML = `<div style="text-align:center; padding-top:40px; color:var(--text-muted);">準備好開始新的旅程了嗎？</div>`;
-        if(actBox) actBox.innerHTML = 
-            ui.atom.buttonBase({ label: "🔍 開始探索 (5⚡)", theme: 'correct', action: 'exploreStory', style: 'width:100%; max-width:400px; margin:0 auto; padding:14px; font-size:1.1rem;' });
-    }
-},
+        // 強制收起抽屜
+        if (window.SQ.Temp) window.SQ.Temp.isTagDrawerOpen = false;
+ 
+        this.clearScreen();
+        const box    = document.getElementById('story-content');
+        const actBox = document.getElementById('story-actions');
+        const gs     = window.SQ.State;
+ 
+        const oldBar = document.getElementById('story-status-bar');
+        if (oldBar) oldBar.remove();
+ 
+        // 刷新抽屜（讓它以收起狀態重繪）
+        if (this.updateDrawer) this.updateDrawer();
+ 
+        if ((window.SQ.Temp.currentSceneNode) || (gs.story && (gs.story.currentNode || gs.story.chain))) {
+            if (box) box.innerHTML = `<div style="text-align:center;padding-top:40px;color:var(--color-gold);">⚠️ 檢測到未完成的冒險</div>`;
+            if (actBox) actBox.innerHTML =
+                ui.atom.buttonBase({ label: "▶ 繼續冒險", theme: 'correct', action: 'resumeStory', style: 'width:100%;max-width:400px;margin:0 auto 10px;padding:14px;font-size:1.1rem;' }) +
+                ui.atom.buttonBase({ label: "🗑️ 放棄並重新開始", theme: 'danger', action: 'abandonStory', style: 'width:100%;max-width:400px;margin:0 auto;padding:14px;font-size:1.1rem;' });
+        } else {
+            if (box) box.innerHTML = `<div style="text-align:center;padding-top:40px;color:var(--text-muted);">準備好開始新的旅程了嗎？</div>`;
+            if (actBox) actBox.innerHTML =
+                ui.atom.buttonBase({ label: "🔍 開始探索 (5⚡)", theme: 'correct', action: 'exploreStory', style: 'width:100%;max-width:400px;margin:0 auto;padding:14px;font-size:1.1rem;' });
+        }
+    },
 
     disableOptions: function() { const container = document.getElementById('story-actions'); if (!container) return; container.querySelectorAll('button').forEach((btn) => { btn.disabled = true; btn.style.pointerEvents = 'none'; }); },
 

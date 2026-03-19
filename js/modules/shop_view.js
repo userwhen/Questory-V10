@@ -72,19 +72,20 @@ window.SQ.View.Shop = {
     },
 
     renderUploadModal: function(editId = null) {
-        const data = editId ? { ...(window.SQ.State.shop.user.find(i => i.id === editId) || {}) } : { name: '', desc: '', category: '熱量', price: 0, qty: 1, type: 'daily', val: '' };
+        // 👇 [修正點] 把預設的 type 改成 'once' (單次)
+        const data = editId ? { ...(window.SQ.State.shop.user.find(i => i.id === editId) || {}) } : { name: '', desc: '', category: '熱量', price: 0, qty: 1, type: 'once', val: '' };
         window.SQ.Temp.uploadEditId = editId;
 
         const initIcon = data.icon || (window.SQ.CATEGORY_ICONS && window.SQ.CATEGORY_ICONS[data.category]) || '📦';
         const scanIconSvg = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px; height:20px;"><path d="M4 8V4H8M16 4H20V8M20 16V20H16M8 20H4V16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 12H18" stroke="#f85149" stroke-width="2" stroke-linecap="round"/></svg>`;
 
-        // ✅ 修正 1：給予商品名稱輸入框與掃描按鈕「絕對一致」的 40px 高度
+        // 👇 [修正點] 移除了 up-name 裡面的 action:"shopUploadChange"
         const nameAndScanRow = ui.composer.formField({
             label: '商品名稱',
             inputHtml: `
                 <div style="display:flex; gap:8px;">
                     <div style="flex:1;">
-                        ${ui.atom.inputBase({type:'text', val:data.name, placeholder:"輸入或掃描...", action:"shopUploadChange", id:"up-name", style: "height:40px; box-sizing:border-box;"})}
+                        ${ui.atom.inputBase({type:'text', val:data.name, placeholder:"輸入或掃描...", id:"up-name", style: "height:40px; box-sizing:border-box;"})}
                     </div>
                     <button data-action="startScan" 
                             style="width:40px; height:40px; background:var(--bg-elevated); border:1px solid var(--border); 
@@ -94,13 +95,14 @@ window.SQ.View.Shop = {
                     </button>
                 </div>`
         });
-			const iconPreviewRow = `<input type="hidden" id="up-icon" value="${initIcon}">`;
+        const iconPreviewRow = `<input type="hidden" id="up-icon" value="${initIcon}">`;
 
-        // ✅ 修正 2：強制分類下拉選單、價格、庫存、重置選單全部鎖定為 40px
+        // 👇 [修正點] 移除了 up-desc 裡面的 action:"shopUploadChange"
+        // 順便把選項的順序調整，讓 '單次' 排在第一個
         let body = `
             ${nameAndScanRow}
             ${iconPreviewRow}
-            ${ui.composer.formField({label:'描述', inputHtml: ui.atom.inputBase({type:'textarea', val:data.desc, placeholder:"說明...", action:"shopUploadChange", id:"up-desc"})})}
+            ${ui.composer.formField({label:'描述', inputHtml: ui.atom.inputBase({type:'textarea', val:data.desc, placeholder:"說明...", id:"up-desc"})})}
             
             <div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:15px;">
                 <div style="flex:1;">
@@ -115,7 +117,7 @@ window.SQ.View.Shop = {
             <div style="border-top:1px dashed var(--border); padding-top:15px; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
                 ${ui.composer.formField({label:'價格', inputHtml: ui.atom.inputBase({type:'number', val:data.price, id:"up-price", style: "height:40px; box-sizing:border-box;"})})}
                 ${ui.composer.formField({label:'庫存', inputHtml: ui.atom.inputBase({type:'number', val:data.qty, id:"up-qty", style: "height:40px; box-sizing:border-box;"})})}
-                ${ui.composer.formField({label:'重置', inputHtml: ui.atom.inputBase({type:'select', val:data.type, id:"up-type", style: "height:40px; box-sizing:border-box;", options:[{val:'daily', label:'常駐'}, {val:'once', label:'單次'}]})})}
+                ${ui.composer.formField({label:'重置', inputHtml: ui.atom.inputBase({type:'select', val:data.type, id:"up-type", style: "height:40px; box-sizing:border-box;", options:[{val:'once', label:'單次'}, {val:'daily', label:'常駐'}]})})}
             </div>`;
 
         ui.modal.render(
@@ -136,7 +138,17 @@ window.SQ.View.Shop = {
         const uniformStyle = "height:40px; box-sizing:border-box;";
         
         if (cat === '熱量') {
-            c.innerHTML = ui.composer.formField({label:'數值 (Kcal)', inputHtml: ui.atom.inputBase({type:'number', val:initVal, action: "autoCalculatePrice", id:"up-val-cal", style: uniformStyle})});
+            c.innerHTML = `
+            <div style="display:flex; gap:8px;">
+                <div style="flex:1;">
+                    ${ui.composer.formField({label:'Kcal(估值)', inputHtml: ui.atom.inputBase({type:'number', val:initVal, action: "autoCalculatePrice", id:"up-val-cal", style: uniformStyle})})}
+                </div>
+                <div style="flex:1;">
+                    ${ui.composer.formField({label:'ml/g(估值)', inputHtml: ui.atom.inputBase({type:'number', val:'', placeholder:'', action: "autoCalculatePrice", id:"up-val-size", style: uniformStyle})})}
+                </div>
+            </div>
+            <div id="up-ratio-hint" style="font-size:0.75rem; color:#f0a500; text-align:right; margin-top:-10px; margin-bottom:5px;"></div>
+            `;
         } else if (cat === '金錢') {
             c.innerHTML = ui.composer.formField({label:'數值 ($)', inputHtml: ui.atom.inputBase({type:'number', val:initVal, action: "autoCalculatePrice", id:"up-val-gold", style: uniformStyle})});
         } else if (cat === '時間') {

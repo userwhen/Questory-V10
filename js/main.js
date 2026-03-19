@@ -125,16 +125,19 @@ window.App = {
         
         if (window.SQ.Core.checkDailyReset) window.SQ.Core.checkDailyReset();
 
-        setTimeout(() => {
-            if (window.SQ.Actions?.navigate) {
-                if (window.Router) window.Router.init();
-                window.SQ.Actions.navigate('main');
-                // 👇 [修復] 改用安全的呼叫方式
-                if (window.SQ.Tutorial && typeof window.SQ.Tutorial.checkTutorial === 'function') {
-                    window.SQ.Tutorial.checkTutorial();
-                }
-            }
-        }, 100);
+       if (window.SQ.Core.checkDailyReset) window.SQ.Core.checkDailyReset();
+
+        // 👇 [替換這整個區塊] 攔截沒有名字或 UID 的新手
+        const gs = window.SQ.State;
+        if (!gs.userName || !gs.userId) {
+            console.log("🌟 偵測到新玩家，啟動註冊流程");
+            this.showWelcomeScreen(() => {
+                this.startGame();
+            });
+        } else {
+            console.log(`👋 歡迎回來，${gs.userName} (${gs.userId})`);
+            this.startGame();
+        }
     },
 
     saveData: function() {
@@ -144,6 +147,95 @@ window.App = {
         }
     },
     resetData: function() { if (window.Core && window.Core.resetData) window.Core.resetData(); },
+	// 👇 [新增 1] 正式進入遊戲的流程 (從原本的 boot 裡面獨立出來)
+    startGame: function() {
+        setTimeout(() => {
+            if (window.SQ.Actions?.navigate) {
+                if (window.Router) window.Router.init();
+                window.SQ.Actions.navigate('main');
+                
+                // 進入大廳後，檢查是否需要啟動新手教學
+                if (window.SQ.Tutorial && typeof window.SQ.Tutorial.checkTutorial === 'function') {
+                    window.SQ.Tutorial.checkTutorial();
+                }
+            }
+        }, 100);
+    },
+
+    // 👇 [新增 2] 全螢幕的新手註冊視窗
+    showWelcomeScreen: function(onComplete) {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `position:fixed; inset:0; z-index:20000; background:var(--bg-base, #121216); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; animation: tuto-fadein 0.5s ease;`;
+
+        overlay.innerHTML = `
+            <div style="background:var(--bg-card, #1e1e24); padding:32px 24px; border-radius:20px; width:100%; max-width:340px; box-shadow:0 20px 40px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.05); text-align:center;">
+                <div style="font-size:3rem; margin-bottom:16px;">✨</div>
+                <h2 style="color:var(--text, #fff); margin:0 0 8px 0; font-size:1.4rem;">歡迎來到 Questory</h2>
+                <p style="color:var(--text-muted, #aaa); font-size:0.9rem; line-height:1.5; margin-bottom:24px;">
+                    這是一場將現實生活轉化為冒險的旅程。<br>請問，我們該如何稱呼您？
+                </p>
+                
+                <input id="sq-welcome-name" type="text" placeholder="請輸入您的暱稱 (1~10字)" maxlength="10" 
+                       style="width:100%; padding:14px; border-radius:12px; 
+                              border:2px solid var(--border, rgba(255,255,255,0.1)); 
+                              background:var(--bg-input, rgba(0,0,0,0.2)); 
+                              color:var(--text, #ffffff); 
+                              font-size:1.1rem; font-weight:bold; text-align:center; box-sizing:border-box; margin-bottom:20px; outline:none; transition:border 0.3s;">
+                
+                <button id="sq-welcome-start" style="width:100%; padding:14px; border-radius:12px; border:none; background:var(--color-gold, #f5a623); color:#111; font-weight:800; font-size:1.1rem; cursor:pointer; box-shadow:0 4px 15px rgba(245,166,35,0.4); transition:transform 0.1s;">
+                    開始冒險 🚀
+                </button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const inputEl = document.getElementById('sq-welcome-name');
+        const btnEl = document.getElementById('sq-welcome-start');
+
+        // 👇 [修正] 確保 focus 與 blur 都是使用主題變數
+        inputEl.addEventListener('focus', () => inputEl.style.borderColor = 'var(--color-gold, #f5a623)');
+        inputEl.addEventListener('blur', () => inputEl.style.borderColor = 'var(--border, rgba(255,255,255,0.1))');
+
+        const submitName = () => {
+            const name = inputEl.value.trim();
+            if (name.length < 1) {
+                window.SQ.Actions?.toast('⚠️ 請輸入暱稱喔！');
+                overlay.firstElementChild.style.transform = 'translateX(-5px)';
+                setTimeout(() => overlay.firstElementChild.style.transform = 'translateX(5px)', 50);
+                setTimeout(() => overlay.firstElementChild.style.transform = 'translateX(0)', 100);
+                return;
+            }
+
+            const newUid = 'usr_' + Math.random().toString(36).substring(2, 10);
+            
+            // 👇 [修正 2] 雙重保險：確保 userName 跟 avatar 裡的 name 都被正確修改
+            window.SQ.State.userName = name;
+            window.SQ.State.userId = newUid;
+            if (!window.SQ.State.avatar) window.SQ.State.avatar = {};
+            window.SQ.State.avatar.name = name; // 同步修改頭像資料的名稱
+            
+            if (window.App && window.App.saveData) window.App.saveData();
+
+            // 👇 [修正 2] 發送廣播事件：強制告訴全系統「屬性已更新，請重新繪製 HUD！」
+            if (window.SQ.EventBus && window.SQ.Events && window.SQ.Events.Stats) {
+                window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
+            }
+
+            btnEl.innerText = '準備進入世界...';
+            btnEl.style.opacity = '0.7';
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+                overlay.style.transition = 'opacity 0.4s ease';
+                setTimeout(() => {
+                    overlay.remove();
+                    if (onComplete) onComplete();
+                }, 400);
+            }, 500);
+        };
+
+        btnEl.addEventListener('click', submitName);
+        inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitName(); });
+    }
 	// 在導航到 main 之後啟動教學檢查
 	
 };
@@ -213,7 +305,62 @@ Object.assign(window.SQ.Actions, {
         }
         if (result === true || result === 'true') { if (window.SQ.Temp.sysConfirmCallback) { window.SQ.Temp.sysConfirmCallback(); window.SQ.Temp.sysConfirmCallback = null; } } 
         else { if (window.SQ.Temp.sysCancelCallback) { window.SQ.Temp.sysCancelCallback(); window.SQ.Temp.sysCancelCallback = null; } }
-    }
+    },
+	// 開啟個人檔案視窗
+    openProfile: () => {
+        // 👇 [修正] 尋找真實的路徑：window.SQ.View.Main.renderProfile
+        if (window.SQ.View.Main && window.SQ.View.Main.renderProfile) {
+            window.SQ.View.Main.renderProfile();
+        } else {
+            console.error("找不到 renderProfile 函數");
+        }
+    },
+    // 點擊更名按鈕的邏輯
+    clickRename: () => {
+        const gs = window.SQ.State;
+
+        if (window.sys && window.sys.confirm) {
+            window.sys.confirm("修改名稱需要消耗 1 張【更名券】。<br>確定要進行修改嗎？", () => {
+                
+                // 👇 [修正 1] 加入 setTimeout，等待 350 毫秒讓確認視窗關閉
+                setTimeout(() => {
+                    const ticketIndex = (gs.bag || []).findIndex(item => item.id === 'sys_rename' && item.count > 0);
+
+                    if (ticketIndex === -1) {
+                        if (window.SQ.Actions && window.SQ.Actions.toast) {
+                            window.SQ.Actions.toast('❌ 您的背包中沒有【更名券】喔！');
+                        }
+                        return;
+                    }
+
+                    if (window.sys && window.sys.prompt) {
+                        window.sys.prompt("請輸入新的暱稱 (1~10字)：", gs.userName, (newName) => {
+                            if (newName && newName.trim().length > 0) {
+                                
+                                gs.bag[ticketIndex].count -= 1;
+                                if (gs.bag[ticketIndex].count <= 0) {
+                                    gs.bag.splice(ticketIndex, 1);
+                                }
+
+                                gs.userName = newName.trim();
+                                if (gs.avatar) gs.avatar.name = newName.trim();
+                                
+                                if (window.App && window.App.saveData) window.App.saveData();
+                                if (window.SQ.Actions && window.SQ.Actions.toast) {
+                                    window.SQ.Actions.toast('✅ 成功修改暱稱！已消耗 1 張更名券。');
+                                }
+                                
+                                if (window.SQ.EventBus) window.SQ.EventBus.emit(window.SQ.Events.Stats.UPDATED);
+                                if (window.SQ.Actions && window.SQ.Actions.closeModal) {
+                                    window.SQ.Actions.closeModal('overlay');
+                                }
+                            }
+                        });
+                    }
+                }, 350); // 👈 延遲時間設為 350ms
+            });
+        }
+    },
 });
 
 window.onload = () => App.boot();
