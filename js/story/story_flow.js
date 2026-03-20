@@ -121,11 +121,16 @@ Object.assign(window.SQ.Engine.Story, {
         // 地圖按鈕注入：只有 isHub 節點才顯示完整地圖按鈕
         if (activeNode.isHub) {
             window.SQ.Temp.lastHubNode = { ...activeNode };
-            if (window.SQ.Engine.Map && window.SQ.Engine.Map.map.length > 0) {
+            if (window.SQ.Engine.Map) {
+                // 🌟 新增：如果地圖還是空的，自動幫玩家建一張地圖！
+                if (window.SQ.Engine.Map.map.length === 0) {
+                    const gs = window.SQ.State;
+                    const defaultRoom = (gs.story.chain && gs.story.chain.memory && gs.story.chain.memory['env_room']) ? gs.story.chain.memory['env_room'] : "大廳";
+                    window.SQ.Engine.Map.init("未知建築", defaultRoom);
+                }
                 options = window.SQ.Engine.Map.injectMapOptions(options);
             }
         }
-
         // 🌟 修正：只有「非 HUB」的劇情才會洗牌，保護箱庭選單固定順序
         if (options.length > 1 && !activeNode.isHub && activeNode.id !== 'root_hub') {
             options = this._shuffle(options);
@@ -377,8 +382,11 @@ Object.assign(window.SQ.Engine.Story, {
         if (targetNode) {
             this.playSceneNode(targetNode);
         } else {
-            console.error(`❌ Scene ID not found: ${targetId}`);
-            if (targetId !== 'GEN_MODULAR') this.finishChain();
+            // 🌟 防呆機制：找不到場景時，發出警告但不中斷遊戲
+            console.warn(`⚠️ 找不到目標場景 (ID: ${targetId})。可能劇本漏寫了 nextScene 或 failScene。系統已自動推進劇情。`);
+            if (targetId !== 'GEN_MODULAR') {
+                this.advanceChain(); // 👈 改成 advanceChain，讓遊戲繼續抽下一張卡！
+            }
         }
     },
 

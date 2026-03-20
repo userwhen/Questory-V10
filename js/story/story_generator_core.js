@@ -226,27 +226,29 @@ Object.assign(window.SQ.Engine.Generator, {
         const mergedTags = [...new Set([...chain.tags, ...playerTags])];
 
         let targetType;
-		if (chain.currentStageIdx >= chain.stages.length - 2) {
-			// 已到達 climax/end 的固定區段，照舊走
-			targetType = chain.stages[chain.currentStageIdx];
-		} else if (chain.currentStageIdx === 0) {
-			targetType = 'start';
-		} else {
-			// 動態決定：計算進入 climax 的機率
-			const tension = this._getTensionValue(chain);
-			const baseClimaxChance = 0.15;                    // 基礎 15% 機率
-			const depthBonus = chain.depth * 0.05;             // 每深一層 +5%
-			const tensionBonus = tension >= 80 ? 0.4           // 高壓 +40%
-							   : tension >= 50 ? 0.2 : 0;      // 中壓 +20%
-			const climaxChance = Math.min(0.85, baseClimaxChance + depthBonus + tensionBonus);
-			
-			targetType = Math.random() < climaxChance ? 'climax' : 'middle';
-			
-			// 如果抽中 climax，把指針推到倒數第二格（確保接著是 end）
-			if (targetType === 'climax') {
-				chain.currentStageIdx = chain.stages.length - 2;
-			}
-		}
+        if (chain.currentStageIdx >= chain.stages.length - 2) {
+            targetType = chain.stages[chain.currentStageIdx];
+        } else if (chain.currentStageIdx === 0) {
+            targetType = 'start';
+        } else {
+            const tension = this._getTensionValue(chain);
+            let climaxChance = 0;
+            
+            // 🛡️ 核心修復：前兩步強制保底安全！除非玩家壓力爆表 (>= 80)，否則必須走到 StageIdx >= 3 才能觸發隨機 Boss
+            if (chain.currentStageIdx >= 3 || tension >= 80) {
+                const baseClimaxChance = 0.05; // 基礎機率降為 5%
+                const stageBonus = Math.max(0, chain.currentStageIdx - 2) * 0.10; // 走越深機率越高
+                const tensionBonus = tension >= 80 ? 0.3 : tension >= 50 ? 0.15 : 0;
+                climaxChance = Math.min(0.85, baseClimaxChance + stageBonus + tensionBonus);
+            }
+            
+            targetType = Math.random() < climaxChance ? 'climax' : 'middle';
+            
+            if (targetType === 'climax') {
+                chain.currentStageIdx = chain.stages.length - 2;
+                console.log(`💀 厄運降臨！張力值檢定未通過 (機率: ${Math.round(climaxChance*100)}%)，強制進入決戰！`);
+            }
+        }
 
         const currentStats = {
             ...(gs.attrs || {}),
@@ -377,7 +379,8 @@ Object.assign(window.SQ.Engine.Generator, {
                 if (typeof t === 'string') rawTextArr.push(t);
                 else if (Array.isArray(t)) rawTextArr = t;
             }
-            finalTxT = rawTextArr.map(t => this._expandGrammar(t, db, memory, 0, collectedTags)).join('<br><br>');
+            // 🌟 修正 1：切斷主文本的標籤污染 (傳入 null)
+            finalTxT = rawTextArr.map(t => this._expandGrammar(t, db, memory, 0, null)).join('<br><br>');
         }
 
         // 對話
@@ -390,8 +393,9 @@ Object.assign(window.SQ.Engine.Generator, {
                 }
                 let speakerName = (d && d.speaker) ? d.speaker : "旁白";
                 return {
-                    speaker: this._expandGrammar(speakerName, db, memory, 0, collectedTags),
-                    text:    this._expandGrammar(rawDiagText, db, memory, 0, collectedTags)
+                    // 🌟 修正 2 & 3：切斷說話者與對話內容的標籤污染 (傳入 null)
+                    speaker: this._expandGrammar(speakerName, db, memory, 0, null),
+                    text:    this._expandGrammar(rawDiagText, db, memory, 0, null)
                 };
             });
         }
@@ -399,7 +403,8 @@ Object.assign(window.SQ.Engine.Generator, {
         // 獎勵
         let newRewards = tmpl.rewards ? JSON.parse(JSON.stringify(tmpl.rewards)) : undefined;
         if (newRewards && newRewards.tags) {
-            newRewards.tags = newRewards.tags.map(t => this._expandGrammar(t, db, memory, 0, collectedTags));
+            // 🌟 修正 4：切斷獎勵處理時的標籤污染 (傳入 null)
+            newRewards.tags = newRewards.tags.map(t => this._expandGrammar(t, db, memory, 0, null));
         }
 
         return {
